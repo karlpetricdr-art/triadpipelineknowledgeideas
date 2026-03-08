@@ -813,7 +813,7 @@ with col_inq3:
         st.success(f"Context from {uploaded_file.name} integrated.")
 
 # =============================================================================
-# 5. TRIAD SYNERGY EXECUTION ENGINE (FIXED: GOOGLE LINKS & GRAPH STABILITY)
+# 5. TRIAD SYNERGY EXECUTION ENGINE (ROBUSTNA FINALNA VERZIJA)
 # =============================================================================
 
 if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=True):
@@ -834,14 +834,10 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
 
             # --- PHASE 1: GROQ (Speculative Foundation) ---
             with st.spinner('PHASE 1: Groq mapping speculative hierarchies (Temp 0.85)...'):
-                p1_prompt = f"""
-                You are the SIS Hierarchology Visionary (Phase 1).
-                STRICT IMA ARCHITECTURE: {ima_data} | HIERARCHOLOGY BASIS: {h_ont}
-                TASK: Provide a speculative foundation identifying hidden hierarchies.
-                """
+                p1_prompt = f"Analyze using Hierarchology (IMA: {ima_data}, Basis: {h_ont}). Identify hidden hierarchies: {user_query}"
                 res_p1 = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
-                    messages=[{"role": "system", "content": p1_prompt}, {"role": "user", "content": user_query}],
+                    messages=[{"role": "system", "content": "You are a Hierarchology Visionary."}, {"role": "user", "content": p1_prompt}],
                     temperature=0.85
                 )
                 foundation = res_p1.choices[0].message.content
@@ -852,15 +848,14 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
             # --- PHASE 2: CEREBRAS (Innovation & Multi-Shape Graph) ---
             with st.spinner('PHASE 2: Cerebras generating Innovations & Hierarchography (Temp 0.85)...'):
                 p2_prompt = f"""
-                You are the SIS Innovation Engine (Phase 2). 
-                STRICT MA FOCUS: {ma_data}
-                TASK: Generate 5 radical ideas.
+                Generate 5 radical ideas. 
+                MA FOCUS: {ma_data}
                 
-                HIERARCHOGRAPHY RULES:
-                - Nodes: "octagon" (Macro), "rectangle" (Meso), "ellipse" (Micro), "diamond" (Associative), "star" (Core Idea).
-                - Use BT, NT, TT, AS, outcome_of, leads_to.
+                MANDATORY JSON FORMAT:
+                "nodes": [{"id": "unique_id", "label": "Title", "shape": "octagon|rectangle|ellipse|diamond|star", "type": "Root|Branch"}]
+                "edges": [{"source": "id1", "target": "id2", "rel_type": "AS|BT|NT|outcome_of"}]
                 
-                End with '### SEMANTIC_GRAPH_JSON' followed by the JSON network.
+                End with '### SEMANTIC_GRAPH_JSON' followed by the JSON.
                 """
                 res_p2 = cerebras_client.chat.completions.create(
                     model=cerebras_id, 
@@ -872,14 +867,11 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
             st.toast("Phase 2 complete. Cooling down API...")
             time.sleep(5)
 
-            # --- PHASE 3: GROQ (Vetting & Linking Verification) ---
+            # --- PHASE 3: GROQ (Vetting & Final Synthesis) ---
             with st.spinner('PHASE 3: Groq performing Final Vetting (Temp 0.2)...'):
                 p3_prompt = """
-                You are the SIS Final Triad Auditor. 
-                TASK:
-                1. Filter speculate ideas from P2 for ethical/logical consistency.
-                2. Refine into a 'Perfect 10' report.
-                3. IMPORTANT: Use the exact names of the nodes from the innovations in your final text.
+                Refine innovations into a 'Perfect 10' report. Use exact node labels from innovations.
+                Produce the FINAL VERIFIED SYNERGY REPORT with the 'Heartbeat of Truth'.
                 """
                 res_p3 = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
@@ -888,14 +880,11 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                 )
                 final_report = res_p3.choices[0].message.content
 
-            # --- IZRIS IN POVEZAVE ---
+            # --- ROBUSTNA OBDELAVA PODATKOV ---
             graph_json_str = ""
             if "### SEMANTIC_GRAPH_JSON" in innovation_raw:
                 graph_json_str = innovation_raw.split("### SEMANTIC_GRAPH_JSON")[1]
 
-            st.subheader("📊 FINAL VERIFIED SYNERGY RESULTS")
-            
-            # Google Search Linker (Z izboljšano detekcijo)
             display_text = final_report
             nodes_for_graph = []
             edges_for_graph = []
@@ -905,28 +894,40 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                     match = re.search(r'\{.*\}', graph_json_str, re.DOTALL)
                     if match:
                         g_json = json.loads(match.group())
-                        # Pripravi vozlišča
-                        for n in g_json.get("nodes", []):
-                            lbl = n.get("label", "")
-                            nid = n.get("id") or lbl
+                        
+                        # Varna obdelava vozlišč (rešuje 'str' object error)
+                        nodes_list = g_json.get("nodes", [])
+                        for n in nodes_list:
+                            if isinstance(n, str):
+                                # Če AI vrne le niz, ga pretvorimo v objekt
+                                lbl, nid = n, n
+                                shape, color = "rectangle", "#fd7e14"
+                            else:
+                                # Če je pravilno objekt (slovar)
+                                lbl = n.get("label", n.get("id", "Unknown"))
+                                nid = n.get("id", lbl)
+                                shape = n.get("shape", "rectangle")
+                                color = n.get("color", "#fd7e14")
+                            
                             if lbl:
-                                # Ustvari Google povezavo v tekstu
+                                # Povezava do Googla v tekstu
                                 g_url = urllib.parse.quote(lbl)
                                 replacement = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}</a>'
                                 display_text = display_text.replace(lbl, replacement, 1)
                                 
-                                # Shrani za Cytoscape
+                                # Dodaj v listo za graf
                                 nodes_for_graph.append({
                                     "data": {
                                         "id": str(nid), "label": str(lbl), 
-                                        "color": n.get("color", "#fd7e14"), 
-                                        "size": 110 if n.get("type") == "Root" else 90,
-                                        "shape": n.get("shape", "rectangle")
+                                        "color": color, "shape": shape,
+                                        "size": 110 if n.get("type") == "Root" else 90
                                     }
                                 })
-                        # Pripravi robove
-                        for e in g_json.get("edges", []):
-                            if e.get("source") and e.get("target"):
+
+                        # Varna obdelava povezav
+                        edges_list = g_json.get("edges", [])
+                        for e in edges_list:
+                            if isinstance(e, dict) and e.get("source") and e.get("target"):
                                 edges_for_graph.append({
                                     "data": {
                                         "source": str(e["source"]), 
@@ -935,24 +936,21 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                                     }
                                 })
                 except Exception as e:
-                    st.warning(f"⚠️ JSON Parsing Error: {e}")
+                    st.sidebar.warning(f"JSON Note: {e}")
 
-            # Izpiši končno besedilo
+            # IZPIS
+            st.subheader("📊 FINAL VERIFIED SYNERGY RESULTS")
             st.markdown(display_text, unsafe_allow_html=True)
 
-            # Izriši graf
             if nodes_for_graph:
                 st.subheader("🕸️ FINAL VERIFIED SEMANTIC NETWORK")
                 render_cytoscape_network(nodes_for_graph + edges_for_graph, f"viz_{int(time.time())}")
-            else:
-                st.warning("⚠️ Graph could not be constructed from the AI output.")
 
             if biblio:
                 with st.expander("📚 BIBLIOGRAPHY"): st.text(biblio)
 
         except Exception as e:
             st.error(f"❌ Triad Synergy Failure: {e}")
-
 # =============================================================================
 # 6. FOOTER & METRICS
 # =============================================================================
@@ -961,6 +959,7 @@ st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | Operating Da
 st.write("")
 
 st.write("")
+
 
 
 
