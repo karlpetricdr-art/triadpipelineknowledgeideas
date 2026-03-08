@@ -813,7 +813,7 @@ with col_inq3:
         st.success(f"Context from {uploaded_file.name} integrated.")
 
 # =============================================================================
-# 5. TRIAD SYNERGY EXECUTION ENGINE (FIXED HTML LINKS & MULTI-COLOR GRAPH)
+# 5. TRIAD SYNERGY EXECUTION ENGINE (FINALNA ROBUSTNA VERZIJA: POVEZAVE + GRAF)
 # =============================================================================
 
 if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=True):
@@ -823,7 +823,7 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
         st.warning("⚠️ Phase 1 Research Inquiry is required.")
     else:
         try:
-            # Init Clients
+            # 1. Inicializacija API odjemalcev
             groq_client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
             cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
             
@@ -844,41 +844,40 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                 )
                 foundation = res_p1.choices[0].message.content
 
-            st.toast("Phase 1 complete. Cooling down API...")
+            st.toast("Phase 1 complete. Cooling down...")
             time.sleep(5) 
 
-            # --- PHASE 2: CEREBRAS (Innovation & Multi-Shape Graph) ---
-            with st.spinner('PHASE 2: Cerebras generating Innovations (Temp 0.85)...'):
-                p2_prompt = """
-                Generate 5 radical ideas for crime/stress prevention. 
+            # --- PHASE 2: CEREBRAS (Innovation & Hierarchography) ---
+            with st.spinner('PHASE 2: Cerebras generating Innovations & JSON Graph...'):
+                p2_template = """
+                Generate 5 radical ideas. 
                 MA FOCUS: [MA_DATA]
                 
-                MANDATORY HIERARCHOGRAPHY SHAPES:
-                - "octagon" for Macro/Laws.
-                - "rectangle" for Meso/Programs.
-                - "ellipse" for Micro/Neural.
-                - "diamond" for Associative links.
-                - "star" for the central core Idea.
+                MANDATORY HIERARCHOGRAPHY RULES:
+                - Use shapes: "octagon" (Macro), "rectangle" (Meso), "ellipse" (Micro), "diamond" (Associative), "star" (Core).
+                - Use relation types: BT, NT, outcome_of, AS, leads_to.
+                - EVERY node must have an "id" and a "label".
                 
-                End with '### SEMANTIC_GRAPH_JSON' followed by the JSON nodes and edges.
+                End with '### SEMANTIC_GRAPH_JSON' followed by the JSON structure.
                 """
-                p2_content = p2_prompt.replace("[MA_DATA]", ma_data)
+                p2_content = p2_template.replace("[MA_DATA]", ma_data)
                 
                 res_p2 = cerebras_client.chat.completions.create(
                     model=cerebras_id, 
-                    messages=[{"role": "system", "content": p2_content}, {"role": "user", "content": f"F1 FOUNDATION:\n{foundation}\n\nGOAL:\n{idea_query}"}],
+                    messages=[{"role": "system", "content": p2_content}, {"role": "user", "content": f"F1:\n{foundation}\n\nGOAL:\n{idea_query}"}],
                     temperature=0.85
                 )
                 innovation_raw = res_p2.choices[0].message.content
 
-            st.toast("Phase 2 complete. Cooling down API...")
+            st.toast("Phase 2 complete. Cooling down...")
             time.sleep(5)
 
-            # --- PHASE 3: GROQ (Vetting & Final Synthesis) ---
-            with st.spinner('PHASE 3: Groq performing Final Vetting (Temp 0.2)...'):
+            # --- PHASE 3: GROQ (Vetting & Linking) ---
+            with st.spinner('PHASE 3: Final Vetting & Synergy Optimization...'):
                 p3_prompt = """
-                Refine innovations into a 'Perfect 10' report. Use exact node labels from innovations.
-                Produce the FINAL VERIFIED SYNERGY REPORT with the 'Heartbeat of Truth'.
+                Refine innovations into a 'Perfect 10' report. 
+                CRITICAL: Use the EXACT node labels from the innovations in your text to ensure links work.
+                Include the 'Heartbeat of Truth'.
                 """
                 res_p3 = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
@@ -887,68 +886,76 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                 )
                 final_report = res_p3.choices[0].message.content
 
-            # --- OBDELAVA PODATKOV ZA PRIKAZ ---
+            # --- OBDELAVA PODATKOV ---
             graph_json_str = ""
             if "### SEMANTIC_GRAPH_JSON" in innovation_raw:
                 graph_json_str = innovation_raw.split("### SEMANTIC_GRAPH_JSON")[1]
 
             display_text = final_report
-            nodes_for_graph = []
-            edges_for_graph = []
+            elements = []
 
+            # 2. EKSTRAKCIJA JSON IN USTVARJANJE POVEZAV
             if graph_json_str:
                 try:
                     match = re.search(r'\{.*\}', graph_json_str, re.DOTALL)
                     if match:
                         g_json = json.loads(match.group())
                         
+                        # Pridobimo vozlišča
                         for n in g_json.get("nodes", []):
-                            if isinstance(n, str):
-                                lbl, nid, shape = n, n, "rectangle"
-                            else:
-                                lbl = n.get("label", n.get("id", "Unknown"))
+                            if isinstance(n, dict):
+                                lbl = n.get("label", n.get("id", ""))
                                 nid = n.get("id", lbl)
                                 shape = n.get("shape", "rectangle")
-                            
-                            if lbl:
-                                # DINAMIČNA BARVA GLEDE NA OBLIKO (HIERARHOGRAFIJA)
-                                if shape == "octagon": v_color = "#e63946"   # Macro (Rdeča)
-                                elif shape == "star": v_color = "#FFD700"    # Inovacija (Zlata)
-                                elif shape == "ellipse": v_color = "#2a9d8f" # Micro (Zelena)
-                                elif shape == "diamond": v_color = "#9b59b6" # Asociacija (Vijolična)
-                                else: v_color = "#fd7e14"                    # Meso (Oranžna)
-
-                                # Popravek za Google povezave - uporabimo unikaten placeholder
-                                g_url = urllib.parse.quote(lbl)
-                                replacement = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}</a>'
-                                display_text = display_text.replace(lbl, replacement, 1)
+                                type_v = n.get("type", "Branch")
                                 
-                                nodes_for_graph.append({
-                                    "data": {
-                                        "id": str(nid), "label": str(lbl), 
-                                        "color": v_color, "shape": shape,
-                                        "size": 110 if n.get("type") == "Root" else 90
-                                    }
-                                })
+                                # Barvna logika (Hierarhografija)
+                                if shape == "octagon": v_color = "#e63946"
+                                elif shape == "star": v_color = "#FFD700"
+                                elif shape == "ellipse": v_color = "#2a9d8f"
+                                elif shape == "diamond": v_color = "#9b59b6"
+                                else: v_color = "#fd7e14"
 
+                                if lbl:
+                                    # Ustvarjanje Google povezav (Case-Insensitive zamenjava)
+                                    g_url = urllib.parse.quote(lbl)
+                                    replacement = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}</a>'
+                                    
+                                    # Regex zamenjava, ki ignorira velike/male črke
+                                    pattern = re.compile(re.escape(lbl), re.IGNORECASE)
+                                    display_text = pattern.sub(replacement, display_text, count=1)
+                                    
+                                    # Dodajanje v Cytoscape elemente
+                                    elements.append({
+                                        "data": {
+                                            "id": str(nid), "label": str(lbl), 
+                                            "color": v_color, "shape": shape,
+                                            "size": 110 if type_v == "Root" else 90
+                                        }
+                                    })
+
+                        # Pridobimo robove
                         for e in g_json.get("edges", []):
                             if isinstance(e, dict) and e.get("source") and e.get("target"):
-                                edges_for_graph.append({
+                                elements.append({
                                     "data": {
                                         "source": str(e["source"]), 
                                         "target": str(e["target"]), 
                                         "rel_type": str(e.get("rel_type", "AS"))
                                     }
                                 })
-                except: pass
+                except Exception as e:
+                    st.sidebar.error(f"JSON Error: {e}")
 
-            # IZPIS REZULTATOV (Nujno unsafe_allow_html=True)
+            # --- PRIKAZ NA ZASLONU ---
             st.subheader("📊 FINAL VERIFIED SYNERGY RESULTS")
             st.markdown(display_text, unsafe_allow_html=True)
 
-            if nodes_for_graph:
-                st.subheader("🕸️ FINAL VERIFIED SEMANTIC NETWORK")
-                render_cytoscape_network(nodes_for_graph + edges_for_graph, f"viz_{int(time.time())}")
+            if elements:
+                st.subheader("🕸️ FINAL VERIFIED SEMANTIC NETWORK (Hierarchography)")
+                render_cytoscape_network(elements, f"viz_{int(time.time())}")
+            else:
+                st.warning("⚠️ Graph could not be generated. Check if the JSON output was valid.")
 
             if biblio:
                 with st.expander("📚 BIBLIOGRAPHY"): st.text(biblio)
@@ -963,6 +970,7 @@ st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | Operating Da
 st.write("")
 
 st.write("")
+
 
 
 
