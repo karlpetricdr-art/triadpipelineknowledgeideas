@@ -813,7 +813,7 @@ with col_inq3:
         st.success(f"Context from {uploaded_file.name} integrated.")
 
 # =============================================================================
-# 5. TRIAD SYNERGY EXECUTION ENGINE (0.85 Vision -> 0.85 Innovation -> 0.2 Vetting)
+# 5. TRIAD SYNERGY EXECUTION ENGINE (VERZIJA Z GOOGLE POVEZAVAMI IN GRAFOM)
 # =============================================================================
 
 if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=True):
@@ -827,118 +827,122 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
             groq_client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
             cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
             
-            # Prepare metadata
             biblio = fetch_author_bibliographies(target_authors) if target_authors else ""
             h_ont = json.dumps(HIERARCHOLOGY_ONTOLOGY)
             ima_data = json.dumps(HUMAN_THINKING_METAMODEL)
             ma_data = json.dumps(MENTAL_APPROACHES_ONTOLOGY)
 
-            # --- PHASE 1: GROQ (VISIONARY FOUNDATION) ---
-            # Set to 0.85 for "Divergent Theoretical Thinking"
-            with st.spinner('PHASE 1: Groq (Visionary) mapping hidden hierarchies...'):
-                p1_template = """
+            # --- PHASE 1: GROQ (FOUNDATION) ---
+            with st.spinner('PHASE 1: Establishing Speculative Foundation...'):
+                p1_prompt = f"""
                 You are the SIS Hierarchology Visionary (Phase 1).
-                STRICT IMA ARCHITECTURE FOCUS: [IMA]
-                HIERARCHOLOGY BASIS: [H_ONT]
-                
-                Task: Provide a speculative, high-concept structural foundation. 
-                Identify hidden hierarchies and "Scientific Cages" that traditional science misses.
-                Think outside the box to establish a radical Ground Truth.
+                STRICT IMA ARCHITECTURE: {ima_data}
+                HIERARCHOLOGY BASIS: {h_ont}
+                Task: Provide a speculative foundation identifying hidden hierarchies.
                 """
-                p1_prompt = p1_template.replace("[IMA]", ima_data).replace("[H_ONT]", h_ont)
-                
                 res_p1 = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=[{"role": "system", "content": p1_prompt}, {"role": "user", "content": user_query}],
-                    temperature=0.85 # HIGH TEMPERATURE FOR VISION
+                    temperature=0.85
                 )
-                groq_foundation = res_p1.choices[0].message.content
+                foundation = res_p1.choices[0].message.content
 
-            # --- PHASE 2: CEREBRAS (RADICAL TRANSFORMATION) ---
-            # Set to 0.85 for "Creative Supernova"
-            with st.spinner('PHASE 2: Cerebras (Innovator) producing radical ideas...'):
-                p2_template = """
-                You are the SIS Innovation Supernova (Phase 2). 
-                STRICT MENTAL APPROACHES (MA) FOCUS: [MA]
-                
-                TASK:
-                1. Review the Visionary Foundation from Phase 1.
-                2. Use Dialectics and Perspective Shifting to generate 5 radical 'Useful Innovative Ideas'.
-                3. Apply HIERARCHOGRAPHY: Describe subject/solution using diagrammatic logic.
-                4. End your response with '### SEMANTIC_GRAPH_JSON' followed by a valid JSON network (45-65 nodes).
+            # --- PHASE 2: CEREBRAS (INNOVATION & GRAPH) ---
+            with st.spinner('PHASE 2: Generating Innovations & Hierarchography...'):
+                p2_prompt = f"""
+                You are the SIS Innovation Engine (Phase 2). 
+                STRICT MA FOCUS: {ma_data}
+                TASK: Generate 5 radical ideas. 
+                End your response with '### SEMANTIC_GRAPH_JSON' followed by a valid JSON network (45-65 nodes).
                 """
-                p2_prompt = p2_template.replace("[MA]", ma_data)
-                
                 res_p2 = cerebras_client.chat.completions.create(
                     model=cerebras_id, 
-                    messages=[{"role": "system", "content": p2_prompt}, {"role": "user", "content": f"FOUNDATION:\n{groq_foundation}\n\nGOAL:\n{idea_query}"}],
-                    temperature=0.85 # HIGH TEMPERATURE FOR INNOVATION
+                    messages=[{"role": "system", "content": p2_prompt}, {"role": "user", "content": f"F1:\n{foundation}\n\nGOAL:\n{idea_query}"}],
+                    temperature=0.85
                 )
                 innovation_raw = res_p2.choices[0].message.content
 
-            # --- PHASE 3: GROQ (RIGID AUDIT & STABILIZATION) ---
-            # Set to 0.2 for "Cold Logic Filter"
-            with st.spinner('PHASE 3: Groq (Auditor) performing Rigid Vetting & Verification...'):
+            # --- PHASE 3: GROQ (VETTING & FINAL REPORT) ---
+            with st.spinner('PHASE 3: Final Vetting & Synergy Optimization...'):
                 p3_prompt = """
                 You are the SIS Final Triad Auditor (Phase 3). 
-                
-                TASK:
-                1. Phase 1 and 2 were highly creative and speculative. Your role is to RUTHLESSLY FILTER these.
-                2. LOGICAL VETTING: Check the Phase 2 innovations against the Phase 1 foundation.
-                3. ETHICAL AUDIT: Discard associations that violate logic or ethical social laws.
-                4. FORMALIZATION: Refine the remaining ideas into a 'Perfect 10' report including the "Heartbeat of Truth".
-                5. Produce the FINAL VERIFIED SYNERGY REPORT.
+                Filter Phase 2 innovations. Refine them into a 'Perfect 10' report.
+                Ensure the 'Heartbeat of Truth' is present.
                 """
-                
                 res_p3 = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
-                    messages=[{"role": "system", "content": p3_prompt}, {"role": "user", "content": f"F1 (Speculative):\n{groq_foundation}\n\nI2 (Innovations):\n{innovation_raw}"}],
-                    temperature=0.2 # RIGID TEMPERATURE FOR STABILIZATION
+                    messages=[{"role": "system", "content": p3_prompt}, {"role": "user", "content": f"F1:\n{foundation}\n\nI2:\n{innovation_raw}"}],
+                    temperature=0.2
                 )
                 final_report = res_p3.choices[0].message.content
 
-            # --- RENDERING RESULTS ---
-            graph_data = ""
+            # --- OBDELAVA PODATKOV ZA PRIKAZ ---
+            # 1. Izvleček JSON podatkov za graf iz 2. faze
+            graph_json_str = ""
             if "### SEMANTIC_GRAPH_JSON" in innovation_raw:
-                graph_data = innovation_raw.split("### SEMANTIC_GRAPH_JSON")[1]
+                graph_json_str = innovation_raw.split("### SEMANTIC_GRAPH_JSON")[1]
 
-            st.subheader("📊 FINAL VERIFIED INNOVATION RESULTS")
+            st.subheader("📊 FINAL VERIFIED SYNERGY RESULTS")
             
-            # Semantic Linker (Google Search)
+            # 2. SEMANTIČNI POVEZOVALEC (Google Search povezave v tekstu)
             display_text = final_report
-            if graph_data:
+            if graph_json_str:
                 try:
-                    g_json = json.loads(re.search(r'\{.*\}', graph_data, re.DOTALL).group())
+                    # Očistimo morebitne komentarje iz JSON-a
+                    json_clean = re.search(r'\{.*\}', graph_json_str, re.DOTALL).group()
+                    g_json = json.loads(json_clean)
+                    
+                    # Vsako oznako vozlišča iz grafa spremenimo v povezavo v končnem tekstu
                     for n in g_json.get("nodes", []):
                         lbl = n["label"]
                         g_url = urllib.parse.quote(lbl)
+                        # Uporabimo vaš CSS razred semantic-node-highlight
                         replacement = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}</a>'
+                        # Zamenjamo samo prvo pojavitev za lepši videz
                         display_text = display_text.replace(lbl, replacement, 1)
-                except: pass
+                except:
+                    pass
 
             st.markdown(display_text, unsafe_allow_html=True)
 
-            # Interactive Graph
-            if graph_data:
-                st.subheader("🕸️ FINAL VERIFIED HIERARCHOGRAPHIC NETWORK")
+            # 3. IZRIS GRAFA (Cytoscape)
+            if graph_json_str:
+                st.subheader("🕸️ FINAL VERIFIED SEMANTIC NETWORK")
                 try:
-                    g_json = json.loads(re.search(r'\{.*\}', graph_data, re.DOTALL).group())
+                    json_clean = re.search(r'\{.*\}', graph_json_str, re.DOTALL).group()
+                    g_json = json.loads(json_clean)
+                    
                     elements = []
                     for n in g_json.get("nodes", []):
-                        elements.append({"data": {
-                            "id": n["id"], "label": n["label"], "color": n.get("color", "#fd7e14"),
-                            "size": 110 if n.get("type") == "Root" else 90, 
-                            "shape": n.get("shape", "rectangle")
-                        }})
+                        # Določimo velikost glede na tip
+                        v_size = 110 if n.get("type") == "Root" else 90
+                        elements.append({
+                            "data": {
+                                "id": n["id"], 
+                                "label": n["label"], 
+                                "color": n.get("color", "#fd7e14"), 
+                                "size": v_size, 
+                                "shape": n.get("shape", "rectangle")
+                            }
+                        })
                     for e in g_json.get("edges", []):
-                        elements.append({"data": {
-                            "source": e["source"], "target": e["target"], "rel_type": e.get("rel_type", "AS")
-                        }})
-                    render_cytoscape_network(elements)
-                except: st.warning("⚠️ Error Rendering Final Network.")
+                        elements.append({
+                            "data": {
+                                "source": e["source"], 
+                                "target": e["target"], 
+                                "rel_type": e.get("rel_type", "AS")
+                            }
+                        })
+                    
+                    # Pokličemo funkcijo za izris
+                    render_cytoscape_network(elements, "viz_final_triad")
+                    
+                except Exception as viz_err:
+                    st.warning(f"⚠️ Graph Render Issue: {viz_err}")
 
             if biblio:
-                with st.expander("📚 BIBLIOGRAPHIC DATA"): st.text(biblio)
+                with st.expander("📚 BIBLIOGRAPHIC DATA"):
+                    st.text(biblio)
 
         except Exception as e:
             st.error(f"❌ Triad Synergy Failure: {e}")
@@ -951,4 +955,5 @@ st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | Operating Da
 st.write("")
 
 st.write("")
+
 
