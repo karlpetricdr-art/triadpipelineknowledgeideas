@@ -848,25 +848,27 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                 foundation = res_p1.choices[0].message.content
 
             # --- PHASE 2: CEREBRAS (INNOVATION & HIERARCHOGRAPHY) ---
-            with st.spinner('PHASE 2: Generating Innovations & Detailed Hierarchography...'):
+            with st.spinner('PHASE 2: Generating Innovations & Multi-Shape Hierarchography...'):
                 p2_prompt = f"""
                 You are the SIS Innovation Engine (Phase 2). 
                 STRICT MA FOCUS: {ma_data}
                 
-                TASK: Generate 5 radical ideas.
+                TASK: Generate 5 radical ideas for crime/stress prevention.
                 
-                JSON SCHEMA RULES:
-                - Every node MUST have an "id" and a "label".
-                - Use "id": "unique_string_id".
-                - Use shapes: 'rectangle' for hierarchies, 'diamond' for associations.
-                - MANDATORY rel_type: BT, NT, TT, AS, EQ, IN, outcome_of, has, prevents, leads_to.
+                HIERARCHOGRAPHY VISUAL RULES:
+                - Use "shape": "octagon" for Macro-level/Universal nodes (Societal laws, broad fields).
+                - Use "shape": "rectangle" for Meso-level/Organizational nodes (Programs, communities).
+                - Use "shape": "ellipse" for Micro-level/Individual nodes (Neural states, biology).
+                - Use "shape": "diamond" for Associative nodes (Abstract concepts, linking gears).
+                - Use "shape": "star" for the absolute core Innovative Idea (The central solution).
+                
+                JSON SCHEMA:
+                Every node MUST have "id", "label", "shape", and "type" (Root or Branch).
+                MANDATORY rel_type: BT, NT, TT, AS, EQ, IN, outcome_of, has, prevents, leads_to.
                 
                 End with '### SEMANTIC_GRAPH_JSON' followed by the JSON network.
                 """
-                res_p2 = cerebras_client.chat.completions.create(
-                    model=cerebras_id, 
-                    messages=[{"role": "system", "content": p2_prompt}, {"role": "user", "content": f"F1 FOUNDATION:\n{foundation}\n\nGOAL:\n{idea_query}"}],
-                    temperature=0.85
+                # Ostali del kode (res_p2 = cerebras_client.chat...) ostane enak
                 )
                 innovation_raw = res_p2.choices[0].message.content
 
@@ -968,6 +970,7 @@ st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | Operating Da
 st.write("")
 
 st.write("")
+
 
 
 
