@@ -813,36 +813,33 @@ with col_inq3:
         st.success(f"Context from {uploaded_file.name} integrated.")
 
 # =============================================================================
-# 5. TRIAD SYNERGY EXECUTION ENGINE (FINALNA VERZIJA S POPRAVLJENIMI OBLIKAMI)
+# 5. TRIAD SYNERGY EXECUTION ENGINE (0.85 -> 0.85 -> 0.2)
 # =============================================================================
 
 if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=True):
     if not groq_api_key or not cerebras_api_key:
-        st.error("❌ Dual-Model synergy requires both Groq and Cerebras keys.")
+        st.error("❌ Dual API Keys required.")
     elif not user_query:
-        st.warning("⚠️ Phase 1 Research Inquiry is required.")
+        st.warning("⚠️ Research Inquiry is required.")
     else:
         try:
-            # Inicializacija odjemalcev
             groq_client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
             cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
             
-            # Priprava metapodatkov (Preverite, če je HIERARCHOLOGY_ONTOLOGY v Section 2!)
-            biblio = fetch_author_bibliographies(target_authors) if target_authors else ""
-            h_ont_str = json.dumps(HIERARCHOLOGY_ONTOLOGY) if 'HIERARCHOLOGY_ONTOLOGY' in locals() else "{}"
+            biblio_data = fetch_author_bibliographies(target_authors)
+            h_ont_str = json.dumps(HIERARCHOLOGY_ONTOLOGY)
             ima_data_str = json.dumps(HUMAN_THINKING_METAMODEL)
             ma_data_str = json.dumps(MENTAL_APPROACHES_ONTOLOGY)
 
-            # --- PHASE 1: GROQ (VISIONARY FOUNDATION) ---
-            with st.spinner('PHASE 1: Groq (Visionary) mapping hidden hierarchies...'):
+            # --- PHASE 1: GROQ (Speculative Foundation) ---
+            with st.spinner('PHASE 1: Groq mapping speculative hierarchies (Temp 0.85)...'):
                 p1_template = """
                 You are the SIS Hierarchology Visionary (Phase 1).
-                STRICT IMA ARCHITECTURE: [IMA]
-                HIERARCHOLOGY BASIS: [H_ONT]
-                Task: Provide a speculative, high-concept structural foundation. 
-                Identify hidden hierarchies and "Scientific Cages" that traditional science misses.
+                STRICT IMA ARCHITECTURE: [IMA] | HIERARCHOLOGY BASIS: [H_ONT]
+                CONTEXT: [DATE] | SCIENCES: [SCIENCES]
+                Task: Provide a speculative foundation identifying hidden hierarchies and "Scientific Cages".
                 """
-                p1_prompt = p1_template.replace("[IMA]", ima_data_str).replace("[H_ONT]", h_ont_str)
+                p1_prompt = p1_template.replace("[IMA]", ima_data_str).replace("[H_ONT]", h_ont_str).replace("[DATE]", SYSTEM_DATE).replace("[SCIENCES]", str(sel_sciences))
                 
                 res_p1 = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
@@ -851,13 +848,16 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                 )
                 foundation = res_p1.choices[0].message.content
 
-            # --- PHASE 2: CEREBRAS (INNOVATION & MULTI-SHAPE GRAPH) ---
-            with st.spinner('PHASE 2: Generating Innovations & Hierarchography...'):
+            st.toast("Phase 1 complete. Cooling down API...")
+            time.sleep(5) 
+
+            # --- PHASE 2: CEREBRAS (Innovation & Multi-Shape Graph) ---
+            with st.spinner('PHASE 2: Cerebras generating Innovations & Hierarchography (Temp 0.85)...'):
                 p2_template = """
                 You are the SIS Innovation Engine (Phase 2). 
                 STRICT MA FOCUS: [MA]
                 
-                TASK: Generate 5 radical ideas for crime/stress prevention.
+                TASK: Generate 5 radical ideas for social law improvement.
                 
                 HIERARCHOGRAPHY VISUAL RULES (SHAPES):
                 - Use "shape": "octagon" for Macro-level nodes.
@@ -866,11 +866,10 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                 - Use "shape": "diamond" for Associative nodes.
                 - Use "shape": "star" for the central core Innovative Idea.
                 
-                JSON SCHEMA:
-                Every node MUST have "id", "label", "shape", and "type" (Root/Branch).
+                JSON SCHEMA: Every node MUST have "id", "label", "shape", and "type" (Root/Branch).
                 MANDATORY rel_type: BT, NT, TT, AS, EQ, IN, outcome_of, has, prevents, leads_to.
                 
-                End with '### SEMANTIC_GRAPH_JSON' followed by the JSON network.
+                End with '### SEMANTIC_GRAPH_JSON' followed by the JSON.
                 """
                 p2_prompt = p2_template.replace("[MA]", ma_data_str)
                 
@@ -881,21 +880,26 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                 )
                 innovation_raw = res_p2.choices[0].message.content
 
-            # --- PHASE 3: GROQ (VETTING & FINAL REPORT) ---
-            with st.spinner('PHASE 3: Final Vetting & Synergy Optimization...'):
+            st.toast("Phase 2 complete. Cooling down API...")
+            time.sleep(5)
+
+            # --- PHASE 3: GROQ (Vetting & Verification) ---
+            with st.spinner('PHASE 3: Groq performing Final Triad Vetting (Temp 0.2)...'):
                 p3_prompt = """
                 You are the SIS Final Triad Auditor (Phase 3). 
-                Critically verify Phase 2 innovations. Refine them into a 'Perfect 10' report.
-                Ensure the 'Heartbeat of Truth' and logical structural connections are clear.
+                TASK:
+                1. Filter Phase 2 speculative innovations for ethical/logical consistency.
+                2. Refine the remaining ideas into a 'Perfect 10' report.
+                3. Ensure the 'Heartbeat of Truth' is clear.
                 """
                 res_p3 = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=[{"role": "system", "content": p3_prompt}, {"role": "user", "content": f"F1:\n{foundation}\n\nI2:\n{innovation_raw}"}],
-                    temperature=0.2
+                    temperature=0.2 # Rigid logic
                 )
                 final_report = res_p3.choices[0].message.content
 
-            # --- OBDELAVA ZA PRIKAZ ---
+            # --- RENDERING ---
             graph_json_str = ""
             if "### SEMANTIC_GRAPH_JSON" in innovation_raw:
                 graph_json_str = innovation_raw.split("### SEMANTIC_GRAPH_JSON")[1]
@@ -919,7 +923,7 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
 
             st.markdown(display_text, unsafe_allow_html=True)
 
-            # --- IZRIS GRAFA (Z RAZLIČNIMI OBLIKAMI) ---
+            # Interactive Graph
             if graph_json_str:
                 st.subheader("🕸️ FINAL VERIFIED SEMANTIC NETWORK (Hierarchography)")
                 try:
@@ -929,14 +933,13 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                         elements = []
                         for n in g_json.get("nodes", []):
                             nid = n.get("id") or n.get("label") or f"n_{time.time()}"
-                            # Koda tukaj dinamično prebere "shape" iz JSON-a
                             elements.append({
                                 "data": {
                                     "id": str(nid), 
                                     "label": str(n.get("label", nid)), 
                                     "color": n.get("color", "#fd7e14"), 
                                     "size": 110 if n.get("type") == "Root" else 90,
-                                    "shape": n.get("shape", "rectangle") # DINAMIČNA OBLIKA
+                                    "shape": n.get("shape", "rectangle")
                                 }
                             })
                         for e in g_json.get("edges", []):
@@ -952,8 +955,8 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                 except Exception as viz_err:
                     st.warning(f"⚠️ Graph Error: {viz_err}")
 
-            if biblio:
-                with st.expander("📚 BIBLIOGRAPHIC DATA"): st.text(biblio)
+            if biblio_data:
+                with st.expander("📚 BIBLIOGRAPHY"): st.text(biblio_data)
 
         except Exception as e:
             st.error(f"❌ Triad Synergy Failure: {e}")
@@ -966,6 +969,7 @@ st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | Operating Da
 st.write("")
 
 st.write("")
+
 
 
 
