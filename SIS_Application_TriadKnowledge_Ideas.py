@@ -796,14 +796,10 @@ with col_inq3:
         st.success(f"Context from {uploaded_file.name} integrated.")
 
 # =============================================================================
-# 5. SYNERGY EXECUTION ENGINE (GROQ -> CEREBRAS PIPELINE)
+# 5. TRIAD SYNERGY EXECUTION ENGINE (0.85 Vision -> 0.85 Innovation -> 0.2 Vetting)
 # =============================================================================
 
-# =============================================================================
-# 5. TRIAD SYNERGY EXECUTION ENGINE (GROQ -> CEREBRAS -> GROQ)
-# =============================================================================
-
-if st.button("🚀 EXECUTE TRIAD FEEDBACK SYNERGY PIPELINE", use_container_width=True):
+if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=True):
     if not groq_api_key or not cerebras_api_key:
         st.error("❌ Dual-Model synergy requires both Groq and Cerebras keys.")
     elif not user_query:
@@ -816,120 +812,119 @@ if st.button("🚀 EXECUTE TRIAD FEEDBACK SYNERGY PIPELINE", use_container_width
             
             # Prepare metadata
             biblio = fetch_author_bibliographies(target_authors) if target_authors else ""
+            h_ont = json.dumps(HIERARCHOLOGY_ONTOLOGY)
             ima_data = json.dumps(HUMAN_THINKING_METAMODEL)
             ma_data = json.dumps(MENTAL_APPROACHES_ONTOLOGY)
 
-            # --- PHASE 1: GROQ (IMA FOUNDATION) ---
-            with st.spinner('PHASE 1: Groq establishing structural foundation (IMA Logic)...'):
+            # --- PHASE 1: GROQ (VISIONARY FOUNDATION) ---
+            # Set to 0.85 for "Divergent Theoretical Thinking"
+            with st.spinner('PHASE 1: Groq (Visionary) mapping hidden hierarchies...'):
                 p1_template = """
-                You are the SIS Research Synthesizer (Phase 1).
+                You are the SIS Hierarchology Visionary (Phase 1).
                 STRICT IMA ARCHITECTURE FOCUS: [IMA]
+                HIERARCHOLOGY BASIS: [H_ONT]
                 
-                CONTEXT: Date: [DATE] | Sciences: [SCIENCES] | Paradigms: [PARADIGMS]
-                
-                Task: Provide a factual, structural interdisciplinary foundation (approx 1000 words).
-                Analyze the inquiry through the "Scientific Cage" lens. Establish the Ground Truth.
+                Task: Provide a speculative, high-concept structural foundation. 
+                Identify hidden hierarchies and "Scientific Cages" that traditional science misses.
+                Think outside the box to establish a radical Ground Truth.
                 """
-                p1_prompt = p1_template.replace("[IMA]", ima_data).replace("[DATE]", SYSTEM_DATE).replace("[SCIENCES]", str(sel_sciences)).replace("[PARADIGMS]", str(sel_paradigms))
+                p1_prompt = p1_template.replace("[IMA]", ima_data).replace("[H_ONT]", h_ont)
                 
                 res_p1 = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=[{"role": "system", "content": p1_prompt}, {"role": "user", "content": user_query}],
-                    temperature=0.4
+                    temperature=0.85 # HIGH TEMPERATURE FOR VISION
                 )
                 groq_foundation = res_p1.choices[0].message.content
 
-            # --- PHASE 2: CEREBRAS (MA INNOVATION & GRAPH) ---
-            with st.spinner('PHASE 2: Cerebras producing innovative ideas and semantic mapping (MA Logic)...'):
+            # --- PHASE 2: CEREBRAS (RADICAL TRANSFORMATION) ---
+            # Set to 0.85 for "Creative Supernova"
+            with st.spinner('PHASE 2: Cerebras (Innovator) producing radical ideas...'):
                 p2_template = """
-                You are the SIS Innovation Engine (Phase 2). 
+                You are the SIS Innovation Supernova (Phase 2). 
                 STRICT MENTAL APPROACHES (MA) FOCUS: [MA]
                 
                 TASK:
-                1. Review the FOUNDATION from Phase 1.
-                2. Apply MA logic (Dialectics, Perspective Shifting) to generate 5 radical 'Useful Innovative Ideas'.
-                3. End your response with '### SEMANTIC_GRAPH_JSON' followed by a valid JSON network (45-65 nodes).
-                
-                Visual Rules: IMA nodes = rectangles, MA nodes = diamonds.
+                1. Review the Visionary Foundation from Phase 1.
+                2. Use Dialectics and Perspective Shifting to generate 5 radical 'Useful Innovative Ideas'.
+                3. Apply HIERARCHOGRAPHY: Describe subject/solution using diagrammatic logic.
+                4. End your response with '### SEMANTIC_GRAPH_JSON' followed by a valid JSON network (45-65 nodes).
                 """
                 p2_prompt = p2_template.replace("[MA]", ma_data)
                 
                 res_p2 = cerebras_client.chat.completions.create(
                     model=cerebras_id, 
                     messages=[{"role": "system", "content": p2_prompt}, {"role": "user", "content": f"FOUNDATION:\n{groq_foundation}\n\nGOAL:\n{idea_query}"}],
-                    temperature=0.85
+                    temperature=0.85 # HIGH TEMPERATURE FOR INNOVATION
                 )
                 innovation_raw = res_p2.choices[0].message.content
 
-            # --- PHASE 3: GROQ (FINAL TRIAD VETTING & SYNERGY) ---
-            with st.spinner('PHASE 3: Groq performing Final Vetting & Synthesis...'):
+            # --- PHASE 3: GROQ (RIGID AUDIT & STABILIZATION) ---
+            # Set to 0.2 for "Cold Logic Filter"
+            with st.spinner('PHASE 3: Groq (Auditor) performing Rigid Vetting & Verification...'):
                 p3_prompt = """
                 You are the SIS Final Triad Auditor (Phase 3). 
                 
                 TASK:
-                1. Critically evaluate the Innovations from Phase 2 against the Foundation from Phase 1.
-                2. Perform Logical Vetting: Ensure no hallucinations or drift.
-                3. Refine the descriptions to include the "Heartbeat of Truth".
-                4. Produce the FINAL VERIFIED SYNERGY REPORT.
+                1. Phase 1 and 2 were highly creative and speculative. Your role is to RUTHLESSLY FILTER these.
+                2. LOGICAL VETTING: Check the Phase 2 innovations against the Phase 1 foundation.
+                3. ETHICAL AUDIT: Discard associations that violate logic or ethical social laws.
+                4. FORMALIZATION: Refine the remaining ideas into a 'Perfect 10' report including the "Heartbeat of Truth".
+                5. Produce the FINAL VERIFIED SYNERGY REPORT.
                 """
                 
                 res_p3 = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
-                    messages=[{"role": "system", "content": p3_prompt}, {"role": "user", "content": f"F1 (Logic):\n{groq_foundation}\n\nI2 (Creative):\n{innovation_raw}"}],
-                    temperature=0.2 # Rigid focus
+                    messages=[{"role": "system", "content": p3_prompt}, {"role": "user", "content": f"F1 (Speculative):\n{groq_foundation}\n\nI2 (Innovations):\n{innovation_raw}"}],
+                    temperature=0.2 # RIGID TEMPERATURE FOR STABILIZATION
                 )
                 final_report = res_p3.choices[0].message.content
 
-            # --- COMBINING AND RENDERING ---
-            # Extract JSON from Phase 2 for the graph
+            # --- RENDERING RESULTS ---
             graph_data = ""
             if "### SEMANTIC_GRAPH_JSON" in innovation_raw:
                 graph_data = innovation_raw.split("### SEMANTIC_GRAPH_JSON")[1]
 
-            st.subheader("📊 TRIAD FEEDBACK PIPELINE RESULTS")
+            st.subheader("📊 FINAL VERIFIED INNOVATION RESULTS")
             
-            # Semantic Processing (Google Links)
+            # Semantic Linker (Google Search)
             display_text = final_report
             if graph_data:
                 try:
                     g_json = json.loads(re.search(r'\{.*\}', graph_data, re.DOTALL).group())
                     for n in g_json.get("nodes", []):
-                        lbl, nid = n["label"], n["id"]
+                        lbl = n["label"]
                         g_url = urllib.parse.quote(lbl)
-                        replacement = f'<span id="{nid}"><a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}</a></span>'
+                        replacement = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}</a>'
                         display_text = display_text.replace(lbl, replacement, 1)
                 except: pass
 
             st.markdown(display_text, unsafe_allow_html=True)
 
-            # Graph Rendering
+            # Interactive Graph
             if graph_data:
+                st.subheader("🕸️ FINAL VERIFIED HIERARCHOGRAPHIC NETWORK")
                 try:
                     g_json = json.loads(re.search(r'\{.*\}', graph_data, re.DOTALL).group())
-                    st.subheader("🕸️ FINAL VERIFIED SEMANTIC NETWORK")
                     elements = []
                     for n in g_json.get("nodes", []):
                         elements.append({"data": {
-                            "id": n["id"], "label": n["label"], "color": n.get("color", "#2a9d8f"),
+                            "id": n["id"], "label": n["label"], "color": n.get("color", "#fd7e14"),
                             "size": 110 if n.get("type") == "Root" else 90, 
-                            "shape": n.get("shape", "rectangle"), "z_index": 1
+                            "shape": n.get("shape", "rectangle")
                         }})
                     for e in g_json.get("edges", []):
                         elements.append({"data": {
                             "source": e["source"], "target": e["target"], "rel_type": e.get("rel_type", "AS")
                         }})
-                    render_cytoscape_network(elements, "viz_triad_feedback")
-                except: st.warning("⚠️ Error Rendering Graph.")
+                    render_cytoscape_network(elements)
+                except: st.warning("⚠️ Error Rendering Final Network.")
 
             if biblio:
-                with st.expander("📚 EXTENDED BIBLIOGRAPHIC METADATA"):
-                    st.text(biblio)
+                with st.expander("📚 BIBLIOGRAPHIC DATA"): st.text(biblio)
 
         except Exception as e:
             st.error(f"❌ Triad Synergy Failure: {e}")
-
-        except Exception as e:
-            st.error(f"❌ Sequential Synergy Failure: {e}")
 
 # =============================================================================
 # 6. FOOTER & METRICS
@@ -937,4 +932,5 @@ if st.button("🚀 EXECUTE TRIAD FEEDBACK SYNERGY PIPELINE", use_container_width
 st.divider()
 st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | Operating Date: {SYSTEM_DATE}")
 st.write("")
+
 st.write("")
