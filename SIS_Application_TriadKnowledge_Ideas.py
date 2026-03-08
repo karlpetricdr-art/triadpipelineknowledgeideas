@@ -512,6 +512,23 @@ MENTAL_APPROACHES_ONTOLOGY = {
         }
     }
 }
+# =============================================================================
+# 2.1 HIERARCHOLOGY & HIERARCHOGRAPHY ONTOLOGY
+# =============================================================================
+
+HIERARCHOLOGY_ONTOLOGY = {
+    "dimensions": {
+        "Micro-hierarchology": "Internal individual thinking and neural inductive logic.",
+        "Meso-hierarchology": "Social groups, organizational structures, and intermediate systems.",
+        "Macro-hierarchology": "Fundamental social laws, natural hierarchies, and universal orders.",
+        "Scientific Cage": "Cognitive limitations preventing thought beyond established paradigms."
+    },
+    "logic_flows": {
+        "Internal": "Inductive (specific to general).",
+        "External": "Deductive & Dialectical (general to specific)."
+    },
+    "hierarchography_tools": ["Workflow Mapping", "Tree Maps", "Structural diagrams", "Oligographs", "UML"]
+}
 
 # =============================================================================
 # 3. KNOWLEDGE BASE (EXHAUSTIVE 18D SCIENCE FIELDS & ONTOLOGIES)
@@ -934,3 +951,4 @@ st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | Operating Da
 st.write("")
 
 st.write("")
+
