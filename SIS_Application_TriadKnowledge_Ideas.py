@@ -813,7 +813,7 @@ with col_inq3:
         st.success(f"Context from {uploaded_file.name} integrated.")
 
 # =============================================================================
-# 5. TRIAD SYNERGY EXECUTION ENGINE (ROBUSTNA VERZIJA S POPRAVKOM ZA 'ID')
+# 5. TRIAD SYNERGY EXECUTION ENGINE (FINALNA VERZIJA S POPRAVLJENIMI OBLIKAMI)
 # =============================================================================
 
 if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=True):
@@ -823,23 +823,27 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
         st.warning("⚠️ Phase 1 Research Inquiry is required.")
     else:
         try:
-            # Init Clients
+            # Inicializacija odjemalcev
             groq_client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
             cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
             
+            # Priprava metapodatkov (Preverite, če je HIERARCHOLOGY_ONTOLOGY v Section 2!)
             biblio = fetch_author_bibliographies(target_authors) if target_authors else ""
-            h_ont = json.dumps(HIERARCHOLOGY_ONTOLOGY)
-            ima_data = json.dumps(HUMAN_THINKING_METAMODEL)
-            ma_data = json.dumps(MENTAL_APPROACHES_ONTOLOGY)
+            h_ont_str = json.dumps(HIERARCHOLOGY_ONTOLOGY) if 'HIERARCHOLOGY_ONTOLOGY' in locals() else "{}"
+            ima_data_str = json.dumps(HUMAN_THINKING_METAMODEL)
+            ma_data_str = json.dumps(MENTAL_APPROACHES_ONTOLOGY)
 
-            # --- PHASE 1: GROQ (FOUNDATION) ---
-            with st.spinner('PHASE 1: Establishing Speculative Foundation (Temp: 0.85)...'):
-                p1_prompt = f"""
+            # --- PHASE 1: GROQ (VISIONARY FOUNDATION) ---
+            with st.spinner('PHASE 1: Groq (Visionary) mapping hidden hierarchies...'):
+                p1_template = """
                 You are the SIS Hierarchology Visionary (Phase 1).
-                STRICT IMA ARCHITECTURE: {ima_data}
-                HIERARCHOLOGY BASIS: {h_ont}
-                Task: Provide a speculative foundation identifying hidden hierarchies.
+                STRICT IMA ARCHITECTURE: [IMA]
+                HIERARCHOLOGY BASIS: [H_ONT]
+                Task: Provide a speculative, high-concept structural foundation. 
+                Identify hidden hierarchies and "Scientific Cages" that traditional science misses.
                 """
+                p1_prompt = p1_template.replace("[IMA]", ima_data_str).replace("[H_ONT]", h_ont_str)
+                
                 res_p1 = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=[{"role": "system", "content": p1_prompt}, {"role": "user", "content": user_query}],
@@ -847,28 +851,33 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                 )
                 foundation = res_p1.choices[0].message.content
 
-            # --- PHASE 2: CEREBRAS (INNOVATION & HIERARCHOGRAPHY) ---
-            with st.spinner('PHASE 2: Generating Innovations & Multi-Shape Hierarchography...'):
-                p2_prompt = f"""
+            # --- PHASE 2: CEREBRAS (INNOVATION & MULTI-SHAPE GRAPH) ---
+            with st.spinner('PHASE 2: Generating Innovations & Hierarchography...'):
+                p2_template = """
                 You are the SIS Innovation Engine (Phase 2). 
-                STRICT MA FOCUS: {ma_data}
+                STRICT MA FOCUS: [MA]
                 
                 TASK: Generate 5 radical ideas for crime/stress prevention.
                 
-                HIERARCHOGRAPHY VISUAL RULES:
-                - Use "shape": "octagon" for Macro-level/Universal nodes (Societal laws, broad fields).
-                - Use "shape": "rectangle" for Meso-level/Organizational nodes (Programs, communities).
-                - Use "shape": "ellipse" for Micro-level/Individual nodes (Neural states, biology).
-                - Use "shape": "diamond" for Associative nodes (Abstract concepts, linking gears).
-                - Use "shape": "star" for the absolute core Innovative Idea (The central solution).
+                HIERARCHOGRAPHY VISUAL RULES (SHAPES):
+                - Use "shape": "octagon" for Macro-level nodes.
+                - Use "shape": "rectangle" for Meso-level nodes.
+                - Use "shape": "ellipse" for Micro-level/Individual nodes.
+                - Use "shape": "diamond" for Associative nodes.
+                - Use "shape": "star" for the central core Innovative Idea.
                 
                 JSON SCHEMA:
-                Every node MUST have "id", "label", "shape", and "type" (Root or Branch).
+                Every node MUST have "id", "label", "shape", and "type" (Root/Branch).
                 MANDATORY rel_type: BT, NT, TT, AS, EQ, IN, outcome_of, has, prevents, leads_to.
                 
                 End with '### SEMANTIC_GRAPH_JSON' followed by the JSON network.
                 """
-                # Ostali del kode (res_p2 = cerebras_client.chat...) ostane enak
+                p2_prompt = p2_template.replace("[MA]", ma_data_str)
+                
+                res_p2 = cerebras_client.chat.completions.create(
+                    model=cerebras_id, 
+                    messages=[{"role": "system", "content": p2_prompt}, {"role": "user", "content": f"F1 FOUNDATION:\n{foundation}\n\nGOAL:\n{idea_query}"}],
+                    temperature=0.85
                 )
                 innovation_raw = res_p2.choices[0].message.content
 
@@ -876,8 +885,8 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
             with st.spinner('PHASE 3: Final Vetting & Synergy Optimization...'):
                 p3_prompt = """
                 You are the SIS Final Triad Auditor (Phase 3). 
-                Filter Phase 2 innovations. Refine them into a 'Perfect 10' report.
-                Ensure the 'Heartbeat of Truth' is clear.
+                Critically verify Phase 2 innovations. Refine them into a 'Perfect 10' report.
+                Ensure the 'Heartbeat of Truth' and logical structural connections are clear.
                 """
                 res_p3 = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
@@ -886,7 +895,7 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                 )
                 final_report = res_p3.choices[0].message.content
 
-            # --- RENDERING RESULTS ---
+            # --- OBDELAVA ZA PRIKAZ ---
             graph_json_str = ""
             if "### SEMANTIC_GRAPH_JSON" in innovation_raw:
                 graph_json_str = innovation_raw.split("### SEMANTIC_GRAPH_JSON")[1]
@@ -910,51 +919,38 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
 
             st.markdown(display_text, unsafe_allow_html=True)
 
-            # --- IZRIS GRAFA (VARNA RAZLIČICA) ---
+            # --- IZRIS GRAFA (Z RAZLIČNIMI OBLIKAMI) ---
             if graph_json_str:
-                st.subheader("🕸️ FINAL VERIFIED SEMANTIC NETWORK")
+                st.subheader("🕸️ FINAL VERIFIED SEMANTIC NETWORK (Hierarchography)")
                 try:
                     match = re.search(r'\{.*\}', graph_json_str, re.DOTALL)
                     if match:
                         g_json = json.loads(match.group())
                         elements = []
-                        
-                        # Varna obdelava vozlišč
                         for n in g_json.get("nodes", []):
-                            # Preverimo, če obstaja ID, sicer ga ustvarimo iz labela
-                            nid = n.get("id") or n.get("label") or f"node_{time.time()}"
-                            nlbl = n.get("label", nid)
-                            v_size = 110 if n.get("type") == "Root" else 90
-                            
+                            nid = n.get("id") or n.get("label") or f"n_{time.time()}"
+                            # Koda tukaj dinamično prebere "shape" iz JSON-a
                             elements.append({
                                 "data": {
                                     "id": str(nid), 
-                                    "label": str(nlbl), 
+                                    "label": str(n.get("label", nid)), 
                                     "color": n.get("color", "#fd7e14"), 
-                                    "size": v_size, 
-                                    "shape": n.get("shape", "rectangle")
+                                    "size": 110 if n.get("type") == "Root" else 90,
+                                    "shape": n.get("shape", "rectangle") # DINAMIČNA OBLIKA
                                 }
                             })
-                        
-                        # Varna obdelava robov
                         for e in g_json.get("edges", []):
-                            # Preverimo, če rob sploh ima source in target
                             if e.get("source") and e.get("target"):
-                                r_label = e.get("rel_type", e.get("label", "AS"))
                                 elements.append({
                                     "data": {
                                         "source": str(e["source"]), 
                                         "target": str(e["target"]), 
-                                        "rel_type": str(r_label)
+                                        "rel_type": str(e.get("rel_type", "AS"))
                                     }
                                 })
-                        
-                        if elements:
-                            render_cytoscape_network(elements, f"viz_{int(time.time())}")
-                        else:
-                            st.warning("⚠️ No valid nodes found in JSON.")
+                        render_cytoscape_network(elements, f"viz_{int(time.time())}")
                 except Exception as viz_err:
-                    st.warning(f"⚠️ Graph Render Issue: {viz_err}")
+                    st.warning(f"⚠️ Graph Error: {viz_err}")
 
             if biblio:
                 with st.expander("📚 BIBLIOGRAPHIC DATA"): st.text(biblio)
@@ -970,6 +966,7 @@ st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | Operating Da
 st.write("")
 
 st.write("")
+
 
 
 
