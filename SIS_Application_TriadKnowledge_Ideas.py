@@ -813,7 +813,7 @@ with col_inq3:
         st.success(f"Context from {uploaded_file.name} integrated.")
 
 # =============================================================================
-# 5. TRIAD SYNERGY EXECUTION ENGINE (VERZIJA Z GOOGLE POVEZAVAMI IN GRAFOM)
+# 5. TRIAD SYNERGY EXECUTION ENGINE (IZBOLJŠANA HIERARHOGRAFIJA IN RELACIJE)
 # =============================================================================
 
 if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=True):
@@ -833,7 +833,7 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
             ma_data = json.dumps(MENTAL_APPROACHES_ONTOLOGY)
 
             # --- PHASE 1: GROQ (FOUNDATION) ---
-            with st.spinner('PHASE 1: Establishing Speculative Foundation...'):
+            with st.spinner('PHASE 1: Establishing Speculative Foundation (Temp: 0.85)...'):
                 p1_prompt = f"""
                 You are the SIS Hierarchology Visionary (Phase 1).
                 STRICT IMA ARCHITECTURE: {ima_data}
@@ -847,17 +847,24 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                 )
                 foundation = res_p1.choices[0].message.content
 
-            # --- PHASE 2: CEREBRAS (INNOVATION & GRAPH) ---
-            with st.spinner('PHASE 2: Generating Innovations & Hierarchography...'):
+            # --- PHASE 2: CEREBRAS (INNOVATION & HIERARCHOGRAPHY) ---
+            with st.spinner('PHASE 2: Generating Innovations & Detailed Hierarchography...'):
                 p2_prompt = f"""
                 You are the SIS Innovation Engine (Phase 2). 
                 STRICT MA FOCUS: {ma_data}
-                TASK: Generate 5 radical ideas. 
-                End your response with '### SEMANTIC_GRAPH_JSON' followed by a valid JSON network (45-65 nodes).
+                
+                TASK: Generate 5 radical ideas for crime/stress prevention.
+                
+                HIERARCHOGRAPHY RULES:
+                1. Use 'rectangle' shape for hierarchical nodes and 'diamond' for associative nodes.
+                2. Use 'Root' type for Macro-nodes and 'Branch' for others.
+                3. MANDATORY RELATION TYPES (rel_type): You must use BT, NT, TT, AS, EQ, IN, outcome_of, has, prevents, leads_to.
+                
+                End with '### SEMANTIC_GRAPH_JSON' followed by the JSON network.
                 """
                 res_p2 = cerebras_client.chat.completions.create(
                     model=cerebras_id, 
-                    messages=[{"role": "system", "content": p2_prompt}, {"role": "user", "content": f"F1:\n{foundation}\n\nGOAL:\n{idea_query}"}],
+                    messages=[{"role": "system", "content": p2_prompt}, {"role": "user", "content": f"F1 FOUNDATION:\n{foundation}\n\nGOAL:\n{idea_query}"}],
                     temperature=0.85
                 )
                 innovation_raw = res_p2.choices[0].message.content
@@ -867,7 +874,7 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                 p3_prompt = """
                 You are the SIS Final Triad Auditor (Phase 3). 
                 Filter Phase 2 innovations. Refine them into a 'Perfect 10' report.
-                Ensure the 'Heartbeat of Truth' is present.
+                Ensure the 'Heartbeat of Truth' and logical inter-modal connections are clear.
                 """
                 res_p3 = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
@@ -876,45 +883,38 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                 )
                 final_report = res_p3.choices[0].message.content
 
-            # --- OBDELAVA PODATKOV ZA PRIKAZ ---
-            # 1. Izvleček JSON podatkov za graf iz 2. faze
+            # --- RENDERING RESULTS ---
             graph_json_str = ""
             if "### SEMANTIC_GRAPH_JSON" in innovation_raw:
                 graph_json_str = innovation_raw.split("### SEMANTIC_GRAPH_JSON")[1]
 
             st.subheader("📊 FINAL VERIFIED SYNERGY RESULTS")
             
-            # 2. SEMANTIČNI POVEZOVALEC (Google Search povezave v tekstu)
+            # Google Search Linker
             display_text = final_report
             if graph_json_str:
                 try:
-                    # Očistimo morebitne komentarje iz JSON-a
                     json_clean = re.search(r'\{.*\}', graph_json_str, re.DOTALL).group()
                     g_json = json.loads(json_clean)
-                    
-                    # Vsako oznako vozlišča iz grafa spremenimo v povezavo v končnem tekstu
                     for n in g_json.get("nodes", []):
                         lbl = n["label"]
                         g_url = urllib.parse.quote(lbl)
-                        # Uporabimo vaš CSS razred semantic-node-highlight
                         replacement = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}</a>'
-                        # Zamenjamo samo prvo pojavitev za lepši videz
                         display_text = display_text.replace(lbl, replacement, 1)
-                except:
-                    pass
+                except: pass
 
             st.markdown(display_text, unsafe_allow_html=True)
 
-            # 3. IZRIS GRAFA (Cytoscape)
+            # --- IZRIS GRAFA Z VSEMI RELACIJAMI ---
             if graph_json_str:
-                st.subheader("🕸️ FINAL VERIFIED SEMANTIC NETWORK")
+                st.subheader("🕸️ FINAL VERIFIED SEMANTIC NETWORK (Hierarchography)")
                 try:
                     json_clean = re.search(r'\{.*\}', graph_json_str, re.DOTALL).group()
                     g_json = json.loads(json_clean)
                     
                     elements = []
+                    # 1. Vozlišča
                     for n in g_json.get("nodes", []):
-                        # Določimo velikost glede na tip
                         v_size = 110 if n.get("type") == "Root" else 90
                         elements.append({
                             "data": {
@@ -925,24 +925,26 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                                 "shape": n.get("shape", "rectangle")
                             }
                         })
+                    
+                    # 2. Povezave (Edges) - Dinamičen rel_type
                     for e in g_json.get("edges", []):
+                        # Tukaj zajamemo katerokoli relacijo (BT, NT, outcome_of, itd.)
+                        r_label = e.get("rel_type", e.get("label", "AS"))
                         elements.append({
                             "data": {
                                 "source": e["source"], 
                                 "target": e["target"], 
-                                "rel_type": e.get("rel_type", "AS")
+                                "rel_type": r_label # Prikazano v Cytoscape
                             }
                         })
                     
-                    # Pokličemo funkcijo za izris
-                    render_cytoscape_network(elements, "viz_final_triad")
+                    render_cytoscape_network(elements, "viz_final_triad_full")
                     
                 except Exception as viz_err:
                     st.warning(f"⚠️ Graph Render Issue: {viz_err}")
 
             if biblio:
-                with st.expander("📚 BIBLIOGRAPHIC DATA"):
-                    st.text(biblio)
+                with st.expander("📚 BIBLIOGRAPHIC DATA"): st.text(biblio)
 
         except Exception as e:
             st.error(f"❌ Triad Synergy Failure: {e}")
@@ -955,5 +957,6 @@ st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | Operating Da
 st.write("")
 
 st.write("")
+
 
 
