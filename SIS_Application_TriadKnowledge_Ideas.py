@@ -813,7 +813,7 @@ with col_inq3:
         st.success(f"Context from {uploaded_file.name} integrated.")
 
 # =============================================================================
-# 5. TRIAD SYNERGY EXECUTION ENGINE (IZBOLJŠANA HIERARHOGRAFIJA IN RELACIJE)
+# 5. TRIAD SYNERGY EXECUTION ENGINE (ROBUSTNA VERZIJA S POPRAVKOM ZA 'ID')
 # =============================================================================
 
 if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=True):
@@ -853,12 +853,13 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                 You are the SIS Innovation Engine (Phase 2). 
                 STRICT MA FOCUS: {ma_data}
                 
-                TASK: Generate 5 radical ideas for crime/stress prevention.
+                TASK: Generate 5 radical ideas.
                 
-                HIERARCHOGRAPHY RULES:
-                1. Use 'rectangle' shape for hierarchical nodes and 'diamond' for associative nodes.
-                2. Use 'Root' type for Macro-nodes and 'Branch' for others.
-                3. MANDATORY RELATION TYPES (rel_type): You must use BT, NT, TT, AS, EQ, IN, outcome_of, has, prevents, leads_to.
+                JSON SCHEMA RULES:
+                - Every node MUST have an "id" and a "label".
+                - Use "id": "unique_string_id".
+                - Use shapes: 'rectangle' for hierarchies, 'diamond' for associations.
+                - MANDATORY rel_type: BT, NT, TT, AS, EQ, IN, outcome_of, has, prevents, leads_to.
                 
                 End with '### SEMANTIC_GRAPH_JSON' followed by the JSON network.
                 """
@@ -874,7 +875,7 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                 p3_prompt = """
                 You are the SIS Final Triad Auditor (Phase 3). 
                 Filter Phase 2 innovations. Refine them into a 'Perfect 10' report.
-                Ensure the 'Heartbeat of Truth' and logical inter-modal connections are clear.
+                Ensure the 'Heartbeat of Truth' is clear.
                 """
                 res_p3 = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
@@ -894,52 +895,62 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
             display_text = final_report
             if graph_json_str:
                 try:
-                    json_clean = re.search(r'\{.*\}', graph_json_str, re.DOTALL).group()
-                    g_json = json.loads(json_clean)
-                    for n in g_json.get("nodes", []):
-                        lbl = n["label"]
-                        g_url = urllib.parse.quote(lbl)
-                        replacement = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}</a>'
-                        display_text = display_text.replace(lbl, replacement, 1)
+                    match = re.search(r'\{.*\}', graph_json_str, re.DOTALL)
+                    if match:
+                        g_json = json.loads(match.group())
+                        for n in g_json.get("nodes", []):
+                            lbl = n.get("label", "")
+                            if lbl:
+                                g_url = urllib.parse.quote(lbl)
+                                replacement = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}</a>'
+                                display_text = display_text.replace(lbl, replacement, 1)
                 except: pass
 
             st.markdown(display_text, unsafe_allow_html=True)
 
-            # --- IZRIS GRAFA Z VSEMI RELACIJAMI ---
+            # --- IZRIS GRAFA (VARNA RAZLIČICA) ---
             if graph_json_str:
-                st.subheader("🕸️ FINAL VERIFIED SEMANTIC NETWORK (Hierarchography)")
+                st.subheader("🕸️ FINAL VERIFIED SEMANTIC NETWORK")
                 try:
-                    json_clean = re.search(r'\{.*\}', graph_json_str, re.DOTALL).group()
-                    g_json = json.loads(json_clean)
-                    
-                    elements = []
-                    # 1. Vozlišča
-                    for n in g_json.get("nodes", []):
-                        v_size = 110 if n.get("type") == "Root" else 90
-                        elements.append({
-                            "data": {
-                                "id": n["id"], 
-                                "label": n["label"], 
-                                "color": n.get("color", "#fd7e14"), 
-                                "size": v_size, 
-                                "shape": n.get("shape", "rectangle")
-                            }
-                        })
-                    
-                    # 2. Povezave (Edges) - Dinamičen rel_type
-                    for e in g_json.get("edges", []):
-                        # Tukaj zajamemo katerokoli relacijo (BT, NT, outcome_of, itd.)
-                        r_label = e.get("rel_type", e.get("label", "AS"))
-                        elements.append({
-                            "data": {
-                                "source": e["source"], 
-                                "target": e["target"], 
-                                "rel_type": r_label # Prikazano v Cytoscape
-                            }
-                        })
-                    
-                    render_cytoscape_network(elements, "viz_final_triad_full")
-                    
+                    match = re.search(r'\{.*\}', graph_json_str, re.DOTALL)
+                    if match:
+                        g_json = json.loads(match.group())
+                        elements = []
+                        
+                        # Varna obdelava vozlišč
+                        for n in g_json.get("nodes", []):
+                            # Preverimo, če obstaja ID, sicer ga ustvarimo iz labela
+                            nid = n.get("id") or n.get("label") or f"node_{time.time()}"
+                            nlbl = n.get("label", nid)
+                            v_size = 110 if n.get("type") == "Root" else 90
+                            
+                            elements.append({
+                                "data": {
+                                    "id": str(nid), 
+                                    "label": str(nlbl), 
+                                    "color": n.get("color", "#fd7e14"), 
+                                    "size": v_size, 
+                                    "shape": n.get("shape", "rectangle")
+                                }
+                            })
+                        
+                        # Varna obdelava robov
+                        for e in g_json.get("edges", []):
+                            # Preverimo, če rob sploh ima source in target
+                            if e.get("source") and e.get("target"):
+                                r_label = e.get("rel_type", e.get("label", "AS"))
+                                elements.append({
+                                    "data": {
+                                        "source": str(e["source"]), 
+                                        "target": str(e["target"]), 
+                                        "rel_type": str(r_label)
+                                    }
+                                })
+                        
+                        if elements:
+                            render_cytoscape_network(elements, f"viz_{int(time.time())}")
+                        else:
+                            st.warning("⚠️ No valid nodes found in JSON.")
                 except Exception as viz_err:
                     st.warning(f"⚠️ Graph Render Issue: {viz_err}")
 
@@ -957,6 +968,7 @@ st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | Operating Da
 st.write("")
 
 st.write("")
+
 
 
 
