@@ -813,7 +813,7 @@ with col_inq3:
         st.success(f"Context from {uploaded_file.name} integrated.")
 
 # =============================================================================
-# 5. TRIAD SYNERGY EXECUTION ENGINE (ODPRAVLJENA NAPAKA S FORMATOM)
+# 5. TRIAD SYNERGY EXECUTION ENGINE (FIXED HTML LINKS & MULTI-COLOR GRAPH)
 # =============================================================================
 
 if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=True):
@@ -834,7 +834,6 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
 
             # --- PHASE 1: GROQ (Speculative Foundation) ---
             with st.spinner('PHASE 1: Groq mapping speculative hierarchies (Temp 0.85)...'):
-                # Uporabimo replace namesto f-stringa za varnost
                 p1_template = """Analyze using Hierarchology (IMA: [IMA], Basis: [BASIS]). Identify hidden hierarchies: [QUERY]"""
                 p1_content = p1_template.replace("[IMA]", ima_data).replace("[BASIS]", h_ont).replace("[QUERY]", user_query)
                 
@@ -850,16 +849,18 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
 
             # --- PHASE 2: CEREBRAS (Innovation & Multi-Shape Graph) ---
             with st.spinner('PHASE 2: Cerebras generating Innovations (Temp 0.85)...'):
-                # TUKAJ JE BILA NAPAKA - Odstranjen f pred narekovaji!
                 p2_prompt = """
                 Generate 5 radical ideas for crime/stress prevention. 
                 MA FOCUS: [MA_DATA]
                 
-                MANDATORY JSON FORMAT:
-                "nodes": [{"id": "unique_id", "label": "Title", "shape": "octagon|rectangle|ellipse|diamond|star", "type": "Root|Branch"}]
-                "edges": [{"source": "id1", "target": "id2", "rel_type": "AS|BT|NT|outcome_of"}]
+                MANDATORY HIERARCHOGRAPHY SHAPES:
+                - "octagon" for Macro/Laws.
+                - "rectangle" for Meso/Programs.
+                - "ellipse" for Micro/Neural.
+                - "diamond" for Associative links.
+                - "star" for the central core Idea.
                 
-                End with '### SEMANTIC_GRAPH_JSON' followed by the JSON.
+                End with '### SEMANTIC_GRAPH_JSON' followed by the JSON nodes and edges.
                 """
                 p2_content = p2_prompt.replace("[MA_DATA]", ma_data)
                 
@@ -881,12 +882,12 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                 """
                 res_p3 = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
-                    messages=[{"role": "system", "content": p3_prompt}, {"role": "user", "content": f"F1 FOUNDATION:\n{foundation}\n\nI2 INNOVATIONS:\n{innovation_raw}"}],
+                    messages=[{"role": "system", "content": p3_prompt}, {"role": "user", "content": f"F1:\n{foundation}\n\nI2:\n{innovation_raw}"}],
                     temperature=0.2
                 )
                 final_report = res_p3.choices[0].message.content
 
-            # --- OBDELAVA PODATKOV ---
+            # --- OBDELAVA PODATKOV ZA PRIKAZ ---
             graph_json_str = ""
             if "### SEMANTIC_GRAPH_JSON" in innovation_raw:
                 graph_json_str = innovation_raw.split("### SEMANTIC_GRAPH_JSON")[1]
@@ -901,7 +902,6 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                     if match:
                         g_json = json.loads(match.group())
                         
-                        # Varna obdelava vozlišč
                         for n in g_json.get("nodes", []):
                             if isinstance(n, str):
                                 lbl, nid, shape = n, n, "rectangle"
@@ -911,7 +911,14 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                                 shape = n.get("shape", "rectangle")
                             
                             if lbl:
-                                # Google Linker
+                                # DINAMIČNA BARVA GLEDE NA OBLIKO (HIERARHOGRAFIJA)
+                                if shape == "octagon": v_color = "#e63946"   # Macro (Rdeča)
+                                elif shape == "star": v_color = "#FFD700"    # Inovacija (Zlata)
+                                elif shape == "ellipse": v_color = "#2a9d8f" # Micro (Zelena)
+                                elif shape == "diamond": v_color = "#9b59b6" # Asociacija (Vijolična)
+                                else: v_color = "#fd7e14"                    # Meso (Oranžna)
+
+                                # Popravek za Google povezave - uporabimo unikaten placeholder
                                 g_url = urllib.parse.quote(lbl)
                                 replacement = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}</a>'
                                 display_text = display_text.replace(lbl, replacement, 1)
@@ -919,12 +926,11 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                                 nodes_for_graph.append({
                                     "data": {
                                         "id": str(nid), "label": str(lbl), 
-                                        "color": "#fd7e14", "shape": shape,
-                                        "size": 110 if n.get("type") == "Root" else 90 if isinstance(n, dict) else 90
+                                        "color": v_color, "shape": shape,
+                                        "size": 110 if n.get("type") == "Root" else 90
                                     }
                                 })
 
-                        # Varna obdelava povezav
                         for e in g_json.get("edges", []):
                             if isinstance(e, dict) and e.get("source") and e.get("target"):
                                 edges_for_graph.append({
@@ -934,10 +940,9 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                                         "rel_type": str(e.get("rel_type", "AS"))
                                     }
                                 })
-                except:
-                    pass
+                except: pass
 
-            # IZPIS REZULTATOV
+            # IZPIS REZULTATOV (Nujno unsafe_allow_html=True)
             st.subheader("📊 FINAL VERIFIED SYNERGY RESULTS")
             st.markdown(display_text, unsafe_allow_html=True)
 
@@ -958,6 +963,7 @@ st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | Operating Da
 st.write("")
 
 st.write("")
+
 
 
 
