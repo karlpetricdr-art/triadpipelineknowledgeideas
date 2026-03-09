@@ -813,7 +813,7 @@ with col_inq3:
         st.success(f"Context from {uploaded_file.name} integrated.")
 
 # =============================================================================
-# 5. TRIAD SYNERGY EXECUTION ENGINE (V10: GOLDEN STAR & MULTI-LEVEL VISUALS)
+# 5. TRIAD SYNERGY EXECUTION ENGINE (V11: FULL THESAURUS LOGIC & GOLDEN STARS)
 # =============================================================================
 
 if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=True):
@@ -823,7 +823,7 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
         st.warning("⚠️ Phase 1 Research Inquiry is required.")
     else:
         try:
-            # 1. Init
+            # 1. Inicializacija
             groq_client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
             cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
             
@@ -833,7 +833,7 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
             ma_str = json.dumps(MENTAL_APPROACHES_ONTOLOGY)
 
             # --- PHASE 1: GROQ (Speculative Foundation) ---
-            with st.spinner('PHASE 1: Mapping Speculative Hierarchies (0.85)...'):
+            with st.spinner('PHASE 1: Mapping speculative hierarchies (Temp 0.85)...'):
                 p1_template = """Analyze using Hierarchology (IMA: [IMA], Basis: [BASIS]). Focus on hidden hierarchies and 'Scientific Cages'. Query: [QUERY]"""
                 p1_c = p1_template.replace("[IMA]", ima_str).replace("[BASIS]", h_ont).replace("[QUERY]", user_query)
                 res_p1 = groq_client.chat.completions.create(
@@ -843,10 +843,10 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                 )
                 foundation = res_p1.choices[0].message.content
 
-            time.sleep(4) 
+            time.sleep(5) # Zaščita pred napako 429
 
             # --- PHASE 2: CEREBRAS (Innovation Brainstorming) ---
-            with st.spinner('PHASE 2: Cerebras generating radical ideas (0.85)...'):
+            with st.spinner('PHASE 2: Cerebras generating radical ideas (Temp 0.85)...'):
                 res_p2 = cerebras_client.chat.completions.create(
                     model=cerebras_id, 
                     messages=[{"role": "system", "content": "You are the SIS Innovation Engine. Generate 5 radical ideas for social law improvement. Use MA Logic (Dialectics, Perspective Shifting)."}, {"role": "user", "content": f"FOUNDATION:\n{foundation}\n\nGOAL:\n{idea_query}"}],
@@ -854,22 +854,27 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                 )
                 innovation_raw = res_p2.choices[0].message.content
 
-            time.sleep(4)
+            time.sleep(5)
 
-            # --- PHASE 3: GROQ (Stable JSON & Visual Forcing) ---
-            with st.spinner('PHASE 3: Final Vetting & Multi-Shape Hierarchography (0.2)...'):
+            # --- PHASE 3: GROQ (Final Vetting & Rigid JSON Hierarchography) ---
+            with st.spinner('PHASE 3: Final Vetting & Complex Hierarchography (Temp 0.2)...'):
                 p3_prompt = """
                 Refine innovations into a 'Perfect 10' report. 
-                STRICT VISUAL RULES FOR THE JSON DATA:
-                1. Best Innovative Ideas: shape "star", color "#FFD700" (Gold).
-                2. Macro-Hierarchology (Societal Laws): shape "octagon", color "#e63946" (Red).
-                3. Meso-Hierarchology (Organizational): shape "rectangle", color "#fd7e14" (Orange).
-                4. Micro-Hierarchology (Individual/Neural): shape "ellipse", color "#2a9d8f" (Green).
-                5. Associative Connections (Concepts): shape "diamond", color "#9b59b6" (Purple).
+                STRICT VISUAL & LOGICAL RULES FOR THE JSON DATA:
                 
-                MANDATORY RELATIONS: Use 'outcome_of', 'leads_to', 'prevents', 'BT', 'NT', 'AS'.
+                NODES:
+                - Best Innovative Ideas: shape "star", color "#FFD700" (Gold).
+                - Macro-Hierarchology: shape "octagon", color "#e63946" (Red).
+                - Meso-Hierarchology: shape "rectangle", color "#fd7e14" (Orange).
+                - Micro-Hierarchology: shape "ellipse", color "#2a9d8f" (Green).
+                - Associative Concepts: shape "diamond", color "#9b59b6" (Purple).
                 
-                FORMAT: Output the report first, then '### JSON_DATA' then strictly valid JSON.
+                EDGES (MANDATORY THESAURUS RELATIONS):
+                - Hierarchical: TT (Top Term), BT (Broader Term), NT (Narrower Term).
+                - Associative: AS (Associative), EQ (Equivalence), RT (Related Term), IN (Instance/Inheritance).
+                - Functional: outcome_of, leads_to, prevents.
+                
+                FORMAT: Output report first, then '### JSON_DATA' then the JSON.
                 """
                 res_p3 = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
@@ -879,6 +884,7 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                 final_output = res_p3.choices[0].message.content
 
             # --- OBDELAVA PODATKOV ---
+            graph_json_str = ""
             if "### JSON_DATA" in final_output:
                 parts = final_output.split("### JSON_DATA")
                 display_text = parts[0]
@@ -895,14 +901,13 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                         g_json = json.loads(json_match.group())
                         raw_nodes = g_json.get("nodes", [])
                         
-                        # Razvrstimo po dolžini besedila za Google linke
+                        # Razvrstimo po dolžini besedila za Google linke (preprečimo napačno paršanje)
                         raw_nodes.sort(key=lambda x: len(x.get("label", "")) if isinstance(x, dict) else len(str(x)), reverse=True)
 
                         for n in raw_nodes:
                             if isinstance(n, dict):
-                                lbl = n.get("label", n.get("id", "Unknown"))
+                                lbl = n.get("label", n.get("id", "Node"))
                                 nid = n.get("id", lbl)
-                                # Vzamemo vizualne atribute neposredno iz AI
                                 shape = n.get("shape", "rectangle").lower()
                                 color = n.get("color", "#fd7e14")
                             else:
@@ -917,34 +922,34 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                                 
                                 elements.append({
                                     "data": {
-                                        "id": str(nid), 
-                                        "label": str(lbl), 
-                                        "color": color, 
-                                        "shape": shape, 
-                                        "size": 125 if shape == "star" else 110 if shape == "octagon" else 95
+                                        "id": str(nid), "label": str(lbl), 
+                                        "color": color, "shape": shape, 
+                                        "size": 130 if shape == "star" else 110 if shape == "octagon" else 90
                                     }
                                 })
 
                         for e in g_json.get("edges", []):
                             if isinstance(e, dict) and e.get("source") and e.get("target"):
+                                # Zagotovimo, da rel_type dejansko vsebuje tezavrske oznake
+                                r_type = str(e.get("rel_type", e.get("label", "AS"))).upper()
                                 elements.append({
                                     "data": {
                                         "source": str(e["source"]), 
                                         "target": str(e["target"]), 
-                                        "rel_type": str(e.get("rel_type", e.get("label", "AS")))
+                                        "rel_type": r_type
                                     }
                                 })
                 except: pass
 
             # --- KONČNI PRIKAZ ---
-            st.subheader("📊 FINAL VERIFIED INNOVATION RESULTS")
+            st.subheader("📊 FINAL VERIFIED SYNERGY RESULTS")
             st.markdown(display_text, unsafe_allow_html=True)
 
             if elements:
                 st.subheader("🕸️ FINAL VERIFIED SEMANTIC NETWORK (Hierarchography)")
                 render_cytoscape_network(elements, f"viz_{int(time.time())}")
             else:
-                st.warning("⚠️ High traffic. The graph visualization is queued. Please refresh in a moment.")
+                st.warning("⚠️ High activity detected. Please refresh or try a simpler inquiry for the graph.")
 
             if biblio:
                 with st.expander("📚 BIBLIOGRAPHY"): st.text(biblio)
@@ -957,6 +962,7 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
 # =============================================================================
 st.divider()
 st.caption(f"SIS Triad Knowledge Synthesizer | {VERSION_CODE} | {SYSTEM_DATE}")
+
 
 
 
