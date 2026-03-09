@@ -813,7 +813,7 @@ with col_inq3:
         st.success(f"Context from {uploaded_file.name} integrated.")
 
 # =============================================================================
-# 5. TRIAD SYNERGY EXECUTION ENGINE (V12: INTER-INNOVATION MESH SYNERGY)
+# 5. TRIAD SYNERGY EXECUTION ENGINE (V13: MICRO-MESO-MACRO VERTICAL INTEGRATION)
 # =============================================================================
 
 if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=True):
@@ -832,51 +832,51 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
             ima_str = json.dumps(HUMAN_THINKING_METAMODEL)
             ma_str = json.dumps(MENTAL_APPROACHES_ONTOLOGY)
 
-            # --- PHASE 1: GROQ (Speculative Foundation) ---
-            with st.spinner('PHASE 1: Mapping speculative hierarchies (0.85)...'):
-                p1_template = """Analyze using Hierarchology (IMA: [IMA], Basis: [BASIS]). Identify hidden hierarchies and 'Scientific Cages': [QUERY]"""
-                p1_c = p1_template.replace("[IMA]", ima_str).replace("[BASIS]", h_ont).replace("[QUERY]", user_query)
+            # --- PHASE 1: GROQ (Visionary Foundation) ---
+            with st.spinner('PHASE 1: Mapping Speculative Hierarchies (0.85)...'):
+                p1_template = """Analyze using Hierarchology (IMA: [IMA], Basis: [BASIS]). 
+                Identify hidden hierarchies and 'Scientific Cages' across MICRO, MESO and MACRO levels."""
+                p1_c = p1_template.replace("[IMA]", ima_str).replace("[BASIS]", h_ont)
                 res_p1 = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
-                    messages=[{"role": "system", "content": "You are a Hierarchology Visionary Scientist."}, {"role": "user", "content": p1_c}],
+                    messages=[{"role": "system", "content": "You are a Hierarchology Visionary Scientist."}, {"role": "user", "content": p1_c + user_query}],
                     temperature=0.85
                 )
                 foundation = res_p1.choices[0].message.content
 
             time.sleep(5) 
 
-            # --- PHASE 2: CEREBRAS (Innovation Brainstorming) ---
+            # --- PHASE 2: CEREBRAS (Radical Innovations) ---
             with st.spinner('PHASE 2: Cerebras generating radical ideas (0.85)...'):
                 res_p2 = cerebras_client.chat.completions.create(
                     model=cerebras_id, 
-                    messages=[{"role": "system", "content": "You are the SIS Innovation Engine. Generate 5 radical ideas for social law improvement. Use MA Logic (Dialectics, Perspective Shifting)."}, {"role": "user", "content": f"FOUNDATION:\n{foundation}\n\nGOAL:\n{idea_query}"}],
+                    messages=[{"role": "system", "content": "You are the SIS Innovation Engine. Generate 5 radical ideas acting on Micro, Meso, or Macro levels. Use MA Logic."}, {"role": "user", "content": f"FOUNDATION:\n{foundation}\n\nGOAL:\n{idea_query}"}],
                     temperature=0.85
                 )
                 innovation_raw = res_p2.choices[0].message.content
 
             time.sleep(5)
 
-            # --- PHASE 3: GROQ (Final Vetting & INTER-INNOVATION LINKING) ---
-            with st.spinner('PHASE 3: Final Triad Vetting & Inter-Innovation Synergy (0.2)...'):
+            # --- PHASE 3: GROQ (Final Vetting & VERTICAL INTEGRATION) ---
+            with st.spinner('PHASE 3: Final Vetting & Vertical Level Linking (0.2)...'):
                 p3_prompt = """
                 Refine innovations into a 'Perfect 10' report. 
                 
                 CRITICAL TASK: 
-                Identify ASOCIATIVE CONNECTIONS BETWEEN the innovative ideas themselves. 
-                How does one idea support, enhance, or relate to another?
+                Create a VERTICAL INTEGRATION between levels. Show how:
+                1. MICRO (Individual/Neural) triggers MESO (Community/Groups).
+                2. MESO triggers MACRO (Societal Laws/Policies).
                 
                 STRICT VISUAL RULES FOR JSON:
                 NODES:
-                - Ideas: shape "star", color "#FFD700" (Gold).
-                - Macro: shape "octagon", color "#e63946" (Red).
-                - Meso: shape "rectangle", color "#fd7e14" (Orange).
-                - Micro: shape "ellipse", color "#2a9d8f" (Green).
-                - Concepts: shape "diamond", color "#9b59b6" (Purple).
+                - Macro-Hierarchology: shape "octagon", color "#e63946" (Red).
+                - Meso-Hierarchology: shape "rectangle", color "#fd7e14" (Orange).
+                - Micro-Hierarchology: shape "ellipse", color "#2a9d8f" (Green).
+                - Best Ideas: shape "star", color "#FFD700" (Gold).
                 
-                EDGES (MANDATORY):
-                - Create edges BETWEEN the Golden Stars (Ideas) using AS, RT or EQ.
+                EDGES (MANDATORY VERTICAL RELATIONS):
+                - Use 'micro_to_meso', 'meso_to_macro' and 'feedback_loop' to connect different levels.
                 - Use TT, BT, NT for hierarchical flow.
-                - Use outcome_of, leads_to for causal flow.
                 
                 FORMAT: Output report, then '### JSON_DATA' then valid JSON.
                 """
@@ -942,12 +942,12 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                                 })
                 except: pass
 
-            # --- KONČNI PRIKAZ ---
+            # --- PRIKAZ ---
             st.subheader("📊 FINAL VERIFIED SYNERGY RESULTS")
             st.markdown(display_text, unsafe_allow_html=True)
 
             if elements:
-                st.subheader("🕸️ FINAL VERIFIED SEMANTIC NETWORK (Cross-Innovation Synergy)")
+                st.subheader("🕸️ FINAL VERIFIED SEMANTIC NETWORK (Multi-Level Integration)")
                 render_cytoscape_network(elements, f"viz_{int(time.time())}")
 
             if biblio:
@@ -955,12 +955,12 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
 
         except Exception as e:
             st.error(f"❌ Triad Synergy Failure: {e}")
-
 # =============================================================================
 # 6. FOOTER
 # =============================================================================
 st.divider()
 st.caption(f"SIS Triad Knowledge Synthesizer | {VERSION_CODE} | {SYSTEM_DATE}")
+
 
 
 
