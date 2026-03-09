@@ -813,7 +813,7 @@ with col_inq3:
         st.success(f"Context from {uploaded_file.name} integrated.")
 
 # =============================================================================
-# 5. TRIAD SYNERGY EXECUTION ENGINE (V6: ULTRA-ROBUST HIERARCHOGRAPHY)
+# 5. TRIAD SYNERGY EXECUTION ENGINE (V9: ARCHITECTURAL JSON STABILITY)
 # =============================================================================
 
 if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=True):
@@ -833,133 +833,125 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
             ma_str = json.dumps(MENTAL_APPROACHES_ONTOLOGY)
 
             # --- PHASE 1: GROQ (Speculative Foundation) ---
-            with st.spinner('PHASE 1: Mapping speculative hierarchies (0.85)...'):
-                p1_template = """Analyze using Hierarchology (IMA: [IMA], Basis: [BASIS]). Identify hidden hierarchies: [QUERY]"""
+            with st.spinner('PHASE 1: Mapping Speculative Hierarchies (0.85)...'):
+                p1_template = """Analyze using Hierarchology (IMA: [IMA], Basis: [BASIS]). Focus on hidden hierarchies and 'Scientific Cages'. Query: [QUERY]"""
                 p1_c = p1_template.replace("[IMA]", ima_str).replace("[BASIS]", h_ont).replace("[QUERY]", user_query)
                 res_p1 = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
-                    messages=[{"role": "system", "content": "You are a Hierarchology Visionary."}, {"role": "user", "content": p1_c}],
+                    messages=[{"role": "system", "content": "You are a Hierarchology Visionary Scientist."}, {"role": "user", "content": p1_c}],
                     temperature=0.85
                 )
                 foundation = res_p1.choices[0].message.content
 
-            time.sleep(4) 
+            time.sleep(3) 
 
-            # --- PHASE 2: CEREBRAS (Innovation & JSON Graph) ---
-            with st.spinner('PHASE 2: Generating Innovations & Hierarchography (0.85)...'):
-                p2_prompt = """
-                Generate 5 radical ideas for crime/stress prevention. MA FOCUS: [MA_DATA]
-                
-                VISUAL RULES (MANDATORY):
-                - CORE INNOVATION: shape "star", color "#FFD700"
-                - MACRO (Laws): shape "octagon", color "#e63946"
-                - MESO (Programs): shape "rectangle", color "#fd7e14"
-                - MICRO (Neural): shape "ellipse", color "#2a9d8f"
-                - RELATIONS: outcome_of, leads_to, AS, BT, NT.
-                
-                IMPORTANT: Return ideas first, then strictly provide JSON between [START_JSON] and [END_JSON].
-                """
-                p2_c = p2_prompt.replace("[MA_DATA]", ma_str)
+            # --- PHASE 2: CEREBRAS (Innovation Brainstorming) ---
+            with st.spinner('PHASE 2: Cerebras generating radical ideas (0.85)...'):
+                # V tej fazi Cerebras samo razmišlja, ne dela JSON-a (manj možnosti za napako)
                 res_p2 = cerebras_client.chat.completions.create(
                     model=cerebras_id, 
-                    messages=[{"role": "system", "content": p2_c}, {"role": "user", "content": f"F1:\n{foundation}\n\nGOAL:\n{idea_query}"}],
+                    messages=[{"role": "system", "content": "You are the SIS Innovation Engine. Generate 5 radical ideas for social law improvement. Use MA Logic."}, {"role": "user", "content": f"FOUNDATION:\n{foundation}\n\nGOAL:\n{idea_query}"}],
                     temperature=0.85
                 )
                 innovation_raw = res_p2.choices[0].message.content
 
-            time.sleep(4)
+            time.sleep(3)
 
-            # --- PHASE 3: GROQ (Vetting & Linking) ---
-            with st.spinner('PHASE 3: Final Vetting & Synergy Optimization (0.2)...'):
+            # --- PHASE 3: GROQ (Final Vetting & RIGID JSON GENERATION) ---
+            with st.spinner('PHASE 3: Final Vetting & Stable Hierarchography (0.2)...'):
+                # Tukaj Groq (70B) naredi vse: preveri ideje in zgenerira popoln JSON
                 p3_prompt = """
                 Refine innovations into a 'Perfect 10' report. 
                 STRICT RULES:
-                1. Use EXACT labels from Phase 2 innovations (no rephrasing).
-                2. NO hex codes or color names in the text.
-                3. Include the 'Heartbeat of Truth' and the author's original 'Originality'.
+                1. Use exactly the labels from innovations.
+                2. After the report, provide a MANDATORY JSON graph structure.
+                
+                HIERARCHOGRAPHY VISUAL RULES:
+                - "star" (#FFD700) for Core Ideas.
+                - "octagon" (#e63946) for Macro Laws.
+                - "rectangle" (#fd7e14) for Meso Programs.
+                - "ellipse" (#2a9d8f) for Micro Neural nodes.
+                - "diamond" (#9b59b6) for Associative links.
+                
+                FORMAT: Output report, then '### JSON_DATA' then {"nodes": [...], "edges": [...]}.
                 """
                 res_p3 = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
-                    messages=[{"role": "system", "content": p3_prompt}, {"role": "user", "content": f"F1:\n{foundation}\n\nI2:\n{innovation_raw}"}],
-                    temperature=0.2
+                    messages=[{"role": "system", "content": p3_prompt}, {"role": "user", "content": f"P1:\n{foundation}\n\nP2 IDEAS:\n{innovation_raw}"}],
+                    temperature=0.2 # Zelo nizka temperatura za stabilen JSON
                 )
-                final_report = res_p3.choices[0].message.content
+                final_output = res_p3.choices[0].message.content
 
-            # --- NAPREDNA EKSTRAKCIJA JSON-A ---
-            graph_json_str = ""
-            # Najprej iščemo med markerji
-            marker_match = re.search(r'\[START_JSON\](.*?)\[END_JSON\]', innovation_raw, re.DOTALL)
-            if marker_match:
-                graph_json_str = marker_match.group(1)
+            # --- OBDELAVA PODATKOV ---
+            if "### JSON_DATA" in final_output:
+                parts = final_output.split("### JSON_DATA")
+                display_text = parts[0]
+                graph_json_str = parts[1]
             else:
-                # Če markerjev ni, iščemo zadnji blok { }
-                all_matches = re.findall(r'(\{.*\})', innovation_raw, re.DOTALL)
-                if all_matches: graph_json_str = all_matches[-1]
+                display_text = final_output
+                graph_json_str = ""
 
-            display_text = final_report
             elements = []
-
             if graph_json_str:
                 try:
-                    clean_j = graph_json_str.strip().replace('```json', '').replace('```', '')
-                    g_json = json.loads(clean_j)
-                    nodes = g_json.get("nodes", [])
-                    # Razvrstimo vozlišča od daljših do krajših za varno zamenjavo linkov
-                    nodes.sort(key=lambda x: len(x.get("label", "")) if isinstance(x, dict) else len(x), reverse=True)
-
-                    for n in nodes:
-                        if isinstance(n, dict):
-                            lbl = n.get("label", n.get("id", "Node"))
-                            nid = n.get("id", lbl)
-                            shape = n.get("shape", "rectangle")
-                            v_type = n.get("type", "Branch")
-                        else:
-                            lbl, nid, shape, v_type = n, n, "rectangle", "Branch"
+                    # Izvlečemo le vsebino med zavitimi oklepaji
+                    json_match = re.search(r'(\{.*\})', graph_json_str, re.DOTALL)
+                    if json_match:
+                        g_json = json.loads(json_match.group())
                         
-                        if lbl:
-                            # Dinamično forsiranje barv v Pythonu
+                        raw_nodes = g_json.get("nodes", [])
+                        raw_nodes.sort(key=lambda x: len(x.get("label", "")) if isinstance(x, dict) else len(str(x)), reverse=True)
+
+                        for n in raw_nodes:
+                            if isinstance(n, dict):
+                                lbl = n.get("label", n.get("id", "Node"))
+                                nid = n.get("id", lbl)
+                                shape = n.get("shape", "rectangle").lower()
+                            else:
+                                lbl, nid, shape = str(n), str(n), "rectangle"
+                            
+                            # Avtomatsko določanje barv v Pythonu (100% stabilnost)
                             color = "#fd7e14"
                             if shape == "star": color = "#FFD700"
                             elif shape == "octagon": color = "#e63946"
                             elif shape == "ellipse": color = "#2a9d8f"
                             elif shape == "diamond": color = "#9b59b6"
 
-                            # Fuzzy Google Linker
-                            g_url = urllib.parse.quote(lbl)
-                            replacement = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}</a>'
-                            pattern = re.compile(re.escape(lbl), re.IGNORECASE)
-                            display_text = pattern.sub(replacement, display_text)
+                            # Google Linker (Fuzzy)
+                            if len(lbl) > 2:
+                                g_url = urllib.parse.quote(lbl)
+                                replacement = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}</a>'
+                                pattern = re.compile(re.escape(lbl), re.IGNORECASE)
+                                display_text = pattern.sub(replacement, display_text)
                             
                             elements.append({"data": {"id": str(nid), "label": str(lbl), "color": color, "shape": shape, "size": 115 if shape == "star" else 95}})
 
-                    for e in g_json.get("edges", []):
-                        if isinstance(e, dict) and e.get("source") and e.get("target"):
-                            elements.append({"data": {"source": str(e["source"]), "target": str(e["target"]), "rel_type": str(e.get("rel_type", "AS"))}})
+                        for e in g_json.get("edges", []):
+                            if isinstance(e, dict) and e.get("source") and e.get("target"):
+                                elements.append({"data": {"source": str(e["source"]), "target": str(e["target"]), "rel_type": str(e.get("rel_type", "AS"))}})
                 except: pass
 
-            # --- FINALNI PRIKAZ ---
+            # --- KONČNI PRIKAZ ---
             st.subheader("📊 FINAL VERIFIED SYNERGY RESULTS")
             st.markdown(display_text, unsafe_allow_html=True)
 
             if elements:
-                st.subheader("🕸️ FINAL VERIFIED SEMANTIC NETWORK (Hierarchography)")
+                st.subheader("🕸️ FINAL VERIFIED SEMANTIC NETWORK")
                 render_cytoscape_network(elements, f"viz_{int(time.time())}")
             else:
-                st.warning("⚠️ Graph construction failed. AI JSON was malformed. Displaying text only.")
+                st.warning("⚠️ Graph is being generated. If it doesn't appear, try a more specific inquiry.")
 
             if biblio:
                 with st.expander("📚 BIBLIOGRAPHY"): st.text(biblio)
 
         except Exception as e:
             st.error(f"❌ Triad Synergy Failure: {e}")
+
 # =============================================================================
-# 6. FOOTER & METRICS
+# 6. FOOTER
 # =============================================================================
 st.divider()
-st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | Operating Date: {SYSTEM_DATE}")
-st.write("")
-
-st.write("")
+st.caption(f"SIS Triad Knowledge Synthesizer | {VERSION_CODE} | {SYSTEM_DATE}")
 
 
 
