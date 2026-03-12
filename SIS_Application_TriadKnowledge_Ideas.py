@@ -826,7 +826,7 @@ with col_inq3:
         st.success(f"Context from {uploaded_file.name} integrated.")
 
 # =============================================================================
-# 5. TRIAD SYNERGY EXECUTION ENGINE (V13: MICRO-MESO-MACRO VERTICAL INTEGRATION)
+# 5. TRIAD SYNERGY EXECUTION ENGINE (IDEATION + GRAPH + LINKS STABILIZED)
 # =============================================================================
 
 if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=True):
@@ -836,20 +836,20 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
         st.warning("⚠️ Phase 1 Research Inquiry is required.")
     else:
         try:
-            # 1. Inicializacija odjemalcev
+            # 1. Init
             groq_client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
             cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
             
             biblio = fetch_author_bibliographies(target_authors) if target_authors else ""
-            h_ont = json.dumps(HIERARCHOLOGY_ONTOLOGY)
+            h_ont_str = json.dumps(HIERARCHOLOGY_ONTOLOGY)
             ima_str = json.dumps(HUMAN_THINKING_METAMODEL)
             ma_str = json.dumps(MENTAL_APPROACHES_ONTOLOGY)
+            ideation_toolbox = json.dumps(IDEATION_TECHNIQUES) if 'IDEATION_TECHNIQUES' in locals() else "{}"
 
-            # --- PHASE 1: GROQ (Visionary Foundation) ---
+            # --- PHASE 1: GROQ (Speculative Foundation) ---
             with st.spinner('PHASE 1: Mapping Speculative Hierarchies (0.85)...'):
-                p1_template = """Analyze using Hierarchology (IMA: [IMA], Basis: [BASIS]). 
-                Identify hidden hierarchies and 'Scientific Cages' across MICRO, MESO and MACRO levels."""
-                p1_c = p1_template.replace("[IMA]", ima_str).replace("[BASIS]", h_ont)
+                p1_template = """Analyze using Hierarchology (IMA: [IMA], Basis: [BASIS]). Identify hidden hierarchies and 'Scientific Cages' across MICRO, MESO and MACRO levels."""
+                p1_c = p1_template.replace("[IMA]", ima_str).replace("[BASIS]", h_ont_str)
                 res_p1 = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=[{"role": "system", "content": "You are a Hierarchology Visionary Scientist."}, {"role": "user", "content": p1_c + user_query}],
@@ -857,62 +857,44 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                 )
                 foundation = res_p1.choices[0].message.content
 
-            time.sleep(5) 
+            time.sleep(3) 
 
-           # --- PHASE 2: CEREBRAS (Innovation & Hierarchography) ---
-            with st.spinner('PHASE 2: Applying Advanced Ideation Techniques (Temp 0.85)...'):
-                # We inject the ideation techniques into the prompt here
-                ideation_str = json.dumps(IDEATION_TECHNIQUES)
-                
+            # --- PHASE 2: CEREBRAS (Radical Innovations with SCAMPER/TRIZ) ---
+            with st.spinner('PHASE 2: Applying Advanced Ideation Techniques (0.85)...'):
                 p2_template = """
-                You are the SIS Innovation Engine (Phase 2). 
-                STRICT MA FOCUS: [MA]
-                IDEATION FRAMEWORKS: [TECHNIQUES]
+                You are the SIS Innovation Engine.
+                MA FOCUS: [MA_DATA]
+                IDEATION TOOLBOX: [TECH_DATA]
                 
                 TASK: Generate 5 radical ideas for social law improvement.
-                For each idea, pick ONE technique from the IDEATION FRAMEWORKS (e.g., SCAMPER or First Principles) 
-                to reach a conclusion that is not obvious.
-                
-                HIERARCHOGRAPHY VISUAL RULES:
-                - Use shapes: "star" (Core), "octagon" (Macro), "rectangle" (Meso), "ellipse" (Micro).
-                - Use relation types: micro_to_meso, meso_to_macro, outcome_of, AS.
-                
-                IMPORTANT: Output the ideas first, then strictly end with '### JSON_DATA' followed by the JSON structure.
+                For each idea, pick ONE technique from the TOOLBOX (e.g., SCAMPER, TRIZ, First Principles).
+                Use MA logic (Dialectics/Perspective Shifting) to ensure the ideas are not obvious.
                 """
-                # Update the replacement logic:
-                p2_c = p2_template.replace("[MA]", ma_str).replace("[TECHNIQUES]", ideation_str)
-                
+                p2_c = p2_template.replace("[MA_DATA]", ma_str).replace("[TECH_DATA]", ideation_toolbox)
                 res_p2 = cerebras_client.chat.completions.create(
                     model=cerebras_id, 
-                    messages=[{"role": "system", "content": p2_c}, {"role": "user", "content": f"F1 FOUNDATION:\n{foundation}\n\nGOAL:\n{idea_query}"}],
+                    messages=[{"role": "system", "content": p2_c}, {"role": "user", "content": f"FOUNDATION:\n{foundation}\n\nGOAL:\n{idea_query}"}],
                     temperature=0.85
                 )
                 innovation_raw = res_p2.choices[0].message.content
 
-            time.sleep(5)
+            time.sleep(3)
 
-            # --- PHASE 3: GROQ (Final Vetting & VERTICAL INTEGRATION) ---
-            with st.spinner('PHASE 3: Final Vetting & Vertical Level Linking (0.2)...'):
+            # --- PHASE 3: GROQ (Final Vetting & STABLE JSON GENERATION) ---
+            with st.spinner('PHASE 3: Final Vetting & Hierarchography Output (0.2)...'):
                 p3_prompt = """
-                Refine innovations into a 'Perfect 10' report. 
+                Refine the innovations into a 'Perfect 10' report. 
                 
-                CRITICAL TASK: 
-                Create a VERTICAL INTEGRATION between levels. Show how:
-                1. MICRO (Individual/Neural) triggers MESO (Community/Groups).
-                2. MESO triggers MACRO (Societal Laws/Policies).
+                STRICT RULES:
+                1. Use the EXACT labels of the ideas from Phase 2.
+                2. Explicitly link MICRO, MESO, and MACRO levels in your descriptions.
+                3. After the report, provide a MANDATORY JSON graph structure.
                 
-                STRICT VISUAL RULES FOR JSON:
-                NODES:
-                - Macro-Hierarchology: shape "octagon", color "#e63946" (Red).
-                - Meso-Hierarchology: shape "rectangle", color "#fd7e14" (Orange).
-                - Micro-Hierarchology: shape "ellipse", color "#2a9d8f" (Green).
-                - Best Ideas: shape "star", color "#FFD700" (Gold).
+                VISUAL RULES:
+                - Ideas: "star" (#FFD700), Macro: "octagon" (#e63946), Meso: "rectangle" (#fd7e14), Micro: "ellipse" (#2a9d8f).
+                - Use relations: micro_to_meso, meso_to_macro, outcome_of, AS, RT.
                 
-                EDGES (MANDATORY VERTICAL RELATIONS):
-                - Use 'micro_to_meso', 'meso_to_macro' and 'feedback_loop' to connect different levels.
-                - Use TT, BT, NT for hierarchical flow.
-                
-                FORMAT: Output report, then '### JSON_DATA' then valid JSON.
+                FORMAT: Output report first, then '### JSON_DATA' then valid JSON.
                 """
                 res_p3 = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
@@ -921,8 +903,7 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                 )
                 final_output = res_p3.choices[0].message.content
 
-            # --- OBDELAVA PODATKOV ---
-            graph_json_str = ""
+            # --- DATA EXTRACTION ---
             if "### JSON_DATA" in final_output:
                 parts = final_output.split("### JSON_DATA")
                 display_text = parts[0]
@@ -932,57 +913,45 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                 graph_json_str = ""
 
             elements = []
+            # Robust JSON Deep-Parsing
             if graph_json_str:
                 try:
                     json_match = re.search(r'(\{.*\})', graph_json_str, re.DOTALL)
                     if json_match:
                         g_json = json.loads(json_match.group())
                         raw_nodes = g_json.get("nodes", [])
+                        # Sort by length descending for fuzzy linker
                         raw_nodes.sort(key=lambda x: len(x.get("label", "")) if isinstance(x, dict) else len(str(x)), reverse=True)
 
                         for n in raw_nodes:
-                            if isinstance(n, dict):
-                                lbl = n.get("label", n.get("id", "Node"))
-                                nid = n.get("id", lbl)
-                                shape = n.get("shape", "rectangle").lower()
-                                color = n.get("color", "#fd7e14")
-                            else:
-                                lbl, nid, shape, color = str(n), str(n), "rectangle", "#fd7e14"
-                            
-                            if lbl:
-                                # Google Linker (Fuzzy)
+                            lbl = n.get("label", n.get("id", "Unknown")) if isinstance(n, dict) else str(n)
+                            nid = n.get("id", lbl) if isinstance(n, dict) else str(n)
+                            shape = n.get("shape", "rectangle").lower() if isinstance(n, dict) else "rectangle"
+                            color = n.get("color", "#fd7e14") if isinstance(n, dict) else "#fd7e14"
+
+                            # Google Linker (Fuzzy Case-Insensitive)
+                            if len(lbl) > 2:
                                 g_url = urllib.parse.quote(lbl)
                                 replacement = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}</a>'
                                 pattern = re.compile(re.escape(lbl), re.IGNORECASE)
                                 display_text = pattern.sub(replacement, display_text)
-                                
-                                elements.append({
-                                    "data": {
-                                        "id": str(nid), "label": str(lbl), 
-                                        "color": color, "shape": shape, 
-                                        "size": 130 if shape == "star" else 110 if shape == "octagon" else 95
-                                    }
-                                })
+                            
+                            elements.append({"data": {"id": str(nid), "label": str(lbl), "color": color, "shape": shape, "size": 125 if shape == "star" else 100}})
 
                         for e in g_json.get("edges", []):
                             if isinstance(e, dict) and e.get("source") and e.get("target"):
-                                r_type = str(e.get("rel_type", e.get("label", "AS"))).upper()
-                                elements.append({
-                                    "data": {
-                                        "source": str(e["source"]), 
-                                        "target": str(e["target"]), 
-                                        "rel_type": r_type
-                                    }
-                                })
+                                elements.append({"data": {"source": str(e["source"]), "target": str(e["target"]), "rel_type": str(e.get("rel_type", "AS")).upper()}})
                 except: pass
 
-            # --- PRIKAZ ---
-            st.subheader("📊 FINAL VERIFIED SYNERGY RESULTS")
+            # --- RENDERING ---
+            st.subheader("📊 FINAL TRIAD VERIFIED RESULTS")
             st.markdown(display_text, unsafe_allow_html=True)
 
             if elements:
-                st.subheader("🕸️ FINAL VERIFIED SEMANTIC NETWORK (Multi-Level Integration)")
+                st.subheader("🕸️ HIERARCHOGRAPHY: MULTI-LEVEL NETWORK")
                 render_cytoscape_network(elements, f"viz_{int(time.time())}")
+            else:
+                st.warning("⚠️ Graph generation failed. Please check your science field selection.")
 
             if biblio:
                 with st.expander("📚 BIBLIOGRAPHY"): st.text(biblio)
@@ -994,6 +963,7 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
 # =============================================================================
 st.divider()
 st.caption(f"SIS Triad Knowledge Synthesizer | {VERSION_CODE} | {SYSTEM_DATE}")
+
 
 
 
