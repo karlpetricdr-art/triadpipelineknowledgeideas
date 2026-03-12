@@ -10,10 +10,10 @@ from openai import OpenAI
 import streamlit.components.v1 as components
 
 # =============================================================================
-# 0. GLOBAL CONFIGURATION & AUTOMATED DATE
+# 0. GLOBALNA KONFIGURACIJA IN AVTOMATSKI DATUM
 # =============================================================================
-SYSTEM_DATE = "February 24, 2026"
-VERSION_CODE = "v33.9.0-CEREBRAS-TRIAD-ELITE-PERFECT-10"
+SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
+VERSION_CODE = "v34.5.0-CEREBRAS-TRIAD-ELITE-COMPLETE-980"
 
 st.set_page_config(
     page_title=f"SIS Universal Knowledge Synthesizer - {SYSTEM_DATE}",
@@ -22,27 +22,34 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- NUCLEAR CSS OVERRIDE: PROFESSIONAL DENSITY & HIGH CONTRAST ---
+# --- NUCLEAR CSS OVERRIDE: OBLITERATING SIDEBAR ARTIFACTS & FIXING VISIBILITY ---
 st.markdown("""
 <style>
     [data-testid="stSidebar"] [data-testid="stIcon"],
     [data-testid="stSidebar"] button[data-testid="stSidebarCollapseButton"],
-    [data-testid="stSidebar"] span[data-testid="stExpanderIcon"] {
+    [data-testid="stSidebar"] span[data-testid="stExpanderIcon"],
+    [data-testid="stSidebar"] svg[class*="st-emotion-cache"] {
         display: none !important;
         visibility: hidden !important;
+        width: 0 !important; height: 0 !important; opacity: 0 !important;
     }
+
     [data-testid="stSidebar"] {
         background-color: #fcfcfc !important;
         border-right: 2px solid #e9ecef !important;
         min-width: 380px !important;
     }
+
     [data-testid="stSidebar"] .stMarkdown p, 
     [data-testid="stSidebar"] label,
-    [data-testid="stSidebar"] .stExpander p {
+    [data-testid="stSidebar"] .stExpander p,
+    [data-testid="stSidebar"] .stMarkdown span {
         color: #1d3557 !important;
         font-size: 0.98em !important;
         font-weight: 600 !important;
+        line-height: 1.6 !important;
     }
+
     .stExpander {
         background-color: #ffffff !important;
         border: 1px solid #d8e2dc !important;
@@ -50,48 +57,51 @@ st.markdown("""
         margin-bottom: 12px !important;
         box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important;
     }
+    
     .stExpander details summary p {
         color: #1d3557 !important;
         font-weight: 800 !important;
         text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
+
     .semantic-node-highlight {
         color: #e63946 !important;
         font-weight: bold !important;
         border-bottom: 2px solid #e63946 !important;
-        background-color: #fff1f2 !important;
         padding: 0 2px;
+        background-color: #fff1f2;
         border-radius: 4px;
         text-decoration: none !important;
     }
+    
     .main-header-gradient {
         background: linear-gradient(90deg, #1d3557, #e63946);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         font-weight: 800; font-size: 2.8rem;
     }
+
     .date-badge {
         background-color: #1d3557; color: white; padding: 12px 20px;
         border-radius: 50px; font-size: 1em; font-weight: 800;
         margin-bottom: 30px; display: block; text-align: center;
         box-shadow: 0 4px 15px rgba(29, 53, 87, 0.3);
     }
-    .metamodel-box {
-        padding: 25px; border-radius: 15px; background-color: #f8f9fa;
-        border-left: 8px solid #00B0F0; margin-bottom: 20px;
-    }
-    .hierarchology-box {
-        padding: 25px; border-radius: 15px; background-color: #fff4e6;
-        border-left: 8px solid #fd7e14; margin-bottom: 20px;
-    }
+
     .sidebar-logo-container { display: flex; justify-content: center; padding: 10px 0; margin-bottom: 5px; }
+
+    .stButton>button {
+        width: 100%; border-radius: 10px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 1px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
 def get_svg_base64(svg_str):
     return base64.b64encode(svg_str.encode('utf-8')).decode('utf-8')
 
-# --- ORIGINAL 3D RELIEF LOGOTIP ---
+# --- LOGOTIP: ORIGINAL 3D RELIEF (PYRAMID & TREE RESTORED EXACTLY) ---
 SVG_3D_RELIEF = """
 <svg width="240" height="240" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
     <defs>
@@ -121,10 +131,10 @@ SVG_3D_RELIEF = """
 """
 
 # =============================================================================
-# 1. CORE RENDERING ENGINE & DATA FETCHING
+# 1. RENDERING ENGINES & DATA FETCHING
 # =============================================================================
 
-def render_cytoscape_network(elements, container_id="cy_triad"):
+def render_cytoscape_network(elements, container_id="cy_mesh"):
     cyto_html = f"""
     <div style="position: relative; width: 100%;">
         <button id="save_btn" style="position: absolute; top: 15px; right: 15px; z-index: 1000; padding: 12px 18px; background: #2a9d8f; color: white; border: none; border-radius: 8px; cursor: pointer; font-family: sans-serif; font-size: 13px; font-weight: 800;">💾 EXPORT GRAPH PNG</button>
@@ -159,9 +169,9 @@ def fetch_author_bibliographies(author_input):
     biblio = ""
     for auth in author_list:
         try:
-            url = f"https://api.semanticscholar.org/graph/v1/paper/search?query=author:\"{auth}\"&limit=5&fields=title,year"
-            res = requests.get(url, timeout=5).json()
-            papers = res.get("data", [])
+            ss_url = f"https://api.semanticscholar.org/graph/v1/paper/search?query=author:\"{auth}\"&limit=5&fields=title,year"
+            ss_res = requests.get(ss_url, timeout=5).json()
+            papers = ss_res.get("data", [])
             if papers:
                 biblio += f"\n--- SCHOLAR DATA: {auth.upper()} ---\n"
                 for p in papers: biblio += f"• ({p.get('year','n.d.')}) {p['title']}\n"
@@ -169,7 +179,7 @@ def fetch_author_bibliographies(author_input):
     return biblio
 
 # =============================================================================
-# 2. FULL ARCHITECTURAL ONTOLOGIES (IMA & MA)
+# 2. ARCHITECTURAL ONTOLOGIES (POPOLNI SEZNAMI)
 # =============================================================================
 
 HUMAN_THINKING_METAMODEL = {
@@ -222,21 +232,24 @@ MENTAL_APPROACHES_ONTOLOGY = {
 }
 
 HIERARCHOLOGY_ONTOLOGY = {
-    "dimensions": {
-        "Micro-hierarchology": "Internal individual thinking and neural inductive logic.",
-        "Meso-hierarchology": "Organizational structures and social programs.",
-        "Macro-hierarchology": "Fundamental societal laws and natural hierarchies.",
+    "core_definitions": {
+        "Hierarchology": "Interdisciplinary science studying hierarchical associative systems.",
+        "Hierarchography": "Descriptive visual mapping of complex topics via workflows and diagrammatic logic.",
         "Scientific Cage": "Cognitive limitations preventing thought beyond established paradigms."
     },
-    "hierarchography_tools": ["Workflow Mapping", "Tree Maps", "Structural diagrams", "Oligographs", "UML", "Mind Mapping", "Cognitive Modeling", "Organigrams"]
+    "hierarchical_levels": {
+        "Micro-hierarchology": "Individual thinking and neural inductive logic.",
+        "Meso-hierarchology": "Social groups and organizational systems.",
+        "Macro-hierarchology": "Fundamental social laws and natural hierarchies."
+    }
 }
 
 IDEATION_TECHNIQUES = {
     "SCAMPER": "Substitute, Combine, Adapt, Modify, Put to another use, Eliminate, Reverse.",
-    "First Principles": "Break down complex problems into basic elements and reassemble them from scratch.",
-    "TRIZ": "Resolve technical or physical contradictions using systematic innovation rules.",
-    "Lateral Thinking": "Approach problems from unexpected angles.",
-    "Reverse Ideation": "Think of causing the problem, then reverse steps to find solutions."
+    "First Principles": "Break down complex problems into basic elements and reassemble them.",
+    "TRIZ": "Resolve contradictions using systematic innovation rules.",
+    "Lateral Thinking": "Unexpected angles and logic jumps.",
+    "Reverse Ideation": "Think of causing the problem, then reverse steps."
 }
 
 # =============================================================================
@@ -251,8 +264,8 @@ KNOWLEDGE_BASE = {
         "Architecture", "History", "Ecology", "Geography", "Linguistics", "Library Science", "Criminology"
     ],
     "Scientific paradigms": {
-        "Empiricism": "Focus on sensory experience and sensory data.",
-        "Rationalism": "Reliance on deductive logic and a priori reasoning.",
+        "Empiricism": "Focus on sensory experience and data.",
+        "Rationalism": "Reliance on deductive logic.",
         "Constructivism": "Knowledge as a social and cognitive build.",
         "Positivism": "Strict adherence to verifiable facts.",
         "Pragmatism": "Evaluation based on utility and application."
@@ -278,36 +291,32 @@ with st.sidebar:
     sel_models = st.multiselect("5. Structural Models:", KNOWLEDGE_BASE["Structural models"], default=["Concepts", "Causal Connections"])
     
     st.divider()
-    with st.expander("🏛️ IMA BUILDING BLOCKS (19)", expanded=False):
+    with st.expander("🏛️ IMA GRADNJAKI (19)", expanded=False):
         for k in sorted(HUMAN_THINKING_METAMODEL["nodes"].keys()): st.write(f"• {k}")
-    with st.expander("🧠 MENTAL APPROACHES (20)", expanded=False):
+    with st.expander("🧠 MENTALNI PRISTOPI (20)", expanded=False):
         for m in sorted(MENTAL_APPROACHES_ONTOLOGY["nodes"].keys()): st.write(f"• {m}")
-    with st.expander("📚 HIERARCHOLOGY CORE", expanded=False):
-        for k, v in HIERARCHOLOGY_ONTOLOGY["dimensions"].items(): st.write(f"**{k}**: {v}")
+    with st.expander("📚 HIERARHOLOGIJA CORE", expanded=False):
+        for k, v in HIERARCHOLOGY_ONTOLOGY["core_definitions"].items(): st.write(f"**{k}**: {v}")
     with st.expander("💡 IDEATION TOOLS", expanded=False):
         for tech, desc in IDEATION_TECHNIQUES.items(): st.write(f"**{tech}**: {desc}")
 
 st.markdown('<h1 class="main-header-gradient">🧱 SIS Cerebras Triad Engine</h1>', unsafe_allow_html=True)
-st.markdown(f"**Pure Cerebras Sequential Pipeline** | Operating Date: **{SYSTEM_DATE}**")
+st.markdown(f"**Automated Pure Cerebras Triad Pipeline** | Operating Date: **{SYSTEM_DATE}**")
 
-col_ref1, col_ref2 = st.columns(2)
-with col_ref1: st.markdown('<div class="hierarchology-box"><b>🔍 Phase 1: Hierarchology</b><br>Visionary analysis of Micro, Meso, and Macro hierarchical systems.</div>', unsafe_allow_html=True)
-with col_ref2: st.markdown('<div class="metamodel-box"><b>✍️ Phase 2: Hierarchography</b><br>Multi-shape diagrammatic modeling and innovation generation.</div>', unsafe_allow_html=True)
-
-# VNOSNA POLJA IN PRIPENJANJE DATOTEKE
 c1, c2 = st.columns([2, 1])
 with c1:
-    user_query = st.text_area("❓ STEP 1: Research Inquiry (Speculative Development):", height=120)
-    idea_query = st.text_area("💡 STEP 2: Innovation Goal (Generative Refinement):", height=120)
+    user_query = st.text_area("❓ STEP 1: Research Inquiry (Vizionarska faza):", height=120)
+    idea_query = st.text_area("💡 STEP 2: Innovation Goal (Taktična faza):", height=120)
 with c2:
     uploaded_file = st.file_uploader("📂 ATTACH DATA (.txt only):", type=['txt'])
     file_content = uploaded_file.read().decode("utf-8") if uploaded_file else ""
+    if uploaded_file: st.success("Data integrated.")
 
 # =============================================================================
-# 5. SYNERGY EXECUTION ENGINE (TRIAD LOOP: 0.85 -> 0.65 -> 0.45)
+# 5. SYNERGY ENGINE (TRIAD LOOP: 0.85 -> 0.65 -> 0.45)
 # =============================================================================
 
-if st.button("🚀 EXECUTE CEREBRAS TRIAD PIPELINE", use_container_width=True):
+if st.button("🚀 EXECUTE PURE CEREBRAS TRIAD PIPELINE", use_container_width=True):
     if not cerebras_api_key:
         st.error("❌ Cerebras API Key required.")
     elif not user_query:
@@ -316,64 +325,58 @@ if st.button("🚀 EXECUTE CEREBRAS TRIAD PIPELINE", use_container_width=True):
         try:
             client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
             
-            ima_data = json.dumps(HUMAN_THINKING_METAMODEL)
-            ma_data = json.dumps(MENTAL_APPROACHES_ONTOLOGY)
-            h_basis = json.dumps(HIERARCHOLOGY_ONTOLOGY)
-            tech_toolbox = json.dumps(IDEATION_TECHNIQUES)
+            biblio = fetch_author_bibliographies(target_authors)
+            ima_str = json.dumps(HUMAN_THINKING_METAMODEL)
+            ma_str = json.dumps(MENTAL_APPROACHES_ONTOLOGY)
+            h_ont = json.dumps(HIERARCHOLOGY_ONTOLOGY)
+            tech_str = json.dumps(IDEATION_TECHNIQUES)
 
             # --- PHASE 1: VISIONARY DEVELOPMENT (0.85) ---
-            with st.spinner('PHASE 1: Razvijanje vizionarskih idej (0.85)...'):
+            with st.spinner('Faza 1: Generiranje vizionarske podlage (0.85)...'):
                 p1_template = """You are a Hierarchology Visionary. 
-                STRICT IMA: [IMA] | BASIS: [BASIS] | SCIENCES: [SCIENCES]
-                TASK: Speculatively identify hidden hierarchies across MICRO, MESO and MACRO.
-                Enforce Hard Science analogies (Physics, Biology). Context from file: [FILE]"""
-                p1_c = p1_template.replace("[IMA]", ima_data).replace("[BASIS]", h_basis).replace("[SCIENCES]", str(sel_sciences)).replace("[FILE]", file_content)
+                IMA: [IMA] | BASIS: [BASIS] | SCIENCES: [SCIENCES]
+                TASK: speculative analysis of MICRO, MESO and MACRO hierarchies. 
+                Use hard science analogies. Context: [FILE]"""
+                p1_c = p1_template.replace("[IMA]", ima_str).replace("[BASIS]", h_ont).replace("[SCIENCES]", str(sel_sciences)).replace("[FILE]", file_content)
                 res_p1 = client.chat.completions.create(model=cerebras_id, messages=[{"role": "system", "content": p1_c}, {"role": "user", "content": user_query}], temperature=0.85)
                 foundation = res_p1.choices[0].message.content
 
+            st.toast("Phase 1 complete. Cooling down API...")
             time.sleep(5) 
 
             # --- PHASE 2: TACTICAL INNOVATION (0.65) ---
-            with st.spinner('PHASE 2: Brainstorming taktičnih inovacij (0.65)...'):
-                p2_template = """You are the SIS Innovation Engine. 
-                MA FOCUS: [MA] | TOOLBOX: [TECH] | SCIENCES: [SCIENCES]
-                TASK: Generate radical ideas. Use 'Analogical Reasoning' from Hard Sciences.
-                Pick specific techniques (SCAMPER/TRIZ) for each idea."""
-                p2_c = p2_template.replace("[MA]", ma_data).replace("[TECH]", tech_toolbox).replace("[SCIENCES]", str(sel_sciences))
+            with st.spinner('Faza 2: Razvijanje inovacij (0.65)...'):
+                p2_template = """You are the SIS Innovation Engine. MA FOCUS: [MA] | TOOLBOX: [TECH] | SCIENCES: [SCIENCES].
+                TASK: Generate radical ideas using Analogical Reasoning and SCAMPER."""
+                p2_c = p2_template.replace("[MA]", ma_str).replace("[TECH]", tech_str).replace("[SCIENCES]", str(sel_sciences))
                 res_p2 = client.chat.completions.create(model=cerebras_id, messages=[{"role": "system", "content": p2_c}, {"role": "user", "content": f"F1 FOUNDATION:\n{foundation}\n\nGOAL:\n{idea_query}"}], temperature=0.65)
                 innovation_raw = res_p2.choices[0].message.content
 
+            st.toast("Phase 2 complete. Cooling down API...")
             time.sleep(5)
 
-            # --- PHASE 3: SYNERGISTIC SYNTHESIS & HIERARCHOGRAPHY (0.45) ---
-            with st.spinner('PHASE 3: Finalna sinteza in Hierarhografija (0.45)...'):
-                p3_prompt = """
-                Refine innovations into a 'Perfect 10' FINAL SYNERGY REPORT.
-                
+            # --- PHASE 3: FINAL SYNTHESIS & HIERARCHOGRAPHY (0.45) ---
+            with st.spinner('PHASE 3: Finalna verifikacija in mrežni izris (0.45)...'):
+                p3_prompt = """Refine into a 'Perfect 10' FINAL SYNERGY REPORT. 
                 STRICT RULES:
-                1. DO NOT include color codes, hex codes (#...), or technical parameters in the text.
-                2. Use the EXACT labels from Phase 2 innovations for linking.
-                3. HIERARCHOGRAPHY MESH: Connect Innovations (star) to Micro (ellipse) AND Macro (octagon) nodes.
-                4. RELATIONS: micro_to_meso, meso_to_macro, BT, NT, AS, outcome_of.
-                
-                Output report first, then strictly JSON between [START_JSON] and [END_JSON].
-                """
-                res_p3 = client.chat.completions.create(model=cerebras_id, messages=[{"role": "system", "content": p3_prompt}, {"role": "user", "content": f"FOUNDATION:\n{foundation}\n\nINNOVATIONS:\n{innovation_raw}"}], temperature=0.45)
+                1. NO color codes (#...) or technical hex parameters in text.
+                2. Use EXACT node labels for linking.
+                3. HIERARCHOGRAPHY MESH in JSON: Innovations (star, #FFD700), Macro (octagon, #e63946), Meso (rectangle, #fd7e14), Micro (ellipse, #2a9d8f).
+                Output Report, then strictly end with marker '### JSON_DATA' and valid JSON structure."""
+                res_p3 = client.chat.completions.create(model=cerebras_id, messages=[{"role": "system", "content": p3_prompt}, {"role": "user", "content": f"F1+F2 IDEAS:\n{innovation_raw}"}], temperature=0.45)
                 final_output = res_p3.choices[0].message.content
 
-            # --- ROBUST DATA EXTRACTION & FUZZY LINKING ---
-            display_text = final_output.split("[START_JSON]")[0]
+            # --- DISTRIBUTING DATA & LINKS Mehanizem ---
+            display_text = final_output.split("### JSON_DATA")[0]
             graph_json_str = ""
-            start_idx = final_output.find('{')
-            end_idx = final_output.rfind('}')
-            if start_idx != -1 and end_idx != -1: graph_json_str = final_output[start_idx:end_idx+1]
+            s_idx, e_idx = final_output.find('{'), final_output.rfind('}')
+            if s_idx != -1 and e_idx != -1: graph_json_str = final_output[s_idx:e_idx+1]
 
             elements = []
             if graph_json_str:
                 try:
                     g_json = json.loads(graph_json_str.strip().replace('```json', '').replace('```', ''))
                     nodes = g_json.get("nodes", [])
-                    # Sort nodes by length (longest first) for safe regex replacement
                     nodes.sort(key=lambda x: len(x.get("label", "")) if isinstance(x, dict) else len(str(x)), reverse=True)
 
                     for n in nodes:
@@ -381,18 +384,17 @@ if st.button("🚀 EXECUTE CEREBRAS TRIAD PIPELINE", use_container_width=True):
                         nid = n.get("id", lbl) if isinstance(n, dict) else str(n)
                         shape = n.get("shape", "rectangle").lower() if isinstance(n, dict) else "rectangle"
                         
-                        # Python-Forced Visual Logic (Prevents hex codes in text)
+                        # Python-Forced Color logic to keep text clean
                         color = "#fd7e14" # Default Orange
                         if shape == "star": color = "#FFD700"
                         elif shape == "octagon": color = "#e63946"
                         elif shape == "ellipse": color = "#2a9d8f"
                         elif shape == "diamond": color = "#9b59b6"
 
-                        # Google Search Fuzzy Linker
-                        if len(lbl) > 2:
-                            g_url = urllib.parse.quote(lbl)
-                            replacement = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}</a>'
-                            display_text = re.compile(re.escape(lbl), re.IGNORECASE).sub(replacement, display_text)
+                        # Google Search Fuzzy Linking
+                        g_url = urllib.parse.quote(lbl)
+                        replacement = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}</a>'
+                        display_text = re.compile(re.escape(lbl), re.IGNORECASE).sub(replacement, display_text)
                         
                         elements.append({"data": {"id": str(nid), "label": str(lbl), "color": color, "shape": shape, "size": 130 if shape == "star" else 105}})
 
@@ -407,15 +409,11 @@ if st.button("🚀 EXECUTE CEREBRAS TRIAD PIPELINE", use_container_width=True):
                 st.subheader("🕸️ FINAL CONNECTIVE HIERARCHOGRAPHY NETWORK")
                 render_cytoscape_network(elements, f"viz_{int(time.time())}")
 
-            biblio = fetch_author_bibliographies(target_authors)
             if biblio:
                 with st.expander("📚 BIBLIOGRAPHY"): st.text(biblio)
 
         except Exception as e:
             st.error(f"❌ Triad Synergy Failure: {e}")
 
-# =============================================================================
-# 6. FOOTER
-# =============================================================================
 st.divider()
-st.caption(f"SIS Universal Triad Engine | {VERSION_CODE} | {SYSTEM_DATE}")
+st.caption(f"SIS Pure Cerebras Engine | {VERSION_CODE} | {SYSTEM_DATE}")
