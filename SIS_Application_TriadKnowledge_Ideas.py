@@ -826,7 +826,7 @@ with col_inq3:
         st.success(f"Context from {uploaded_file.name} integrated.")
 
 # =============================================================================
-# 5. TRIAD SYNERGY EXECUTION ENGINE (V17: TEMP 0.4 ZA FAZO 3 & STABILEN GRAF)
+# 5. TRIAD SYNERGY EXECUTION ENGINE (V18: TEMP 0.3 & CONNECTIVE MESH GRAPH)
 # =============================================================================
 
 if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=True):
@@ -852,9 +852,7 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                 You are a Hierarchology Visionary. 
                 SELECTED FIELDS: [SCIENCES]
                 IMA ARCHITECTURE: [IMA]
-                
                 TASK: Analyze the problem using principles from [SCIENCES].
-                If Physics is selected, use 'Entropy' or 'Thermodynamics'. If Biology, use 'Homeostasis'.
                 Identify hidden hierarchies bridging hard sciences with social stress and crime.
                 """
                 p1_prompt = p1_template.replace("[IMA]", ima_str).replace("[SCIENCES]", str(sel_sciences))
@@ -889,27 +887,30 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
             st.toast("Phase 2 complete. Cooling down API...")
             time.sleep(5)
 
-            # --- PHASE 3: GROQ (Final Vetting & Stable JSON Output) ---
-            with st.spinner('PHASE 3: Final Vetting & Hierarchography (0.4)...'):
+            # --- PHASE 3: GROQ (Final Vetting & CONNECTIVE HIERARCHOGRAPHY) ---
+            with st.spinner('PHASE 3: Final Vetting & Connective Mesh Generation (0.3)...'):
                 p3_prompt = """
                 Refine innovations into a 'Perfect 10' report. 
                 
-                STRICT RULES:
-                1. Use EXACT node labels (e.g. 'Entropy Shield') in the text to enable linking.
-                2. After the report, you MUST provide the JSON data between [START_JSON] and [END_JSON].
+                CRITICAL TASK: Create a DENSE CONNECTIVE WEB (Mesh Synergy) in the JSON data.
+                - Every Innovation (star) MUST be connected to at least one Micro-node (ellipse) AND one Macro-node (octagon).
+                - Connect related Innovations to each other to show associative synergy.
                 
                 VISUAL SYSTEM:
                 - Ideas: "star" (#FFD700), Macro: "octagon" (#e63946), Meso: "rectangle" (#fd7e14), Micro: "ellipse" (#2a9d8f), Concepts: "diamond" (#9b59b6).
-                - Relations: TT, BT, NT, AS, EQ, RT, IN, outcome_of, leads_to.
+                - Use EXACT labels in the text and JSON for linking.
+                - Relations: outcome_of, leads_to, BT, NT, AS, EQ.
+                
+                FORMAT: Report text first, then strictly JSON between [START_JSON] and [END_JSON].
                 """
                 res_p3 = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=[{"role": "system", "content": p3_prompt}, {"role": "user", "content": f"F1:\n{foundation}\n\nI2:\n{innovation_raw}"}],
-                    temperature=0.4 # POSODOBLJENO NA 0.4 ZA VEČJO TEKOČO BESEDO
+                    temperature=0.3 # TEMPERATURA 0.3 PO VAŠI ŽELJI
                 )
                 final_output = res_p3.choices[0].message.content
 
-            # --- OBDELAVA IN IZRIS ---
+            # --- EKSTRAKCIJA IN IZRIS ---
             graph_json_str = ""
             if "[START_JSON]" in final_output:
                 graph_json_str = final_output.split("[START_JSON]")[1].split("[END_JSON]")[0]
@@ -932,7 +933,7 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                         nid = n.get("id", lbl) if isinstance(n, dict) else str(n)
                         shape = n.get("shape", "rectangle").lower() if isinstance(n, dict) else "rectangle"
                         
-                        # Vsiljena barvna logika
+                        # Vsiljena barvna logika za vizualno ločevanje nivojev
                         color = "#fd7e14"
                         if shape == "star": color = "#FFD700"
                         elif shape == "octagon": color = "#e63946"
@@ -940,7 +941,6 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                         elif shape == "diamond": color = "#9b59b6"
 
                         if lbl and len(lbl) > 2:
-                            # Google Linker (Fuzzy CASE-INSENSITIVE)
                             g_url = urllib.parse.quote(lbl)
                             replacement = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}</a>'
                             pattern = re.compile(re.escape(lbl), re.IGNORECASE)
@@ -954,15 +954,13 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                             elements.append({"data": {"source": str(e["source"]), "target": str(e["target"]), "rel_type": r_label}})
                 except: pass
 
-            # --- PRIKAZ ---
+            # --- KONČNI PRIKAZ ---
             st.subheader("📊 FINAL VERIFIED SYNERGY RESULTS")
             st.markdown(display_text, unsafe_allow_html=True)
 
             if elements:
-                st.subheader("🕸️ FINAL VERIFIED SEMANTIC NETWORK")
+                st.subheader("🕸️ FINAL CONNECTIVE SEMANTIC NETWORK (Hierarchography)")
                 render_cytoscape_network(elements, f"viz_{int(time.time())}")
-            else:
-                st.warning("⚠️ Graph could not be rendered. Displaying verified text only.")
 
             if biblio:
                 with st.expander("📚 BIBLIOGRAPHY"): st.text(biblio)
@@ -975,6 +973,7 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
 # =============================================================================
 st.divider()
 st.caption(f"SIS Triad Synthesizer | {VERSION_CODE} | {SYSTEM_DATE}")
+
 
 
 
