@@ -826,7 +826,7 @@ with col_inq3:
         st.success(f"Context from {uploaded_file.name} integrated.")
 
 # =============================================================================
-# 5. TRIAD SYNERGY EXECUTION ENGINE (V18: TEMP 0.3 & CONNECTIVE MESH GRAPH)
+# 5. TRIAD SYNERGY EXECUTION ENGINE (V19: MESH SYNERGY & GUARANTEED REPORT)
 # =============================================================================
 
 if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=True):
@@ -846,107 +846,104 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
             ma_str = json.dumps(MENTAL_APPROACHES_ONTOLOGY)
             ideation_str = json.dumps(IDEATION_TECHNIQUES) if 'IDEATION_TECHNIQUES' in locals() else "{}"
 
-            # --- PHASE 1: GROQ (Hard-Science Visionary) ---
+            # --- PHASE 1: GROQ (Speculative Foundation) ---
             with st.spinner('PHASE 1: Mapping Speculative Hierarchies (0.85)...'):
-                p1_template = """
-                You are a Hierarchology Visionary. 
-                SELECTED FIELDS: [SCIENCES]
-                IMA ARCHITECTURE: [IMA]
-                TASK: Analyze the problem using principles from [SCIENCES].
-                Identify hidden hierarchies bridging hard sciences with social stress and crime.
-                """
-                p1_prompt = p1_template.replace("[IMA]", ima_str).replace("[SCIENCES]", str(sel_sciences))
-                
+                p1_template = """Analyze using Hierarchology (IMA: [IMA], Basis: [BASIS]). 
+                Use analogies from these sciences: [SCIENCES]. Identify hidden hierarchies across MICRO, MESO and MACRO."""
+                p1_c = p1_template.replace("[IMA]", ima_str).replace("[BASIS]", h_ont_str).replace("[SCIENCES]", str(sel_sciences))
                 res_p1 = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
-                    messages=[{"role": "system", "content": p1_prompt}, {"role": "user", "content": user_query}],
+                    messages=[{"role": "system", "content": "You are a Hierarchology Visionary Scientist."}, {"role": "user", "content": p1_c + user_query}],
                     temperature=0.85
                 )
                 foundation = res_p1.choices[0].message.content
 
-            st.toast("Phase 1 complete. Cooling down API...")
-            time.sleep(5) 
+            time.sleep(4) 
 
             # --- PHASE 2: CEREBRAS (Innovation Brainstorming) ---
             with st.spinner('PHASE 2: Generating Radical Interdisciplinary Ideas (0.85)...'):
-                p2_template = """
-                You are the SIS Innovation Engine. Generate 5 radical ideas.
-                INTEGRATE THESE SCIENCES: [SCIENCES]
-                TOOLBOX: [TECH]
-                Use 'Analogical Reasoning' to apply laws of physical sciences to solve social crime/stress.
-                """
-                p2_prompt = p2_template.replace("[SCIENCES]", str(sel_sciences)).replace("[TECH]", ideation_str)
-                
+                p2_template = """You are the SIS Innovation Engine. Generate 5 radical ideas. 
+                INTEGRATE: [SCIENCES]. TOOLBOX: [TECH]. Use 'Analogical Reasoning' to map hard sciences onto social stress solutions."""
+                p2_c = p2_template.replace("[SCIENCES]", str(sel_sciences)).replace("[TECH]", ideation_str)
                 res_p2 = cerebras_client.chat.completions.create(
                     model=cerebras_id, 
-                    messages=[{"role": "system", "content": p2_prompt}, {"role": "user", "content": f"F1 FOUNDATION:\n{foundation}\n\nGOAL:\n{idea_query}"}],
+                    messages=[{"role": "system", "content": p2_c}, {"role": "user", "content": f"F1:\n{foundation}\n\nGOAL:\n{idea_query}"}],
                     temperature=0.85
                 )
                 innovation_raw = res_p2.choices[0].message.content
 
-            st.toast("Phase 2 complete. Cooling down API...")
-            time.sleep(5)
+            time.sleep(4)
 
-            # --- PHASE 3: GROQ (Final Vetting & CONNECTIVE HIERARCHOGRAPHY) ---
+            # --- PHASE 3: GROQ (Final Vetting & Connective Hierarchography) ---
             with st.spinner('PHASE 3: Final Vetting & Connective Mesh Generation (0.3)...'):
                 p3_prompt = """
-                Refine innovations into a 'Perfect 10' report. 
+                Refine the innovations into a comprehensive 'Perfect 10' NARRATIVE REPORT.
                 
-                CRITICAL TASK: Create a DENSE CONNECTIVE WEB (Mesh Synergy) in the JSON data.
-                - Every Innovation (star) MUST be connected to at least one Micro-node (ellipse) AND one Macro-node (octagon).
-                - Connect related Innovations to each other to show associative synergy.
+                CRITICAL TASK - HIERARCHOGRAPHY MESH:
+                In the JSON section, you MUST create a dense web.
+                1. Every Innovation (star) MUST connect to its Micro-origin (ellipse) AND its Macro-result (octagon).
+                2. Connect Innovations to each other (AS or EQ) if they share a common goal.
+                3. Use full descriptive labels, NO numbers.
                 
                 VISUAL SYSTEM:
                 - Ideas: "star" (#FFD700), Macro: "octagon" (#e63946), Meso: "rectangle" (#fd7e14), Micro: "ellipse" (#2a9d8f), Concepts: "diamond" (#9b59b6).
-                - Use EXACT labels in the text and JSON for linking.
-                - Relations: outcome_of, leads_to, BT, NT, AS, EQ.
+                - Relations: outcome_of, leads_to, BT, NT, AS, EQ, RT.
                 
-                FORMAT: Report text first, then strictly JSON between [START_JSON] and [END_JSON].
+                FORMAT: 
+                Write the Narrative Report first. 
+                Then strictly end with the marker: ##### REPORT_END_JSON_START #####
+                Then provide the JSON structure.
                 """
                 res_p3 = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=[{"role": "system", "content": p3_prompt}, {"role": "user", "content": f"F1:\n{foundation}\n\nI2:\n{innovation_raw}"}],
-                    temperature=0.3 # TEMPERATURA 0.3 PO VAŠI ŽELJI
+                    temperature=0.3
                 )
                 final_output = res_p3.choices[0].message.content
 
-            # --- EKSTRAKCIJA IN IZRIS ---
-            graph_json_str = ""
-            if "[START_JSON]" in final_output:
-                graph_json_str = final_output.split("[START_JSON]")[1].split("[END_JSON]")[0]
+            # --- OBDELAVA PODATKOV ---
+            if "##### REPORT_END_JSON_START #####" in final_output:
+                parts = final_output.split("##### REPORT_END_JSON_START #####")
+                display_text = parts[0]
+                graph_json_str = parts[1]
             else:
-                match = re.search(r'(\{.*\})', final_output, re.DOTALL)
-                if match: graph_json_str = match.group()
+                # Fallback če model ne upošteva markerja
+                json_match = re.search(r'(\{.*\})', final_output, re.DOTALL)
+                if json_match:
+                    graph_json_str = json_match.group()
+                    display_text = final_output.replace(graph_json_str, "")
+                else:
+                    display_text = final_output
+                    graph_json_str = ""
 
-            display_text = final_output.split("[START_JSON]")[0] if "[START_JSON]" in final_output else final_output
             elements = []
-
             if graph_json_str:
                 try:
                     clean_json = graph_json_str.strip().replace('```json', '').replace('```', '')
-                    g_json = json.loads(clean_json)
-                    nodes_data = g_json.get("nodes", [])
-                    nodes_data.sort(key=lambda x: len(x.get("label", "")) if isinstance(x, dict) else len(str(x)), reverse=True)
+                    g_json = json.loads(clean_j if 'clean_j' in locals() else clean_json)
+                    nodes = g_json.get("nodes", [])
+                    nodes.sort(key=lambda x: len(x.get("label", "")) if isinstance(x, dict) else len(str(x)), reverse=True)
 
-                    for n in nodes_data:
+                    for n in nodes:
                         lbl = n.get("label", n.get("id", "Node")) if isinstance(n, dict) else str(n)
                         nid = n.get("id", lbl) if isinstance(n, dict) else str(n)
                         shape = n.get("shape", "rectangle").lower() if isinstance(n, dict) else "rectangle"
                         
-                        # Vsiljena barvna logika za vizualno ločevanje nivojev
-                        color = "#fd7e14"
+                        # Barvno forsiranje v Pythonu
+                        color = "#fd7e14" # Meso
                         if shape == "star": color = "#FFD700"
                         elif shape == "octagon": color = "#e63946"
                         elif shape == "ellipse": color = "#2a9d8f"
                         elif shape == "diamond": color = "#9b59b6"
 
-                        if lbl and len(lbl) > 2:
+                        # Google Linker (Fuzzy)
+                        if len(lbl) > 2:
                             g_url = urllib.parse.quote(lbl)
                             replacement = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}</a>'
                             pattern = re.compile(re.escape(lbl), re.IGNORECASE)
                             display_text = pattern.sub(replacement, display_text)
                         
-                        elements.append({"data": {"id": str(nid), "label": str(lbl), "color": color, "shape": shape, "size": 130 if shape == "star" else 100}})
+                        elements.append({"data": {"id": str(nid), "label": str(lbl), "color": color, "shape": shape, "size": 130 if shape == "star" else 105}})
 
                     for e in g_json.get("edges", []):
                         if isinstance(e, dict) and e.get("source") and e.get("target"):
@@ -959,8 +956,10 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
             st.markdown(display_text, unsafe_allow_html=True)
 
             if elements:
-                st.subheader("🕸️ FINAL CONNECTIVE SEMANTIC NETWORK (Hierarchography)")
+                st.subheader("🕸️ FINAL CONNECTIVE MESH NETWORK (Hierarchography)")
                 render_cytoscape_network(elements, f"viz_{int(time.time())}")
+            else:
+                st.warning("⚠️ Graph is being constructed. If it doesn't appear, please retry.")
 
             if biblio:
                 with st.expander("📚 BIBLIOGRAPHY"): st.text(biblio)
@@ -973,6 +972,7 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
 # =============================================================================
 st.divider()
 st.caption(f"SIS Triad Synthesizer | {VERSION_CODE} | {SYSTEM_DATE}")
+
 
 
 
