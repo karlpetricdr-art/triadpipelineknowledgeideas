@@ -13,7 +13,7 @@ import streamlit.components.v1 as components
 # 0. GLOBALNA KONFIGURACIJA IN AVTOMATSKI DATUM
 # =============================================================================
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v29.9.0-CEREBRAS-TRIAD-COMPLETE-ULTRA"
+VERSION_CODE = "v30.1.0-CEREBRAS-TRIAD-MAX-ONTOLOGY"
 
 st.set_page_config(
     page_title=f"SIS Universal Knowledge Synthesizer - {SYSTEM_DATE}",
@@ -31,13 +31,11 @@ st.markdown("""
         display: none !important;
         visibility: hidden !important;
     }
-
     [data-testid="stSidebar"] {
         background-color: #fcfcfc !important;
         border-right: 2px solid #e9ecef !important;
         min-width: 380px !important;
     }
-
     [data-testid="stSidebar"] .stMarkdown p, 
     [data-testid="stSidebar"] label,
     [data-testid="stSidebar"] .stExpander p {
@@ -46,7 +44,6 @@ st.markdown("""
         font-weight: 600 !important;
         line-height: 1.6 !important;
     }
-
     .stExpander {
         background-color: #ffffff !important;
         border: 1px solid #d8e2dc !important;
@@ -54,14 +51,12 @@ st.markdown("""
         margin-bottom: 12px !important;
         box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important;
     }
-    
     .stExpander details summary p {
         color: #1d3557 !important;
         font-weight: 800 !important;
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
-
     .semantic-node-highlight {
         color: #e63946;
         font-weight: bold;
@@ -71,30 +66,18 @@ st.markdown("""
         border-radius: 4px;
         text-decoration: none !important;
     }
-    
-    .metamodel-box {
-        padding: 25px; border-radius: 15px; background-color: #f8f9fa;
-        border-left: 8px solid #00B0F0; margin-bottom: 20px;
-    }
-    .hierarchology-box {
-        padding: 25px; border-radius: 15px; background-color: #fff4e6;
-        border-left: 8px solid #fd7e14; margin-bottom: 20px;
-    }
-    
     .main-header-gradient {
         background: linear-gradient(90deg, #1d3557, #e63946);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         font-weight: 800; font-size: 2.8rem;
     }
-
     .date-badge {
         background-color: #1d3557; color: white; padding: 12px 20px;
         border-radius: 50px; font-size: 1em; font-weight: 800;
         margin-bottom: 30px; display: block; text-align: center;
         box-shadow: 0 4px 15px rgba(29, 53, 87, 0.3);
     }
-
     .sidebar-logo-container { display: flex; justify-content: center; padding: 10px 0; margin-bottom: 5px; }
 </style>
 """, unsafe_allow_html=True)
@@ -132,7 +115,7 @@ SVG_3D_RELIEF = """
 """
 
 # =============================================================================
-# 1. CORE RENDERING ENGINES & DATA FETCHING
+# 1. CORE RENDERING ENGINES
 # =============================================================================
 
 def render_cytoscape_network(elements, container_id="cy_triad_mesh"):
@@ -149,7 +132,7 @@ def render_cytoscape_network(elements, container_id="cy_triad_mesh"):
                 elements: {json.dumps(elements)},
                 style: [
                     {{ selector: 'node', style: {{ 'label': 'data(label)', 'text-valign': 'center', 'color': '#212529', 'background-color': 'data(color)', 'width': 'data(size)', 'height': 'data(size)', 'shape': 'data(shape)', 'font-size': '14px', 'font-weight': '700' }} }},
-                    {{ selector: 'edge', style: {{ 'width': 4, 'line-color': '#adb5bd', 'label': 'data(rel_type)', 'target-arrow-shape': 'triangle', 'curve-style': 'bezier', 'font-size': '11px', 'color': '#1d3557' }} }}
+                    {{ selector: 'edge', style: {{ 'width': 4, 'line-color': '#adb5bd', 'label': 'data(rel_type)', 'target-arrow-shape': 'triangle', 'curve-style': 'bezier', 'font-size': '10px', 'color': '#1d3557' }} }}
                 ],
                 layout: {{ name: 'cose', padding: 60 }}
             }});
@@ -164,9 +147,9 @@ def fetch_author_bibliographies(author_input):
     biblio = ""
     for auth in author_list:
         try:
-            ss_url = f"https://api.semanticscholar.org/graph/v1/paper/search?query=author:\"{auth}\"&limit=5&fields=title,year"
-            ss_res = requests.get(ss_url, timeout=5).json()
-            papers = ss_res.get("data", [])
+            url = f"https://api.semanticscholar.org/graph/v1/paper/search?query=author:\"{auth}\"&limit=5&fields=title,year"
+            res = requests.get(url, timeout=5).json()
+            papers = res.get("data", [])
             if papers:
                 biblio += f"\n--- {auth.upper()} ---\n"
                 for p in papers: biblio += f"• ({p.get('year','n.d.')}) {p['title']}\n"
@@ -174,65 +157,66 @@ def fetch_author_bibliographies(author_input):
     return biblio
 
 # =============================================================================
-# 2. ARCHITECTURAL ONTOLOGIES (IMA, MA, HIERARCHOLOGY, IDEATION)
+# 2. ONTOLOGIJE (POPOLNI SEZNAMI)
 # =============================================================================
 
 HUMAN_THINKING_METAMODEL = {
     "nodes": {
-        "Human mental concentration": {"desc": "Foundational focus."},
+        "Human mental concentration": {"color": "#ADB5BD", "shape": "rectangle"},
         "Identity": {"color": "#C6EFCE", "shape": "rectangle"},
-        "Autobiographical memory": {"desc": "Historical data."},
+        "Autobiographical memory": {"color": "#C6EFCE", "shape": "rectangle"},
         "Mission": {"color": "#92D050", "shape": "rectangle"},
         "Vision": {"color": "#FFFF00", "shape": "rectangle"},
         "Goal": {"color": "#00B0F0", "shape": "rectangle"},
         "Problem": {"color": "#F2DCDB", "shape": "rectangle"},
         "Ethics/moral": {"color": "#FFC000", "shape": "rectangle"},
-        "Hierarchy of interests": {"desc": "Ordering needs."},
-        "Rule": {"desc": "Constraints."},
-        "Decision-making": {"desc": "Selection pathways."},
-        "Problem solving": {"desc": "Algorithmic execution."},
-        "Conflict situation": {"desc": "Goal clashes."},
-        "Knowledge": {"desc": "Factual base."},
-        "Experience": {"desc": "Wisdom."},
-        "Classification": {"desc": "Taxonomy."},
-        "Psychological aspect": {"desc": "Internal state."},
-        "Sociological aspect": {"desc": "External impact."}
+        "Hierarchy of interests": {"color": "#F8CBAD", "shape": "rectangle"},
+        "Rule": {"color": "#F2F2F2", "shape": "rectangle"},
+        "Decision-making": {"color": "#FFFF99", "shape": "rectangle"},
+        "Problem solving": {"color": "#D9D9D9", "shape": "rectangle"},
+        "Conflict situation": {"color": "#00FF00", "shape": "rectangle"},
+        "Knowledge": {"color": "#DDEBF7", "shape": "rectangle"},
+        "Tool": {"color": "#00B050", "shape": "rectangle"},
+        "Experience": {"color": "#00B050", "shape": "rectangle"},
+        "Classification": {"color": "#CCC0DA", "shape": "rectangle"},
+        "Psychological aspect": {"color": "#F8CBAD", "shape": "rectangle"},
+        "Sociological aspect": {"color": "#00FFFF", "shape": "rectangle"}
     }
 }
 
 MENTAL_APPROACHES_ONTOLOGY = {
     "nodes": {
         "Perspective shifting": {"color": "#00FF00", "shape": "diamond"},
-        "Similarity and difference": {"shape": "diamond"},
-        "Core": {"shape": "diamond"},
-        "Attraction": {"shape": "diamond"},
-        "Repulsion": {"shape": "diamond"},
-        "Condensation": {"shape": "diamond"},
-        "Framework and foundation": {"shape": "diamond"},
-        "Bipolarity and dialectics": {"shape": "diamond"},
-        "Constant": {"shape": "diamond"},
-        "Associativity": {"shape": "diamond"},
-        "Induction": {"shape": "diamond"},
-        "Whole and part": {"shape": "diamond"},
-        "Mini-max": {"shape": "diamond"},
-        "Addition and composition": {"shape": "diamond"},
-        "Hierarchy": {"shape": "diamond"},
-        "Balance": {"shape": "diamond"},
-        "Deduction": {"shape": "diamond"},
-        "Abstraction and elimination": {"shape": "diamond"},
-        "Pleasure and displeasure": {"shape": "diamond"},
-        "Openness and closedness": {"shape": "diamond"}
+        "Similarity and difference": {"color": "#FFFF00", "shape": "diamond"},
+        "Core": {"color": "#FFC000", "shape": "diamond"},
+        "Attraction": {"color": "#F2A6A2", "shape": "diamond"},
+        "Repulsion": {"color": "#D9D9D9", "shape": "diamond"},
+        "Condensation": {"color": "#CCC0DA", "shape": "diamond"},
+        "Framework and foundation": {"color": "#F8CBAD", "shape": "diamond"},
+        "Bipolarity and dialectics": {"color": "#DDEBF7", "shape": "diamond"},
+        "Constant": {"color": "#E1C1D1", "shape": "diamond"},
+        "Associativity": {"color": "#E1C1D1", "shape": "diamond"},
+        "Induction": {"color": "#B4C6E7", "shape": "diamond"},
+        "Whole and part": {"color": "#00FF00", "shape": "diamond"},
+        "Mini-max": {"color": "#00FF00", "shape": "diamond"},
+        "Addition and composition": {"color": "#FF00FF", "shape": "diamond"},
+        "Hierarchy": {"color": "#C6EFCE", "shape": "diamond"},
+        "Balance": {"color": "#00B0F0", "shape": "diamond"},
+        "Deduction": {"color": "#92D050", "shape": "diamond"},
+        "Abstraction and elimination": {"color": "#00B0F0", "shape": "diamond"},
+        "Pleasure and displeasure": {"color": "#00FF00", "shape": "diamond"},
+        "Openness and closedness": {"color": "#FFC000", "shape": "diamond"}
     }
 }
 
 HIERARCHOLOGY_ONTOLOGY = {
     "dimensions": {
-        "Micro-hierarchology": "Internal individual thinking and neural inductive logic.",
+        "Micro-hierarchology": "Internal neural logic and individual thinking.",
         "Meso-hierarchology": "Organizational structures and social programs.",
         "Macro-hierarchology": "Fundamental societal laws and natural hierarchies.",
         "Scientific Cage": "Cognitive limitations preventing thought beyond established paradigms."
     },
-    "hierarchography_tools": ["Workflow Mapping", "Tree Maps", "Structural diagrams", "Oligographs", "UML", "Organigrams"]
+    "hierarchography_tools": ["Workflow Mapping", "Tree Maps", "Structural diagrams", "Oligographs", "UML", "Mind Mapping", "Cognitive Modeling", "Organigrams"]
 }
 
 IDEATION_TECHNIQUES = {
@@ -244,32 +228,28 @@ IDEATION_TECHNIQUES = {
 }
 
 # =============================================================================
-# 3. KNOWLEDGE BASE (EXHAUSTIVE 18D SCIENCE FIELDS & PARADIGMS)
+# 3. KNOWLEDGE BASE (CELOTEN 18D+ SEZNAM)
 # =============================================================================
 
 KNOWLEDGE_BASE = {
-    "Science fields": {
-        "Mathematics": {"cat": "Formal"}, "Physics": {"cat": "Natural"}, "Chemistry": {"cat": "Natural"},
-        "Biology": {"cat": "Natural"}, "Neuroscience": {"cat": "Natural"}, "Psychology": {"cat": "Social"},
-        "Sociology": {"cat": "Social"}, "Computer Science": {"cat": "Formal"}, "Legal science": {"cat": "Social"},
-        "Economics": {"cat": "Social"}, "Forensic sciences": {"cat": "Applied"}, "Engineering": {"cat": "Applied"},
-        "Medicine": {"cat": "Applied"}, "Psychiatry": {"cat": "Applied"}, "Geology": {"cat": "Natural"},
-        "Climatology": {"cat": "Natural"}, "Philosophy": {"cat": "Humanities"}, "Architecture": {"cat": "Applied"},
-        "History": {"cat": "Humanities"}, "Ecology": {"cat": "Natural"}, "Geography": {"cat": "Social/Natural"},
-        "Linguistics": {"cat": "Humanities"}, "Library Science": {"cat": "Applied"}, "Criminology": {"cat": "Social"}
-    },
+    "Science fields": [
+        "Mathematics", "Physics", "Chemistry", "Biology", "Neuroscience", "Psychology", 
+        "Sociology", "Computer Science", "Legal science", "Economics", "Forensic sciences", 
+        "Engineering", "Medicine", "Psychiatry", "Geology", "Climatology", "Philosophy", 
+        "Architecture", "History", "Ecology", "Geography", "Linguistics", "Library Science", "Criminology"
+    ],
     "Scientific paradigms": {
-        "Empiricism": "Focus on sensory experience and data.",
-        "Rationalism": "Reliance on deductive logic.",
-        "Constructivism": "Knowledge as social build.",
-        "Positivism": "Strict verifiable facts.",
-        "Pragmatism": "Evaluation by utility."
+        "Empiricism": "Focus on sensory experience and sensory data.",
+        "Rationalism": "Reliance on deductive logic and a priori reasoning.",
+        "Constructivism": "Knowledge as a social and cognitive build.",
+        "Positivism": "Strict adherence to verifiable facts.",
+        "Pragmatism": "Evaluation based on utility and application."
     },
-    "Structural models": ["Causal Connections", "Principles & Relations", "Concepts", "Glossary", "Episodes", "Generalizations"]
+    "Structural models": ["Causal Connections", "Principles & Relations", "Concepts", "Glossary", "Episodes & Sequences", "Generalizations", "Facts & Characteristics"]
 }
 
 # =============================================================================
-# 4. INTERFACE CONSTRUCTION
+# 4. VMESNIK (STRANSKA VRSTICA IN GLAVNI DEL)
 # =============================================================================
 
 with st.sidebar:
@@ -281,35 +261,33 @@ with st.sidebar:
     
     st.divider()
     target_authors = st.text_input("👤 Authors for Analysis:", placeholder="Karl Petrič, Samo Kralj")
-    sel_sciences = st.multiselect("2. Select Science Fields:", sorted(list(KNOWLEDGE_BASE["Science fields"].keys())), default=["Sociology", "Forensic sciences", "Neuroscience", "Physics"])
-    sel_paradigms = st.multiselect("4. Scientific Paradigms:", list(KNOWLEDGE_BASE["Scientific paradigms"].keys()), default=["Empiricism", "Pragmatism"])
+    sel_sciences = st.multiselect("2. Select Science Fields:", sorted(KNOWLEDGE_BASE["Science fields"]), default=["Sociology", "Forensic sciences", "Neuroscience", "Physics"])
+    sel_paradigms = st.multiselect("4. Scientific Paradigms:", list(KNOWLEDGE_BASE["Scientific paradigms"].keys()), default=["Empiricism", "Rationalism"])
     sel_models = st.multiselect("5. Structural Models:", KNOWLEDGE_BASE["Structural models"], default=["Concepts", "Causal Connections"])
     
     st.divider()
-    with st.expander("📚 HIERARCHOLOGY EXPLORER", expanded=False):
-        for k, v in HIERARCHOLOGY_ONTOLOGY["dimensions"].items(): st.write(f"• **{k}**: {v}")
-    with st.expander("🧠 MENTAL APPROACHES", expanded=False):
+    with st.expander("🏛️ IMA BUILDING BLOCKS", expanded=False):
+        for k in sorted(HUMAN_THINKING_METAMODEL["nodes"].keys()): st.write(f"• {k}")
+    with st.expander("🧠 MENTAL APPROACHES (MA)", expanded=False):
         for m in sorted(MENTAL_APPROACHES_ONTOLOGY["nodes"].keys()): st.write(f"• {m}")
+    with st.expander("📚 HIERARCHOLOGY CORE", expanded=False):
+        for k, v in HIERARCHOLOGY_ONTOLOGY["dimensions"].items(): st.write(f"**{k}**: {v}")
     with st.expander("💡 IDEATION TOOLS", expanded=False):
         for tech, desc in IDEATION_TECHNIQUES.items(): st.write(f"**{tech}**: {desc}")
 
 st.markdown('<h1 class="main-header-gradient">🧱 SIS Cerebras Triad Engine</h1>', unsafe_allow_html=True)
-st.markdown(f"**Pure Sequential Cerebras Pipeline** | Operating Date: **{SYSTEM_DATE}**")
+st.markdown(f"**Automated Hierarchical Synergy Pipeline** | Operating Date: **{SYSTEM_DATE}**")
 
-col_ref1, col_ref2 = st.columns(2)
-with col_ref1: st.markdown('<div class="hierarchology-box"><b>🔍 Phase 1: Hierarchology</b><br>Visionary analysis across Micro, Meso, and Macro levels.</div>', unsafe_allow_html=True)
-with col_ref2: st.markdown('<div class="metamodel-box"><b>✍️ Phase 2: Hierarchography</b><br>Multi-shape diagrammatic modeling and innovation.</div>', unsafe_allow_html=True)
-
-user_query = st.text_area("❓ STEP 1: Research Inquiry (Speculative):", placeholder="Analyze through hard sciences analogies...", height=150)
-idea_query = st.text_area("💡 STEP 2: Innovation Goal (Practical):", placeholder="Generate radical solutions...", height=150)
+user_query = st.text_area("❓ STEP 1: Research Inquiry (Visionary Phase):", placeholder="Analyze through the lens of all selected hard and social sciences...", height=150)
+idea_query = st.text_area("💡 STEP 2: Innovation Goal (Generative Phase):", placeholder="Map radical solutions using SCAMPER/TRIZ...", height=150)
 uploaded_file = st.file_uploader("📂 ATTACH DATA (.txt only):", type=['txt'])
 file_content = uploaded_file.read().decode("utf-8") if uploaded_file else ""
 
 # =============================================================================
-# 5. SYNERGY EXECUTION ENGINE (TRIAD LOOP CEREBRAS: 0.85 -> 0.65 -> 0.45)
+# 5. SYNERGY ENGINE (TRIAD LOOP CEREBRAS: 0.85 -> 0.65 -> 0.45)
 # =============================================================================
 
-if st.button("🚀 EXECUTE CEREBRAS TRIAD PIPELINE", use_container_width=True):
+if st.button("🚀 EXECUTE PURE CEREBRAS TRIAD PIPELINE", use_container_width=True):
     if not cerebras_api_key:
         st.error("❌ Cerebras API Key required.")
     elif not user_query:
@@ -323,19 +301,20 @@ if st.button("🚀 EXECUTE CEREBRAS TRIAD PIPELINE", use_container_width=True):
             ima_str = json.dumps(HUMAN_THINKING_METAMODEL)
             ma_str = json.dumps(MENTAL_APPROACHES_ONTOLOGY)
             tech_str = json.dumps(IDEATION_TECHNIQUES)
+            paradigms_str = json.dumps(KNOWLEDGE_BASE["Scientific paradigms"])
 
             # --- PHASE 1: CEREBRAS (VISIONARY - 0.85) ---
-            with st.spinner('PHASE 1: Establishing Visionary Foundation (0.85)...'):
+            with st.spinner('PHASE 1: Cerebras establishing Visionary Foundation (0.85)...'):
                 p1_template = """
                 You are a Hierarchology Visionary. 
-                STRICT IMA: [IMA] | BASIS: [BASIS] | SCIENCES: [SCIENCES] | PARADIGMS: [PARADIGMS]
+                IMA GRADANTS: [IMA] | BASIS: [BASIS] | SCIENCES: [SCIENCES] | PARADIGMS: [PARADIGMS]
                 TASK: Speculative foundation. Identify hidden hierarchies across MICRO, MESO and MACRO.
-                Enforce Hard Science analogies (Physics, Biology, Geology).
+                Enforce Hard Science analogies from the selected list.
                 """
-                p1_c = p1_template.replace("[IMA]", ima_str).replace("[BASIS]", h_ont).replace("[SCIENCES]", str(sel_sciences)).replace("[PARADIGMS]", str(sel_paradigms))
+                p1_c = p1_template.replace("[IMA]", ima_str).replace("[BASIS]", h_ont).replace("[SCIENCES]", str(sel_sciences)).replace("[PARADIGMS]", paradigms_str)
                 res_p1 = client.chat.completions.create(
                     model=cerebras_id,
-                    messages=[{"role": "system", "content": p1_c}, {"role": "user", "content": user_query}],
+                    messages=[{"role": "system", "content": p1_c}, {"role": "user", "content": user_query + "\n" + file_content}],
                     temperature=0.85
                 )
                 foundation = res_p1.choices[0].message.content
@@ -344,11 +323,12 @@ if st.button("🚀 EXECUTE CEREBRAS TRIAD PIPELINE", use_container_width=True):
             time.sleep(5) 
 
             # --- PHASE 2: CEREBRAS (INNOVATION - 0.65) ---
-            with st.spinner('PHASE 2: Generating Radical Ideas (0.65)...'):
+            with st.spinner('PHASE 2: Cerebras generating radical ideas (0.65)...'):
                 p2_template = """
-                You are the SIS Innovation Engine. 
+                You are the Innovation Engine. 
                 MA FOCUS: [MA] | TOOLBOX: [TECH] | SCIENCES: [SCIENCES]
-                TASK: Generate 5 radical ideas. Use 'Analogical Reasoning' from Hard Sciences.
+                TASK: Generate 5 radical ideas. Apply 'Analogical Reasoning' from Hard Sciences to Social Stress.
+                Use specific MA approaches like Perspective Shifting and Dialectics.
                 """
                 p2_c = p2_template.replace("[MA]", ma_str).replace("[TECH]", tech_str).replace("[SCIENCES]", str(sel_sciences))
                 res_p2 = client.chat.completions.create(
@@ -364,16 +344,16 @@ if st.button("🚀 EXECUTE CEREBRAS TRIAD PIPELINE", use_container_width=True):
             # --- PHASE 3: CEREBRAS (VETTING & HIERARCHOGRAPHY - 0.45) ---
             with st.spinner('PHASE 3: Final Vetting & Hierarchography Output (0.45)...'):
                 p3_prompt = """
-                Refine innovations into a 'Perfect 10' report. 
-                STRICT GRAPH RULES:
-                1. DENSE MESH: Connect Innovations (star) to Micro (ellipse) AND Macro (octagon) nodes.
-                2. Connect different innovations to each other (AS) if synergistic.
+                Refine innovations into a 'Perfect 10' report. Use exact node labels. 
+                STRICT VISUAL RULES FOR THE JSON DATA:
+                - Innovations: shape "star", color "#FFD700" (Gold).
+                - Macro: shape "octagon", color "#e63946" (Red).
+                - Meso: shape "rectangle", color "#fd7e14" (Orange).
+                - Micro: shape "ellipse", color "#2a9d8f" (Green).
+                - Concepts: shape "diamond", color "#9b59b6" (Purple).
+                - RELATIONS: TT, BT, NT, AS, outcome_of, micro_to_meso, meso_to_macro.
                 
-                VISUALS:
-                - Innovations: "star" (#FFD700), Macro: "octagon" (#e63946), Meso: "rectangle" (#fd7e14), Micro: "ellipse" (#2a9d8f), Concepts: "diamond" (#9b59b6).
-                - Relations: TT, BT, NT, AS, EQ, RT, outcome_of, leads_to.
-                
-                Output report, then strictly JSON between [START_JSON] and [END_JSON].
+                Output report first, then strictly JSON between [START_JSON] and [END_JSON].
                 """
                 res_p3 = client.chat.completions.create(
                     model=cerebras_id,
@@ -400,15 +380,14 @@ if st.button("🚀 EXECUTE CEREBRAS TRIAD PIPELINE", use_container_width=True):
                         lbl = n.get("label", n.get("id", "Node")) if isinstance(n, dict) else str(n)
                         nid = n.get("id", lbl) if isinstance(n, dict) else str(n)
                         shape = n.get("shape", "rectangle").lower() if isinstance(n, dict) else "rectangle"
-                        color = "#fd7e14" # Default Orange
-                        if shape == "star": color = "#FFD700"
-                        elif shape == "octagon": color = "#e63946"
-                        elif shape == "ellipse": color = "#2a9d8f"
-                        elif shape == "diamond": color = "#9b59b6"
+                        color = n.get("color", "#fd7e14") if isinstance(n, dict) else "#fd7e14"
 
-                        g_url = urllib.parse.quote(lbl)
-                        replacement = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}</a>'
-                        display_text = re.compile(re.escape(lbl), re.IGNORECASE).sub(replacement, display_text)
+                        # Google Search Fuzzy Linking
+                        if len(lbl) > 2:
+                            g_url = urllib.parse.quote(lbl)
+                            replacement = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}</a>'
+                            display_text = re.compile(re.escape(lbl), re.IGNORECASE).sub(replacement, display_text)
+                        
                         elements.append({"data": {"id": str(nid), "label": str(lbl), "color": color, "shape": shape, "size": 130 if shape == "star" else 105}})
 
                     for e in g_json.get("edges", []):
@@ -416,10 +395,10 @@ if st.button("🚀 EXECUTE CEREBRAS TRIAD PIPELINE", use_container_width=True):
                             elements.append({"data": {"source": str(e["source"]), "target": str(e["target"]), "rel_type": str(e.get("rel_type", "AS")).upper()}})
                 except: pass
 
-            st.subheader("📊 CEREBRAS TRIAD VERIFIED RESULTS")
+            st.subheader("📊 FINAL TRIAD VERIFIED SYNERGY")
             st.markdown(display_text, unsafe_allow_html=True)
             if elements:
-                st.subheader("🕸️ HIERARCHOGRAPHY CONNECTIVE NETWORK")
+                st.subheader("🕸️ FINAL CONNECTIVE HIERARCHOGRAPHY NETWORK")
                 render_cytoscape_network(elements, f"viz_{int(time.time())}")
 
             if biblio:
@@ -432,4 +411,4 @@ if st.button("🚀 EXECUTE CEREBRAS TRIAD PIPELINE", use_container_width=True):
 # 6. FOOTER
 # =============================================================================
 st.divider()
-st.caption(f"SIS Pure Cerebras Triad Engine | {VERSION_CODE} | {SYSTEM_DATE}")
+st.caption(f"SIS Pure Cerebras Triad Synthesizer | {VERSION_CODE} | {SYSTEM_DATE}")
