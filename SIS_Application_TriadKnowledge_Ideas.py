@@ -826,7 +826,7 @@ with col_inq3:
         st.success(f"Context from {uploaded_file.name} integrated.")
 
 # =============================================================================
-# 5. TRIAD SYNERGY EXECUTION ENGINE (V16: HARD-SCIENCE & STABLE HIERARCHOGRAPHY)
+# 5. TRIAD SYNERGY EXECUTION ENGINE (V17: TEMP 0.4 ZA FAZO 3 & STABILEN GRAF)
 # =============================================================================
 
 if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=True):
@@ -847,16 +847,15 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
             ideation_str = json.dumps(IDEATION_TECHNIQUES) if 'IDEATION_TECHNIQUES' in locals() else "{}"
 
             # --- PHASE 1: GROQ (Hard-Science Visionary) ---
-            with st.spinner('PHASE 1: Mapping Speculative Hierarchies (Enforcing Hard Sciences)...'):
+            with st.spinner('PHASE 1: Mapping Speculative Hierarchies (0.85)...'):
                 p1_template = """
                 You are a Hierarchology Visionary. 
                 SELECTED FIELDS: [SCIENCES]
                 IMA ARCHITECTURE: [IMA]
                 
-                TASK: Establish a Speculative Foundation.
-                CRITICAL RULE: You MUST analyze the problem using principles from [SCIENCES].
-                If Physics is selected, use 'Entropy' or 'Thermodynamics'. If Biology, use 'Homeostasis' or 'Evolutionary Biology'.
-                Identify hidden hierarchies that bridge hard sciences with social stress and crime.
+                TASK: Analyze the problem using principles from [SCIENCES].
+                If Physics is selected, use 'Entropy' or 'Thermodynamics'. If Biology, use 'Homeostasis'.
+                Identify hidden hierarchies bridging hard sciences with social stress and crime.
                 """
                 p1_prompt = p1_template.replace("[IMA]", ima_str).replace("[SCIENCES]", str(sel_sciences))
                 
@@ -867,16 +866,15 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                 )
                 foundation = res_p1.choices[0].message.content
 
-            st.toast("Phase 1 complete. Cooling down...")
+            st.toast("Phase 1 complete. Cooling down API...")
             time.sleep(5) 
 
             # --- PHASE 2: CEREBRAS (Innovation Brainstorming) ---
-            with st.spinner('PHASE 2: Generating Radical Interdisciplinary Ideas...'):
+            with st.spinner('PHASE 2: Generating Radical Interdisciplinary Ideas (0.85)...'):
                 p2_template = """
                 You are the SIS Innovation Engine. Generate 5 radical ideas.
                 INTEGRATE THESE SCIENCES: [SCIENCES]
                 TOOLBOX: [TECH]
-                
                 Use 'Analogical Reasoning' to apply laws of physical sciences to solve social crime/stress.
                 """
                 p2_prompt = p2_template.replace("[SCIENCES]", str(sel_sciences)).replace("[TECH]", ideation_str)
@@ -888,16 +886,16 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                 )
                 innovation_raw = res_p2.choices[0].message.content
 
-            st.toast("Phase 2 complete. Cooling down...")
+            st.toast("Phase 2 complete. Cooling down API...")
             time.sleep(5)
 
             # --- PHASE 3: GROQ (Final Vetting & Stable JSON Output) ---
-            with st.spinner('PHASE 3: Final Vetting & Hierarchography Generation...'):
+            with st.spinner('PHASE 3: Final Vetting & Hierarchography (0.4)...'):
                 p3_prompt = """
                 Refine innovations into a 'Perfect 10' report. 
                 
                 STRICT RULES:
-                1. Use EXACT node labels (e.g. 'Entropy Shield') in the text.
+                1. Use EXACT node labels (e.g. 'Entropy Shield') in the text to enable linking.
                 2. After the report, you MUST provide the JSON data between [START_JSON] and [END_JSON].
                 
                 VISUAL SYSTEM:
@@ -907,17 +905,15 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                 res_p3 = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=[{"role": "system", "content": p3_prompt}, {"role": "user", "content": f"F1:\n{foundation}\n\nI2:\n{innovation_raw}"}],
-                    temperature=0.2
+                    temperature=0.4 # POSODOBLJENO NA 0.4 ZA VEČJO TEKOČO BESEDO
                 )
                 final_output = res_p3.choices[0].message.content
 
             # --- OBDELAVA IN IZRIS ---
-            # Ekstrakcija JSON-a s pomočjo markerjev
             graph_json_str = ""
             if "[START_JSON]" in final_output:
                 graph_json_str = final_output.split("[START_JSON]")[1].split("[END_JSON]")[0]
             else:
-                # Fallback na iskanje oklepajev
                 match = re.search(r'(\{.*\})', final_output, re.DOTALL)
                 if match: graph_json_str = match.group()
 
@@ -929,8 +925,6 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                     clean_json = graph_json_str.strip().replace('```json', '').replace('```', '')
                     g_json = json.loads(clean_json)
                     nodes_data = g_json.get("nodes", [])
-                    
-                    # Sortiranje vozlišč od daljših k krajšim (za varno zamenjavo linkov)
                     nodes_data.sort(key=lambda x: len(x.get("label", "")) if isinstance(x, dict) else len(str(x)), reverse=True)
 
                     for n in nodes_data:
@@ -938,7 +932,7 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                         nid = n.get("id", lbl) if isinstance(n, dict) else str(n)
                         shape = n.get("shape", "rectangle").lower() if isinstance(n, dict) else "rectangle"
                         
-                        # Barvna logika (vsiljena v Pythonu)
+                        # Vsiljena barvna logika
                         color = "#fd7e14"
                         if shape == "star": color = "#FFD700"
                         elif shape == "octagon": color = "#e63946"
@@ -960,26 +954,27 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
                             elements.append({"data": {"source": str(e["source"]), "target": str(e["target"]), "rel_type": r_label}})
                 except: pass
 
-            # --- KONČNI IZPIS ---
+            # --- PRIKAZ ---
             st.subheader("📊 FINAL VERIFIED SYNERGY RESULTS")
             st.markdown(display_text, unsafe_allow_html=True)
 
             if elements:
-                st.subheader("🕸️ FINAL VERIFIED SEMANTIC NETWORK (Hierarchography)")
+                st.subheader("🕸️ FINAL VERIFIED SEMANTIC NETWORK")
                 render_cytoscape_network(elements, f"viz_{int(time.time())}")
             else:
-                st.warning("⚠️ Graph reconstruction failed. AI did not follow JSON format strictly. Displaying text only.")
+                st.warning("⚠️ Graph could not be rendered. Displaying verified text only.")
 
             if biblio:
                 with st.expander("📚 BIBLIOGRAPHY"): st.text(biblio)
 
         except Exception as e:
             st.error(f"❌ Triad Synergy Failure: {e}")
+
 # =============================================================================
 # 6. FOOTER
 # =============================================================================
 st.divider()
-st.caption(f"SIS Triad Knowledge Synthesizer | {VERSION_CODE} | {SYSTEM_DATE}")
+st.caption(f"SIS Triad Synthesizer | {VERSION_CODE} | {SYSTEM_DATE}")
 
 
 
