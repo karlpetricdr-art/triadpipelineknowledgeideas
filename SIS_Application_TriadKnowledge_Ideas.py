@@ -529,6 +529,17 @@ HIERARCHOLOGY_ONTOLOGY = {
     },
     "hierarchography_tools": ["Workflow Mapping", "Tree Maps", "Structural diagrams", "Oligographs", "UML"]
 }
+# =============================================================================
+# 2.2 IDEATION TECHNIQUES ONTOLOGY (THE INNOVATION TOOLS)
+# =============================================================================
+IDEATION_TECHNIQUES = {
+    "SCAMPER": "Substitute, Combine, Adapt, Modify, Put to another use, Eliminate, Reverse.",
+    "First Principles": "Break down complex problems into basic elements and reassemble them from scratch.",
+    "Analogical Reasoning": "Transfer solutions from one field (e.g., Biology) to another (e.g., Criminology).",
+    "Reverse Ideation": "Identify how to cause the problem, then reverse those steps to find a solution.",
+    "TRIZ": "Systematic innovation based on resolving technical or physical contradictions.",
+    "Six Thinking Hats": "Analyze from emotional, factual, creative, and critical perspectives."
+}
 
 # =============================================================================
 # 3. KNOWLEDGE BASE (EXHAUSTIVE 18D SCIENCE FIELDS & ONTOLOGIES)
@@ -763,7 +774,9 @@ with st.sidebar:
         for s in sorted(KNOWLEDGE_BASE["Science fields"].keys()): st.markdown(f"• **{s}**")
     with st.expander("🏗️ Structural Model Context", expanded=False):
         for m, d in KNOWLEDGE_BASE["Structural models"].items(): st.markdown(f"**{m}**: {d}")
-
+with st.expander("💡 IDEATION TECHNIQUES", expanded=False):
+        for tech, desc in IDEATION_TECHNIQUES.items():
+            st.markdown(f"**{tech}**: {desc}")
 # --- MAIN PAGE CONTENT ---
 st.markdown('<h1 class="main-header-gradient">🧱 SIS Universal Knowledge Synthesizer</h1>', unsafe_allow_html=True)
 st.markdown(f"**Sequential Multi-Engine Pipeline** | Current Operating Date: **{SYSTEM_DATE}**")
@@ -846,11 +859,32 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
 
             time.sleep(5) 
 
-            # --- PHASE 2: CEREBRAS (Radical Innovations) ---
-            with st.spinner('PHASE 2: Cerebras generating radical ideas (0.85)...'):
+           # --- PHASE 2: CEREBRAS (Innovation & Hierarchography) ---
+            with st.spinner('PHASE 2: Applying Advanced Ideation Techniques (Temp 0.85)...'):
+                # We inject the ideation techniques into the prompt here
+                ideation_str = json.dumps(IDEATION_TECHNIQUES)
+                
+                p2_template = """
+                You are the SIS Innovation Engine (Phase 2). 
+                STRICT MA FOCUS: [MA]
+                IDEATION FRAMEWORKS: [TECHNIQUES]
+                
+                TASK: Generate 5 radical ideas for social law improvement.
+                For each idea, pick ONE technique from the IDEATION FRAMEWORKS (e.g., SCAMPER or First Principles) 
+                to reach a conclusion that is not obvious.
+                
+                HIERARCHOGRAPHY VISUAL RULES:
+                - Use shapes: "star" (Core), "octagon" (Macro), "rectangle" (Meso), "ellipse" (Micro).
+                - Use relation types: micro_to_meso, meso_to_macro, outcome_of, AS.
+                
+                IMPORTANT: Output the ideas first, then strictly end with '### JSON_DATA' followed by the JSON structure.
+                """
+                # Update the replacement logic:
+                p2_c = p2_template.replace("[MA]", ma_str).replace("[TECHNIQUES]", ideation_str)
+                
                 res_p2 = cerebras_client.chat.completions.create(
                     model=cerebras_id, 
-                    messages=[{"role": "system", "content": "You are the SIS Innovation Engine. Generate 5 radical ideas acting on Micro, Meso, or Macro levels. Use MA Logic."}, {"role": "user", "content": f"FOUNDATION:\n{foundation}\n\nGOAL:\n{idea_query}"}],
+                    messages=[{"role": "system", "content": p2_c}, {"role": "user", "content": f"F1 FOUNDATION:\n{foundation}\n\nGOAL:\n{idea_query}"}],
                     temperature=0.85
                 )
                 innovation_raw = res_p2.choices[0].message.content
@@ -960,6 +994,7 @@ if st.button("🚀 EXECUTE HIGH-INNOVATION TRIAD PIPELINE", use_container_width=
 # =============================================================================
 st.divider()
 st.caption(f"SIS Triad Knowledge Synthesizer | {VERSION_CODE} | {SYSTEM_DATE}")
+
 
 
 
