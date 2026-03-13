@@ -908,6 +908,11 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 Authors: [BIBLIO] | Data Context: [FILE]
                 
                 TASK: Provide a structural foundation (approx 1500 words) using Hierarchology logic.
+                
+                NATURAL SCIENCE INTEGRATION RULE (MANDATORY):
+                If [SCIENCES] includes Physics, Chemistry, or Biology, you MUST treat them as fundamental drivers.
+                - Analyze the BIOPHYSICAL SUBSTRATE of the problem (e.g., How do thermodynamics, wave frequencies, or molecular chemistry affect behavioral outcomes like stress and crime?).
+                - Do not stay only in social paradigms. Identify how hard-science constants (entropy, neural pathways, hormonal feedback) influence the Meso (social) and Macro (law) levels.
                 """
                 groq_sys_prompt = p1_template.replace("[H_ONT]", h_ont_data).replace("[IMA_ONT]", ima_data).replace("[DATE]", SYSTEM_DATE).replace("[SCIENCES]", str(sel_sciences)).replace("[BIBLIO]", biblio_data).replace("[FILE]", file_content)
                 
@@ -929,8 +934,14 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 MENTAL APPROACHES (MA): [MA_ONT]
                 
                 HYBRID STRATEGIC FRAMEWORK: [TECHNIQUE_NAMES]
-                FRAMEWORK DESCRIPTIONS:
-                [TECHNIQUE_DESCS]
+                FRAMEWORK DESCRIPTIONS: [TECHNIQUE_DESCS]
+                
+                CONVERGENCE MANDATE:
+                You must achieve 'HARD SCIENCE CONVERGENCE'. 
+                If Physics, Chemistry, or Biology are selected in the project ([SCIENCES]), the innovations MUST strictly use their principles to solve the social issue.
+                - Example: Address crime via Physics (acoustic entropy/lighting frequency) or Biology (biochemical neural stabilization).
+                - Example: Address stress via Chemistry (hormonal buffering) or Physics (circadian modulation).
+                Force a synthesis where a social problem is addressed via a natural-science instrument.
                 
                 TASK:
                 1. Review the Phase 1 foundation.
@@ -947,7 +958,8 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 cerebras_sys_prompt = (p2_template
                     .replace("[MA_ONT]", ma_data)
                     .replace("[TECHNIQUE_NAMES]", tech_names)
-                    .replace("[TECHNIQUE_DESCS]", tech_descriptions))
+                    .replace("[TECHNIQUE_DESCS]", tech_descriptions)
+                    .replace("[SCIENCES]", str(sel_sciences)))
                 
                 cerebras_user_input = "FOUNDATION: " + groq_synthesis + "\n\nINNOVATION GOAL: " + idea_query
                 
@@ -1015,10 +1027,11 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             st.error(f"❌ Pipeline Failure: {e}")
 
 # =============================================================================
-# 6. FOOTER & METRICS
+# 6. FOOTER
 # =============================================================================
 st.divider()
 st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | {SYSTEM_DATE}")
+
 
 
 
