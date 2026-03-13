@@ -874,26 +874,22 @@ with col_inq3:
 # 5. SYNERGY EXECUTION ENGINE (HIERARCHOLOGY -> HIERARCHOGRAPHY PIPELINE)
 # =============================================================================
 
-if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True):
-    if not groq_api_key or not cerebras_api_key:
-        st.error("❌ Dual-Model synergy requires both Groq and Cerebras keys.")
-    elif not user_query:
-        st.warning("⚠️ Phase 1 Research Inquiry is required.")
-    else:
-        try:
+# 0. INICIALIZACIJA (Prepreči napako 'not defined')
+            groq_synthesis = ""
+            cerebras_innovation = ""
+            
             # Init Clients
             groq_client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
             cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
             
-            # Prepare data strings safely
-            h_ont_data = json.dumps(HIERARCHOLOGY_ONTOLOGY) if 'HIERARCHOLOGY_ONTOLOGY' in globals() else "{}"
+            # Priprava podatkov
+            h_ont_data = json.dumps(HIERARCHOLOGY_ONTOLOGY)
             ima_data = json.dumps(HUMAN_THINKING_METAMODEL)
             ma_data = json.dumps(MENTAL_APPROACHES_ONTOLOGY)
             biblio_data = fetch_author_bibliographies(target_authors) if target_authors else "No bibliography provided."
 
             # --- PHASE 1: GROQ (HIERARCHOLOGY ANALYSIS) ---
             with st.spinner('PHASE 1: Groq synthesizing Hierarchology Foundation...'):
-                # Using standard strings and .replace() to avoid f-string SyntaxErrors
                 p1_template = """
                 You are the SIS Hierarchology Research Scientist (Phase 1).
                 HIERARCHOLOGY ONTOLOGY: [H_ONT]
@@ -903,10 +899,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 Date: [DATE] | Sciences: [SCIENCES]
                 Authors: [BIBLIO] | Data Context: [FILE]
                 
-                TASK: Provide a structural foundation (approx 1500 words) using Hierarchology:
-                1. THE SCIENTIFIC CAGE: Identify cognitive limitations restricting this research.
-                2. HIERARCHICAL LEVELS: Analyze via Micro-hierarchology (individual), Meso-hierarchology (groups), and Macro-hierarchology (societal laws).
-                3. OPERATIONAL LOGIC: Identify Internal Inductive vs External Deductive processes.
+                TASK: Provide a structural foundation using Hierarchology logic.
                 """
                 groq_sys_prompt = p1_template.replace("[H_ONT]", h_ont_data).replace("[IMA_ONT]", ima_data).replace("[DATE]", SYSTEM_DATE).replace("[SCIENCES]", str(sel_sciences)).replace("[BIBLIO]", biblio_data).replace("[FILE]", file_content)
                 
@@ -917,36 +910,48 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 )
                 groq_synthesis = groq_response.choices[0].message.content
 
-           # --- PHASE 2: CEREBRAS (HIERARCHOGRAPHY & INNOVATION) ---
-            with st.spinner('PHASE 2: Cerebras producing Hybrid Innovations...'):
-                
-                # Combine all selected techniques into a single block of instructions
-                tech_names = ", ".join(selected_techniques)
-                tech_descriptions = "\n".join([f"- {t}: {IDEATION_TECHNIQUES[t]}" for t in selected_techniques])
+            # --- PHASE 2: CEREBRAS (HIERARCHOGRAPHY & INNOVATION) ---
+            if groq_synthesis and selected_techniques:
+                with st.spinner('PHASE 2: Cerebras producing Hybrid Innovations...'):
+                    # Priprava opisa tehnik
+                    tech_names = ", ".join(selected_techniques)
+                    tech_descriptions = "\n".join([f"- {t}: {IDEATION_TECHNIQUES.get(t, '')}" for t in selected_techniques])
 
-                p2_template = """
-                You are the SIS Hierarchography Specialist (Phase 2). 
-                MENTAL APPROACHES (MA): [MA_ONT]
-                
-                HYBRID STRATEGIC FRAMEWORK: [TECHNIQUE_NAMES]
-                FRAMEWORK DESCRIPTIONS:
-                [TECHNIQUE_DESCS]
-                
-                TASK:
-                1. Review the Phase 1 foundation.
-                2. Generate radical 'Useful Innovative Ideas' by synthesizing the logic of ALL selected frameworks ([TECHNIQUE_NAMES]).
-                3. HIERARCHOGRAPHY: Describe the resulting system using diagrammatic logic.
-                4. End your response with '### SEMANTIC_GRAPH_JSON' followed by a valid JSON network.
-                ... (keep visual rules as before) ...
-                """
-                
-                # Update the string replacement to inject the combined data
-                cerebras_sys_prompt = (p2_template
-                    .replace("[MA_ONT]", ma_data)
-                    .replace("[TECHNIQUE_NAMES]", tech_names)
-                    .replace("[TECHNIQUE_DESCS]", tech_descriptions))
-                
-                # ... (rest of your completion code) ...
+                    p2_template = """
+                    You are the SIS Hierarchography Specialist (Phase 2). 
+                    MENTAL APPROACHES (MA): [MA_ONT]
+                    
+                    HYBRID STRATEGIC FRAMEWORK: [TECHNIQUE_NAMES]
+                    FRAMEWORK DESCRIPTIONS:
+                    [TECHNIQUE_DESCS]
+                    
+                    TASK:
+                    1. Review Phase 1 foundation.
+                    2. Generate radical 'Useful Innovative Ideas' by synthesizing ALL selected frameworks.
+                    3. HIERARCHOGRAPHY: Describe the system using diagrammatic logic.
+                    4. End with '### SEMANTIC_GRAPH_JSON' + JSON network.
+                    """
+                    
+                    cerebras_sys_prompt = (p2_template
+                        .replace("[MA_ONT]", ma_data)
+                        .replace("[TECHNIQUE_NAMES]", tech_names)
+                        .replace("[TECHNIQUE_DESCS]", tech_descriptions))
+                    
+                    cerebras_user_input = "FOUNDATION: " + groq_synthesis + "\n\nINNOVATION GOAL: " + idea_query
+                    
+                    cerebras_response = cerebras_client.chat.completions.create(
+                        model=cerebras_id, 
+                        messages=[{"role": "system", "content": cerebras_sys_prompt}, {"role": "user", "content": cerebras_user_input}],
+                        temperature=0.85
+                    )
+                    cerebras_innovation = cerebras_response.choices[0].message.content
+            else:
+                cerebras_innovation = "Phase 2 was skipped because no techniques were selected."
+
+            # --- COMBINING AND RENDERING ---
+            combined_content = "## 📚 Phase 1: Hierarchology Foundation\n" + groq_synthesis + "\n\n---\n## 💡 Phase 2: Hybrid Innovations\n" + cerebras_innovation
+            
+            # ... (nadaljujte z obstoječo kodo za renderiranje grafov) ...
 
             # --- COMBINING AND RENDERING ---
             combined_content = "## 📚 Phase 1: Hierarchology Foundation\n" + groq_synthesis + "\n\n---\n## 💡 Phase 2: Hierarchography & Innovations\n" + cerebras_innovation
@@ -1013,6 +1018,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
 # =============================================================================
 st.divider()
 st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | {SYSTEM_DATE}")
+
 
 
 
