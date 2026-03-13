@@ -870,11 +870,19 @@ with col_inq3:
         st.success(f"Context from {uploaded_file.name} integrated.")
 
 # =============================================================================
-# =============================================================================
 # 5. SYNERGY EXECUTION ENGINE (HIERARCHOLOGY -> HIERARCHOGRAPHY PIPELINE)
 # =============================================================================
 
-# 0. INICIALIZACIJA (Prepreči napako 'not defined')
+if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True):
+    if not groq_api_key or not cerebras_api_key:
+        st.error("❌ Dual-Model synergy requires both Groq and Cerebras keys.")
+    elif not user_query:
+        st.warning("⚠️ Phase 1 Research Inquiry is required.")
+    elif not selected_techniques:
+        st.warning("⚠️ Prosim, izberite vsaj eno tehniko inoviranja (Innovation Strategy).")
+    else:
+        try:
+            # 0. INITIALIZATION
             groq_synthesis = ""
             cerebras_innovation = ""
             
@@ -899,7 +907,7 @@ with col_inq3:
                 Date: [DATE] | Sciences: [SCIENCES]
                 Authors: [BIBLIO] | Data Context: [FILE]
                 
-                TASK: Provide a structural foundation using Hierarchology logic.
+                TASK: Provide a structural foundation (approx 1500 words) using Hierarchology logic.
                 """
                 groq_sys_prompt = p1_template.replace("[H_ONT]", h_ont_data).replace("[IMA_ONT]", ima_data).replace("[DATE]", SYSTEM_DATE).replace("[SCIENCES]", str(sel_sciences)).replace("[BIBLIO]", biblio_data).replace("[FILE]", file_content)
                 
@@ -911,50 +919,47 @@ with col_inq3:
                 groq_synthesis = groq_response.choices[0].message.content
 
             # --- PHASE 2: CEREBRAS (HIERARCHOGRAPHY & INNOVATION) ---
-            if groq_synthesis and selected_techniques:
-                with st.spinner('PHASE 2: Cerebras producing Hybrid Innovations...'):
-                    # Priprava opisa tehnik
-                    tech_names = ", ".join(selected_techniques)
-                    tech_descriptions = "\n".join([f"- {t}: {IDEATION_TECHNIQUES.get(t, '')}" for t in selected_techniques])
+            with st.spinner('PHASE 2: Cerebras producing Hybrid Innovations...'):
+                # Priprava opisa izbranih tehnik
+                tech_names = ", ".join(selected_techniques)
+                tech_descriptions = "\n".join([f"- {t}: {IDEATION_TECHNIQUES.get(t, '')}" for t in selected_techniques])
 
-                    p2_template = """
-                    You are the SIS Hierarchography Specialist (Phase 2). 
-                    MENTAL APPROACHES (MA): [MA_ONT]
-                    
-                    HYBRID STRATEGIC FRAMEWORK: [TECHNIQUE_NAMES]
-                    FRAMEWORK DESCRIPTIONS:
-                    [TECHNIQUE_DESCS]
-                    
-                    TASK:
-                    1. Review Phase 1 foundation.
-                    2. Generate radical 'Useful Innovative Ideas' by synthesizing ALL selected frameworks.
-                    3. HIERARCHOGRAPHY: Describe the system using diagrammatic logic.
-                    4. End with '### SEMANTIC_GRAPH_JSON' + JSON network.
-                    """
-                    
-                    cerebras_sys_prompt = (p2_template
-                        .replace("[MA_ONT]", ma_data)
-                        .replace("[TECHNIQUE_NAMES]", tech_names)
-                        .replace("[TECHNIQUE_DESCS]", tech_descriptions))
-                    
-                    cerebras_user_input = "FOUNDATION: " + groq_synthesis + "\n\nINNOVATION GOAL: " + idea_query
-                    
-                    cerebras_response = cerebras_client.chat.completions.create(
-                        model=cerebras_id, 
-                        messages=[{"role": "system", "content": cerebras_sys_prompt}, {"role": "user", "content": cerebras_user_input}],
-                        temperature=0.85
-                    )
-                    cerebras_innovation = cerebras_response.choices[0].message.content
-            else:
-                cerebras_innovation = "Phase 2 was skipped because no techniques were selected."
+                p2_template = """
+                You are the SIS Hierarchography Specialist (Phase 2). 
+                MENTAL APPROACHES (MA): [MA_ONT]
+                
+                HYBRID STRATEGIC FRAMEWORK: [TECHNIQUE_NAMES]
+                FRAMEWORK DESCRIPTIONS:
+                [TECHNIQUE_DESCS]
+                
+                TASK:
+                1. Review the Phase 1 foundation.
+                2. Generate radical 'Useful Innovative Ideas' by synthesizing the logic of ALL selected frameworks ([TECHNIQUE_NAMES]).
+                3. HIERARCHOGRAPHY: Describe the resulting system using diagrammatic logic.
+                4. End your response with '### SEMANTIC_GRAPH_JSON' followed by a valid JSON network.
+                
+                VISUAL RULES: 
+                - Hierarchies = 'rectangle' (#fd7e14).
+                - Associations = 'diamond' (#e63946).
+                - JSON schema: {"nodes": [{"id": "n1", "label": "Text", "type": "Root|Branch", "color": "#hex", "shape": "rectangle|diamond"}], "edges": [{"source": "n1", "target": "n2", "rel_type": "AS|BT"}]}
+                """
+                
+                cerebras_sys_prompt = (p2_template
+                    .replace("[MA_ONT]", ma_data)
+                    .replace("[TECHNIQUE_NAMES]", tech_names)
+                    .replace("[TECHNIQUE_DESCS]", tech_descriptions))
+                
+                cerebras_user_input = "FOUNDATION: " + groq_synthesis + "\n\nINNOVATION GOAL: " + idea_query
+                
+                cerebras_response = cerebras_client.chat.completions.create(
+                    model=cerebras_id, 
+                    messages=[{"role": "system", "content": cerebras_sys_prompt}, {"role": "user", "content": cerebras_user_input}],
+                    temperature=0.85
+                )
+                cerebras_innovation = cerebras_response.choices[0].message.content
 
             # --- COMBINING AND RENDERING ---
             combined_content = "## 📚 Phase 1: Hierarchology Foundation\n" + groq_synthesis + "\n\n---\n## 💡 Phase 2: Hybrid Innovations\n" + cerebras_innovation
-            
-            # ... (nadaljujte z obstoječo kodo za renderiranje grafov) ...
-
-            # --- COMBINING AND RENDERING ---
-            combined_content = "## 📚 Phase 1: Hierarchology Foundation\n" + groq_synthesis + "\n\n---\n## 💡 Phase 2: Hierarchography & Innovations\n" + cerebras_innovation
             
             parts = combined_content.split("### SEMANTIC_GRAPH_JSON")
             main_markdown = parts[0]
@@ -975,7 +980,7 @@ with col_inq3:
             st.subheader("📊 INTEGRATED HIERARCHOLOGY RESULTS")
             st.markdown(main_markdown, unsafe_allow_html=True)
 
-            # --- INTERACTIVE GRAPH (CLEAN LIST BUILDING) ---
+            # --- INTERACTIVE GRAPH ---
             if len(parts) > 1:
                 try:
                     json_str = re.search(r'\{.*\}', parts[1], re.DOTALL).group()
@@ -1006,10 +1011,6 @@ with col_inq3:
                 except Exception as viz_err:
                     st.warning(f"⚠️ Graph Render Error: {viz_err}")
 
-            if biblio_data:
-                with st.expander("📚 BIBLIOGRAPHY"):
-                    st.text(biblio_data)
-
         except Exception as e:
             st.error(f"❌ Pipeline Failure: {e}")
 
@@ -1018,6 +1019,7 @@ with col_inq3:
 # =============================================================================
 st.divider()
 st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | {SYSTEM_DATE}")
+
 
 
 
