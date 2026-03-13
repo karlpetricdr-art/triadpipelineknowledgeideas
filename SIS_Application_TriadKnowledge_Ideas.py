@@ -836,16 +836,22 @@ with r2c2: sel_models = st.multiselect("5. Structural Models:", list(KNOWLEDGE_B
 with r2c3: goal_context = st.selectbox("6. Strategic Project Goal:", ["Scientific Research", "Problem Solving", "Educational", "Policy Making"])
 
 st.divider()
+# --- ADVANCED MULTI-IDEATION UI ---
 st.markdown("### 🧬 INNOVATION STRATEGY")
-sel_technique = st.selectbox(
-    "Select Strategic Ideation Framework for Phase 2:", 
+selected_techniques = st.multiselect(
+    "Select Strategic Ideation Frameworks (Pick one or more):", 
     options=list(IDEATION_TECHNIQUES.keys()), 
-    index=0,
-    help="This instructs the Cerebras engine to use a specific cognitive framework for idea generation."
+    default=["Six Thinking Hats"],
+    help="If you select multiple, the AI will synthesize them into a hybrid innovation strategy."
 )
-st.info(f"**Current Strategy: {sel_technique}** - {IDEATION_TECHNIQUES.get(sel_technique, '')}")
+
+if not selected_techniques:
+    st.warning("⚠️ Please select at least one technique for Phase 2.")
+else:
+    # Build a combined description for the info box
+    combined_desc = " | ".join([f"**{t}**: {IDEATION_TECHNIQUES[t]}" for t in selected_techniques])
+    st.info(f"**Active Hybrid Strategy:** {combined_desc}")
 st.divider()
-# >>> KONEC PRILEPLJENE KODE <<<
 
 # DUAL INQUIRY INTERFACE (nadaljevanje obstoječe kode)
 col_inq1, col_inq2, col_inq3 = st.columns([2, 2, 1])
@@ -911,41 +917,36 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 )
                 groq_synthesis = groq_response.choices[0].message.content
 
-            # --- PHASE 2: CEREBRAS (HIERARCHOGRAPHY & INNOVATION) ---
-            with st.spinner('PHASE 2: Cerebras producing Hierarchography & Innovations...'):
+           # --- PHASE 2: CEREBRAS (HIERARCHOGRAPHY & INNOVATION) ---
+            with st.spinner('PHASE 2: Cerebras producing Hybrid Innovations...'):
+                
+                # Combine all selected techniques into a single block of instructions
+                tech_names = ", ".join(selected_techniques)
+                tech_descriptions = "\n".join([f"- {t}: {IDEATION_TECHNIQUES[t]}" for t in selected_techniques])
+
                 p2_template = """
                 You are the SIS Hierarchography Specialist (Phase 2). 
                 MENTAL APPROACHES (MA): [MA_ONT]
                 
-                STRATEGIC FRAMEWORK: [TECHNIQUE_NAME]
-                FRAMEWORK DESCRIPTION: [TECHNIQUE_DESC]
+                HYBRID STRATEGIC FRAMEWORK: [TECHNIQUE_NAMES]
+                FRAMEWORK DESCRIPTIONS:
+                [TECHNIQUE_DESCS]
                 
                 TASK:
                 1. Review the Phase 1 foundation.
-                2. Generate radical 'Useful Innovative Ideas' strictly applying the [TECHNIQUE_NAME] logic.
-                3. HIERARCHOGRAPHY: Describe the system using diagrammatic logic (Workflows, Oligographs, or Tree Maps).
+                2. Generate radical 'Useful Innovative Ideas' by synthesizing the logic of ALL selected frameworks ([TECHNIQUE_NAMES]).
+                3. HIERARCHOGRAPHY: Describe the resulting system using diagrammatic logic.
                 4. End your response with '### SEMANTIC_GRAPH_JSON' followed by a valid JSON network.
-                
-                VISUAL RULES: 
-                - Hierarchies = 'rectangle' (#fd7e14).
-                - Associations = 'diamond' (#e63946).
-                - JSON schema: {"nodes": [{"id": "n1", "label": "Text", "type": "Root|Branch", "color": "#hex", "shape": "rectangle|diamond"}], "edges": [{"source": "n1", "target": "n2", "rel_type": "AS|BT"}]}
+                ... (keep visual rules as before) ...
                 """
                 
-                # Tukaj vstavimo izbrano tehniko v sistemski prompt
+                # Update the string replacement to inject the combined data
                 cerebras_sys_prompt = (p2_template
                     .replace("[MA_ONT]", ma_data)
-                    .replace("[TECHNIQUE_NAME]", sel_technique)
-                    .replace("[TECHNIQUE_DESC]", IDEATION_TECHNIQUES.get(sel_technique, "")))
+                    .replace("[TECHNIQUE_NAMES]", tech_names)
+                    .replace("[TECHNIQUE_DESCS]", tech_descriptions))
                 
-                cerebras_user_input = "FOUNDATION: " + groq_synthesis + "\n\nINNOVATION GOAL: " + idea_query
-                
-                cerebras_response = cerebras_client.chat.completions.create(
-                    model=cerebras_id, 
-                    messages=[{"role": "system", "content": cerebras_sys_prompt}, {"role": "user", "content": cerebras_user_input}],
-                    temperature=0.85
-                )
-                cerebras_innovation = cerebras_response.choices[0].message.content
+                # ... (rest of your completion code) ...
 
             # --- COMBINING AND RENDERING ---
             combined_content = "## 📚 Phase 1: Hierarchology Foundation\n" + groq_synthesis + "\n\n---\n## 💡 Phase 2: Hierarchography & Innovations\n" + cerebras_innovation
@@ -1012,6 +1013,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
 # =============================================================================
 st.divider()
 st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | {SYSTEM_DATE}")
+
 
 
 
