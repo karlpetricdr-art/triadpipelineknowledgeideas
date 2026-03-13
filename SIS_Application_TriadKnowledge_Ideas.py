@@ -881,14 +881,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
     elif not selected_techniques:
         st.warning("⚠️ Prosim, izberite vsaj eno tehniko inoviranja.")
     else:
-        # Priprava kontejnerjev za prikaz (da vidimo napredek)
-        output_placeholder = st.empty()
-        
         try:
-            # 0. INITIALIZATION
-            groq_synthesis = ""
-            cerebras_innovation = ""
-            
             # Init Clients
             groq_client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
             cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
@@ -899,22 +892,18 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             ma_data = json.dumps(MENTAL_APPROACHES_ONTOLOGY)
             biblio_data = fetch_author_bibliographies(target_authors) if target_authors else "No bibliography provided."
 
-            # --- PHASE 1: GROQ ---
-            with st.spinner('PHASE 1: Groq analizira bio-fizikalne temelje...'):
+            # --- PHASE 1: GROQ (STRUKTURNI TEMELJ) ---
+            with st.spinner('PHASE 1: Groq gradi znanstveni temelj...'):
                 p1_template = """
                 You are the SIS Hierarchology Research Scientist (Phase 1).
                 HIERARCHOLOGY ONTOLOGY: [H_ONT]
                 IMA ARCHITECTURE: [IMA_ONT]
                 
                 CONTEXT:
-                Date: [DATE] | Sciences: [SCIENCES]
-                Authors: [BIBLIO] | Data Context: [FILE]
+                Date: [DATE] | Sciences: [SCIENCES] | Authors: [BIBLIO] | Context: [FILE]
                 
-                TASK: Provide a structural foundation (approx 1500 words) using Hierarchology logic.
-                
-                NATURAL SCIENCE MANDATE:
-                If [SCIENCES] includes Physics, Chemistry, or Biology, treat them as PRIMARY drivers.
-                Analyze the BIOPHYSICAL SUBSTRATE (waves, entropy, hormones, neural pathways) of the problem.
+                TASK: Provide a deep structural analysis (1000-1500 words).
+                MANDATORY: If Physics, Chemistry, or Biology are in [SCIENCES], you MUST analyze the biophysical substrate of the problem (entropy, neural pathways, molecular triggers).
                 """
                 groq_sys_prompt = p1_template.replace("[H_ONT]", h_ont_data).replace("[IMA_ONT]", ima_data).replace("[DATE]", SYSTEM_DATE).replace("[SCIENCES]", str(sel_sciences)).replace("[BIBLIO]", biblio_data).replace("[FILE]", file_content)
                 
@@ -925,37 +914,27 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 )
                 groq_synthesis = groq_response.choices[0].message.content
 
-            # --- PHASE 2: CEREBRAS ---
-            with st.spinner('PHASE 2: Cerebras razvija naravoslovne inovacije...'):
+            # --- PHASE 2: CEREBRAS (INOVACIJE & GRAF) ---
+            with st.spinner('PHASE 2: Cerebras razvija hibridne inovacije in graf...'):
                 tech_names = ", ".join(selected_techniques)
                 tech_descriptions = "\n".join([f"- {t}: {IDEATION_TECHNIQUES.get(t, '')}" for t in selected_techniques])
 
                 p2_template = """
                 You are the SIS Hierarchography Specialist (Phase 2). 
-                MENTAL APPROACHES (MA): [MA_ONT]
-                
-                HYBRID STRATEGIC FRAMEWORK: [TECHNIQUE_NAMES]
-                FRAMEWORK DESCRIPTIONS: [TECHNIQUE_DESCS]
-                
-                CONVERGENCE MANDATE:
-                If [SCIENCES] contains Physics, Chemistry, or Biology, you MUST solve the issue via hard-science instruments (e.g. acoustic frequencies, molecular tagging, epigenetic modulation).
+                MENTAL APPROACHES: [MA_ONT]
+                STRATEGY: [TECHNIQUE_NAMES]
                 
                 TASK:
-                1. Review Phase 1 foundation.
-                2. Generate 'Useful Innovative Ideas' using [TECHNIQUE_NAMES].
-                3. HIERARCHOGRAPHY: Describe the system logic.
-                4. CRITICAL: End with '### SEMANTIC_GRAPH_JSON' and a valid JSON object.
+                1. Review Phase 1 analysis.
+                2. Generate radical 'Useful Innovative Ideas' using [TECHNIQUE_NAMES]. 
+                3. HARD SCIENCE RULE: If Physics, Chemistry, or Biology are active, synthesize them into the core of your ideas.
+                4. End STRICTLY with '### SEMANTIC_GRAPH_JSON' and a JSON block for the network.
                 
-                JSON Schema: {"nodes": [{"id": "n1", "label": "Text", "color": "#hex", "shape": "rectangle"}], "edges": [{"source": "n1", "target": "n2", "rel_type": "AS"}]}
+                JSON Format: {"nodes": [{"id": "n1", "label": "Text", "color": "#fd7e14", "shape": "rectangle"}], "edges": [{"source": "n1", "target": "n2", "rel_type": "AS"}]}
                 """
                 
-                cerebras_sys_prompt = (p2_template
-                    .replace("[MA_ONT]", ma_data)
-                    .replace("[TECHNIQUE_NAMES]", tech_names)
-                    .replace("[TECHNIQUE_DESCS]", tech_descriptions)
-                    .replace("[SCIENCES]", str(sel_sciences)))
-                
-                cerebras_user_input = "FOUNDATION: " + groq_synthesis + "\n\nINNOVATION GOAL: " + idea_query
+                cerebras_sys_prompt = p2_template.replace("[MA_ONT]", ma_data).replace("[TECHNIQUE_NAMES]", tech_names).replace("[TECHNIQUE_DESCS]", tech_descriptions)
+                cerebras_user_input = f"FOUNDATION: {groq_synthesis}\n\nGOAL: {idea_query}"
                 
                 cerebras_response = cerebras_client.chat.completions.create(
                     model=cerebras_id, 
@@ -964,20 +943,22 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 )
                 cerebras_innovation = cerebras_response.choices[0].message.content
 
-            # --- PRIKAZ REZULTATOV (FAIL-SAFE) ---
-            st.subheader("📊 INTEGRATED HIERARCHOLOGY RESULTS")
+            # --- ZDRUŽEVANJE IN PRIKAZ ---
+            st.subheader("📊 INTEGRATED RESEARCH RESULTS")
             
-            # Razdelitev na tekst in JSON
+            # Fail-safe razdelitev na tekst in graf
+            full_text = "## 📚 Phase 1: Foundation\n\n" + groq_synthesis + "\n\n---\n## 💡 Phase 2: Innovations\n\n"
+            
             if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
                 parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
-                text_part = groq_synthesis + "\n\n---\n" + parts[0]
+                full_text += parts[0]
                 json_part = parts[1]
             else:
-                text_part = groq_synthesis + "\n\n---\n" + cerebras_innovation
+                full_text += cerebras_innovation
                 json_part = None
 
-            # Izpis glavnega besedila (Google Links procesiranje)
-            main_markdown = text_part
+            # Procesiranje Google povezav v celotnem besedilu
+            main_markdown = full_text
             if json_part:
                 try:
                     json_match = re.search(r'\{.*\}', json_part, re.DOTALL)
@@ -1005,9 +986,9 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                             elements.append({"data": {"id": n["id"], "label": n["label"], "color": n.get("color", "#fd7e14"), "size": 100, "shape": n.get("shape", "rectangle")}})
                         for e in g_json.get("edges", []):
                             elements.append({"data": {"source": e["source"], "target": e["target"], "rel_type": e.get("rel_type", "AS")}})
-                        render_cytoscape_network(elements, "viz_final")
-                except Exception as viz_err:
-                    st.warning("⚠️ Graf ni mogel biti generiran (napaka v JSON strukturi), vendar je poročilo zgoraj.")
+                        render_cytoscape_network(elements, "viz_final_graph")
+                except:
+                    st.warning("⚠️ JSON format grafa ni bil popoln, vendar je poročilo zgoraj celovito.")
 
         except Exception as e:
             st.error(f"❌ Pipeline Failure: {e}")
@@ -1017,6 +998,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
 # =============================================================================
 st.divider()
 st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | {SYSTEM_DATE}")
+
 
 
 
