@@ -974,11 +974,10 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             st.error(f"❌ Pipeline Failure: {e}")
 
 # =============================================================================
-# 6. FOOTER
+# 6. FOOTER & METRICS
 # =============================================================================
 st.divider()
-st.caption(f"SIS Hierarchology Synthesizer | {VERSION_CODE} | from datetime import datetime
-SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
+st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | Operating Date: {SYSTEM_DATE}")
 
 
 
