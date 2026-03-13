@@ -882,117 +882,131 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
         st.warning("⚠️ Prosim, izberite vsaj eno tehniko inoviranja.")
     else:
         try:
+            # Init Clients
             groq_client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
             cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
             
+            # Priprava podatkov
             h_ont_data = json.dumps(HIERARCHOLOGY_ONTOLOGY)
             ima_data = json.dumps(HUMAN_THINKING_METAMODEL)
             ma_data = json.dumps(MENTAL_APPROACHES_ONTOLOGY)
             biblio_data = fetch_author_bibliographies(target_authors) if target_authors else "No bibliography provided."
 
-            # --- PHASE 1: GROQ (NON-REDUNDANT ARCHITECT) ---
-            with st.spinner('PHASE 1: Groq gradi unikatno arhitekturno osnovo...'):
+            # --- PHASE 1: GROQ (ARCHITECTURAL FOUNDATION) ---
+            with st.spinner('PHASE 1: Groq gradi znanstveno arhitekturo...'):
                 p1_template = """
                 You are the SIS Lead Hierarchologist (Phase 1). 
-                Objective: 10/10 System Architecture.
-                
-                RULES TO AVOID REPETITION:
-                - Do not use filler phrases.
-                - Focus on RAW STRUCTURAL LOGIC.
-                - Use high-density scientific terminology to ensure each sentence provides NEW information.
-                
-                TASK: Construct a 'Causal Ontological Stack':
-                1. MICRO-SUBSTRATE: Explicitly define the Biophysical/Hard Science drivers (Physics/Bio/Chem).
-                2. MESO-EMERGENCE: How these drivers manifest as behavior.
-                3. MACRO-SYSTEM: The structural 'Scientific Cage'.
-                
-                MANDATE: Ensure a clean, logical flow without circular definitions.
+                TASK: Provide a deep structural analysis (1500 words).
+                MANDATORY: Focus on Biophysical drivers (Physics/Bio) and how they emerge as social patterns.
+                NO FILLER: Use dense, academic language.
                 """
                 groq_sys_prompt = p1_template.replace("[H_ONT]", h_ont_data).replace("[IMA_ONT]", ima_data)
                 
                 groq_response = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=[{"role": "system", "content": groq_sys_prompt}, {"role": "user", "content": user_query}],
-                    temperature=0.45 # Rahlo povišana za večjo variabilnost izrazov
+                    temperature=0.4
                 )
                 groq_synthesis = groq_response.choices[0].message.content
 
-            # --- PHASE 2: CEREBRAS (INCREMENTAL INNOVATOR) ---
-            with st.spinner('PHASE 2: Cerebras generira NOVE rešitve (brez ponavljanja)...'):
+            # --- PHASE 2: CEREBRAS (INCREMENTAL INNOVATION) ---
+            with st.spinner('PHASE 2: Cerebras ustvarja inovacije in graf...'):
                 tech_names = ", ".join(selected_techniques)
                 tech_descriptions = "\n".join([f"- {t}: {IDEATION_TECHNIQUES.get(t, '')}" for t in selected_techniques])
 
                 p2_template = """
                 You are the SIS Hierarchography Specialist (Phase 2).
+                STRATEGY: [TECHNIQUE_NAMES]
                 
-                ANTI-REPETITION RULES:
-                - DO NOT SUMMARIZE Phase 1. Assume the reader has already read it.
-                - DO NOT REUSE terminology from Phase 1 unless absolutely necessary.
-                - START DIRECTLY with the "Delta" (the new value).
-                - Focus 100% on PRACTICAL INNOVATION and NEW CONCEPTUAL LEAPS.
+                RULES: 
+                1. DO NOT REPEAT Phase 1. 
+                2. Generate 5-7 radical innovations. 
+                3. You MUST end with '### SEMANTIC_GRAPH_JSON' followed by a valid JSON.
                 
-                TASK:
-                1. Apply [TECHNIQUE_NAMES] to create radical, previously unmentioned innovations.
-                2. Ensure each innovation is a 'First-of-its-kind' concept based on Phase 1's biophysical findings.
-                3. End with '### SEMANTIC_GRAPH_JSON'.
+                JSON SCHEMA: {"nodes": [{"id": "n1", "label": "TERM", "color": "#fd7e14", "shape": "rectangle"}], "edges": [{"source": "n1", "target": "n2", "rel_type": "AS"}]}
                 """
                 
-                cerebras_sys_prompt = p2_template.replace("[TECHNIQUE_NAMES]", tech_names).replace("[TECHNIQUE_DESCS]", tech_descriptions)
-                cerebras_user_input = f"FOUNDATION ALREADY ESTABLISHED: (Do not repeat this) \n\nGOAL: {idea_query}\n\nCORE ARCHITECTURE TO BUILD UPON: {groq_synthesis[:1000]}..." # Pošljemo le bistvo, da AI ne kopira
+                cerebras_sys_prompt = p2_template.replace("[TECHNIQUE_NAMES]", tech_names)
+                # Pošljemo dovolj konteksta za linkanje, a prepovemo ponavljanje
+                cerebras_user_input = f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nGOAL: {idea_query}\n\nTASK: Build NEW innovations upon this foundation. Do not summarize."
                 
                 cerebras_response = cerebras_client.chat.completions.create(
                     model=cerebras_id, 
                     messages=[{"role": "system", "content": cerebras_sys_prompt}, {"role": "user", "content": cerebras_user_input}],
-                    temperature=0.85 # Visoka temperatura za maksimalno novost (Novelty)
+                    temperature=0.8
                 )
                 cerebras_innovation = cerebras_response.choices[0].message.content
 
-            # --- DUAL-ENGINE RENDERING ---
+            # --- PROCESIRANJE REZULTATOV ---
             st.subheader("🧱 HIERARCHOLOGICAL SYNTHESIS REPORT")
             
+            # Razdelitev teksta in JSON-a
             if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
                 parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
                 innovation_text = parts[0]
-                json_part = parts[1]
+                json_raw = parts[1]
             else:
                 innovation_text = cerebras_innovation
-                json_part = None
+                json_raw = None
 
-            # Združimo poročilo tako, da je jasno ločeno, kaj je baza in kaj je nadgradnja
-            full_markdown = f"## 📚 ARCHITECTURAL FOUNDATION\n{groq_synthesis}\n\n---\n## 💡 INCREMENTAL INNOVATIONS (Phase 2 - Strategic Leap)\n{innovation_text}"
+            full_report = f"## 📚 Phase 1: Foundation\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations\n\n{innovation_text}"
             
-            # Semantic Processing
-            processed_markdown = full_markdown
-            if json_part:
+            # --- ROBUSTEN PARSER ZA GRAF IN POVEZAVE ---
+            nodes_for_highlighting = []
+            elements = []
+            
+            if json_raw:
                 try:
-                    json_match = re.search(r'\{.*\}', json_part, re.DOTALL)
-                    if json_match:
-                        g_json = json.loads(json_match.group())
-                        for n in g_json.get("nodes", []):
-                            lbl = n["label"]
-                            g_url = urllib.parse.quote(lbl)
-                            pattern = re.compile(re.escape(lbl), re.IGNORECASE)
-                            replacement = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
-                            processed_markdown = pattern.sub(replacement, processed_markdown, count=1)
-                except: pass
-
-            st.markdown(processed_markdown, unsafe_allow_html=True)
-
-            # --- GRAPH ---
-            if json_part:
-                try:
-                    json_match = re.search(r'\{.*\}', json_part, re.DOTALL)
-                    if json_match:
-                        g_json = json.loads(json_match.group())
-                        st.subheader("🕸️ HIERARCHOGRAPHIC SYSTEM MAP")
-                        elements = []
-                        for n in g_json.get("nodes", []):
-                            elements.append({"data": {"id": n["id"], "label": n["label"], "color": n.get("color", "#fd7e14"), "size": 100, "shape": n.get("shape", "rectangle")}})
-                        for e in g_json.get("edges", []):
-                            elements.append({"data": {"source": e["source"], "target": e["target"], "rel_type": e.get("rel_type", "AS")}})
-                        render_cytoscape_network(elements, f"cy_final_{int(time.time())}")
+                    # Očistimo morebitne markdown narekovaje
+                    clean_json_str = re.search(r'(\{.*\})', json_raw, re.DOTALL).group(1)
+                    g_data = json.loads(clean_json_str)
+                    
+                    # Priprava elementov za Cytoscape
+                    for n in g_data.get("nodes", []):
+                        nodes_for_highlighting.append(n)
+                        elements.append({
+                            "data": {
+                                "id": n["id"], 
+                                "label": n["label"], 
+                                "color": n.get("color", "#fd7e14"), 
+                                "shape": n.get("shape", "rectangle"),
+                                "size": 100
+                            }
+                        })
+                    for e in g_data.get("edges", []):
+                        elements.append({
+                            "data": {
+                                "source": e["source"], 
+                                "target": e["target"], 
+                                "rel_type": e.get("rel_type", "AS")
+                            }
+                        })
                 except:
-                    st.info("💡 Arhitektura in inovacije so pripravljene.")
+                    json_raw = None # Če JSON ni veljaven, ne bomo linkali
+
+            # --- SEMANTIČNO POLINKANJE (HIGHLIGHTING) ---
+            final_markdown = full_report
+            if nodes_for_highlighting:
+                # Sortiramo po dolžini (daljši termini imajo prednost pri zamenjavi)
+                sorted_nodes = sorted(nodes_for_highlighting, key=lambda x: len(x['label']), reverse=True)
+                for node in sorted_nodes:
+                    lbl = node['label']
+                    nid = node['id']
+                    if len(lbl) > 3: # Samo za dovolj dolge besede
+                        g_url = urllib.parse.quote(lbl)
+                        # Uporabimo Regex za zamenjavo prve pojavitve besede, ki ni že del HTML taga
+                        pattern = re.compile(r'(?i)\b(' + re.escape(lbl) + r')\b')
+                        replacement = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight" id="{nid}">\\1<i class="google-icon">↗</i></a>'
+                        final_markdown = pattern.sub(replacement, final_markdown, count=1)
+
+            st.markdown(final_markdown, unsafe_allow_html=True)
+
+            # --- IZRIS GRAFA ---
+            if elements:
+                st.subheader("🕸️ HIERARCHOGRAPHIC SYSTEM MAP")
+                render_cytoscape_network(elements, f"cy_{int(time.time())}")
+            elif json_raw:
+                st.warning("⚠️ Grafični podatki so bili generirani, vendar niso v pravilnem JSON formatu.")
 
         except Exception as e:
             st.error(f"❌ Pipeline Failure: {e}")
@@ -1002,6 +1016,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
 # =============================================================================
 st.divider()
 st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | {SYSTEM_DATE}")
+
 
 
 
