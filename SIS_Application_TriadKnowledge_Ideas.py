@@ -12,11 +12,7 @@ import streamlit.components.v1 as components
 # =============================================================================
 # 0. GLOBAL CONFIGURATION & SESSION DATE (FEBRUARY 24, 2026)
 # =============================================================================
-# From:
 SYSTEM_DATE = "February 24, 2026"
-
-# To:
-SYSTEM_DATE = "March 13, 2026"
 VERSION_CODE = "v22.8.0-ULTRA-SYNERGY-FINAL-950"
 
 st.set_page_config(
@@ -730,11 +726,7 @@ with st.sidebar:
     st.markdown(f'<div class="sidebar-logo-container"><img src="data:image/svg+xml;base64,{get_svg_base64(SVG_3D_RELIEF)}" width="220"></div>', unsafe_allow_html=True)
     
     # 2. Hardcoded Date Badge (FORCED VISIBILITY)
-    # From:
-st.markdown(f'<div class="date-badge">FEBRUARY 24, 2026</div>', unsafe_allow_html=True)
-
-# To:
-st.markdown(f'<div class="date-badge">MARCH 13, 2026</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="date-badge">FEBRUARY 24, 2026</div>', unsafe_allow_html=True)
     
     st.header("⚙️ SYSTEM CONTROL")
     
@@ -985,7 +977,8 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
 # 6. FOOTER
 # =============================================================================
 st.divider()
-st.caption(f"SIS Hierarchology Synthesizer | {VERSION_CODE} | {SYSTEM_DATE}")
+st.caption(f"SIS Hierarchology Synthesizer | {VERSION_CODE} | from datetime import datetime
+SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
 
 
 
