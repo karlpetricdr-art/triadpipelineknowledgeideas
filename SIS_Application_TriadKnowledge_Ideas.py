@@ -879,8 +879,11 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
     elif not user_query:
         st.warning("⚠️ Phase 1 Research Inquiry is required.")
     elif not selected_techniques:
-        st.warning("⚠️ Prosim, izberite vsaj eno tehniko inoviranja (Innovation Strategy).")
+        st.warning("⚠️ Prosim, izberite vsaj eno tehniko inoviranja.")
     else:
+        # Priprava kontejnerjev za prikaz (da vidimo napredek)
+        output_placeholder = st.empty()
+        
         try:
             # 0. INITIALIZATION
             groq_synthesis = ""
@@ -896,8 +899,8 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             ma_data = json.dumps(MENTAL_APPROACHES_ONTOLOGY)
             biblio_data = fetch_author_bibliographies(target_authors) if target_authors else "No bibliography provided."
 
-            # --- PHASE 1: GROQ (HIERARCHOLOGY ANALYSIS) ---
-            with st.spinner('PHASE 1: Groq synthesizing Hierarchology Foundation...'):
+            # --- PHASE 1: GROQ ---
+            with st.spinner('PHASE 1: Groq analizira bio-fizikalne temelje...'):
                 p1_template = """
                 You are the SIS Hierarchology Research Scientist (Phase 1).
                 HIERARCHOLOGY ONTOLOGY: [H_ONT]
@@ -909,10 +912,9 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 
                 TASK: Provide a structural foundation (approx 1500 words) using Hierarchology logic.
                 
-                NATURAL SCIENCE INTEGRATION RULE (MANDATORY):
-                If [SCIENCES] includes Physics, Chemistry, or Biology, you MUST treat them as fundamental drivers.
-                - Analyze the BIOPHYSICAL SUBSTRATE of the problem (e.g., How do thermodynamics, wave frequencies, or molecular chemistry affect behavioral outcomes like stress and crime?).
-                - Do not stay only in social paradigms. Identify how hard-science constants (entropy, neural pathways, hormonal feedback) influence the Meso (social) and Macro (law) levels.
+                NATURAL SCIENCE MANDATE:
+                If [SCIENCES] includes Physics, Chemistry, or Biology, treat them as PRIMARY drivers.
+                Analyze the BIOPHYSICAL SUBSTRATE (waves, entropy, hormones, neural pathways) of the problem.
                 """
                 groq_sys_prompt = p1_template.replace("[H_ONT]", h_ont_data).replace("[IMA_ONT]", ima_data).replace("[DATE]", SYSTEM_DATE).replace("[SCIENCES]", str(sel_sciences)).replace("[BIBLIO]", biblio_data).replace("[FILE]", file_content)
                 
@@ -923,9 +925,8 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 )
                 groq_synthesis = groq_response.choices[0].message.content
 
-            # --- PHASE 2: CEREBRAS (HIERARCHOGRAPHY & INNOVATION) ---
-            with st.spinner('PHASE 2: Cerebras producing Hybrid Innovations...'):
-                # Priprava opisa izbranih tehnik
+            # --- PHASE 2: CEREBRAS ---
+            with st.spinner('PHASE 2: Cerebras razvija naravoslovne inovacije...'):
                 tech_names = ", ".join(selected_techniques)
                 tech_descriptions = "\n".join([f"- {t}: {IDEATION_TECHNIQUES.get(t, '')}" for t in selected_techniques])
 
@@ -937,22 +938,15 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 FRAMEWORK DESCRIPTIONS: [TECHNIQUE_DESCS]
                 
                 CONVERGENCE MANDATE:
-                You must achieve 'HARD SCIENCE CONVERGENCE'. 
-                If Physics, Chemistry, or Biology are selected in the project ([SCIENCES]), the innovations MUST strictly use their principles to solve the social issue.
-                - Example: Address crime via Physics (acoustic entropy/lighting frequency) or Biology (biochemical neural stabilization).
-                - Example: Address stress via Chemistry (hormonal buffering) or Physics (circadian modulation).
-                Force a synthesis where a social problem is addressed via a natural-science instrument.
+                If [SCIENCES] contains Physics, Chemistry, or Biology, you MUST solve the issue via hard-science instruments (e.g. acoustic frequencies, molecular tagging, epigenetic modulation).
                 
                 TASK:
-                1. Review the Phase 1 foundation.
-                2. Generate radical 'Useful Innovative Ideas' by synthesizing the logic of ALL selected frameworks ([TECHNIQUE_NAMES]).
-                3. HIERARCHOGRAPHY: Describe the resulting system using diagrammatic logic.
-                4. End your response with '### SEMANTIC_GRAPH_JSON' followed by a valid JSON network.
+                1. Review Phase 1 foundation.
+                2. Generate 'Useful Innovative Ideas' using [TECHNIQUE_NAMES].
+                3. HIERARCHOGRAPHY: Describe the system logic.
+                4. CRITICAL: End with '### SEMANTIC_GRAPH_JSON' and a valid JSON object.
                 
-                VISUAL RULES: 
-                - Hierarchies = 'rectangle' (#fd7e14).
-                - Associations = 'diamond' (#e63946).
-                - JSON schema: {"nodes": [{"id": "n1", "label": "Text", "type": "Root|Branch", "color": "#hex", "shape": "rectangle|diamond"}], "edges": [{"source": "n1", "target": "n2", "rel_type": "AS|BT"}]}
+                JSON Schema: {"nodes": [{"id": "n1", "label": "Text", "color": "#hex", "shape": "rectangle"}], "edges": [{"source": "n1", "target": "n2", "rel_type": "AS"}]}
                 """
                 
                 cerebras_sys_prompt = (p2_template
@@ -966,62 +960,54 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 cerebras_response = cerebras_client.chat.completions.create(
                     model=cerebras_id, 
                     messages=[{"role": "system", "content": cerebras_sys_prompt}, {"role": "user", "content": cerebras_user_input}],
-                    temperature=0.85
+                    temperature=0.8
                 )
                 cerebras_innovation = cerebras_response.choices[0].message.content
 
-            # --- COMBINING AND RENDERING ---
-            combined_content = "## 📚 Phase 1: Hierarchology Foundation\n" + groq_synthesis + "\n\n---\n## 💡 Phase 2: Hybrid Innovations\n" + cerebras_innovation
+            # --- PRIKAZ REZULTATOV (FAIL-SAFE) ---
+            st.subheader("📊 INTEGRATED HIERARCHOLOGY RESULTS")
             
-            parts = combined_content.split("### SEMANTIC_GRAPH_JSON")
-            main_markdown = parts[0]
-            
-            # Semantic Processing (Google Links)
-            if len(parts) > 1:
+            # Razdelitev na tekst in JSON
+            if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
+                parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
+                text_part = groq_synthesis + "\n\n---\n" + parts[0]
+                json_part = parts[1]
+            else:
+                text_part = groq_synthesis + "\n\n---\n" + cerebras_innovation
+                json_part = None
+
+            # Izpis glavnega besedila (Google Links procesiranje)
+            main_markdown = text_part
+            if json_part:
                 try:
-                    json_str = re.search(r'\{.*\}', parts[1], re.DOTALL).group()
-                    g_json = json.loads(json_str)
-                    for n in g_json.get("nodes", []):
-                        lbl, nid = n["label"], n["id"]
-                        g_url = urllib.parse.quote(lbl)
-                        pattern = re.compile(re.escape(lbl), re.IGNORECASE)
-                        replacement = f'<span id="{nid}"><a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a></span>'
-                        main_markdown = pattern.sub(replacement, main_markdown, count=1)
+                    json_match = re.search(r'\{.*\}', json_part, re.DOTALL)
+                    if json_match:
+                        g_json = json.loads(json_match.group())
+                        for n in g_json.get("nodes", []):
+                            lbl, nid = n["label"], n["id"]
+                            g_url = urllib.parse.quote(lbl)
+                            pattern = re.compile(re.escape(lbl), re.IGNORECASE)
+                            replacement = f'<span id="{nid}"><a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a></span>'
+                            main_markdown = pattern.sub(replacement, main_markdown, count=1)
                 except: pass
 
-            st.subheader("📊 INTEGRATED HIERARCHOLOGY RESULTS")
             st.markdown(main_markdown, unsafe_allow_html=True)
 
-            # --- INTERACTIVE GRAPH ---
-            if len(parts) > 1:
+            # --- IZRIS GRAFA ---
+            if json_part:
                 try:
-                    json_str = re.search(r'\{.*\}', parts[1], re.DOTALL).group()
-                    g_json = json.loads(json_str)
-                    st.subheader("🕸️ HIERARCHOGRAPHIC SEMANTIC NETWORK")
-                    
-                    elements = []
-                    for n in g_json.get("nodes", []):
-                        elements.append({
-                            "data": {
-                                "id": n["id"], 
-                                "label": n["label"], 
-                                "color": n.get("color", "#fd7e14"), 
-                                "size": 100, 
-                                "shape": n.get("shape", "rectangle")
-                            }
-                        })
-                    for e in g_json.get("edges", []):
-                        elements.append({
-                            "data": {
-                                "source": e["source"], 
-                                "target": e["target"], 
-                                "rel_type": e.get("rel_type", "AS")
-                            }
-                        })
-                    
-                    render_cytoscape_network(elements, "viz_hierarchography_final")
+                    json_match = re.search(r'\{.*\}', json_part, re.DOTALL)
+                    if json_match:
+                        g_json = json.loads(json_match.group())
+                        st.subheader("🕸️ HIERARCHOGRAPHIC SEMANTIC NETWORK")
+                        elements = []
+                        for n in g_json.get("nodes", []):
+                            elements.append({"data": {"id": n["id"], "label": n["label"], "color": n.get("color", "#fd7e14"), "size": 100, "shape": n.get("shape", "rectangle")}})
+                        for e in g_json.get("edges", []):
+                            elements.append({"data": {"source": e["source"], "target": e["target"], "rel_type": e.get("rel_type", "AS")}})
+                        render_cytoscape_network(elements, "viz_final")
                 except Exception as viz_err:
-                    st.warning(f"⚠️ Graph Render Error: {viz_err}")
+                    st.warning("⚠️ Graf ni mogel biti generiran (napaka v JSON strukturi), vendar je poročilo zgoraj.")
 
         except Exception as e:
             st.error(f"❌ Pipeline Failure: {e}")
@@ -1031,6 +1017,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
 # =============================================================================
 st.divider()
 st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | {SYSTEM_DATE}")
+
 
 
 
