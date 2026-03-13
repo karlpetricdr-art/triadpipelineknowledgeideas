@@ -713,7 +713,18 @@ KNOWLEDGE_BASE = {
         }
     }
 }
-
+# =============================================================================
+# 3.1 ADVANCED IDEATION TECHNIQUES LIBRARY
+# =============================================================================
+IDEATION_TECHNIQUES = {
+    "Six Thinking Hats": "Process the problem through 6 perspectives: White (Data), Red (Emotion), Black (Risk), Yellow (Value), Green (Creativity), and Blue (Control/Planning).",
+    "SCAMPER": "Apply the following filters: Substitute, Combine, Adapt, Modify, Put to another use, Eliminate, and Reverse.",
+    "First Principles": "Deconstruct the problem into fundamental, undeniable truths and rebuild a solution from the ground up (avoiding analogies).",
+    "TRIZ (Simplified)": "Identify systemic contradictions and apply inventive principles like Segmentation, Nesting, or Local Quality to resolve them.",
+    "Lateral Thinking": "Use 'Provocation' and 'Movement' to jump out of established patterns and find non-obvious entry points to the problem.",
+    "Blue Ocean Strategy": "Identify ways to make the competition irrelevant by creating a new value space through 'Eliminate-Reduce-Raise-Create' logic.",
+    "Synectics": "Use direct, personal, and symbolic analogies to make the strange familiar and the familiar strange."
+}
 # =============================================================================
 # 4. INTERFACE CONSTRUCTION (SIDEBAR & MAIN)
 # =============================================================================
@@ -825,7 +836,20 @@ with r2c2: sel_models = st.multiselect("5. Structural Models:", list(KNOWLEDGE_B
 with r2c3: goal_context = st.selectbox("6. Strategic Project Goal:", ["Scientific Research", "Problem Solving", "Educational", "Policy Making"])
 
 st.divider()
+st.markdown("### 🧬 INNOVATION STRATEGY")
+sel_technique = st.selectbox(
+    "Select Strategic Ideation Framework for Phase 2:", 
+    options=list(IDEATION_TECHNIQUES.keys()), 
+    index=0,
+    help="This instructs the Cerebras engine to use a specific cognitive framework for idea generation."
+)
+st.info(f"**Current Strategy: {sel_technique}** - {IDEATION_TECHNIQUES.get(sel_technique, '')}")
+st.divider()
+# >>> KONEC PRILEPLJENE KODE <<<
 
+# DUAL INQUIRY INTERFACE (nadaljevanje obstoječe kode)
+col_inq1, col_inq2, col_inq3 = st.columns([2, 2, 1])
+# ...
 # DUAL INQUIRY INTERFACE
 col_inq1, col_inq2, col_inq3 = st.columns([2, 2, 1])
 with col_inq1:
@@ -893,18 +917,28 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 You are the SIS Hierarchography Specialist (Phase 2). 
                 MENTAL APPROACHES (MA): [MA_ONT]
                 
+                STRATEGIC FRAMEWORK: [TECHNIQUE_NAME]
+                FRAMEWORK DESCRIPTION: [TECHNIQUE_DESC]
+                
                 TASK:
-                1. Review the Phase 1 analysis and generate radical 'Useful Innovative Ideas'.
-                2. HIERARCHOGRAPHY: Describe the system using diagrammatic logic (Workflows, Oligographs, or Tree Maps).
-                3. End your response with '### SEMANTIC_GRAPH_JSON' followed by a valid JSON network.
+                1. Review the Phase 1 foundation.
+                2. Generate radical 'Useful Innovative Ideas' strictly applying the [TECHNIQUE_NAME] logic.
+                3. HIERARCHOGRAPHY: Describe the system using diagrammatic logic (Workflows, Oligographs, or Tree Maps).
+                4. End your response with '### SEMANTIC_GRAPH_JSON' followed by a valid JSON network.
                 
                 VISUAL RULES: 
                 - Hierarchies = 'rectangle' (#fd7e14).
                 - Associations = 'diamond' (#e63946).
                 - JSON schema: {"nodes": [{"id": "n1", "label": "Text", "type": "Root|Branch", "color": "#hex", "shape": "rectangle|diamond"}], "edges": [{"source": "n1", "target": "n2", "rel_type": "AS|BT"}]}
                 """
-                cerebras_sys_prompt = p2_template.replace("[MA_ONT]", ma_data)
-                cerebras_user_input = "FOUNDATION: " + groq_synthesis + "\n\nGOAL: " + idea_query
+                
+                # Tukaj vstavimo izbrano tehniko v sistemski prompt
+                cerebras_sys_prompt = (p2_template
+                    .replace("[MA_ONT]", ma_data)
+                    .replace("[TECHNIQUE_NAME]", sel_technique)
+                    .replace("[TECHNIQUE_DESC]", IDEATION_TECHNIQUES.get(sel_technique, "")))
+                
+                cerebras_user_input = "FOUNDATION: " + groq_synthesis + "\n\nINNOVATION GOAL: " + idea_query
                 
                 cerebras_response = cerebras_client.chat.completions.create(
                     model=cerebras_id, 
@@ -978,6 +1012,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
 # =============================================================================
 st.divider()
 st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | {SYSTEM_DATE}")
+
 
 
 
