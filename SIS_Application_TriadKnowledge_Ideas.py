@@ -977,7 +977,8 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
 # 6. FOOTER & METRICS
 # =============================================================================
 st.divider()
-st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | Operating Date: SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
+st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | Operating Date: {SYSTEM_DATE}")
+st.write("")
 
 
 
