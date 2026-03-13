@@ -892,74 +892,85 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             ma_data = json.dumps(MENTAL_APPROACHES_ONTOLOGY)
             biblio_data = fetch_author_bibliographies(target_authors) if target_authors else "No bibliography provided."
 
-            # --- PHASE 1: GROQ (MASTER ARCHITECT - DEEP SYNTHESIS) ---
-            with st.spinner('PHASE 1: Groq izvaja vertikalno znanstveno integracijo...'):
+            # --- PHASE 1: GROQ (SYSTEM ARCHITECT & INTEGRATOR) ---
+            # Cilj: Maksimalna arhitekturna trdnost in interdisciplinarnost
+            with st.spinner('PHASE 1: Groq gradi vzročno arhitekturo sistema...'):
                 p1_template = """
                 You are the SIS Lead Hierarchologist (Phase 1). 
-                Your goal is a 10/10 interdisciplinary synthesis.
+                Objective: Achieve a 10/10 score in System Architecture and Interdisciplinary Integration.
                 
-                ONTOLOGIES: [H_ONT], [IMA_ONT]
-                CONTEXT: Sciences: [SCIENCES] | Authors: [BIBLIO] | Data: [FILE]
+                KNOWLEDGE FRAMEWORK: [H_ONT]
+                COGNITIVE MODEL: [IMA_ONT]
                 
-                TASK: Construct a Vertical Integration Map (1500 words):
-                1. MICRO-LEVEL (Biophysical): If [SCIENCES] contains Physics/Bio/Chem, analyze the atomic/neural substrate (e.g. neurotransmitters, entropy, thermodynamic stability).
-                2. MESO-LEVEL (Social/Psychological): Map how these biophysical states manifest as stress or crime patterns.
-                3. MACRO-LEVEL (Structural): Analyze the systemic/legal cage.
-                4. CONVERGENT DIAGNOSIS: Identify the EXACT point where hard science can fix a social failure.
+                TASK: Construct a 'Causal Ontological Stack' (1500 words):
+                1. MICRO-LEVEL (Substrate): Map the Physics/Biology/Chemistry of the problem. 
+                   - If Physics: Define thermodynamic entropy or wave-interference in the context of [USER_QUERY].
+                   - If Biology: Define neurochemical/epigenetic signaling pathways.
+                2. MESO-LEVEL (Emergence): Explain how the Micro-substrate creates Social/Psychological patterns. 
+                   - Link biophysical energy states to human behavior.
+                3. MACRO-LEVEL (Constraint): Analyze the 'Scientific Cage' and legal/social structures.
+                4. INTEGRATION AUDIT: Explicitly state the causal link between a natural law and a social outcome.
+                
+                Format: Use professional, high-density scientific language.
                 """
-                groq_sys_prompt = p1_template.replace("[H_ONT]", h_ont_data).replace("[IMA_ONT]", ima_data).replace("[DATE]", SYSTEM_DATE).replace("[SCIENCES]", str(sel_sciences)).replace("[BIBLIO]", biblio_data).replace("[FILE]", file_content)
+                groq_sys_prompt = p1_template.replace("[H_ONT]", h_ont_data).replace("[IMA_ONT]", ima_data).replace("[USER_QUERY]", user_query).replace("[SCIENCES]", str(sel_sciences))
                 
                 groq_response = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=[{"role": "system", "content": groq_sys_prompt}, {"role": "user", "content": user_query}],
-                    temperature=0.5
+                    temperature=0.35 # Nižja temperatura za maksimalno arhitekturno stabilnost
                 )
                 groq_synthesis = groq_response.choices[0].message.content
 
-            # --- PHASE 2: CEREBRAS (RADICAL INVENTOR - HYBRID IDEATION) ---
-            with st.spinner('PHASE 2: Cerebras ustvarja prelomne inovacije in mrežo...'):
+            # --- PHASE 2: CEREBRAS (PRACTICAL INNOVATOR & HIERARCHOGRAPHER) ---
+            # Cilj: Praktična uporabnost, novost in jasnost grafa
+            with st.spinner('PHASE 2: Cerebras prevaja arhitekturo v praktične inovacije...'):
                 tech_names = ", ".join(selected_techniques)
                 tech_descriptions = "\n".join([f"- {t}: {IDEATION_TECHNIQUES.get(t, '')}" for t in selected_techniques])
 
                 p2_template = """
                 You are the SIS Hierarchography Specialist (Phase 2).
-                METHODOLOGY: [TECHNIQUE_NAMES] ([TECHNIQUE_DESCS])
+                TASK: Translate Phase 1's architecture into 'Practical Innovations' (10/10 Practicality & Clarity).
                 
-                TASK:
-                1. Apply the [TECHNIQUE_NAMES] frameworks to the Phase 1 Foundation.
-                2. INVENT: Generate 5-7 radical, high-utility innovations that leverage HARD SCIENCE (Physics/Bio/Chem) to solve the social issues identified.
-                3. HIERARCHOGRAPHY: Define the associative links between these innovations and the structural foundation.
-                4. FORMAT: End with '### SEMANTIC_GRAPH_JSON' and a valid JSON network.
+                IDEATION STRATEGY: [TECHNIQUE_NAMES]
                 
-                JSON Rules: Use 'rectangle' for nodes, 'diamond' for associations. Force high-density links.
+                REQUIREMENTS:
+                1. INNOVATION PROTOCOLS: Generate 5 radical solutions. Each must include:
+                   - Name: Scientific/Technical name.
+                   - Mechanism: How it uses Hard Science (Physics/Bio) to fix a Social Problem.
+                   - Practicality: Immediate real-world deployment steps.
+                2. HIERARCHOGRAPHY: Map these solutions back to the Phase 1 Foundation.
+                3. GRAPH JSON: End with '### SEMANTIC_GRAPH_JSON' and a valid JSON network.
+                
+                JSON Rules: Ensure nodes represent BOTH scientific concepts and practical solutions.
                 """
                 
                 cerebras_sys_prompt = p2_template.replace("[TECHNIQUE_NAMES]", tech_names).replace("[TECHNIQUE_DESCS]", tech_descriptions)
-                cerebras_user_input = f"FOUNDATION ANALYSIS: {groq_synthesis}\n\nINNOVATION GOAL: {idea_query}"
+                cerebras_user_input = f"ARCHITECTURAL FOUNDATION: {groq_synthesis}\n\nGOAL: {idea_query}"
                 
                 cerebras_response = cerebras_client.chat.completions.create(
                     model=cerebras_id, 
                     messages=[{"role": "system", "content": cerebras_sys_prompt}, {"role": "user", "content": cerebras_user_input}],
-                    temperature=0.85
+                    temperature=0.8 # Višja temperatura za novost konceptov
                 )
                 cerebras_innovation = cerebras_response.choices[0].message.content
 
-            # --- DUAL-ENGINE RENDERING ---
-            st.subheader("🧱 UNIVERSAL KNOWLEDGE SYNTHESIS")
+            # --- RENDERING ENGINE ---
+            st.subheader("🧱 HIERARCHOLOGICAL SYNTHESIS REPORT")
             
-            # Separation & Fail-safe
+            # Parsing logic
             if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
-                text_parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
-                innovation_text = text_parts[0]
-                json_part = text_parts[1]
+                parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
+                innovation_text = parts[0]
+                json_part = parts[1]
             else:
                 innovation_text = cerebras_innovation
                 json_part = None
 
-            full_report = f"### 📚 Phase 1: Structural Foundation\n{groq_synthesis}\n\n---\n### 💡 Phase 2: Radical Innovations\n{innovation_text}"
+            full_markdown = f"## 📚 ARCHITECTURAL FOUNDATION (Phase 1)\n{groq_synthesis}\n\n---\n## 💡 PRACTICAL INNOVATIONS (Phase 2)\n{innovation_text}"
             
-            # Google Links Processor
-            main_markdown = full_report
+            # Process Semantic Highlighting
+            processed_markdown = full_markdown
             if json_part:
                 try:
                     json_match = re.search(r'\{.*\}', json_part, re.DOTALL)
@@ -970,26 +981,26 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                             g_url = urllib.parse.quote(lbl)
                             pattern = re.compile(re.escape(lbl), re.IGNORECASE)
                             replacement = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
-                            main_markdown = pattern.sub(replacement, main_markdown, count=1)
+                            processed_markdown = pattern.sub(replacement, processed_markdown, count=1)
                 except: pass
 
-            st.markdown(main_markdown, unsafe_allow_html=True)
+            st.markdown(processed_markdown, unsafe_allow_html=True)
 
-            # --- GRAPH VISUALIZATION ---
+            # --- DYNAMIC GRAPH ---
             if json_part:
                 try:
                     json_match = re.search(r'\{.*\}', json_part, re.DOTALL)
                     if json_match:
                         g_json = json.loads(json_match.group())
-                        st.subheader("🕸️ HIERARCHOGRAPHIC SEMANTIC NETWORK")
+                        st.subheader("🕸️ HIERARCHOGRAPHIC SYSTEM MAP")
                         elements = []
                         for n in g_json.get("nodes", []):
                             elements.append({"data": {"id": n["id"], "label": n["label"], "color": n.get("color", "#fd7e14"), "size": 100, "shape": n.get("shape", "rectangle")}})
                         for e in g_json.get("edges", []):
                             elements.append({"data": {"source": e["source"], "target": e["target"], "rel_type": e.get("rel_type", "AS")}})
-                        render_cytoscape_network(elements, f"cy_{int(time.time())}")
+                        render_cytoscape_network(elements, f"cy_final_{int(time.time())}")
                 except:
-                    st.info("💡 Poročilo je pripravljeno. Grafični JSON je bil preobsežen za vizualizacijo, a vsebina je zgoraj.")
+                    st.info("💡 Arhitektura in inovacije so pripravljene. Grafični model je dostopen v besedilni obliki.")
 
         except Exception as e:
             st.error(f"❌ Pipeline Failure: {e}")
@@ -999,6 +1010,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
 # =============================================================================
 st.divider()
 st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | {SYSTEM_DATE}")
+
 
 
 
