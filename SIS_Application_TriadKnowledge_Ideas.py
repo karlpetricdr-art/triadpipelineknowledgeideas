@@ -875,68 +875,77 @@ with col_inq1:
     user_query = st.text_area("❓ STEP 1: Research Inquiry (for GROQ):", placeholder="Fact-based Foundational Inquiry...", height=200)
 with col_inq2:
     idea_query = st.text_area("💡 STEP 2: Innovation Prompt (for SAMBANOVA):", placeholder="Targets for innovative idea production...", height=200)
+# --- POPRAVEK KORAK 1: Branje vsebine datoteke ---
 with col_inq3:
-    # TUKAJ JE BIL POPRAVEK:
-    uploaded_file = st.file_uploader("📂 ATTACH DATA (.txt only):", type=['txt'], help="Context for both AI engines.")
-    file_content = ""
-    if uploaded_file: 
-        file_content = uploaded_file.read().decode("utf-8")
-        st.success(f"Context from {uploaded_file.name} integrated.")
+    uploaded_file = st.file_uploader("📂 ATTACH DATA (.txt only):", type=['txt'], key="final_file_uploader")
+    
+    # POMEMBNO: file_content mora biti definiran tukaj
+    file_content = "" 
+    
+    if uploaded_file is not None:
+        try:
+            # Preberemo vsebino in jo dekodiramo v tekst
+            file_content = uploaded_file.read().decode("utf-8")
+            st.success(f"📎 {uploaded_file.name} naložena!")
+            
+            # Opcijsko: Pokažemo kratek predogled (prvih 100 znakov), da vemo, da dela
+            with st.expander("Predogled datoteke"):
+                st.text(file_content[:300] + "...")
+        except Exception as e:
+            st.error(f"Napaka pri branju datoteke: {e}")
 
 # =============================================================================
 # 5. SYNERGY EXECUTION ENGINE (SREMENJENO NA SAMBANOVA LLAMA 3.3)
 # =============================================================================
 
-if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True, key="main_exec_v2026"):
-    # 1. Preverjanje ključev (Uporabljamo novo ime sambanova_api_key)
+# --- POPRAVEK KORAK 2: Vključitev vsebine datoteke v AI proces ---
+
+if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True, key="exec_pipeline_v2026"):
     if not groq_api_key or not sambanova_api_key:
         st.error("❌ Dual-Model synergy requires both Groq and SambaNova keys.")
     elif not user_query:
         st.warning("⚠️ Phase 1 Research Inquiry is required.")
     else:
         try:
+            # 1. PRIPRAVA KONTEKSTA (Združimo datoteko z vprašanjem)
+            # Če je datoteka naložena, jo AI dobi v obliki "DODATNI PODATKI"
+            full_context = f"\n\n[CONTEXT DATA FROM ATTACHED FILE]:\n{file_content}" if file_content else ""
+
             # Inicializacija klientov
             groq_client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
+            samba_client = OpenAI(api_key=sambanova_api_key, base_url="https://api.sambanova.ai/v1")
             
-            # SambaNova uporablja OpenAI standard, a svoj URL
-            samba_client = OpenAI(
-                api_key=sambanova_api_key, 
-                base_url="https://api.sambanova.ai/v1"
-            )
-            
-            # --- PHASE 1: GROQ (ARCHITECTURAL FOUNDATION) ---
-            with st.spinner('PHASE 1: Groq gradi znanstveno arhitekturo (LPU stroj)...'):
-                groq_sys_prompt = "You are the SIS Lead Hierarchologist. Provide deep structural analysis based on IMA ontology."
+            # --- PHASE 1: GROQ (S strukturnim kontekstom iz datoteke) ---
+            with st.spinner('PHASE 1: Groq analizira vsebino datoteke in gradi temelje...'):
+                groq_sys_prompt = "You are the SIS Lead Hierarchologist. Use the attached context data to provide a precise, fact-based structural analysis."
                 
-                groq_response = groq_client.chat.completions.create(
+                p1_response = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
-                    messages=[{"role": "system", "content": groq_sys_prompt}, {"role": "user", "content": user_query}],
+                    messages=[
+                        {"role": "system", "content": groq_sys_prompt}, 
+                        {"role": "user", "content": f"INQUIRY: {user_query}{full_context}"}
+                    ],
                     temperature=0.4
                 )
-                groq_synthesis = groq_response.choices[0].message.content
-                st.session_state.groq_synthesis = groq_synthesis # Shranimo v stanje
+                groq_synthesis = p1_response.choices[0].message.content
+                st.session_state.groq_synthesis = groq_synthesis
 
-            # --- PHASE 2: SAMBANOVA (INCREMENTAL INNOVATION) ---
-            with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) ustvarja inovacije (RDU stroj)...'):
-                tech_names = ", ".join(selected_techniques) if 'selected_techniques' in locals() else "Standard Innovation"
-
-                # Prompt za SambaNovo - fiksiran na generiranje inovacij in grafa
-                samba_sys_prompt = f"""
-                You are the SIS Hierarchography Specialist. Strategy: {tech_names}.
-                RULES: 
-                1. DO NOT REPEAT Phase 1. 
-                2. Generate 5-7 radical innovations based on Mental Approaches (MA). 
-                3. You MUST end with '### SEMANTIC_GRAPH_JSON' followed by a valid JSON.
-                """
+            # --- PHASE 2: SAMBANOVA (Z inovativnim kontekstom iz datoteke) ---
+            with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) ustvarja inovacije...'):
+                samba_sys_prompt = "You are the SIS Hierarchography Specialist. Synthesize radical innovations by combining the Phase 1 foundation with the attached context data."
                 
-                samba_user_input = f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nGOAL: {idea_query}\n\nTASK: Build NEW innovations."
-                
-                samba_response = samba_client.chat.completions.create(
-                    model=sambanova_id, # Uporabi model izbran v Sidebaru
-                    messages=[{"role": "system", "content": samba_sys_prompt}, {"role": "user", "content": samba_user_input}],
+                # SambaNova zdaj dobi vsebino datoteke, da ne bo ugibala
+                p2_response = samba_client.chat.completions.create(
+                    model=sambanova_id, 
+                    messages=[
+                        {"role": "system", "content": samba_sys_prompt}, 
+                        {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nINNOVATION GOAL: {idea_query}{full_context}"}
+                    ],
                     temperature=0.8
                 )
-                cerebras_innovation = samba_response.choices[0].message.content
+                cerebras_innovation = p2_response.choices[0].message.content
+
+            # [Nadaljevanje kode za izpis in graf ostane isto...]
 
             # --- PROCESIRANJE REZULTATOV ---
             st.subheader("🧱 HIERARCHOLOGICAL SYNTHESIS REPORT")
