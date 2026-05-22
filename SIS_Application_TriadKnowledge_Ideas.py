@@ -741,17 +741,13 @@ with st.sidebar:
     
     st.header("⚙️ SYSTEM CONTROL")
     
-    # Dual API Keys Access
+    # Dual-Engine API Access (Zamenjano: SambaNova namesto Cerebrasa)
     st.subheader("🔑 Dual-Engine API Access")
-    groq_api_key = st.text_input("Groq Key (Phase 1 Synthesis):", type="password", help="Provides structural dissertation base.")
-    cerebras_api_key = st.text_input("Cerebras Key (Phase 2 Ideas):", type="password", help="Provides innovations and graph JSON.")
+    groq_api_key = st.text_input("Groq Key (Phase 1):", type="password")
+    sambanova_api_key = st.text_input("SambaNova Key (Phase 2):", type="password", help="Pridobi ga na cloud.sambanova.ai")
     
-    # Posodobljeno za Cerebras Llama 3.3 (Zamenjava za ukinjen 8b model)
-    cerebras_id = st.selectbox(
-    "Cerebras Model Endpoint:", 
-    ["llama-3.3-70b", "llama-3.1-8b", "llama-3.1-70b", "llama3.1-8b", "llama3.1-70b"], 
-    index=0
-)
+    # Model je zdaj fiksiran na najboljšo 70B verzijo
+    sambanova_id = "Llama-3.3-70B-Instruct"
     
     st.divider()
     col_res, col_gui = st.columns(2)
@@ -888,7 +884,12 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
         try:
             # Init Clients
             groq_client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
-            cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
+            
+            # SambaNova uporablja standardni OpenAI format z njihovim naslovom
+            samba_client = OpenAI(
+                api_key=sambanova_api_key, 
+                base_url="https://api.sambanova.ai/v1"
+            )
             
             # Priprava podatkov
             h_ont_data = json.dumps(HIERARCHOLOGY_ONTOLOGY)
@@ -913,33 +914,29 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 )
                 groq_synthesis = groq_response.choices[0].message.content
 
-            # --- PHASE 2: CEREBRAS (INCREMENTAL INNOVATION) ---
-            with st.spinner('PHASE 2: Cerebras ustvarja inovacije in graf...'):
+           # --- PHASE 2: SAMBANOVA (STRATEGIC INNOVATION) ---
+            with st.spinner('PHASE 2: SambaNova (RDU stroj) ustvarja inovacije...'):
                 tech_names = ", ".join(selected_techniques)
-                tech_descriptions = "\n".join([f"- {t}: {IDEATION_TECHNIQUES.get(t, '')}" for t in selected_techniques])
-
+                
                 p2_template = """
                 You are the SIS Hierarchography Specialist (Phase 2).
                 STRATEGY: [TECHNIQUE_NAMES]
                 
                 RULES: 
                 1. DO NOT REPEAT Phase 1. 
-                2. Generate 5-7 radical innovations. 
+                2. Generate 5-7 radical innovations based on the Hierarchology ontology. 
                 3. You MUST end with '### SEMANTIC_GRAPH_JSON' followed by a valid JSON.
-                
-                JSON SCHEMA: {"nodes": [{"id": "n1", "label": "TERM", "color": "#fd7e14", "shape": "rectangle"}], "edges": [{"source": "n1", "target": "n2", "rel_type": "AS"}]}
                 """
                 
-                cerebras_sys_prompt = p2_template.replace("[TECHNIQUE_NAMES]", tech_names)
-                # Pošljemo dovolj konteksta za linkanje, a prepovemo ponavljanje
-                cerebras_user_input = f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nGOAL: {idea_query}\n\nTASK: Build NEW innovations upon this foundation. Do not summarize."
+                samba_sys_prompt = p2_template.replace("[TECHNIQUE_NAMES]", tech_names)
+                samba_user_input = f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nGOAL: {idea_query}\n\nTASK: Build NEW innovations."
                 
-                cerebras_response = cerebras_client.chat.completions.create(
-                    model=cerebras_id, 
-                    messages=[{"role": "system", "content": cerebras_sys_prompt}, {"role": "user", "content": cerebras_user_input}],
+                samba_response = samba_client.chat.completions.create(
+                    model="Llama-3.3-70B-Instruct", 
+                    messages=[{"role": "system", "content": samba_sys_prompt}, {"role": "user", "content": samba_user_input}],
                     temperature=0.8
                 )
-                cerebras_innovation = cerebras_response.choices[0].message.content
+                cerebras_innovation = samba_response.choices[0].message.content
 
             # --- PROCESIRANJE REZULTATOV ---
             st.subheader("🧱 HIERARCHOLOGICAL SYNTHESIS REPORT")
