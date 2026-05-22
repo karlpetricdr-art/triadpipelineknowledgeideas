@@ -944,63 +944,79 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             # [Nadaljevanje kode za izpis in graf ostane isto...]
 
             # --- PROCESIRANJE REZULTATOV ---
+            # --- TOČNA KODA ZA 2. KORAK: PROCESOR GRAFA IN POVEZAV ---
             st.subheader("🧱 HIERARCHOLOGICAL SYNTHESIS REPORT")
             
-            # 1. Razdelitev teksta in JSON-a
+            # 1. Razrez besedila na tekst in JSON del
             if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
                 parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
                 innovation_text = parts[0]
                 json_raw = parts[1]
             else:
                 innovation_text = cerebras_innovation
-                json_raw = None
+                json_raw = ""
 
-            # Sestavimo celotno poročilo za prikaz
+            # Združimo Phase 1 in Phase 2 za končni prikaz
             full_report = f"## 📚 Phase 1: Foundation\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations\n\n{innovation_text}"
             
-            # 2. SEMANTIČNO OZNAČEVANJE (Google Linking)
-            final_markdown = full_report
             nodes_for_highlighting = []
             elements = []
-            
-            if json_raw:
-                try:
-                    clean_json_str = re.search(r'(\{.*\})', json_raw, re.DOTALL).group(1)
-                    g_data = json.loads(clean_json_str)
-                    
-                    for n in g_data.get("nodes", []):
-                        nodes_for_highlighting.append(n)
-                        elements.append({
-                            "data": {
-                                "id": n["id"], "label": n["label"], 
-                                "color": n.get("color", "#fd7e14"), "shape": "rectangle"
-                            }
-                        })
-                        # Dodajanje povezav na Google neposredno v besedilo
-                        lbl = n["label"]
-                        nid = n["id"]
-                        if len(lbl) > 3:
-                            g_url = urllib.parse.quote(lbl)
-                            pattern = re.compile(r'(?i)\b(' + re.escape(lbl) + r')\b')
-                            replacement = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight" id="{nid}">\\1<i class="google-icon">↗</i></a>'
-                            final_markdown = pattern.sub(replacement, final_markdown, count=1)
-                    
-                    for e in g_data.get("edges", []):
-                        elements.append({
-                            "data": {
-                                "source": e["source"], "target": e["target"], 
-                                "rel_type": e.get("rel_type", "LINK")
-                            }
-                        })
-                except Exception as json_err:
-                    st.warning(f"Note: Graph data format issue: {json_err}")
+            final_markdown = full_report
 
-            # 3. PRIKAZ KONČNEGA POROČILA Z HTML POVEZAVAMI
+            # 2. Robustno čiščenje in branje JSON podatkov
+            if json_raw.strip():
+                try:
+                    # Poiščemo samo vsebino znotraj { }
+                    json_match = re.search(r'(\{.*\})', json_raw, re.DOTALL)
+                    if json_match:
+                        clean_json_str = json_match.group(1)
+                        g_data = json.loads(clean_json_str)
+                        
+                        # Priprava vozlišč (Nodes) za graf in Google povezave
+                        for n in g_data.get("nodes", []):
+                            lbl = n.get("label", "Node")
+                            nid = n.get("id", "n")
+                            color = n.get("color", "#fd7e14")
+                            
+                            nodes_for_highlighting.append({"id": nid, "label": lbl})
+                            elements.append({
+                                "data": {"id": nid, "label": lbl, "color": color, "shape": "rectangle"}
+                            })
+
+                        # Priprava povezav (Edges) za graf
+                        for e in g_data.get("edges", []):
+                            elements.append({
+                                "data": {
+                                    "source": e["source"], 
+                                    "target": e["target"], 
+                                    "rel_type": e.get("rel_type", "LINK")
+                                }
+                            })
+
+                        # 3. SEMANTIČNO POVEZOVANJE (Google Linking)
+                        # Besede sortiramo od najdaljših k najkrajšim za pravilno zamenjavo
+                        sorted_nodes = sorted(nodes_for_highlighting, key=lambda x: len(x['label']), reverse=True)
+                        for node in sorted_nodes:
+                            label = node['label']
+                            node_id = node['id']
+                            if len(label) > 2:
+                                g_url = urllib.parse.quote(label)
+                                # Ustvarimo HTML povezavo
+                                link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight" id="{node_id}">{label}<i class="google-icon">↗</i></a>'
+                                # Zamenjamo samo prvo pojavitev besede (ne glede na velike/male črke)
+                                pattern = re.compile(re.escape(label), re.IGNORECASE)
+                                final_markdown = pattern.sub(link_html, final_markdown, count=1)
+                except Exception as e:
+                    st.warning(f"Note: Could not process graph JSON: {e}")
+
+            # 4. IZPIS POROČILA S POVEZAVAMI
             st.markdown(final_markdown, unsafe_allow_html=True)
 
-            # 4. IZRIS GRAFA
+            # 5. IZRIS GRAFA (Cytoscape)
             if elements:
+                st.divider()
                 st.subheader("🕸️ HIERARCHOGRAPHIC SYSTEM MAP")
+                # Uporabimo časovni žig, da se graf vedno na novo naloži
                 render_cytoscape_network(elements, f"cy_{int(time.time())}")
 
         except Exception as e:
