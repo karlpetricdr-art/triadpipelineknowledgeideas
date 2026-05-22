@@ -928,7 +928,22 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
 
             # --- PHASE 2: SAMBANOVA (Z inovativnim kontekstom iz datoteke) ---
             with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) ustvarja inovacije...'):
-                samba_sys_prompt = "You are the SIS Hierarchography Specialist. Synthesize radical innovations by combining the Phase 1 foundation with the attached context data."
+                # --- KORAK 1: STROŽJA NAVODILA ZA GRAF IN POVEZAVE ---
+                samba_sys_prompt = """
+                You are the SIS Hierarchography Specialist. 
+                TASK: Generate 5-7 radical innovations based on the foundation.
+                
+                MANDATORY OUTPUT FORMAT:
+                1. [Your Text Innovations]
+                
+                2. You MUST end your response with EXACTLY this delimiter:
+                ### SEMANTIC_GRAPH_JSON
+                
+                3. After the delimiter, provide ONLY a valid JSON object like this example:
+                {"nodes": [{"id": "n1", "label": "KeyTerm", "color": "#fd7e14"}], "edges": [{"source": "n1", "target": "n2", "rel_type": "LINK"}]}
+                
+                RULE: The 'label' in JSON MUST be a word that exists in your innovation text.
+                """
                 
                 # SambaNova zdaj dobi vsebino datoteke, da ne bo ugibala
                 p2_response = samba_client.chat.completions.create(
@@ -946,93 +961,85 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             # =============================================================================
             # ROBUSTEN PROCESOR: GRAF IN GOOGLE POVEZAVE (FINAL FIX)
             # =============================================================================
+            # =============================================================================
+            # KORAK 2: PAMETNI PROCESOR (POVEZAVE + GRAF)
+            # =============================================================================
             st.subheader("🧱 HIERARCHOLOGICAL SYNTHESIS REPORT")
             
-            # 1. ČIŠČENJE IZHODA: Razdelimo besedilo in JSON
-            # SambaNova včasih doda besedilo po JSONu, zato iščemo točno mejo
+            # 1. ČIŠČENJE: Razdelimo tekst od JSON-a
             if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
                 parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
                 innovation_text = parts[0]
-                json_part = parts[1]
+                json_raw = parts[1]
             else:
                 innovation_text = cerebras_innovation
-                json_part = ""
+                json_raw = ""
 
-            # Osnova poročila
+            # Združimo Phase 1 in Phase 2 za končni prikaz
             full_report = f"## 📚 Phase 1: Foundation\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations\n\n{innovation_text}"
             
-            final_elements = []
+            nodes_for_highlighting = []
+            elements = []
             final_markdown = full_report
-            found_keywords = []
 
-            # 2. EKSTRAKCIJA JSON IN PRIPRAVA POVEZAV
-            if json_part.strip():
-                try:
-                    # Poiščemo prvi { in zadnji } da dobimo čist JSON, če je AI kaj "klepetal" zraven
-                    json_match = re.search(r'(\{.*\})', json_part, re.DOTALL)
-                    if json_match:
-                        clean_json = json_match.group(1)
-                        graph_data = json.loads(clean_json)
-                        
-                        # Procesiramo vozlišča (Nodes)
-                        for node in graph_data.get("nodes", []):
-                            n_id = node.get("id")
-                            n_label = node.get("label", "Node")
-                            n_color = node.get("color", "#fd7e14")
-                            
-                            # Dodamo v elemente za graf
-                            final_elements.append({
-                                "data": {"id": n_id, "label": n_label, "color": n_color, "shape": "rectangle"}
-                            })
-                            # Shranimo za Google linking
-                            found_keywords.append({"id": n_id, "label": n_label})
-
-                        # Procesiramo povezave (Edges)
-                        for edge in graph_data.get("edges", []):
-                            final_elements.append({
-                                "data": {
-                                    "source": edge.get("source"), 
-                                    "target": edge.get("target"), 
-                                    "rel_type": edge.get("rel_type", "LINK")
-                                }
-                            })
-                except Exception as e:
-                    st.warning(f"⚠️ JSON Graph processing issue: {e}")
-
-            # 3. SEMANTIČNO POVEZOVANJE (Google Search Hyperlinks)
-            # Sortiramo besede od najdaljših k najkrajšim, da ne "pohrustamo" delov besed
-            sorted_keywords = sorted(found_keywords, key=lambda x: len(x['label']), reverse=True)
+            # 2. ISKANJE IN PARSIRANJE JSON GRAFA
+            # Uporabimo Regex, da najdemo JSON, tudi če ga je AI čudno zapisal
+            json_match = re.search(r'(\{.*"nodes".*\})', json_raw if json_raw else cerebras_innovation, re.DOTALL | re.IGNORECASE)
             
-            for item in sorted_keywords:
-                original_label = item['label']
-                node_id = item['id']
-                
-                if len(original_label) > 2:
-                    # Pripravimo Google URL
-                    encoded_query = urllib.parse.quote(original_label)
-                    google_url = f"https://www.google.com/search?q={encoded_query}"
+            if json_match:
+                try:
+                    clean_json_str = json_match.group(1)
+                    g_data = json.loads(clean_json_str)
                     
-                    # Ustvarimo HTML povezavo
-                    # Uporabimo tvoj CSS 'semantic-node-highlight'
-                    html_link = f'<a href="{google_url}" target="_blank" class="semantic-node-highlight" id="{node_id}">{original_label}<i class="google-icon">↗</i></a>'
-                    
-                    # Zamenjamo samo prvo pojavitev besede (Case-Insensitive)
-                    # Uporabimo Regex, da zagotovimo zamenjavo celih besed
-                    pattern = re.compile(r'\b' + re.escape(original_label) + r'\b', re.IGNORECASE)
-                    final_markdown = pattern.sub(html_link, final_markdown, count=1)
+                    # Priprava vozlišč (Nodes)
+                    for n in g_data.get("nodes", []):
+                        lbl = n.get("label", "Node")
+                        nid = n.get("id", f"n{lbl}")
+                        color = n.get("color", "#fd7e14")
+                        
+                        nodes_for_highlighting.append({"id": nid, "label": lbl})
+                        elements.append({
+                            "data": {"id": nid, "label": lbl, "color": color, "shape": "rectangle"}
+                        })
 
-            # 4. KONČNI PRIKAZ BESEDILA
+                    # Priprava povezav (Edges)
+                    for e in g_data.get("edges", []):
+                        elements.append({
+                            "data": {
+                                "source": e.get("source"), 
+                                "target": e.get("target"), 
+                                "rel_type": e.get("rel_type", "LINK")
+                            }
+                        })
+                except Exception as json_err:
+                    st.warning(f"Note: Graph structure detected but formatting is non-standard.")
+
+            # 3. GOOGLE LINKING (Semantično povezovanje besed)
+            if nodes_for_highlighting:
+                # Sortiramo besede od najdaljših k najkrajšim (prepreči napake pri prekrivanju)
+                sorted_nodes = sorted(nodes_for_highlighting, key=lambda x: len(x['label']), reverse=True)
+                for node in sorted_nodes:
+                    label = node['label']
+                    node_id = node['id']
+                    if len(label) > 2:
+                        g_url = urllib.parse.quote(label)
+                        # Ustvarimo HTML za Google povezavo
+                        link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight" id="{node_id}">{label}<i class="google-icon">↗</i></a>'
+                        # Regex zamenjava (samo prva pojavitev cele besede, case-insensitive)
+                        pattern = re.compile(r'\b' + re.escape(label) + r'\b', re.IGNORECASE)
+                        final_markdown = pattern.sub(link_html, final_markdown, count=1)
+
+            # 4. KONČNI PRIKAZ POROČILA
             st.markdown(final_markdown, unsafe_allow_html=True)
 
-            # 5. IZRIS GRAFA (Cytoscape)
-            if final_elements:
+            # 5. IZRIS INTERAKTIVNEGA GRAFA
+            if elements:
                 st.divider()
                 st.subheader("🕸️ HIERARCHOGRAPHIC SYSTEM MAP")
-                # Unikaten ID za graf (timestamp) prisili Streamlit v nov izris
-                graph_id = f"cy_{int(time.time())}"
-                render_cytoscape_network(final_elements, graph_id)
+                # Unikaten ID grafa zagotovi, da se ob vsakem kliku na gumb osveži
+                render_cytoscape_network(elements, f"cy_{int(time.time())}")
             else:
-                st.info("ℹ️ Information: Graph was not requested or formatted by Phase 2 engine.")
+                st.info("ℹ️ Note: Text synthesis complete. Visual graph could not be mapped from this specific response.")
 
         except Exception as e:
             st.error(f"❌ Pipeline Failure: {e}")
