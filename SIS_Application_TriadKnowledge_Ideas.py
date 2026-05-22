@@ -929,6 +929,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             # --- PHASE 2: SAMBANOVA (Z inovativnim kontekstom iz datoteke) ---
             with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) ustvarja inovacije...'):
                # --- KORAK 1: POPRAVLJEN IN ZAKLJUČEN PROMPT ---
+                # --- FAZA 2: SAMBANOVA PROMPT (S POPRAVLJENIMI NAREKOVAJI) ---
                 samba_sys_prompt = """
                 You are the SIS Hierarchography Specialist.
                 TASK: Expand Phase 1 into a HIGH-DENSITY 18D system map.
@@ -945,24 +946,16 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 ### SEMANTIC_GRAPH_JSON
                 {"nodes": [], "edges": []}
                 """
-                # Zgoraj so trije narekovaji, ki morajo obvezno zapreti niz!
-                
-                3. After the delimiter, provide ONLY a valid JSON object like this example:
-                {"nodes": [{"id": "n1", "label": "KeyTerm", "color": "#fd7e14"}], "edges": [{"source": "n1", "target": "n2", "rel_type": "LINK"}]}
-                
-                RULE: The 'label' in JSON MUST be a word that exists in your innovation text.
-                """
-                
-                # SambaNova zdaj dobi vsebino datoteke, da ne bo ugibala
-                p2_response = samba_client.chat.completions.create(
+
+                samba_response = samba_client.chat.completions.create(
                     model=sambanova_id, 
                     messages=[
                         {"role": "system", "content": samba_sys_prompt}, 
-                        {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nINNOVATION GOAL: {idea_query}{full_context}"}
+                        {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER GOAL: {idea_query}{full_context}"}
                     ],
                     temperature=0.8
                 )
-                cerebras_innovation = p2_response.choices[0].message.content
+                cerebras_innovation = samba_response.choices[0].message.content
 
             # [Nadaljevanje kode za izpis in graf ostane isto...]
 
