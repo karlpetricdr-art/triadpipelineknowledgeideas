@@ -797,22 +797,18 @@ with st.sidebar:
     st.link_button("🎓 Google Scholar", "https://scholar.google.com/", use_container_width=True)
     
     st.divider()
-    
-    # TUKAJ JE BIL INDENTATION ERROR - ZDAJ JE POPRAVLJENO:
-    if st.button("♻️ RESET SYSTEM"):
-        for key in list(st.session_state.keys()):
-            del st.session_state[key]
-        st.rerun()
-        
+    col_res, col_gui = st.columns(2)
+    with col_res:
+        # Dodali smo unikatno ime 'key', da Streamlit ne javi napake
+        if st.button("♻️ RESET", key="unique_reset_v2026"):
+            for key in list(st.session_state.keys()):
+                del st.session_state[key]
+            st.rerun()
+      
     st.divider()
     st.subheader("🌐 EXTERNAL CONNECTORS")
     st.link_button("📂 GitHub Repository", "https://github.com/", use_container_width=True)
     
-    st.divider()
-    if st.button("♻️ RESET SYSTEM"):
-        for key in list(st.session_state.keys()):
-            del st.session_state[key]
-        st.rerun()
     with col_gui:
         if st.button("📖 GUIDE"):
             st.session_state.show_user_guide = not st.session_state.show_user_guide
@@ -930,7 +926,7 @@ with col_inq3:
 # =============================================================================
 
 # --- TUKAJ SE ZAČNE IZVEDBA ---
-if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True):
+if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True, key="main_execution_synergy"):
     # Preverimo oba ključa
     if not groq_api_key or not sambanova_api_key:
         st.error("❌ Dual-Model synergy requires both Groq and SambaNova keys.")
