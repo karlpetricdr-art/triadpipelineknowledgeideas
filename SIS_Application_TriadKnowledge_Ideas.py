@@ -15,6 +15,16 @@ import streamlit.components.v1 as components
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
 VERSION_CODE = "v22.8.0-ULTRA-SYNERGY-FINAL-950"
 
+# =============================================================================
+# INITIALIZATION FIX: Preprečuje AttributeError pri zagonu in resetiranju
+# =============================================================================
+if 'show_user_guide' not in st.session_state:
+    st.session_state.show_user_guide = False
+
+# Zagotovimo, da so vsi ključi prisotni v session_state pred prvo uporabo
+if 'groq_synthesis' not in st.session_state:
+    st.session_state.groq_synthesis = ""
+
 st.set_page_config(
     page_title=f"SIS Universal Knowledge Synthesizer - {SYSTEM_DATE}",
     page_icon="🌳",
