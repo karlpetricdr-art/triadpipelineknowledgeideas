@@ -928,16 +928,23 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
 
             # --- PHASE 2: SAMBANOVA (Z inovativnim kontekstom iz datoteke) ---
             with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) ustvarja inovacije...'):
-                # --- KORAK 1: STROŽJA NAVODILA ZA GRAF IN POVEZAVE ---
+                # --- KORAK 1: NAVODILO ZA VISOKO GOSTOTO IN SEMANTIČNO POVEZAVO ---
                 samba_sys_prompt = """
-                You are the SIS Hierarchography Specialist. 
-                TASK: Generate 5-7 radical innovations based on the foundation.
+                You are the SIS Hierarchography Specialist.
+                TASK: Expand Phase 1 into a HIGH-DENSITY 18D system map.
+
+                MANDATORY RULES:
+                1. INNOVATIONS: Generate at least 7 radical, non-obvious innovations.
+                2. TERMINOLOGY: You MUST reuse and integrate the exact technical terms from Phase 1.
+                3. GRAPH DENSITY: Your JSON must contain AT LEAST 10-12 nodes and 15+ edges.
+                4. HYPERLINKING: Ensure every term used in the 'label' field of your JSON appears EXACTLY the same in your innovation text (case-sensitive).
                 
-                MANDATORY OUTPUT FORMAT:
-                1. [Your Text Innovations]
+                OUTPUT FORMAT:
+                [Detailed Innovation Text]
                 
-                2. You MUST end your response with EXACTLY this delimiter:
                 ### SEMANTIC_GRAPH_JSON
+                {"nodes": [... min 10 nodes ...], "edges": [... min 15 connections ...]}
+                """
                 
                 3. After the delimiter, provide ONLY a valid JSON object like this example:
                 {"nodes": [{"id": "n1", "label": "KeyTerm", "color": "#fd7e14"}], "edges": [{"source": "n1", "target": "n2", "rel_type": "LINK"}]}
@@ -959,15 +966,11 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             # [Nadaljevanje kode za izpis in graf ostane isto...]
 
             # =============================================================================
-            # ROBUSTEN PROCESOR: GRAF IN GOOGLE POVEZAVE (FINAL FIX)
+            # KORAK 2: ULTRA-LINKER PROCESOR (FAZA 1 + 2 SINERGIJA)
             # =============================================================================
-            # =============================================================================
-            # KORAK 2: PAMETNI PROCESOR (POVEZAVE + GRAF)
-            # =============================================================================
-            # --- ULTRA PROCESOR ZA GOOGLE POVEZAVE (FAZA 1 + 2) ---
             st.subheader("🧱 HIERARCHOLOGICAL SYNTHESIS REPORT")
             
-            # Priprava besedila
+            # 1. ČIŠČENJE: Ločimo inovacije od JSON-a
             if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
                 parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
                 innovation_text = parts[0]
@@ -976,57 +979,75 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 innovation_text = cerebras_innovation
                 json_raw = ""
 
-            # Združimo obe fazi v eno celoto za procesiranje povezav
-            full_report = f"## 📚 Phase 1: Foundation\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations\n\n{innovation_text}"
+            # ZDRUŽIMO CELOTNO POROČILO (Tukaj omogočimo, da se Phase 2 linka na Phase 1)
+            full_report = f"## 📚 Phase 1: Foundation (Groq)\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations (SambaNova)\n\n{innovation_text}"
             
             nodes_to_link = []
             final_elements = []
 
-            # 1. Ekstrakcija besed iz JSON-a
+            # 2. ROBUSTNO ISKANJE JSON-a
+            # SambaNova včasih doda tekst pred/za JSON, zato uporabimo regex lovilec
             json_match = re.search(r'(\{.*"nodes".*\})', json_raw if json_raw else cerebras_innovation, re.DOTALL | re.IGNORECASE)
+            
             if json_match:
                 try:
                     g_data = json.loads(json_match.group(1))
+                    
+                    # Priprava vozlišč (Nodes)
                     for n in g_data.get("nodes", []):
                         lbl = n.get("label", "")
+                        nid = n.get("id", f"n{lbl}")
                         if lbl:
-                            nodes_to_link.append({"id": n.get("id"), "label": lbl})
-                            final_elements.append({"data": {"id": n.get("id"), "label": lbl, "color": n.get("color", "#fd7e14"), "shape": "rectangle"}})
-                    for e in g_data.get("edges", []):
-                        final_elements.append({"data": {"source": e.get("source"), "target": e.get("target"), "rel_type": e.get("rel_type", "LINK")}})
-                except: pass
+                            nodes_to_link.append({"id": nid, "label": lbl})
+                            final_elements.append({
+                                "data": {"id": nid, "label": lbl, "color": n.get("color", "#fd7e14"), "shape": "rectangle"}
+                            })
 
-            # 2. AGRESIVNO SEMANTIČNO POVEZOVANJE
-            # Povezave iščemo po celotnem poročilu (Faza 1 in 2 hkrati)
+                    # Priprava povezav (Edges)
+                    for e in g_data.get("edges", []):
+                        final_elements.append({
+                            "data": {
+                                "source": e.get("source"), 
+                                "target": e.get("target"), 
+                                "rel_type": e.get("rel_type", "LINK")
+                            }
+                        })
+                except:
+                    st.warning("⚠️ Graph data was found but the format was slightly off.")
+
+            # 3. AGRESIVNO SEMANTIČNO POVEZOVANJE (Google Linking)
+            # Cilj: Polinkati besede v OBREH fazah hkrati
             final_markdown = full_report
             
             if nodes_to_link:
-                # Sortiramo od najdaljših (npr. "Sistemska revščina") do krajših ("revščina")
+                # Sortiramo besede od najdaljših k najkrajšim (prepreči, da bi "revščina" pokvarila "sistemska revščina")
                 sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
                 
                 for item in sorted_keywords:
                     lbl = item['label']
                     nid = item['id']
-                    if len(lbl) > 3:
+                    
+                    if len(lbl) > 2:
                         g_url = urllib.parse.quote(lbl)
-                        # HTML za povezavo
+                        # HTML za Google povezavo
                         link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
                         
-                        # Regex, ki zamenja prvih 3 pojavitev besede (da bo besedilo bolj polinkano)
-                        # Case-insensitive (\b zagotovi, da ne linka sredi druge besede)
+                        # REGEX: count=15 zagotovi, da polinka besedo povsod, kjer se pojavi (Faza 1 IN 2)
+                        # \b zagotovi, da polinka samo celo besedo
                         pattern = re.compile(r'\b' + re.escape(lbl) + r'\b', re.IGNORECASE)
-                        final_markdown = pattern.sub(link_html, final_markdown, count=3)
+                        final_markdown = pattern.sub(link_html, final_markdown, count=15)
 
-            # 3. PRIKAZ KONČNEGA REZULTATA
+            # 4. KONČNI PRIKAZ (Z vsemi HTML povezavami)
             st.markdown(final_markdown, unsafe_allow_html=True)
-            
-            # 4. IZRIS GRAFA
+
+            # 5. IZRIS GOSTEGA GRAFA (Cytoscape)
             if final_elements:
                 st.divider()
-                st.subheader("🕸️ HIERARCHOGRAPHIC SYSTEM MAP")
+                st.subheader(f"🕸️ HIERARCHOGRAPHIC SYSTEM MAP ({len(nodes_to_link)} Nodes)")
+                # Unikaten ID za graf omogoči pravilno osveževanje
                 render_cytoscape_network(final_elements, f"cy_{int(time.time())}")
             else:
-                st.info("ℹ️ Note: Text synthesis complete. Visual graph could not be mapped from this specific response.")
+                st.info("ℹ️ Information: Model generated the report, but visual mapping was skipped.")
 
         except Exception as e:
             st.error(f"❌ Pipeline Failure: {e}")
