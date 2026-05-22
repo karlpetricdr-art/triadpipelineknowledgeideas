@@ -747,11 +747,7 @@ with st.sidebar:
     cerebras_api_key = st.text_input("Cerebras Key (Phase 2 Ideas):", type="password", help="Provides innovations and graph JSON.")
     
     # Posodobljeno za Cerebras Llama 3.3 (Zamenjava za ukinjen 8b model)
-    cerebras_id = st.selectbox(
-        "Cerebras Model Endpoint:", 
-        ["llama-3.3-70b", "llama-3.1-70b"], 
-        index=0
-    )
+    cerebras_id = st.selectbox("Cerebras Model Endpoint:", ["llama3.3-70b", "llama-3.3-70b", "llama3.1-70b"], index=0)
     
     st.divider()
     col_res, col_gui = st.columns(2)
