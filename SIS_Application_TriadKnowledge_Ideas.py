@@ -884,53 +884,29 @@ with col_inq3:
         st.success(f"Context from {uploaded_file.name} integrated.")
 
 # =============================================================================
-# 5. SYNERGY EXECUTION ENGINE (HIERARCHOLOGY -> HIERARCHOGRAPHY PIPELINE)
+# 5. SYNERGY EXECUTION ENGINE (SREMENJENO NA SAMBANOVA LLAMA 3.3)
 # =============================================================================
 
-# --- TUKAJ SE ZAČNE IZVEDBA ---
-if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True, key="main_execution_synergy"):
-    # Preverimo oba ključa
+if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True, key="main_exec_v2026"):
+    # 1. Preverjanje ključev (Uporabljamo novo ime sambanova_api_key)
     if not groq_api_key or not sambanova_api_key:
         st.error("❌ Dual-Model synergy requires both Groq and SambaNova keys.")
+    elif not user_query:
+        st.warning("⚠️ Phase 1 Research Inquiry is required.")
     else:
         try:
-            # Klienti
+            # Inicializacija klientov
             groq_client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
-            samba_client = OpenAI(api_key=sambanova_api_key, base_url="https://api.sambanova.ai/v1")
-
-            # --- PHASE 1 (Groq) ostane ista ---
-            # ... (tvoja obstoječa koda za Phase 1) ...
-
-            # --- PHASE 2: SAMBANOVA ---
-            with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) ustvarja inovacije...'):
-                # Tukaj uporabimo sambanova_id, ki smo ga izbrali v sidebaru
-                samba_response = samba_client.chat.completions.create(
-                    model=sambanova_id, 
-                    messages=[
-                        {"role": "system", "content": "You are a Hierarchography Specialist. Generate 5-7 innovations and end with ### SEMANTIC_GRAPH_JSON"}, 
-                        {"role": "user", "content": f"FOUNDATION: {groq_synthesis}\n\nGOAL: {idea_query}"}
-                    ],
-                    temperature=0.8
-                )
-                cerebras_innovation = samba_response.choices[0].message.content
             
-            # ... (nadaljevanje kode za Phase 1 in Phase 2) ...
+            # SambaNova uporablja OpenAI standard, a svoj URL
+            samba_client = OpenAI(
+                api_key=sambanova_api_key, 
+                base_url="https://api.sambanova.ai/v1"
+            )
             
-            # Priprava podatkov
-            h_ont_data = json.dumps(HIERARCHOLOGY_ONTOLOGY)
-            ima_data = json.dumps(HUMAN_THINKING_METAMODEL)
-            ma_data = json.dumps(MENTAL_APPROACHES_ONTOLOGY)
-            biblio_data = fetch_author_bibliographies(target_authors) if target_authors else "No bibliography provided."
-
             # --- PHASE 1: GROQ (ARCHITECTURAL FOUNDATION) ---
-            with st.spinner('PHASE 1: Groq gradi znanstveno arhitekturo...'):
-                p1_template = """
-                You are the SIS Lead Hierarchologist (Phase 1). 
-                TASK: Provide a deep structural analysis (1500 words).
-                MANDATORY: Focus on Biophysical drivers (Physics/Bio) and how they emerge as social patterns.
-                NO FILLER: Use dense, academic language.
-                """
-                groq_sys_prompt = p1_template.replace("[H_ONT]", h_ont_data).replace("[IMA_ONT]", ima_data)
+            with st.spinner('PHASE 1: Groq gradi znanstveno arhitekturo (LPU stroj)...'):
+                groq_sys_prompt = "You are the SIS Lead Hierarchologist. Provide deep structural analysis based on IMA ontology."
                 
                 groq_response = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
@@ -938,26 +914,25 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                     temperature=0.4
                 )
                 groq_synthesis = groq_response.choices[0].message.content
+                st.session_state.groq_synthesis = groq_synthesis # Shranimo v stanje
 
-           # --- PHASE 2: SAMBANOVA (STRATEGIC INNOVATION) ---
-            with st.spinner('PHASE 2: SambaNova (RDU stroj) ustvarja inovacije...'):
-                tech_names = ", ".join(selected_techniques)
-                
-                p2_template = """
-                You are the SIS Hierarchography Specialist (Phase 2).
-                STRATEGY: [TECHNIQUE_NAMES]
-                
+            # --- PHASE 2: SAMBANOVA (INCREMENTAL INNOVATION) ---
+            with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) ustvarja inovacije (RDU stroj)...'):
+                tech_names = ", ".join(selected_techniques) if 'selected_techniques' in locals() else "Standard Innovation"
+
+                # Prompt za SambaNovo - fiksiran na generiranje inovacij in grafa
+                samba_sys_prompt = f"""
+                You are the SIS Hierarchography Specialist. Strategy: {tech_names}.
                 RULES: 
                 1. DO NOT REPEAT Phase 1. 
-                2. Generate 5-7 radical innovations based on the Hierarchology ontology. 
+                2. Generate 5-7 radical innovations based on Mental Approaches (MA). 
                 3. You MUST end with '### SEMANTIC_GRAPH_JSON' followed by a valid JSON.
                 """
                 
-                samba_sys_prompt = p2_template.replace("[TECHNIQUE_NAMES]", tech_names)
                 samba_user_input = f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nGOAL: {idea_query}\n\nTASK: Build NEW innovations."
                 
                 samba_response = samba_client.chat.completions.create(
-                    model="Llama-3.3-70B-Instruct", 
+                    model=sambanova_id, # Uporabi model izbran v Sidebaru
                     messages=[{"role": "system", "content": samba_sys_prompt}, {"role": "user", "content": samba_user_input}],
                     temperature=0.8
                 )
