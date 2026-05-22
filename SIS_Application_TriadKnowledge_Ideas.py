@@ -731,41 +731,37 @@ IDEATION_TECHNIQUES = {
 
 if 'show_user_guide' not in st.session_state: st.session_state.show_user_guide = False
 
-# --- IZBRIŠI STARI WITH ST.SIDEBAR IN PRILEPI TOLE ---
 with st.sidebar:
-    # 1. Logo
     st.markdown(f'<div class="sidebar-logo-container"><img src="data:image/svg+xml;base64,{get_svg_base64(SVG_3D_RELIEF)}" width="220"></div>', unsafe_allow_html=True)
-    
-    # 2. Date Badge
     st.markdown(f'<div class="date-badge">{SYSTEM_DATE.upper()}</div>', unsafe_allow_html=True)
     
     st.header("⚙️ SYSTEM CONTROL")
     
-    # API Keys
+    # API Ključi
     st.subheader("🔑 Dual-Engine API Access")
-    groq_api_key = st.text_input("Groq Key (Phase 1):", type="password", key="groq_key_input")
-    sambanova_api_key = st.text_input("SambaNova Key (Phase 2):", type="password", key="samba_key_input")
+    groq_api_key = st.text_input("Groq Key (Phase 1):", type="password", key="k1_groq")
+    sambanova_api_key = st.text_input("SambaNova Key (Phase 2):", type="password", key="k2_samba")
     
-    # Model Selection
+    # Izbor modela
     sambanova_id = st.selectbox(
-        "SambaNova Model Endpoint:", 
+        "SambaNova Model:", 
         ["Meta-Llama-3.3-70B-Instruct", "Meta-Llama-3.1-70B-Instruct"], 
         index=0,
-        key="samba_model_select"
+        key="samba_model_unique"
     )
     
     st.divider()
     
-    # KONTROLNI GUMBI Z UNIKATNIMI KLJUČI (Rešitev za Duplicate ID error)
+    # POMEMBNO: Tukaj smo spremenili napis v "HARD RESET", da ni nobene možnosti za dvojnika
     col_res, col_gui = st.columns(2)
     with col_res:
-        if st.button("♻️ RESET", key="main_reset_button"):
-            for key in list(st.session_state.keys()):
-                del st.session_state[key]
+        if st.button("🔄 HARD RESET", key="btn_reset_final"):
+            for k in list(st.session_state.keys()):
+                del st.session_state[k]
             st.rerun()
             
     with col_gui:
-        if st.button("📖 GUIDE", key="main_guide_button"):
+        if st.button("📖 SHOW GUIDE", key="btn_guide_final"):
             st.session_state.show_user_guide = not st.session_state.show_user_guide
             st.rerun()
             
