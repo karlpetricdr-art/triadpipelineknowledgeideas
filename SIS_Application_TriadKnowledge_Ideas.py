@@ -741,18 +741,22 @@ with st.sidebar:
     
     st.header("⚙️ SYSTEM CONTROL")
     
-    # Dual-Engine API Access (Zamenjano: SambaNova namesto Cerebrasa)
-    st.subheader("🔑 Dual-Engine API Access")
-    groq_api_key = st.text_input("Groq Key (Phase 1):", type="password")
-    sambanova_api_key = st.text_input("SambaNova Key (Phase 2):", type="password", help="Pridobi ga na cloud.sambanova.ai")
+    st.header("⚙️ ENGINE CONFIGURATION")
     
-    # Model je zdaj fiksiran na najboljšo 70B verzijo
-    sambanova_id = "Llama-3.3-70B-Instruct"
+    # Dual-Engine API Access
+    groq_api_key = st.text_input("1. Groq Key (Phase 1):", type="password")
+    sambanova_api_key = st.text_input("2. SambaNova Key (Phase 2):", type="password", help="Get it at cloud.sambanova.ai")
     
     st.divider()
-    col_res, col_gui = st.columns(2)
-    with col_res:
-        if st.button("♻️ RESET"):
+    # TUKAJ JE IZBOR MODELA, KI JE MANJKAL:
+    sambanova_id = st.selectbox(
+        "SambaNova Model (Phase 2):", 
+        ["Meta-Llama-3.3-70B-Instruct", "Meta-Llama-3.1-70B-Instruct", "Meta-Llama-3.1-8B-Instruct"],
+        index=0
+    )
+    
+    st.divider()
+    if st.button("♻️ RESET SYSTEM"): st.rerun()
             for key in list(st.session_state.keys()): del st.session_state[key]
             st.rerun()
     with col_gui:
@@ -863,7 +867,7 @@ with col_inq1:
 with col_inq2:
     idea_query = st.text_area("💡 STEP 2: Innovation Prompt (for CEREBRAS):", placeholder="Targets for innovative idea production based on Phase 1 foundation...", height=200)
 with col_inq3:
-    uploaded_file = st.file_uploader("📂 ATTACH DATA (.txt only):", type=['txt'], help="Context for both AI engines.")
+     = st.file_uploader("📂 ATTACH DATA (.txt only):", type=['txt'], help="Context for both AI engines.")
     file_content = ""
     if uploaded_file: 
         file_content = uploaded_file.read().decode("utf-8")
@@ -875,23 +879,30 @@ with col_inq3:
 
 # --- TUKAJ SE ZAČNE IZVEDBA ---
 if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True):
-    # POPRAVLJENO: Tukaj uporabimo sambanova_api_key
+    # Preverimo oba ključa
     if not groq_api_key or not sambanova_api_key:
         st.error("❌ Dual-Model synergy requires both Groq and SambaNova keys.")
-    elif not user_query:
-        st.warning("⚠️ Phase 1 Research Inquiry is required.")
-    elif not selected_techniques:
-        st.warning("⚠️ Prosim, izberite vsaj eno tehniko inoviranja.")
     else:
         try:
-            # Init Clients
+            # Klienti
             groq_client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
-            
-            # SambaNova Klient
-            samba_client = OpenAI(
-                api_key=sambanova_api_key, 
-                base_url="https://api.sambanova.ai/v1"
-            )
+            samba_client = OpenAI(api_key=sambanova_api_key, base_url="https://api.sambanova.ai/v1")
+
+            # --- PHASE 1 (Groq) ostane ista ---
+            # ... (tvoja obstoječa koda za Phase 1) ...
+
+            # --- PHASE 2: SAMBANOVA ---
+            with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) ustvarja inovacije...'):
+                # Tukaj uporabimo sambanova_id, ki smo ga izbrali v sidebaru
+                samba_response = samba_client.chat.completions.create(
+                    model=sambanova_id, 
+                    messages=[
+                        {"role": "system", "content": "You are a Hierarchography Specialist. Generate 5-7 innovations and end with ### SEMANTIC_GRAPH_JSON"}, 
+                        {"role": "user", "content": f"FOUNDATION: {groq_synthesis}\n\nGOAL: {idea_query}"}
+                    ],
+                    temperature=0.8
+                )
+                cerebras_innovation = samba_response.choices[0].message.content
             
             # ... (nadaljevanje kode za Phase 1 in Phase 2) ...
             
