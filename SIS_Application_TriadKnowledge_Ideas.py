@@ -873,9 +873,11 @@ with col_inq3:
 # 5. SYNERGY EXECUTION ENGINE (HIERARCHOLOGY -> HIERARCHOGRAPHY PIPELINE)
 # =============================================================================
 
+# --- TUKAJ SE ZAČNE IZVEDBA ---
 if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True):
-    if not groq_api_key or not cerebras_api_key:
-        st.error("❌ Dual-Model synergy requires both Groq and Cerebras keys.")
+    # POPRAVLJENO: Tukaj uporabimo sambanova_api_key
+    if not groq_api_key or not sambanova_api_key:
+        st.error("❌ Dual-Model synergy requires both Groq and SambaNova keys.")
     elif not user_query:
         st.warning("⚠️ Phase 1 Research Inquiry is required.")
     elif not selected_techniques:
@@ -885,11 +887,13 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             # Init Clients
             groq_client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
             
-            # SambaNova uporablja standardni OpenAI format z njihovim naslovom
+            # SambaNova Klient
             samba_client = OpenAI(
                 api_key=sambanova_api_key, 
                 base_url="https://api.sambanova.ai/v1"
             )
+            
+            # ... (nadaljevanje kode za Phase 1 in Phase 2) ...
             
             # Priprava podatkov
             h_ont_data = json.dumps(HIERARCHOLOGY_ONTOLOGY)
@@ -1017,22 +1021,3 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
 # =============================================================================
 st.divider()
 st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | {SYSTEM_DATE}")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
