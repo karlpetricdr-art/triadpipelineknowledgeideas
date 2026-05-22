@@ -928,7 +928,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
 
             # --- PHASE 2: SAMBANOVA (Z inovativnim kontekstom iz datoteke) ---
             with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) ustvarja inovacije...'):
-                # --- KORAK 1: NAVODILO ZA VISOKO GOSTOTO IN SEMANTIČNO POVEZAVO ---
+               # --- KORAK 1: POPRAVLJEN IN ZAKLJUČEN PROMPT ---
                 samba_sys_prompt = """
                 You are the SIS Hierarchography Specialist.
                 TASK: Expand Phase 1 into a HIGH-DENSITY 18D system map.
@@ -943,8 +943,9 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 [Detailed Innovation Text]
                 
                 ### SEMANTIC_GRAPH_JSON
-                {"nodes": [... min 10 nodes ...], "edges": [... min 15 connections ...]}
+                {"nodes": [], "edges": []}
                 """
+                # Zgoraj so trije narekovaji, ki morajo obvezno zapreti niz!
                 
                 3. After the delimiter, provide ONLY a valid JSON object like this example:
                 {"nodes": [{"id": "n1", "label": "KeyTerm", "color": "#fd7e14"}], "edges": [{"source": "n1", "target": "n2", "rel_type": "LINK"}]}
