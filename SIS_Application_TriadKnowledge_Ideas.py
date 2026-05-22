@@ -726,102 +726,61 @@ IDEATION_TECHNIQUES = {
     "Synectics": "Use direct, personal, and symbolic analogies to make the strange familiar and the familiar strange."
 }
 # =============================================================================
-# 4. INTERFACE CONSTRUCTION (SIDEBAR & MAIN)
+# 4. POSODOBLJEN SIDEBAR (BREZ PODVOJENIH ID-jev)
 # =============================================================================
 
-if 'show_user_guide' not in st.session_state: st.session_state.show_user_guide = False
-
 with st.sidebar:
+    # 1. LOGO
     st.markdown(f'<div class="sidebar-logo-container"><img src="data:image/svg+xml;base64,{get_svg_base64(SVG_3D_RELIEF)}" width="220"></div>', unsafe_allow_html=True)
+    
+    # 2. DATUM
     st.markdown(f'<div class="date-badge">{SYSTEM_DATE.upper()}</div>', unsafe_allow_html=True)
     
     st.header("⚙️ SYSTEM CONTROL")
     
-    # API Ključi
+    # 3. API KLJUČI (Z unikatnimi ključi 'key')
     st.subheader("🔑 Dual-Engine API Access")
-    groq_api_key = st.text_input("Groq Key (Phase 1):", type="password", key="k1_groq")
-    sambanova_api_key = st.text_input("SambaNova Key (Phase 2):", type="password", key="k2_samba")
+    # OPOMBA: Tukaj vpišite pravi ključ (sn-...), ne imena projekta!
+    groq_api_key = st.text_input("Groq Key (Phase 1):", type="password", key="unique_groq_v3")
+    sambanova_api_key = st.text_input("SambaNova Key (Phase 2):", type="password", key="unique_samba_v3")
     
-    # Izbor modela
+    # 4. IZBOR MODELA
     sambanova_id = st.selectbox(
-        "SambaNova Model:", 
+        "SambaNova Model Endpoint:", 
         ["Meta-Llama-3.3-70B-Instruct", "Meta-Llama-3.1-70B-Instruct"], 
         index=0,
-        key="samba_model_unique"
+        key="unique_model_select_v3"
     )
     
     st.divider()
     
-    # POMEMBNO: Tukaj smo spremenili napis v "HARD RESET", da ni nobene možnosti za dvojnika
+    # 5. GUMBI ZA RESET IN VODNIK (Z unikatnimi ključi)
     col_res, col_gui = st.columns(2)
     with col_res:
-        if st.button("🔄 HARD RESET", key="btn_reset_final"):
-            for k in list(st.session_state.keys()):
-                del st.session_state[k]
-            st.rerun()
-            
-    with col_gui:
-        if st.button("📖 SHOW GUIDE", key="btn_guide_final"):
-            st.session_state.show_user_guide = not st.session_state.show_user_guide
-            st.rerun()
-            
-    st.divider()
-    st.subheader("🌐 EXTERNAL CONNECTORS")
-    st.link_button("📂 GitHub Repository", "https://github.com/", use_container_width=True, key="git_link")
-    st.link_button("🆔 ORCID Registry", "https://orcid.org/", use_container_width=True, key="orcid_link")
-    st.link_button("🎓 Google Scholar", "https://scholar.google.com/", use_container_width=True, key="scholar_link")
-    
-    st.divider()
-    
-    # POPRAVLJEN RESET IN GUIDE GUMB (Indentation FIX)
-    col_res, col_gui = st.columns(2)
-    with col_res:
-        if st.button("♻️ RESET"):
+        if st.button("♻️ RESET APP", key="unique_reset_button_v3"):
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
             st.rerun()
             
     with col_gui:
-        if st.button("📖 GUIDE"):
+        # TUKAJ JE BILA NAPAKA (Line 809) - Zdaj ima unikatni key
+        if st.button("📖 OPEN GUIDE", key="unique_guide_button_v3"):
             st.session_state.show_user_guide = not st.session_state.show_user_guide
             st.rerun()
             
+    # 6. ZUNANJE POVEZAVE
     st.divider()
     st.subheader("🌐 EXTERNAL CONNECTORS")
-    st.link_button("📂 GitHub Repository", "https://github.com/", use_container_width=True)
-    st.link_button("🆔 ORCID Registry", "https://orcid.org/", use_container_width=True)
-    st.link_button("🎓 Google Scholar", "https://scholar.google.com/", use_container_width=True)
-    
-    st.divider()
-    col_res, col_gui = st.columns(2)
-    with col_res:
-        # Dodali smo unikatno ime 'key', da Streamlit ne javi napake
-        if st.button("♻️ RESET", key="unique_reset_v2026"):
-            for key in list(st.session_state.keys()):
-                del st.session_state[key]
-            st.rerun()
-      
-    st.divider()
-    st.subheader("🌐 EXTERNAL CONNECTORS")
-    st.link_button("📂 GitHub Repository", "https://github.com/", use_container_width=True)
-    
-    with col_gui:
-        if st.button("📖 GUIDE"):
-            st.session_state.show_user_guide = not st.session_state.show_user_guide
-            st.rerun()
-            
-    # MISSING LINK BUTTONS (RESTORED)
-    st.divider()
-    st.subheader("🌐 EXTERNAL CONNECTORS")
-    st.link_button("📂 GitHub Repository", "https://github.com/", use_container_width=True)
-    st.link_button("🆔 ORCID Registry", "https://orcid.org/", use_container_width=True)
-    st.link_button("🎓 Google Scholar", "https://scholar.google.com/", use_container_width=True)
-    
-    # KNOWLEDGE EXPLORER (FORCED HIGH CONTRAST)
+    st.link_button("📂 GitHub Repository", "https://github.com/", use_container_width=True, key="unique_git_v3")
+    st.link_button("🆔 ORCID Registry", "https://orcid.org/", use_container_width=True, key="unique_orcid_v3")
+    st.link_button("🎓 Google Scholar", "https://scholar.google.com/", use_container_width=True, key="unique_scholar_v3")
+
+    # 7. KNOWLEDGE EXPLORER (Ohranjamo vsebino, dodajamo ključe)
     st.divider()
     st.subheader("📚 KNOWLEDGE EXPLORER")
     with st.expander("👤 User Profile Ontologies", expanded=False):
-        for p, d in KNOWLEDGE_BASE["User profiles"].items(): st.markdown(f"**{p}**: {d['description']}")
+        for p, d in KNOWLEDGE_BASE["User profiles"].items(): 
+            st.markdown(f"**{p}**: {d['description']}")
     with st.expander("🧠 Mental Approach (MA) Map", expanded=False):
         for m, d in MENTAL_APPROACHES_ONTOLOGY["nodes"].items(): st.markdown(f"• **{m}**: {d['desc']}")
     with st.expander("🏛️ Metamodel (IMA) Structures", expanded=False):
