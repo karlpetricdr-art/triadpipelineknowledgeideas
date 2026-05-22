@@ -876,23 +876,19 @@ with col_inq1:
 with col_inq2:
     idea_query = st.text_area("💡 STEP 2: Innovation Prompt (for SAMBANOVA):", placeholder="Targets for innovative idea production...", height=200)
 # --- POPRAVEK KORAK 1: Branje vsebine datoteke ---
+# --- KORAK 1: File Upload with English Translation ---
 with col_inq3:
-    uploaded_file = st.file_uploader("📂 ATTACH DATA (.txt only):", type=['txt'], key="final_file_uploader")
-    
-    # POMEMBNO: file_content mora biti definiran tukaj
+    uploaded_file = st.file_uploader("📂 ATTACH DATA (.txt only):", type=['txt'], key="final_file_uploader_v2")
     file_content = "" 
-    
     if uploaded_file is not None:
         try:
-            # Preberemo vsebino in jo dekodiramo v tekst
             file_content = uploaded_file.read().decode("utf-8")
-            st.success(f"📎 {uploaded_file.name} naložena!")
-            
-            # Opcijsko: Pokažemo kratek predogled (prvih 100 znakov), da vemo, da dela
-            with st.expander("Predogled datoteke"):
+            st.success(f"📎 {uploaded_file.name} uploaded!")
+            # Prevedeno v angleščino:
+            with st.expander("File Preview"):
                 st.text(file_content[:300] + "...")
         except Exception as e:
-            st.error(f"Napaka pri branju datoteke: {e}")
+            st.error(f"Error reading file: {e}")
 
 # =============================================================================
 # 5. SYNERGY EXECUTION ENGINE (SREMENJENO NA SAMBANOVA LLAMA 3.3)
@@ -950,7 +946,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             # --- PROCESIRANJE REZULTATOV ---
             st.subheader("🧱 HIERARCHOLOGICAL SYNTHESIS REPORT")
             
-            # Razdelitev teksta in JSON-a
+            # 1. Razdelitev teksta in JSON-a
             if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
                 parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
                 innovation_text = parts[0]
@@ -959,64 +955,53 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 innovation_text = cerebras_innovation
                 json_raw = None
 
+            # Sestavimo celotno poročilo za prikaz
             full_report = f"## 📚 Phase 1: Foundation\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations\n\n{innovation_text}"
             
-            # --- ROBUSTEN PARSER ZA GRAF IN POVEZAVE ---
+            # 2. SEMANTIČNO OZNAČEVANJE (Google Linking)
+            final_markdown = full_report
             nodes_for_highlighting = []
             elements = []
             
             if json_raw:
                 try:
-                    # Očistimo morebitne markdown narekovaje
                     clean_json_str = re.search(r'(\{.*\})', json_raw, re.DOTALL).group(1)
                     g_data = json.loads(clean_json_str)
                     
-                    # Priprava elementov za Cytoscape
                     for n in g_data.get("nodes", []):
                         nodes_for_highlighting.append(n)
                         elements.append({
                             "data": {
-                                "id": n["id"], 
-                                "label": n["label"], 
-                                "color": n.get("color", "#fd7e14"), 
-                                "shape": n.get("shape", "rectangle"),
-                                "size": 100
+                                "id": n["id"], "label": n["label"], 
+                                "color": n.get("color", "#fd7e14"), "shape": "rectangle"
                             }
                         })
+                        # Dodajanje povezav na Google neposredno v besedilo
+                        lbl = n["label"]
+                        nid = n["id"]
+                        if len(lbl) > 3:
+                            g_url = urllib.parse.quote(lbl)
+                            pattern = re.compile(r'(?i)\b(' + re.escape(lbl) + r')\b')
+                            replacement = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight" id="{nid}">\\1<i class="google-icon">↗</i></a>'
+                            final_markdown = pattern.sub(replacement, final_markdown, count=1)
+                    
                     for e in g_data.get("edges", []):
                         elements.append({
                             "data": {
-                                "source": e["source"], 
-                                "target": e["target"], 
-                                "rel_type": e.get("rel_type", "AS")
+                                "source": e["source"], "target": e["target"], 
+                                "rel_type": e.get("rel_type", "LINK")
                             }
                         })
-                except:
-                    json_raw = None # Če JSON ni veljaven, ne bomo linkali
+                except Exception as json_err:
+                    st.warning(f"Note: Graph data format issue: {json_err}")
 
-            # --- SEMANTIČNO POLINKANJE (HIGHLIGHTING) ---
-            final_markdown = full_report
-            if nodes_for_highlighting:
-                # Sortiramo po dolžini (daljši termini imajo prednost pri zamenjavi)
-                sorted_nodes = sorted(nodes_for_highlighting, key=lambda x: len(x['label']), reverse=True)
-                for node in sorted_nodes:
-                    lbl = node['label']
-                    nid = node['id']
-                    if len(lbl) > 3: # Samo za dovolj dolge besede
-                        g_url = urllib.parse.quote(lbl)
-                        # Uporabimo Regex za zamenjavo prve pojavitve besede, ki ni že del HTML taga
-                        pattern = re.compile(r'(?i)\b(' + re.escape(lbl) + r')\b')
-                        replacement = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight" id="{nid}">\\1<i class="google-icon">↗</i></a>'
-                        final_markdown = pattern.sub(replacement, final_markdown, count=1)
-
+            # 3. PRIKAZ KONČNEGA POROČILA Z HTML POVEZAVAMI
             st.markdown(final_markdown, unsafe_allow_html=True)
 
-            # --- IZRIS GRAFA ---
+            # 4. IZRIS GRAFA
             if elements:
                 st.subheader("🕸️ HIERARCHOGRAPHIC SYSTEM MAP")
                 render_cytoscape_network(elements, f"cy_{int(time.time())}")
-            elif json_raw:
-                st.warning("⚠️ Grafični podatki so bili generirani, vendar niso v pravilnem JSON formatu.")
 
         except Exception as e:
             st.error(f"❌ Pipeline Failure: {e}")
