@@ -731,25 +731,48 @@ IDEATION_TECHNIQUES = {
 
 if 'show_user_guide' not in st.session_state: st.session_state.show_user_guide = False
 
-# --- EXPANDED LEFT SIDEBAR: LOGO, ARROW FIXES, & FORCED CONTRAST ---
-# --- POPRAVLJEN SIDEBAR Z NATANČNIMI ZAMIKI ---
+# --- IZBRIŠI STARI WITH ST.SIDEBAR IN PRILEPI TOLE ---
 with st.sidebar:
+    # 1. Original 3D Relief Logo
     st.markdown(f'<div class="sidebar-logo-container"><img src="data:image/svg+xml;base64,{get_svg_base64(SVG_3D_RELIEF)}" width="220"></div>', unsafe_allow_html=True)
+    
+    # 2. Date Badge
     st.markdown(f'<div class="date-badge">{SYSTEM_DATE.upper()}</div>', unsafe_allow_html=True)
     
     st.header("⚙️ SYSTEM CONTROL")
     
     # Dual API Keys Access
     st.subheader("🔑 Dual-Engine API Access")
-    groq_api_key = st.text_input("Groq Key (Phase 1 Synthesis):", type="password")
-    sambanova_api_key = st.text_input("SambaNova Key (Phase 2 Ideas):", type="password")
+    groq_api_key = st.text_input("Groq Key (Phase 1):", type="password", help="Groq za strukturno sintezo.")
+    sambanova_api_key = st.text_input("SambaNova Key (Phase 2):", type="password", help="SambaNova za inovacije.")
     
-    # Model Identifier za SambaNovo
+    # Model Selection za SambaNovo
     sambanova_id = st.selectbox(
         "SambaNova Model Endpoint:", 
         ["Meta-Llama-3.3-70B-Instruct", "Meta-Llama-3.1-70B-Instruct"], 
         index=0
     )
+    
+    st.divider()
+    
+    # POPRAVLJEN RESET IN GUIDE GUMB (Indentation FIX)
+    col_res, col_gui = st.columns(2)
+    with col_res:
+        if st.button("♻️ RESET"):
+            for key in list(st.session_state.keys()):
+                del st.session_state[key]
+            st.rerun()
+            
+    with col_gui:
+        if st.button("📖 GUIDE"):
+            st.session_state.show_user_guide = not st.session_state.show_user_guide
+            st.rerun()
+            
+    st.divider()
+    st.subheader("🌐 EXTERNAL CONNECTORS")
+    st.link_button("📂 GitHub Repository", "https://github.com/", use_container_width=True)
+    st.link_button("🆔 ORCID Registry", "https://orcid.org/", use_container_width=True)
+    st.link_button("🎓 Google Scholar", "https://scholar.google.com/", use_container_width=True)
     
     st.divider()
     
