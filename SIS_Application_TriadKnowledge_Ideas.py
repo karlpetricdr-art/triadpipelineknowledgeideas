@@ -901,27 +901,29 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
         st.warning("⚠️ Phase 1 Research Inquiry is required.")
     else:
         try:
-            # --- 1. PRIDOBIVANJE BIBLIOGRAFIJE (Klic funkcije iz 1. koraka) ---
+            # --- 1. PRIDOBIVANJE BIBLIOGRAFIJE ---
             with st.spinner('🔍 Accessing ORCID & Scholar databases...'):
                 biblio_data = fetch_author_bibliographies(target_authors) if target_authors else ""
             
-            # Priprava razširjenega konteksta za AI
-            # Združimo vsebino datoteke (.txt) in bibliografske podatke
-            context_file = f"\n\n[FILE CONTEXT]:\n{file_content}" if file_content else ""
-            context_biblio = f"\n\n[AUTHOR RESEARCH BACKGROUND]:\n{biblio_data}" if biblio_data else ""
+            # --- 2. PRIPRAVA KONTEKSTA (Pazimo na imena spremenljivk!) ---
+            # full_context je vsebina vaše .txt datoteke
+            full_context = f"\n\n[FILE CONTEXT]:\n{file_content}" if file_content else ""
+            # biblio_context so podatki o avtorjih
+            biblio_context = f"\n\n[AUTHOR RESEARCH BACKGROUND]:\n{biblio_data}" if biblio_data else ""
             
-            full_ai_input = f"{user_query}{context_file}{context_biblio}"
+            # Združen vhod za Groq (Phase 1)
+            full_ai_input = f"{user_query}{full_context}{biblio_context}"
 
             # Inicializacija klientov
             groq_client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
             samba_client = OpenAI(api_key=sambanova_api_key, base_url="https://api.sambanova.ai/v1")
             
-            # --- PHASE 1: GROQ (Zdaj analizira tudi avtorjeva dela) ---
+            # --- PHASE 1: GROQ (Strukturna podlaga + Avtorji) ---
             with st.spinner('PHASE 1: Building Architecture & Analyzing Author Context...'):
                 p1_response = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=[
-                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. Integrate the provided Author Research Background into your structural analysis."}, 
+                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. Integrate the provided Author Research Background and file data into your structural analysis."}, 
                         {"role": "user", "content": full_ai_input}
                     ],
                     temperature=0.4
@@ -929,9 +931,9 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 groq_synthesis = p1_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
 
-            # --- PHASE 2: SAMBANOVA (Z inovativnim kontekstom iz datoteke) ---
-            # --- PHASE 2: SAMBANOVA (ZARADI NAPAKE NATANČNO PORAVNANO) ---
-            # --- KORAK 1: POSODOBLJEN UML, THESAURUS & COLOR MATRIX PROMPT ---
+            # --- PHASE 2: SAMBANOVA (UML Matrika, Inovacije in Graf) ---
+            with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) generating innovations...'):
+                # Ohranjava vašo celotno UML matriko in barve
                 samba_sys_prompt = """
                 You are the SIS Hierarchography Specialist & Systems Architect.
                 TASK: Expand Phase 1 into a HIGH-DENSITY, MULTI-COLORED UML system map.
@@ -948,14 +950,14 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 - Thesaurus: TT, BT, NT, RT, AS, EQ, IN.
 
                 RULES:
-                - Use AT LEAST 12 nodes and 18 edges.
+                - Use AT LEAST 12 nodes and 18 edges for high density.
                 - Every node MUST have the correct 'shape' and 'color' from the matrix above.
                 - Ensure 'label' in JSON matches the innovation text exactly.
                 
                 OUTPUT FORMAT:
                 [Detailed Innovation Text]
                 ### SEMANTIC_GRAPH_JSON
-                {"nodes": [{"id": "n1", "label": "TERM", "color": "#C6EFCE", "shape": "ellipse"}], "edges": [...]}
+                {"nodes": [{"id": "n1", "label": "TERM", "color": "#C6EFCE", "shape": "ellipse"}], "edges": []}
                 """
 
                 samba_response = samba_client.chat.completions.create(
