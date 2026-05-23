@@ -294,52 +294,27 @@ def render_cytoscape_network(elements, container_id="cy_canvas"):
     components.html(cyto_html, height=850)
 
 def fetch_author_bibliographies(author_input):
-    """Pridobi visoko-fidelity bibliografske podatke iz ORCID in Semantic Scholar."""
     if not author_input: return ""
-    
-    # Razdelimo vnose (npr. Karl Petric, Teodor Petric)
     author_list = [a.strip() for a in author_input.split(",")]
     comprehensive_biblio = ""
     headers = {"Accept": "application/json"}
-    
     for auth in author_list:
-        orcid_id = None
         try:
-            # 1. POSKUS: Iskanje ORCID ID preko javnega API-ja
             s_res = requests.get(f"https://pub.orcid.org/v3.0/search/?q={auth}", headers=headers, timeout=6).json()
             if s_res.get('result'):
                 orcid_id = s_res['result'][0]['orcid-identifier']['path']
-        except: pass
-
-        if orcid_id:
-            try:
-                # 2. POSKUS: Pridobivanje seznama del iz ORCID
                 r_res = requests.get(f"https://pub.orcid.org/v3.0/{orcid_id}/record", headers=headers, timeout=6).json()
                 works = r_res.get('activities-summary', {}).get('works', {}).get('group', [])
-                comprehensive_biblio += f"\n--- ORCID DATA: {auth.upper()} ({orcid_id}) ---\n"
-                if works:
-                    for work in works[:12]: # Vzamemo prvih 12 del
-                        summary = work.get('work-summary', [{}])[0]
-                        title = summary.get('title', {}).get('title', {}).get('value', 'Unknown Title')
-                        year = work.get('publication-date', {}).get('year', {}).get('value', 'n.d.')
-                        comprehensive_biblio += f"• ({year}) {title}\n"
-                else: 
-                    comprehensive_biblio += "- No metadata found in ORCID profile.\n"
-            except: pass
-        else:
-            try:
-                # 3. POSKUS: Če ORCID ne najde nič, poskusimo Semantic Scholar
-                ss_url = f"https://api.semanticscholar.org/graph/v1/paper/search?query=author:\"{auth}\"&limit=10&fields=title,year"
-                ss_res = requests.get(ss_url, timeout=6).json()
-                papers = ss_res.get("data", [])
-                if papers:
-                    comprehensive_biblio += f"\n--- SCHOLAR REPOSITORY: {auth.upper()} ---\n"
-                    for p in papers:
-                        comprehensive_biblio += f"• ({p.get('year','n.d.')}) {p['title']}\n"
-                else: 
-                    comprehensive_biblio += f"- No record found for {auth} in primary databases.\n"
-            except: pass
-            
+                comprehensive_biblio += f"#### 🆔 ORCID: {auth.upper()} ({orcid_id})\n"
+                for work in works[:12]:
+                    summary = work.get('work-summary', [{}])[0]
+                    title = summary.get('title', {}).get('title', {}).get('value', 'Unknown Title')
+                    # Boljše iskanje letnice
+                    pub_date = summary.get('publication-date')
+                    year = pub_date.get('year', {}).get('value', 'n.d.') if pub_date else 'n.d.'
+                    comprehensive_biblio += f"- **{year}**: {title}\n"
+                comprehensive_biblio += "\n---\n"
+        except: pass
     return comprehensive_biblio
 
 # =============================================================================
@@ -889,10 +864,8 @@ with col_inq3:
             st.error(f"Error reading file: {e}")
 
 # =============================================================================
-# 5. SYNERGY EXECUTION ENGINE (SREMENJENO NA SAMBANOVA LLAMA 3.3)
+# 5. SYNERGY EXECUTION ENGINE (GROQ + SAMBANOVA + ORCID + UML)
 # =============================================================================
-
-# --- POPRAVEK KORAK 2: Vključitev vsebine datoteke v AI proces ---
 
 if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True, key="exec_pipeline_v2026"):
     if not groq_api_key or not sambanova_api_key:
@@ -901,14 +874,12 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
         st.warning("⚠️ Phase 1 Research Inquiry is required.")
     else:
         try:
-            # --- 1. PRIDOBIVANJE BIBLIOGRAFIJE ---
+            # --- 1. PRIDOBIVANJE PODATKOV (BIBLIOGRAFIJA + DATOTEKA) ---
             with st.spinner('🔍 Accessing ORCID & Scholar databases...'):
                 biblio_data = fetch_author_bibliographies(target_authors) if target_authors else ""
             
-            # --- 2. PRIPRAVA KONTEKSTA (Pazimo na imena spremenljivk!) ---
-            # full_context je vsebina vaše .txt datoteke
+            # Priprava kontekstov
             full_context = f"\n\n[FILE CONTEXT]:\n{file_content}" if file_content else ""
-            # biblio_context so podatki o avtorjih
             biblio_context = f"\n\n[AUTHOR RESEARCH BACKGROUND]:\n{biblio_data}" if biblio_data else ""
             
             # Združen vhod za Groq (Phase 1)
@@ -918,7 +889,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             groq_client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
             samba_client = OpenAI(api_key=sambanova_api_key, base_url="https://api.sambanova.ai/v1")
             
-            # --- PHASE 1: GROQ (Strukturna podlaga + Avtorji) ---
+            # --- 2. PHASE 1: GROQ (STRUKTURNA PODLAGA) ---
             with st.spinner('PHASE 1: Building Architecture & Analyzing Author Context...'):
                 p1_response = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
@@ -931,9 +902,8 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 groq_synthesis = p1_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
 
-            # --- PHASE 2: SAMBANOVA (UML Matrika, Inovacije in Graf) ---
+            # --- 3. PHASE 2: SAMBANOVA (UML MATRIKA IN INOVACIJE) ---
             with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) generating innovations...'):
-                # Ohranjava vašo celotno UML matriko in barve
                 samba_sys_prompt = """
                 You are the SIS Hierarchography Specialist & Systems Architect.
                 TASK: Expand Phase 1 into a HIGH-DENSITY, MULTI-COLORED UML system map.
@@ -952,12 +922,12 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 RULES:
                 - Use AT LEAST 12 nodes and 18 edges for high density.
                 - Every node MUST have the correct 'shape' and 'color' from the matrix above.
-                - Ensure 'label' in JSON matches the innovation text exactly.
+                - Labels in JSON MUST match the innovation text exactly for hyperlinking.
                 
                 OUTPUT FORMAT:
                 [Detailed Innovation Text]
                 ### SEMANTIC_GRAPH_JSON
-                {"nodes": [{"id": "n1", "label": "TERM", "color": "#C6EFCE", "shape": "ellipse"}], "edges": []}
+                {"nodes": [], "edges": []}
                 """
 
                 samba_response = samba_client.chat.completions.create(
@@ -970,26 +940,9 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 )
                 cerebras_innovation = samba_response.choices[0].message.content
 
-            # =============================================================================
-            # KORAK 2: ULTRA-PROCESOR (GOOGLE LINKS + THESAURUS GRAPH)
-            # =============================================================================
-            st.subheader("🧱 HIERARCHOLOGICAL SYNTHESIS REPORT")
-			
-			# --- 1. PRIKAZ BIBLIOGRAFIJE (Takoj pod naslovom) ---
-            if biblio_data:
-                with st.expander("📚 EXTRACTED AUTHOR DATA (ORCID/SCHOLAR)", expanded=False):
-                    st.markdown(biblio_data)
+            # --- 4. PROCESIRANJE REZULTATOV (REŠITEV ZA NAMEERROR) ---
+            # Najprej pripravimo vse podatke, šele na koncu jih izpišemo!
             
-            # Nato sledi vaša obstoječa koda za Google linking in prikaz teksta:
-            st.markdown(final_markdown, unsafe_allow_html=True)
-
-            # In šele na koncu pride graf, ki ste ga omenili:
-            if final_elements:
-                st.divider()
-                st.subheader(f"🕸️ HIERARCHOGRAPHIC SYSTEM MAP ({len(nodes_to_link)} Nodes)")
-                render_cytoscape_network(final_elements, f"cy_{int(time.time())}")
-            
-            # 2. ČIŠČENJE: Ločimo besedilo od JSON-a
             if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
                 parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
                 innovation_text = parts[0]
@@ -998,30 +951,24 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 innovation_text = cerebras_innovation
                 json_raw = ""
 
-            # ZDRUŽIMO POROČILO ZA SINERGIJSKO POVEZOVANJE
             full_report = f"## 📚 Phase 1: Foundation (Groq)\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations (SambaNova)\n\n{innovation_text}"
             
             nodes_to_link = []
             final_elements = []
 
-            # 3. ROBUSTNO ISKANJE JSON-A
-            # --- POSODOBLJEN 3. KORAK: UML & THESAURUS PROCESOR ---
+            # Iskanje JSON-a in procesiranje grafičnih elementov
             json_match = re.search(r'(\{.*"nodes".*\})', json_raw if json_raw else cerebras_innovation, re.DOTALL | re.IGNORECASE)
             
             if json_match:
                 try:
                     g_data = json.loads(json_match.group(1))
                     
-                    # --- KORAK 2: PROCESIRANJE BARV IN OBLIK ---
+                    # Vozlišča
                     for n in g_data.get("nodes", []):
                         lbl = n.get("label", "Node")
                         nid = n.get("id", f"n{lbl}")
-                        
-                        # AI zdaj pošilja specifične barve in oblike iz matrike
-                        n_color = n.get("color", "#fd7e14") # Oranžna ostane le, če AI pozabi poslati barvo
+                        n_color = n.get("color", "#fd7e14")
                         n_shape = n.get("shape", "rectangle")
-                        
-                        # Prilagoditev velikosti za boljšo vizualno uravnoteženost
                         n_size = 85
                         if n_shape == 'diamond': n_size = 105
                         if n_shape == 'hexagon': n_size = 95
@@ -1029,62 +976,49 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                         
                         nodes_to_link.append({"id": nid, "label": lbl})
                         final_elements.append({
-                            "data": {
-                                "id": nid, 
-                                "label": lbl, 
-                                "color": n_color, 
-                                "shape": n_shape,
-                                "size": n_size
-                            }
+                            "data": {"id": nid, "label": lbl, "color": n_color, "shape": n_shape, "size": n_size}
                         })
 
-                    # 4. Procesiranje UML & Thesaurus povezav (Lines & Arrows)
+                    # Povezave
                     for e in g_data.get("edges", []):
                         rel = e.get("rel_type", "Association")
-                        source = e.get("source")
-                        target = e.get("target")
-                        
-                        # Barvno ločevanje: UML (siva), Thesaurus (zelena/teal)
                         e_color = "#2a9d8f" if rel in ["BT", "NT", "TT", "RT", "AS", "EQ", "IN"] else "#adb5bd"
-                        
-                        # Stili linij: Realization in Dependency sta črtkani (dashed)
                         l_style = 'dashed' if rel in ['Realization', 'Dependency', 'Realizes', 'Depends'] else 'solid'
-                        
-                        # Tipi puščic: UML uporablja trikotnike, ostali vee
                         arrow_type = 'triangle' if rel in ['Generalization', 'Realization', 'Composition', 'Aggregation'] else 'vee'
                         
                         final_elements.append({
                             "data": {
-                                "source": source, 
-                                "target": target, 
-                                "rel_type": rel,
-                                "color": e_color,
-                                "arrow": arrow_type,
-                                "line_style": l_style
+                                "source": e.get("source"), "target": e.get("target"), 
+                                "rel_type": rel, "color": e_color, "arrow": arrow_type, "line_style": l_style
                             }
                         })
                 except Exception as json_err:
-                    st.warning(f"Note: Graph structure detected but could not be fully parsed: {json_err}")
+                    st.warning(f"Note: Graph structure issue: {json_err}")
 
-            # 5. AGRESIVNO SEMANTIČNO POVEZOVANJE (Google Linking)
+            # AGRESIVNO SEMANTIČNO POVEZOVANJE (Tukaj ustvarimo končni final_markdown)
             final_markdown = full_report
             if nodes_to_link:
-                # Sortiramo po dolžini besed
                 sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
                 for item in sorted_keywords:
-                    lbl = item['label']
-                    nid = item['id']
+                    lbl, nid = item['label'], item['id']
                     if len(lbl) > 2:
                         g_url = urllib.parse.quote(lbl)
                         link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
-                        # Polinkamo do 15 pojavitev v obeh fazah
                         pattern = re.compile(r'\b' + re.escape(lbl) + r'\b', re.IGNORECASE)
                         final_markdown = pattern.sub(link_html, final_markdown, count=15)
 
-            # 6. KONČNI PRIKAZ (Z vsemi HTML povezavami)
+            # --- 5. KONČNI PRIKAZ (ZDAJ JE VRSTNI RED PRAVILEN) ---
+            st.subheader("🧱 HIERARCHOLOGICAL SYNTHESIS REPORT")
+            
+            # Prikaz bibliografije
+            if biblio_data:
+                with st.expander("📚 EXTRACTED AUTHOR DATA (ORCID/SCHOLAR)", expanded=False):
+                    st.markdown(biblio_data)
+            
+            # Prikaz besedila s povezavami
             st.markdown(final_markdown, unsafe_allow_html=True)
 
-            # 7. IZRIS GRAFA (Cytoscape)
+            # Prikaz grafa na koncu
             if final_elements:
                 st.divider()
                 st.subheader(f"🕸️ HIERARCHOGRAPHIC SYSTEM MAP ({len(nodes_to_link)} Nodes)")
