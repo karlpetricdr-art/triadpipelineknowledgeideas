@@ -294,8 +294,10 @@ def render_cytoscape_network(elements, container_id="cy_canvas"):
     components.html(cyto_html, height=850)
 
 def fetch_author_bibliographies(author_input):
-    """Retrieves high-fidelity bibliographic data from ORCID and Semantic Scholar with years."""
+    """Pridobi visoko-fidelity bibliografske podatke iz ORCID in Semantic Scholar."""
     if not author_input: return ""
+    
+    # Razdelimo vnose (npr. Karl Petric, Teodor Petric)
     author_list = [a.strip() for a in author_input.split(",")]
     comprehensive_biblio = ""
     headers = {"Accept": "application/json"}
@@ -303,6 +305,7 @@ def fetch_author_bibliographies(author_input):
     for auth in author_list:
         orcid_id = None
         try:
+            # 1. POSKUS: Iskanje ORCID ID preko javnega API-ja
             s_res = requests.get(f"https://pub.orcid.org/v3.0/search/?q={auth}", headers=headers, timeout=6).json()
             if s_res.get('result'):
                 orcid_id = s_res['result'][0]['orcid-identifier']['path']
@@ -310,28 +313,33 @@ def fetch_author_bibliographies(author_input):
 
         if orcid_id:
             try:
+                # 2. POSKUS: Pridobivanje seznama del iz ORCID
                 r_res = requests.get(f"https://pub.orcid.org/v3.0/{orcid_id}/record", headers=headers, timeout=6).json()
                 works = r_res.get('activities-summary', {}).get('works', {}).get('group', [])
-                comprehensive_biblio += f"\n--- ORCID REPOSITORY: {auth.upper()} ({orcid_id}) ---\n"
+                comprehensive_biblio += f"\n--- ORCID DATA: {auth.upper()} ({orcid_id}) ---\n"
                 if works:
-                    for work in works[:15]:
+                    for work in works[:12]: # Vzamemo prvih 12 del
                         summary = work.get('work-summary', [{}])[0]
                         title = summary.get('title', {}).get('title', {}).get('value', 'Unknown Title')
                         year = work.get('publication-date', {}).get('year', {}).get('value', 'n.d.')
                         comprehensive_biblio += f"• ({year}) {title}\n"
-                else: comprehensive_biblio += "- No metadata found in ORCID.\n"
+                else: 
+                    comprehensive_biblio += "- No metadata found in ORCID profile.\n"
             except: pass
         else:
             try:
+                # 3. POSKUS: Če ORCID ne najde nič, poskusimo Semantic Scholar
                 ss_url = f"https://api.semanticscholar.org/graph/v1/paper/search?query=author:\"{auth}\"&limit=10&fields=title,year"
                 ss_res = requests.get(ss_url, timeout=6).json()
                 papers = ss_res.get("data", [])
                 if papers:
-                    comprehensive_biblio += f"\n--- SCHOLAR DATA: {auth.upper()} ---\n"
+                    comprehensive_biblio += f"\n--- SCHOLAR REPOSITORY: {auth.upper()} ---\n"
                     for p in papers:
                         comprehensive_biblio += f"• ({p.get('year','n.d.')}) {p['title']}\n"
-                else: comprehensive_biblio += f"- No record found for {auth}.\n"
+                else: 
+                    comprehensive_biblio += f"- No record found for {auth} in primary databases.\n"
             except: pass
+            
     return comprehensive_biblio
 
 # =============================================================================
@@ -893,23 +901,28 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
         st.warning("⚠️ Phase 1 Research Inquiry is required.")
     else:
         try:
-            # 1. PRIPRAVA KONTEKSTA (Združimo datoteko z vprašanjem)
-            # Če je datoteka naložena, jo AI dobi v obliki "DODATNI PODATKI"
-            full_context = f"\n\n[CONTEXT DATA FROM ATTACHED FILE]:\n{file_content}" if file_content else ""
+            # --- 1. PRIDOBIVANJE BIBLIOGRAFIJE (Klic funkcije iz 1. koraka) ---
+            with st.spinner('🔍 Accessing ORCID & Scholar databases...'):
+                biblio_data = fetch_author_bibliographies(target_authors) if target_authors else ""
+            
+            # Priprava razširjenega konteksta za AI
+            # Združimo vsebino datoteke (.txt) in bibliografske podatke
+            context_file = f"\n\n[FILE CONTEXT]:\n{file_content}" if file_content else ""
+            context_biblio = f"\n\n[AUTHOR RESEARCH BACKGROUND]:\n{biblio_data}" if biblio_data else ""
+            
+            full_ai_input = f"{user_query}{context_file}{context_biblio}"
 
             # Inicializacija klientov
             groq_client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
             samba_client = OpenAI(api_key=sambanova_api_key, base_url="https://api.sambanova.ai/v1")
             
-            # --- PHASE 1: GROQ (S strukturnim kontekstom iz datoteke) ---
-            with st.spinner('PHASE 1: Groq analizira vsebino datoteke in gradi temelje...'):
-                groq_sys_prompt = "You are the SIS Lead Hierarchologist. Use the attached context data to provide a precise, fact-based structural analysis."
-                
+            # --- PHASE 1: GROQ (Zdaj analizira tudi avtorjeva dela) ---
+            with st.spinner('PHASE 1: Building Architecture & Analyzing Author Context...'):
                 p1_response = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=[
-                        {"role": "system", "content": groq_sys_prompt}, 
-                        {"role": "user", "content": f"INQUIRY: {user_query}{full_context}"}
+                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. Integrate the provided Author Research Background into your structural analysis."}, 
+                        {"role": "user", "content": full_ai_input}
                     ],
                     temperature=0.4
                 )
@@ -959,8 +972,22 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             # KORAK 2: ULTRA-PROCESOR (GOOGLE LINKS + THESAURUS GRAPH)
             # =============================================================================
             st.subheader("🧱 HIERARCHOLOGICAL SYNTHESIS REPORT")
+			
+			# --- 1. PRIKAZ BIBLIOGRAFIJE (Takoj pod naslovom) ---
+            if biblio_data:
+                with st.expander("📚 EXTRACTED AUTHOR DATA (ORCID/SCHOLAR)", expanded=False):
+                    st.markdown(biblio_data)
             
-            # 1. ČIŠČENJE: Ločimo besedilo od JSON-a
+            # Nato sledi vaša obstoječa koda za Google linking in prikaz teksta:
+            st.markdown(final_markdown, unsafe_allow_html=True)
+
+            # In šele na koncu pride graf, ki ste ga omenili:
+            if final_elements:
+                st.divider()
+                st.subheader(f"🕸️ HIERARCHOGRAPHIC SYSTEM MAP ({len(nodes_to_link)} Nodes)")
+                render_cytoscape_network(final_elements, f"cy_{int(time.time())}")
+            
+            # 2. ČIŠČENJE: Ločimo besedilo od JSON-a
             if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
                 parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
                 innovation_text = parts[0]
@@ -975,7 +1002,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             nodes_to_link = []
             final_elements = []
 
-            # 2. ROBUSTNO ISKANJE JSON-A
+            # 3. ROBUSTNO ISKANJE JSON-A
             # --- POSODOBLJEN 3. KORAK: UML & THESAURUS PROCESOR ---
             json_match = re.search(r'(\{.*"nodes".*\})', json_raw if json_raw else cerebras_innovation, re.DOTALL | re.IGNORECASE)
             
@@ -1009,7 +1036,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                             }
                         })
 
-                    # 2. Procesiranje UML & Thesaurus povezav (Lines & Arrows)
+                    # 4. Procesiranje UML & Thesaurus povezav (Lines & Arrows)
                     for e in g_data.get("edges", []):
                         rel = e.get("rel_type", "Association")
                         source = e.get("source")
@@ -1037,7 +1064,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 except Exception as json_err:
                     st.warning(f"Note: Graph structure detected but could not be fully parsed: {json_err}")
 
-            # 3. AGRESIVNO SEMANTIČNO POVEZOVANJE (Google Linking)
+            # 5. AGRESIVNO SEMANTIČNO POVEZOVANJE (Google Linking)
             final_markdown = full_report
             if nodes_to_link:
                 # Sortiramo po dolžini besed
@@ -1052,10 +1079,10 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                         pattern = re.compile(r'\b' + re.escape(lbl) + r'\b', re.IGNORECASE)
                         final_markdown = pattern.sub(link_html, final_markdown, count=15)
 
-            # 4. KONČNI PRIKAZ (Z vsemi HTML povezavami)
+            # 6. KONČNI PRIKAZ (Z vsemi HTML povezavami)
             st.markdown(final_markdown, unsafe_allow_html=True)
 
-            # 5. IZRIS GRAFA (Cytoscape)
+            # 7. IZRIS GRAFA (Cytoscape)
             if final_elements:
                 st.divider()
                 st.subheader(f"🕸️ HIERARCHOGRAPHIC SYSTEM MAP ({len(nodes_to_link)} Nodes)")
