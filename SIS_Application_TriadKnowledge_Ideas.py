@@ -918,37 +918,31 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
 
             # --- PHASE 2: SAMBANOVA (Z inovativnim kontekstom iz datoteke) ---
             # --- PHASE 2: SAMBANOVA (ZARADI NAPAKE NATANČNO PORAVNANO) ---
-            # --- KORAK 2: UML & THESAURUS ARCHITECTURAL PROMPT ---
+            # --- KORAK 1: POSODOBLJEN UML, THESAURUS & COLOR MATRIX PROMPT ---
                 samba_sys_prompt = """
                 You are the SIS Hierarchography Specialist & Systems Architect.
-                TASK: Expand Phase 1 into a HIGH-DENSITY UML-based system map.
+                TASK: Expand Phase 1 into a HIGH-DENSITY, MULTI-COLORED UML system map.
 
-                MANDATORY NODE SHAPES:
-                - 'ellipse' for Actors, Stakeholders, or Entities.
-                - 'rectangle' for Core Systems, Processes, or Modules.
-                - 'diamond' for Decision points, Use Cases, or Conflict situations.
-                - 'round-rectangle' for Knowledge nodes, Data, or Documents.
+                MANDATORY NODE MATRIX (Color & Shape):
+                1. Actors/Stakeholders/Entities: shape='ellipse', color='#C6EFCE' (Light Green)
+                2. Core Systems/Processes/Modules: shape='rectangle', color='#DDEBF7' (Light Blue)
+                3. Decisions/Use Cases/Conflicts: shape='diamond', color='#F2DCDB' (Light Red)
+                4. Strategic Innovations/Ideas: shape='round-rectangle', color='#fd7e14' (Orange)
+                5. Knowledge/Data/Documents: shape='hexagon', color='#FFFF99' (Yellow)
 
                 MANDATORY UML & THESAURUS EDGES (rel_type):
-                1. UML Notation:
-                   - 'Generalization' (Inheritance/BT)
-                   - 'Realization' (Implementation/NT)
-                   - 'Composition' (Strong part-of)
-                   - 'Aggregation' (Weak part-of)
-                   - 'Dependency' (Uses/Needs)
-                2. Thesaurus Labels:
-                   - TT (Top Term), BT (Broader), NT (Narrower), RT (Related)
-                   - AS (Association), EQ (Equivalence), IN (Instance)
+                - UML: Generalization, Realization, Composition, Aggregation, Dependency.
+                - Thesaurus: TT, BT, NT, RT, AS, EQ, IN.
 
                 RULES:
-                - Use AT LEAST 12 nodes and 18 edges for high density.
-                - Use a mix of shapes to differentiate system layers.
-                - Ensure 'label' in JSON matches the innovation text exactly for hyperlinking.
+                - Use AT LEAST 12 nodes and 18 edges.
+                - Every node MUST have the correct 'shape' and 'color' from the matrix above.
+                - Ensure 'label' in JSON matches the innovation text exactly.
                 
                 OUTPUT FORMAT:
                 [Detailed Innovation Text]
                 ### SEMANTIC_GRAPH_JSON
-                {"nodes": [...], "edges": [...]}
+                {"nodes": [{"id": "n1", "label": "TERM", "color": "#C6EFCE", "shape": "ellipse"}], "edges": [...]}
                 """
 
                 samba_response = samba_client.chat.completions.create(
@@ -989,13 +983,20 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 try:
                     g_data = json.loads(json_match.group(1))
                     
-                    # 1. Procesiranje vozlišč (Shapes & Size)
+                    # --- KORAK 2: PROCESIRANJE BARV IN OBLIK ---
                     for n in g_data.get("nodes", []):
                         lbl = n.get("label", "Node")
                         nid = n.get("id", f"n{lbl}")
-                        n_color = n.get("color", "#fd7e14")
-                        # Preberemo obliko (ellipse, diamond, rectangle, round-rectangle)
+                        
+                        # AI zdaj pošilja specifične barve in oblike iz matrike
+                        n_color = n.get("color", "#fd7e14") # Oranžna ostane le, če AI pozabi poslati barvo
                         n_shape = n.get("shape", "rectangle")
+                        
+                        # Prilagoditev velikosti za boljšo vizualno uravnoteženost
+                        n_size = 85
+                        if n_shape == 'diamond': n_size = 105
+                        if n_shape == 'hexagon': n_size = 95
+                        if n_shape == 'ellipse': n_size = 80
                         
                         nodes_to_link.append({"id": nid, "label": lbl})
                         final_elements.append({
@@ -1004,7 +1005,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                                 "label": lbl, 
                                 "color": n_color, 
                                 "shape": n_shape,
-                                "size": 95 if n_shape == 'diamond' else 85
+                                "size": n_size
                             }
                         })
 
