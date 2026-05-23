@@ -927,31 +927,18 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 st.session_state.groq_synthesis = groq_synthesis
 
             # --- PHASE 2: SAMBANOVA (Z inovativnim kontekstom iz datoteke) ---
-            with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) ustvarja inovacije...'):
-               samba_sys_prompt = """
+            # --- PHASE 2: SAMBANOVA (ZARADI NAPAKE NATANČNO PORAVNANO) ---
+            with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) generating innovations...'):
+                samba_sys_prompt = """
                 You are the SIS Hierarchography Specialist.
-                TASK: Map the system using precise ontological and thesaurus-based edge labels.
-
-                MANDATORY EDGE LABELS (rel_type):
-                1. Standard Thesaurus: 
-                   - TT (Top Term), BT (Broader Term), NT (Narrower Term)
-                   - RT (Related Term), AS (Association), EQ (Equivalence), IN (Instance)
-                2. IMA/MA Architectural Verbs:
-                   - defines, triggers, constrains, amplifies, negates, 
-                   - structurizes, challenges, perspectivizes, condenses.
-
-                RULES:
-                - Every edge in the JSON MUST use one of these specific codes or verbs as 'rel_type'.
-                - Do NOT use 'Link' or generic descriptions.
-                
-                JSON SCHEMA: {"nodes": [...], "edges": [{"source": "n1", "target": "n2", "rel_type": "BT"}]}
-                """
+                TASK: Expand Phase 1 into a HIGH-DENSITY 18D system map.
 
                 MANDATORY RULES:
                 1. INNOVATIONS: Generate at least 7 radical, non-obvious innovations.
                 2. TERMINOLOGY: You MUST reuse and integrate the exact technical terms from Phase 1.
                 3. GRAPH DENSITY: Your JSON must contain AT LEAST 10-12 nodes and 15+ edges.
-                4. HYPERLINKING: Ensure every term used in the 'label' field of your JSON appears EXACTLY the same in your innovation text (case-sensitive).
+                4. HYPERLINKING: Ensure every term used in the 'label' field of your JSON appears EXACTLY the same in your innovation text.
+                5. EDGE LABELS: Use exact Rel-Types: TT, BT, NT, RT, AS, EQ, IN or verbs like 'triggers', 'defines'.
                 
                 OUTPUT FORMAT:
                 [Detailed Innovation Text]
@@ -971,7 +958,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 cerebras_innovation = samba_response.choices[0].message.content
 
             # =============================================================================
-            # KORAK 2: ULTRA-PROCESOR (POVEZAVE + TEZAVERSKI GRAF)
+            # KORAK 2: ULTRA-PROCESOR (GOOGLE LINKS + THESAURUS GRAPH)
             # =============================================================================
             st.subheader("🧱 HIERARCHOLOGICAL SYNTHESIS REPORT")
             
@@ -984,75 +971,55 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 innovation_text = cerebras_innovation
                 json_raw = ""
 
-            # ZDRUŽIMO CELOTNO POROČILO (Da bo procesor skeniral obe fazi hkrati)
+            # ZDRUŽIMO POROČILO ZA SINERGIJSKO POVEZOVANJE
             full_report = f"## 📚 Phase 1: Foundation (Groq)\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations (SambaNova)\n\n{innovation_text}"
             
             nodes_to_link = []
             final_elements = []
 
-            # 2. ROBUSTNO ISKANJE JSON-A (Neodvisno od ločilnika)
+            # 2. ROBUSTNO ISKANJE JSON-A
             json_match = re.search(r'(\{.*"nodes".*\})', json_raw if json_raw else cerebras_innovation, re.DOTALL | re.IGNORECASE)
             
             if json_match:
                 try:
                     g_data = json.loads(json_match.group(1))
-                    
-                    # Procesiramo vozlišča (Nodes)
                     for n in g_data.get("nodes", []):
                         lbl = n.get("label", "")
                         nid = n.get("id", f"n{lbl}")
                         if lbl:
                             nodes_to_link.append({"id": nid, "label": lbl})
-                            final_elements.append({
-                                "data": {"id": nid, "label": lbl, "color": n.get("color", "#fd7e14"), "shape": "rectangle"}
-                            })
-
-                    # Procesiramo povezave (Edges) s Tezaverskimi/IMA označbami
+                            final_elements.append({"data": {"id": nid, "label": lbl, "color": n.get("color", "#fd7e14"), "shape": "rectangle"}})
+                    
                     for e in g_data.get("edges", []):
-                        # Preberemo rel_type (npr. BT, NT, triggers...)
-                        rel_label = e.get("rel_type", "AS")
                         final_elements.append({
-                            "data": {
-                                "source": e.get("source"), 
-                                "target": e.get("target"), 
-                                "rel_type": rel_label # To se izpiše na črti v grafu
-                            }
+                            "data": {"source": e.get("source"), "target": e.get("target"), "rel_type": e.get("rel_type", "AS")}
                         })
                 except:
                     st.warning("⚠️ Graph structure detected but could not be fully parsed.")
 
             # 3. AGRESIVNO SEMANTIČNO POVEZOVANJE (Google Linking)
-            # Skeniramo Fazo 1 in Fazo 2 hkrati
             final_markdown = full_report
-            
             if nodes_to_link:
-                # Sortiramo besede od najdaljših k najkrajšim (prepreči "pohrustanje" besed)
+                # Sortiramo po dolžini besed
                 sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
-                
                 for item in sorted_keywords:
                     lbl = item['label']
                     nid = item['id']
-                    
                     if len(lbl) > 2:
                         g_url = urllib.parse.quote(lbl)
-                        # HTML za Google povezavo s tvojim CSS stilom
                         link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
-                        
-                        # count=15 zagotovi, da se beseda polinka v obeh fazah (Faza 1 IN 2)
+                        # Polinkamo do 15 pojavitev v obeh fazah
                         pattern = re.compile(r'\b' + re.escape(lbl) + r'\b', re.IGNORECASE)
                         final_markdown = pattern.sub(link_html, final_markdown, count=15)
 
-            # 4. PRIKAZ KONČNEGA POROČILA (HTML)
+            # 4. KONČNI PRIKAZ (Z vsemi HTML povezavami)
             st.markdown(final_markdown, unsafe_allow_html=True)
 
-            # 5. IZRIS GOSTEGA GRAFA (Cytoscape)
+            # 5. IZRIS GRAFA (Cytoscape)
             if final_elements:
                 st.divider()
                 st.subheader(f"🕸️ HIERARCHOGRAPHIC SYSTEM MAP ({len(nodes_to_link)} Nodes)")
-                # Unikaten ID grafa zagotovi pravilno osveževanje v Streamlitu
                 render_cytoscape_network(final_elements, f"cy_{int(time.time())}")
-            else:
-                st.info("ℹ️ Information: Synthesis complete. Visual map was not generated in this run.")
 
         except Exception as e:
             st.error(f"❌ Pipeline Failure: {e}")
