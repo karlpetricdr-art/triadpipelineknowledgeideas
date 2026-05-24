@@ -865,289 +865,10 @@ with col_inq3:
             st.error(f"Error reading file: {e}")
 
 # =============================================================================
-# 5. SYNERGY EXECUTION ENGINE (GROQ + SAMBANOVA + ORCID + UML)
+# 5. SYNERGY EXECUTION ENGINE (GROQ + SAMBANOVA + 3D HIERARCHOGRAPHY)
 # =============================================================================
 
-if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True, key="exec_pipeline_v2026"):
-    if not groq_api_key or not sambanova_api_key:
-        st.error("❌ Dual-Model synergy requires both Groq and SambaNova keys.")
-    elif not user_query:
-        st.warning("⚠️ Phase 1 Research Inquiry is required.")
-    else:
-        try:
-            # --- 1. PRIDOBIVANJE PODATKOV (BIBLIOGRAFIJA + DATOTEKA) ---
-            with st.spinner('🔍 Accessing ORCID & Scholar databases...'):
-                biblio_data = fetch_author_bibliographies(target_authors) if target_authors else ""
-            
-            # Priprava kontekstov
-            full_context = f"\n\n[FILE CONTEXT]:\n{file_content}" if file_content else ""
-            biblio_context = f"\n\n[AUTHOR RESEARCH BACKGROUND]:\n{biblio_data}" if biblio_data else ""
-            
-            # Združen vhod za Groq (Phase 1)
-            full_ai_input = f"{user_query}{full_context}{biblio_context}"
-
-            # Inicializacija klientov
-            groq_client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
-            samba_client = OpenAI(api_key=sambanova_api_key, base_url="https://api.sambanova.ai/v1")
-            
-            # --- 2. PHASE 1: GROQ (STRUKTURNA PODLAGA) ---
-            with st.spinner('PHASE 1: Building Architecture & Analyzing Author Context...'):
-                p1_response = groq_client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    messages=[
-                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. Integrate the provided Author Research Background and file data into your structural analysis."}, 
-                        {"role": "user", "content": full_ai_input}
-                    ],
-                    temperature=0.4
-                )
-                groq_synthesis = p1_response.choices[0].message.content
-                st.session_state.groq_synthesis = groq_synthesis
-				# --- PHASE 2: SAMBANOVA EXECUTION (3D ARCHITECT) ---
-            with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) generira 3D inovacije...'):
-                samba_sys_prompt = """
-                You are the SIS 3D Systems Architect. 
-                Task: Build a HIGH-DENSITY 3D HIERARCHOGRAPHIC MAP.
-
-                MANDATORY GEOMETRY:
-                1. Scientists/Persons -> shape='triangle' (3D Cone)
-                2. Innovative Ideas -> shape='rectangle' (3D Cube)
-                3. Societies/Groups -> shape='diamond' (3D Pyramid)
-                4. Nature/Environment -> shape='ellipse' (3D Sphere)
-                5. Systems/Processes -> shape='hexagon' (3D Box)
-
-                Assign colors: Gold (#FFD700) for Persons, Orange (#fd7e14) for Ideas, Purple (#9b59b6) for Society, Green (#2ecc71) for Nature.
-                Provide at least 15 nodes and 20 edges in JSON.
-
-                OUTPUT:
-                [Detailed Markdown Text]
-                ### SEMANTIC_GRAPH_JSON
-                {"nodes": [], "edges": []}
-                """
-
-                samba_response = samba_client.chat.completions.create(
-                    model=sambanova_id, 
-                    messages=[
-                        {"role": "system", "content": samba_sys_prompt}, 
-                        {"role": "user", "content": f"FOUNDATION: {groq_synthesis}\n\nGOAL: {idea_query}"}
-                    ],
-                    temperature=0.8
-                )
-                cerebras_innovation = samba_response.choices[0].message.content
-
-            # --- PROCESIRANJE IN IZRIS (3D LOGIKA) ---
-            if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
-                parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
-                innovation_text, json_raw = parts[0], parts[1]
-            else:
-                innovation_text, json_raw = cerebras_innovation, ""
-
-            # Iskanje JSON-a z Regexom
-            json_match = re.search(r'(\{.*"nodes".*\})', json_raw if json_raw else cerebras_innovation, re.DOTALL | re.IGNORECASE)
-            
-            final_elements = []
-            nodes_to_link = []
-
-            if json_match:
-                try:
-                    g_data = json.loads(json_match.group(1))
-                    for n in g_data.get("nodes", []):
-                        final_elements.append({"data": {
-                            "id": n.get("id"), "label": n.get("label"), 
-                            "color": n.get("color"), "shape": n.get("shape")
-                        }})
-                        nodes_to_link.append({"id": n.get("id"), "label": n.get("label")})
-                    
-                    for e in g_data.get("edges", []):
-                        final_elements.append({"data": {
-                            "source": e.get("source"), "target": e.get("target"), 
-                            "rel_type": e.get("rel_type")
-                        }})
-                except: st.error("Napaka v JSON strukturi grafa.")
-
-            # Izpis poročila (z Google povezavami)
-            final_markdown = f"## 📚 Phase 1\n{groq_synthesis}\n\n---\n## 💡 Phase 2\n{innovation_text}"
-            
-            # Dodajanje Google Search povezav v besedilo
-            for item in nodes_to_link:
-                lbl = item['label']
-                if len(lbl) > 3:
-                    link = f'<a href="https://google.com/search?q={urllib.parse.quote(lbl)}" target="_blank" class="semantic-node-highlight">{lbl}↗</a>'
-                    final_markdown = re.sub(r'\b' + re.escape(lbl) + r'\b', link, final_markdown, count=1)
-
-            st.markdown(final_markdown, unsafe_allow_html=True)
-
-            # KONČNI 3D PRIKAZ
-            if final_elements:
-                st.divider()
-                st.subheader("🌌 3D HIERARCHOGRAPHIC SPACE")
-                st.info("🕹️ Navigacija: Leva tipka=Vrtiš, Desna tipka=Premikaš, Kolešček=Zoom.")
-                render_3d_network(final_elements)
-
-        except Exception as e:
-            st.error(f"Sistemska napaka: {e}")
-
-            # =============================================================================
-            # 3. PHASE 2: SAMBANOVA (GENERIRANJE 3D STRUKTURE IN INOVACIJ)
-            # =============================================================================
-            with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) gradi 3D hierarhografijo...'):
-                samba_sys_prompt = """
-                You are the SIS Hierarchography Specialist & 3D Systems Architect.
-                TASK: Expand Phase 1 into a HIGH-DENSITY, 3D UML system map using a specific geometric visual language.
-
-                MANDATORY NODE MATRIX (Visual Language for 3D Rendering):
-                1. Scientists / Research Persons: shape='triangle', color='#FFD700' (Will be 3D Cone)
-                2. Innovative Ideas: shape='rectangle', color='#fd7e14' (Will be 3D Cube)
-                3. Societies / Collectives: shape='diamond', color='#9b59b6' (Will be 3D Pyramid)
-                4. Nature / Environment / Bio: shape='ellipse', color='#2ecc71' (Will be 3D Sphere)
-                5. Systems / Processes / Knowledge: shape='hexagon', color='#DDEBF7' (Will be 3D Box)
-
-                MANDATORY UML & THESAURUS EDGES (rel_type):
-                - UML: Generalization, Realization, Composition, Aggregation, Dependency.
-                - Thesaurus: TT, BT, NT, RT, AS, EQ, IN.
-
-                RULES:
-                - Use AT LEAST 15 nodes and 20 edges for high density.
-                - Every node MUST have the correct 'shape' and 'color' from the matrix above.
-                - Labels in JSON MUST match the innovation text exactly for hyperlinking.
-                
-                OUTPUT FORMAT:
-                [Detailed Innovation Text in Markdown]
-                
-                ### SEMANTIC_GRAPH_JSON
-                {"nodes": [{"id": "n1", "label": "Scientist Name", "shape": "triangle", "color": "#FFD700"}], "edges": [{"source": "n1", "target": "n2", "rel_type": "Realization"}]}
-                """
-
-                samba_response = samba_client.chat.completions.create(
-                    model=sambanova_id, 
-                    messages=[
-                        {"role": "system", "content": samba_sys_prompt}, 
-                        {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER GOAL: {idea_query}{full_context}"}
-                    ],
-                    temperature=0.8
-                )
-                cerebras_innovation = samba_response.choices[0].message.content
-
-            # =============================================================================
-            # 4. PROCESIRANJE REZULTATOV IN 3D VIZUALIZACIJA
-            # =============================================================================
-            
-            # Ločevanje besedila od JSON podatkov
-            if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
-                parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
-                innovation_text = parts[0]
-                json_raw = parts[1]
-            else:
-                innovation_text = cerebras_innovation
-                json_raw = ""
-
-            full_report = f"## 📚 Phase 1: Foundation (Groq)\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations (SambaNova)\n\n{innovation_text}"
-            
-            nodes_to_link = []
-            final_elements = []
-
-            # Iskanje in razčlenjevanje JSON-a za 3D graf
-            json_match = re.search(r'(\{.*"nodes".*\})', json_raw if json_raw else cerebras_innovation, re.DOTALL | re.IGNORECASE)
-            
-            if json_match:
-                try:
-                    g_data = json.loads(json_match.group(1))
-                    
-                    # Ekstrakcija vozlišč za 3D
-                    for n in g_data.get("nodes", []):
-                        lbl = n.get("label", "Node")
-                        nid = n.get("id", f"n{lbl}")
-                        n_color = n.get("color", "#fd7e14")
-                        n_shape = n.get("shape", "rectangle") 
-                        
-                        nodes_to_link.append({"id": nid, "label": lbl})
-                        final_elements.append({
-                            "data": {
-                                "id": nid, 
-                                "label": lbl, 
-                                "color": n_color, 
-                                "shape": n_shape
-                            }
-                        })
-
-                    # Ekstrakcija povezav
-                    for e in g_data.get("edges", []):
-                        final_elements.append({
-                            "data": {
-                                "source": e.get("source"), 
-                                "target": e.get("target"), 
-                                "rel_type": e.get("rel_type", "Association")
-                            }
-                        })
-                except Exception as json_err:
-                    st.warning(f"Opomba: Prišlo je do težave pri pripravi 3D strukture: {json_err}")
-
-            # Pametno semantično povezovanje (Google Search Links)
-            final_markdown = full_report
-            if nodes_to_link:
-                # Razvrstimo po dolžini (daljše besede prej), da ne pokvarimo krajših znotraj daljših
-                sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
-                for item in sorted_keywords:
-                    lbl = item['label']
-                    if len(lbl) > 3:
-                        g_url = urllib.parse.quote(lbl)
-                        link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
-                        pattern = re.compile(r'\b' + re.escape(lbl) + r'\b', re.IGNORECASE)
-                        final_markdown = pattern.sub(link_html, final_markdown, count=8)
-
-            # --- PRIKAZ NA ZASLONU ---
-            st.subheader("🧱 HIERARCHOLOGICAL SYNTHESIS REPORT")
-            
-            if biblio_data:
-                with st.expander("📚 IDENTIFIED AUTHOR BIBLIOGRAPHIES", expanded=False):
-                    st.markdown(biblio_data)
-            
-            # Izpis poročila z vsemi interaktivnimi povezavami
-            st.markdown(final_markdown, unsafe_allow_html=True)
-
-            # IZRIS 3D PROSTORA
-            if final_elements:
-                st.divider()
-                st.subheader("🌌 3D HIERARCHOGRAPHIC SPACE EXPLORER")
-                st.info("🕹️ **NAVIGACIJA:** Leva tipka = Vrtljivost | Desna tipka = Premikanje | Kolešček = Zoom. Telesa predstavljajo: Znanstvenike (Stožci), Ideje (Kocke), Družbo (Piramide) in Naravo (Krogle).")
-                
-                # Pokličemo funkcijo, ki smo jo definirali v 1. koraku
-                render_3d_network(final_elements)
-
-        except Exception as e:
-            st.error(f"❌ Napaka v sistemskem cevovodu: {e}")
-            st.exception(e) # Pokaže podrobno tehnično napako za debugiranje
-
-            # AGRESIVNO SEMANTIČNO POVEZOVANJE (Tukaj ustvarimo končni final_markdown)
-            final_markdown = full_report
-            if nodes_to_link:
-                sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
-                for item in sorted_keywords:
-                    lbl, nid = item['label'], item['id']
-                    if len(lbl) > 2:
-                        g_url = urllib.parse.quote(lbl)
-                        link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
-                        pattern = re.compile(r'\b' + re.escape(lbl) + r'\b', re.IGNORECASE)
-                        final_markdown = pattern.sub(link_html, final_markdown, count=15)
-
-            # --- 5. KONČNI PRIKAZ (ZDAJ JE VRSTNI RED PRAVILEN) ---
-            st.subheader("🧱 HIERARCHOLOGICAL SYNTHESIS REPORT")
-            
-            # Prikaz bibliografije
-            if biblio_data:
-                with st.expander("📚 EXTRACTED AUTHOR DATA (ORCID/SCHOLAR)", expanded=False):
-                    st.markdown(biblio_data)
-            
-            # Prikaz besedila s povezavami
-            st.markdown(final_markdown, unsafe_allow_html=True)
-
-            # Prikaz grafa na koncu
-            if final_elements:
-                st.divider()
-                st.subheader(f"🕸️ HIERARCHOGRAPHIC SYSTEM MAP ({len(nodes_to_link)} Nodes)")
-                render_cytoscape_network(final_elements, f"cy_{int(time.time())}")
-# =============================================================================
-# 1. POMOŽNA FUNKCIJA ZA 3D IZRIS (Definirana na vrhu, da ni napak)
-# =============================================================================
+# OPOMBA: Funkcija render_3d_network mora biti definirana pred klicem v gumbu.
 def render_3d_network(elements_json):
     """Izris pravega 3D prostora s kockami, piramidami in krogami (Three.js)."""
     nodes = []
@@ -1176,14 +897,15 @@ def render_3d_network(elements_json):
             .backgroundColor('#00050a')
             .showNavInfo(true)
             .nodeLabel(node => `<div style="color:white; background:rgba(0,20,40,0.9); padding:8px; border:1px solid #00B0F0; border-radius:5px;">
-                                 <b>${{node.label}}</b><br/>Tip: ${{node.shape}}</div>`)
+                                 <b>${{node.label}}</b><br/>Oblika: ${{node.shape}}</div>`)
             .nodeThreeObject(node => {{
                 let geometry;
+                // SIS 3D VIZUALNI JEZIK
                 switch(node.shape) {{
-                    case 'triangle': geometry = new THREE.ConeGeometry(12, 24, 4); break;
-                    case 'diamond':  geometry = new THREE.TetrahedronGeometry(15); break;
-                    case 'ellipse':  geometry = new THREE.SphereGeometry(12, 32, 32); break;
-                    case 'rectangle': default: geometry = new THREE.BoxGeometry(18, 18, 18);
+                    case 'triangle': geometry = new THREE.ConeGeometry(12, 24, 4); break; // Znanstvenik
+                    case 'diamond':  geometry = new THREE.TetrahedronGeometry(15); break; // Družba
+                    case 'ellipse':  geometry = new THREE.SphereGeometry(12, 32, 32); break; // Narava
+                    case 'rectangle': default: geometry = new THREE.BoxGeometry(18, 18, 18); // Ideja
                 }}
                 const material = new THREE.MeshPhongMaterial({{ 
                     color: node.color || '#fd7e14', 
@@ -1205,34 +927,31 @@ def render_3d_network(elements_json):
     """
     components.html(html_code, height=820)
 
-# =============================================================================
-# 5. SYNERGY EXECUTION ENGINE (GROQ + SAMBANOVA + 3D HIERARCHOGRAPHY)
-# =============================================================================
-
-if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True, key="exec_pipeline_v2026"):
+# GLAVNI GUMB (Definiran samo enkrat z unikatnim ključem)
+if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True, key="exec_pipeline_final_3d"):
     if not groq_api_key or not sambanova_api_key:
         st.error("❌ Dual-Model synergy requires both Groq and SambaNova keys.")
     elif not user_query:
         st.warning("⚠️ Phase 1 Research Inquiry is required.")
     else:
         try:
-            # --- 1. PRIDOBIVANJE PODATKOV (ORCID + DATOTEKA) ---
-            with st.spinner('🔍 Analiziram ORCID baze in datoteke...'):
+            # --- 1. DATA ACQUISITION ---
+            with st.spinner('🔍 Dostop do ORCID baze in analiza datotek...'):
                 biblio_data = fetch_author_bibliographies(target_authors) if target_authors else ""
             
             full_context = f"\n\n[FILE DATA]:\n{file_content}" if file_content else ""
-            biblio_context = f"\n\n[AUTHOR RESEARCH]:\n{biblio_data}" if biblio_data else ""
+            biblio_context = f"\n\n[ORCID BACKGROUND]:\n{biblio_data}" if biblio_data else ""
             full_ai_input = f"{user_query}{full_context}{biblio_context}"
 
             groq_client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
             samba_client = OpenAI(api_key=sambanova_api_key, base_url="https://api.sambanova.ai/v1")
             
-            # --- 2. PHASE 1: GROQ (STRUKTURNA PODLAGA) ---
-            with st.spinner('PHASE 1: Groq gradi arhitekturo znanja...'):
+            # --- 2. PHASE 1: GROQ (FOUNDATION) ---
+            with st.spinner('PHASE 1: Groq gradi strukturno podlago...'):
                 p1_response = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=[
-                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. Focus on structural factual integrity."}, 
+                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. Focus on structural integrity."}, 
                         {"role": "user", "content": full_ai_input}
                     ],
                     temperature=0.4
@@ -1240,20 +959,19 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 groq_synthesis = p1_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
 
-            # --- 3. PHASE 2: SAMBANOVA (3D INOVACIJE) ---
-            with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) generira 3D inovacije...'):
+            # --- 3. PHASE 2: SAMBANOVA (3D INNOVATION) ---
+            with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) ustvarja 3D inovacije...'):
                 samba_sys_prompt = """
                 You are the SIS 3D Systems Architect. 
-                Task: Build a HIGH-DENSITY 3D HIERARCHOGRAPHIC MAP based on Phase 1.
+                Task: Build a HIGH-DENSITY 3D HIERARCHOGRAPHIC MAP.
 
-                MANDATORY 3D GEOMETRY (Visual Language):
+                MANDATORY 3D SHAPES:
                 1. Scientists/Persons: shape='triangle' (3D Cone) | color='#FFD700'
                 2. Innovative Ideas: shape='rectangle' (3D Cube) | color='#fd7e14'
-                3. Societies/Groups: shape='diamond' (3D Pyramid) | color='#9b59b6'
+                3. Societies/Collectives: shape='diamond' (3D Pyramid) | color='#9b59b6'
                 4. Nature/Environment: shape='ellipse' (3D Sphere) | color='#2ecc71'
-                5. Systems/Data: shape='hexagon' (3D Box) | color='#DDEBF7'
 
-                Assign at least 15 nodes and 20 UML-style edges in JSON.
+                Rules: Generate at least 15 nodes and 20 edges in JSON.
                 
                 OUTPUT FORMAT:
                 [Detailed Markdown Text]
@@ -1271,7 +989,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 )
                 cerebras_innovation = samba_response.choices[0].message.content
 
-            # --- 4. PROCESIRANJE REZULTATOV ---
+            # --- 4. PROCESSING RESULTS ---
             if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
                 parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
                 innovation_text, json_raw = parts[0], parts[1]
@@ -1287,11 +1005,12 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 try:
                     g_data = json.loads(json_match.group(1))
                     for n in g_data.get("nodes", []):
+                        lbl = n.get("label", "Node")
                         final_elements.append({"data": {
-                            "id": n.get("id"), "label": n.get("label"), 
+                            "id": n.get("id"), "label": lbl, 
                             "color": n.get("color"), "shape": n.get("shape")
                         }})
-                        nodes_to_link.append({"id": n.get("id"), "label": n.get("label")})
+                        nodes_to_link.append({"id": n.get("id"), "label": lbl})
                     
                     for e in g_data.get("edges", []):
                         final_elements.append({"data": {
@@ -1299,29 +1018,28 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                             "rel_type": e.get("rel_type")
                         }})
                 except:
-                    st.warning("Težava pri branju grafične strukture.")
+                    st.warning("Grafična struktura ni povsem berljiva, a poročilo je pripravljeno.")
 
-            # Semantično povezovanje z Google Search
-            full_report = f"## 📚 Phase 1: Foundation\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Innovations\n{innovation_text}"
-            final_markdown = full_report
+            # --- 5. FINAL RENDERING ---
+            st.subheader("🧱 HIERARCHOLOGICAL SYNTHESIS REPORT")
             
+            if biblio_data:
+                with st.expander("📚 IDENTIFIED AUTHOR DATA", expanded=False):
+                    st.markdown(biblio_data)
+
+            # Semantično povezovanje poročila z Google povezavami
+            full_report = f"## 📚 Phase 1: Foundation\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Innovations\n\n{innovation_text}"
+            final_markdown = full_report
             if nodes_to_link:
                 sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
                 for item in sorted_keywords:
                     lbl = item['label']
                     if len(lbl) > 3:
                         g_url = urllib.parse.quote(lbl)
-                        link_html = f'<a href="https://google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}↗</a>'
+                        link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}↗</a>'
                         pattern = re.compile(r'\b' + re.escape(lbl) + r'\b', re.IGNORECASE)
                         final_markdown = pattern.sub(link_html, final_markdown, count=10)
 
-            # --- 5. PRIKAZ REZULTATOV ---
-            st.subheader("🧱 HIERARCHOLOGICAL SYNTHESIS REPORT")
-            
-            if biblio_data:
-                with st.expander("📚 IDENTIFIED AUTHOR DATA", expanded=False):
-                    st.markdown(biblio_data)
-            
             st.markdown(final_markdown, unsafe_allow_html=True)
 
             if final_elements:
@@ -1337,4 +1055,4 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
 # 6. FOOTER
 # =============================================================================
 st.divider()
-st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | {SYSTEM_DATE}")
+st.caption(f"SIS Synthesizer | {VERSION_CODE} | {SYSTEM_DATE}")
