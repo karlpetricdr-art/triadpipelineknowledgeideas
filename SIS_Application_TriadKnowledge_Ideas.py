@@ -299,23 +299,23 @@ def fetch_author_bibliographies(author_input):
     comprehensive_biblio = ""
     headers = {"Accept": "application/json"}
     for auth in author_list:
-        try:
-            s_res = requests.get(f"https://pub.orcid.org/v3.0/search/?q={auth}", headers=headers, timeout=6).json()
-            if s_res.get('result'):
-                orcid_id = s_res['result'][0]['orcid-identifier']['path']
-                r_res = requests.get(f"https://pub.orcid.org/v3.0/{orcid_id}/record", headers=headers, timeout=6).json()
-                works = r_res.get('activities-summary', {}).get('works', {}).get('group', [])
-                comprehensive_biblio += f"#### 🆔 ORCID: {auth.upper()} ({orcid_id})\n"
-                for work in works[:12]:
-                    summary = work.get('work-summary', [{}])[0]
-                    title = summary.get('title', {}).get('title', {}).get('value', 'Unknown Title')
-                    # Boljše iskanje letnice
-                    pub_date = summary.get('publication-date')
-                    year = pub_date.get('year', {}).get('value', 'n.d.') if pub_date else 'n.d.'
-                    comprehensive_biblio += f"- **{year}**: {title}\n"
-                comprehensive_biblio += "\n---\n"
-        except: pass
-    return comprehensive_biblio
+	try:
+		s_res = requests.get(f"https://pub.orcid.org/v3.0/search/?q={auth}", headers=headers, timeout=6).json()
+		if s_res.get('result'):
+			orcid_id = s_res['result'][0]['orcid-identifier']['path']
+			r_res = requests.get(f"https://pub.orcid.org/v3.0/{orcid_id}/record", headers=headers, timeout=6).json()
+			works = r_res.get('activities-summary', {}).get('works', {}).get('group', [])
+			comprehensive_biblio += f"#### 🆔 ORCID: {auth.upper()} ({orcid_id})\n"
+			for work in works[:12]:
+				summary = work.get('work-summary', [{}])[0]
+				title = summary.get('title', {}).get('title', {}).get('value', 'Unknown Title')
+				# Boljše iskanje letnice
+				pub_date = summary.get('publication-date')
+				year = pub_date.get('year', {}).get('value', 'n.d.') if pub_date else 'n.d.'
+				comprehensive_biblio += f"- **{year}**: {title}\n"
+			comprehensive_biblio += "\n---\n"
+	except: pass
+return comprehensive_biblio
 
 # =============================================================================
 # 2. ARCHITECTURAL ONTOLOGIES (IMA & MA) - EXHAUSTIVE EXPANSION
@@ -1197,7 +1197,7 @@ def render_3d_network(elements_json):
     """
     components.html(html_code, height=820)
 
-        except Exception as e:
+except Exception as e:
             st.error(f"❌ Pipeline Failure: {e}")
 
 # =============================================================================
