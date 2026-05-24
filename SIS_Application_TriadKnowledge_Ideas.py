@@ -1144,7 +1144,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 st.divider()
                 st.subheader(f"🕸️ HIERARCHOGRAPHIC SYSTEM MAP ({len(nodes_to_link)} Nodes)")
                 render_cytoscape_network(final_elements, f"cy_{int(time.time())}")
-				def render_3d_network(elements_json):
+def render_3d_network(elements_json):
     """Izris pravega 3D prostora s kockami, piramidami in krogami (Three.js)."""
     nodes = []
     links = []
@@ -1175,42 +1175,24 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                                  <b>${{node.label}}</b><br/>Oblika: ${{node.shape}}</div>`)
             .nodeThreeObject(node => {{
                 let geometry;
-                // 3D GEOMETRIJA GLEDE NA TVOJE ZAHTEVE
                 switch(node.shape) {{
-                    case 'triangle': // OSEBA/ZNANSTVENIK = STOŽEC (PIRAMIDALEN)
-                        geometry = new THREE.ConeGeometry(12, 24, 4); 
-                        break;
-                    case 'diamond':  // DRUŽBA = PIRAMIDA (TETRAEDER)
-                        geometry = new THREE.TetrahedronGeometry(15);
-                        break;
-                    case 'ellipse':  // NARAVA = KROGLA
-                        geometry = new THREE.SphereGeometry(12, 32, 32);
-                        break;
-                    case 'rectangle': // INOVACIJA = KOCKA
-                    default:
-                        geometry = new THREE.BoxGeometry(18, 18, 18);
+                    case 'triangle': geometry = new THREE.ConeGeometry(12, 24, 4); break;
+                    case 'diamond':  geometry = new THREE.TetrahedronGeometry(15); break;
+                    case 'ellipse':  geometry = new THREE.SphereGeometry(12, 32, 32); break;
+                    case 'rectangle': default: geometry = new THREE.BoxGeometry(18, 18, 18);
                 }}
                 const material = new THREE.MeshPhongMaterial({{ 
                     color: node.color || '#fd7e14', 
                     transparent: true, 
                     opacity: 0.9,
-                    shininess: 100,
-                    specular: 0xffffff
+                    shininess: 100
                 }});
                 return new THREE.Mesh(geometry, material);
             }})
             .linkWidth(1.5)
             .linkColor(() => '#457b9d')
-            .linkDirectionalParticles(2) // Animacija pretoka informacij
-            .linkDirectionalParticleSpeed(0.005)
-            .linkDirectionalArrowLength(5)
-            .linkDirectionalArrowRelPos(1);
-
-        // Dodajanje močnejše svetlobe za 3D globino
-        const light = new THREE.PointLight(0xffffff, 1.5);
-        light.position.set(100, 100, 100);
-        Graph.scene().add(light);
-        Graph.scene().add(new THREE.AmbientLight(0x808080));
+            .linkDirectionalParticles(2)
+            .linkDirectionalParticleSpeed(0.005);
     </script>
     """
     components.html(html_code, height=820)
