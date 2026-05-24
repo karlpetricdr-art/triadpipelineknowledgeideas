@@ -868,9 +868,11 @@ with col_inq3:
 # 5. SYNERGY EXECUTION ENGINE (GROQ + SAMBANOVA + 3D HIERARCHOGRAPHY)
 # =============================================================================
 
-# OPOMBA: Funkcija render_3d_network mora biti definirana pred klicem v gumbu.
-def render_3d_network(elements_json):
-    """Izris pravega 3D prostora s kockami, piramidami in krogami (Three.js)."""
+def render_3d_network(elements_json, container_id="3d_canvas"):
+    """
+    Napredni Three.js / 3d-force-graph motor za vizualizacijo 18D znanstvenih taksonomij.
+    Implementira volumetrična telesa: Stožce, Kocke, Tetraedre in Sfere.
+    """
     nodes = []
     links = []
     for el in elements_json:
@@ -878,181 +880,240 @@ def render_3d_network(elements_json):
             links.append({
                 "source": el['data']['source'], 
                 "target": el['data']['target'], 
-                "label": el['data'].get('rel_type', '')
+                "rel_type": el['data'].get('rel_type', 'Association')
             })
         else:
             nodes.append(el['data'])
-
+    
     data_json = json.dumps({"nodes": nodes, "links": links})
-
+    
     html_code = f"""
-    <div id="3d-graph" style="width: 100%; height: 800px; background: #00050a; border-radius: 20px; border: 1px solid #1d3557;"></div>
+    <div style="position: relative; width: 100%;">
+        <div id="{container_id}" style="width: 100%; height: 850px; background: #00050a; border-radius: 20px; border: 2px solid #1d3557; box-shadow: inset 0 0 50px rgba(0,176,240,0.2);"></div>
+        <div style="position: absolute; bottom: 20px; left: 20px; color: rgba(255,255,255,0.7); font-family: sans-serif; font-size: 12px; pointer-events: none;">
+            <b>SIS 3D NAVIGACIJA:</b><br/>
+            Leva miška: Rotacija prostora<br/>
+            Desna miška: Panoramski premik<br/>
+            Kolešček: Zoom (globina)
+        </div>
+    </div>
     <script src="//unpkg.com/3d-force-graph"></script>
     <script src="//unpkg.com/three"></script>
     <script>
         const gData = {data_json};
-        const Graph = ForceGraph3D()
-            (document.getElementById('3d-graph'))
+        const Graph = ForceGraph3D()(document.getElementById('{container_id}'))
             .graphData(gData)
             .backgroundColor('#00050a')
-            .showNavInfo(true)
-            .nodeLabel(node => `<div style="color:white; background:rgba(0,20,40,0.9); padding:8px; border:1px solid #00B0F0; border-radius:5px;">
-                                 <b>${{node.label}}</b><br/>Oblika: ${{node.shape}}</div>`)
+            .showNavInfo(false)
+            .nodeLabel(node => `<div style="background:rgba(0,20,40,0.95); color:white; padding:10px; border:1px solid #00B0F0; border-radius:8px; font-family:sans-serif;">
+                                 <b style="color:#FFD700;">${{node.label}}</b><br/>
+                                 <span style="font-size:11px; opacity:0.8;">Geometrija: ${{node.shape}}</span></div>`)
             .nodeThreeObject(node => {{
                 let geometry;
-                // SIS 3D VIZUALNI JEZIK
+                // STREŽENJE VOLUMETRIČNIH TELES GLEDE NA SIS ONTOLOGIJO
                 switch(node.shape) {{
-                    case 'triangle': geometry = new THREE.ConeGeometry(12, 24, 4); break; // Znanstvenik
-                    case 'diamond':  geometry = new THREE.TetrahedronGeometry(15); break; // Družba
-                    case 'ellipse':  geometry = new THREE.SphereGeometry(12, 32, 32); break; // Narava
-                    case 'rectangle': default: geometry = new THREE.BoxGeometry(18, 18, 18); // Ideja
+                    case 'triangle': // Znanstvenik/Oseba -> STOŽEC
+                        geometry = new THREE.ConeGeometry(12, 25, 4); 
+                        break;
+                    case 'diamond':  // Družba/Kolektiv -> TETRAEDER (Piramida)
+                        geometry = new THREE.TetrahedronGeometry(16);
+                        break;
+                    case 'ellipse':  // Narava/Okolje -> SFERA (Krogla)
+                        geometry = new THREE.SphereGeometry(12, 32, 32);
+                        break;
+                    case 'rectangle': // Inovativna ideja -> KOCKA
+                    default:
+                        geometry = new THREE.BoxGeometry(18, 18, 18);
                 }}
                 const material = new THREE.MeshPhongMaterial({{ 
                     color: node.color || '#fd7e14', 
                     transparent: true, 
                     opacity: 0.9,
-                    shininess: 100
+                    shininess: 100,
+                    specular: 0xffffff
                 }});
-                return new THREE.Mesh(geometry, material);
+                const mesh = new THREE.Mesh(geometry, material);
+                return mesh;
             }})
             .linkWidth(1.5)
             .linkColor(() => '#457b9d')
-            .linkDirectionalParticles(3)
-            .linkDirectionalParticleSpeed(0.005);
-            
-        const light = new THREE.DirectionalLight(0xffffff, 1);
-        light.position.set(1, 1, 1).normalize();
-        Graph.scene().add(light);
+            .linkDirectionalParticles(4)
+            .linkDirectionalParticleSpeed(0.006)
+            .linkDirectionalArrowLength(5)
+            .linkDirectionalArrowRelPos(1);
+
+        // Dinamična osvetlitev prostora
+        const ambientLight = new THREE.AmbientLight(0x404040, 2);
+        Graph.scene().add(ambientLight);
+        const pointLight = new THREE.PointLight(0xffffff, 2);
+        pointLight.position.set(100, 100, 100);
+        Graph.scene().add(pointLight);
+
+        // Prilagoditev na klik za fokus
+        Graph.onNodeClick(node => {{
+            const distance = 200;
+            const distRatio = 1 + distance/Math.hypot(node.x, node.y, node.z);
+            Graph.cameraPosition(
+                {{ x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio }},
+                node, 
+                3000
+            );
+        }});
     </script>
     """
-    components.html(html_code, height=820)
+    components.html(html_code, height=880)
 
-# GLAVNI GUMB (Definiran samo enkrat z unikatnim ključem)
-if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True, key="exec_pipeline_final_3d"):
+# --- EXECUTION LOGIC ---
+
+if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True, key="exec_pipeline_v2026_final"):
     if not groq_api_key or not sambanova_api_key:
-        st.error("❌ Dual-Model synergy requires both Groq and SambaNova keys.")
+        st.error("❌ Dual-Engine synergy requires both Groq (Phase 1) and SambaNova (Phase 2) API keys.")
     elif not user_query:
-        st.warning("⚠️ Phase 1 Research Inquiry is required.")
+        st.warning("⚠️ Phase 1 Research Inquiry is required to build the structural foundation.")
     else:
         try:
-            # --- 1. DATA ACQUISITION ---
-            with st.spinner('🔍 Dostop do ORCID baze in analiza datotek...'):
+            # --- 1. PRIDOBIVANJE PODATKOV (ORCID + FILER) ---
+            with st.spinner('🔍 Accessing ORCID & Scholar databases for author profiling...'):
                 biblio_data = fetch_author_bibliographies(target_authors) if target_authors else ""
             
-            full_context = f"\n\n[FILE DATA]:\n{file_content}" if file_content else ""
-            biblio_context = f"\n\n[ORCID BACKGROUND]:\n{biblio_data}" if biblio_data else ""
-            full_ai_input = f"{user_query}{full_context}{biblio_context}"
+            full_context = f"\n\n[FILE ATTACHMENT CONTENT]:\n{file_content}" if file_content else ""
+            biblio_context = f"\n\n[AUTHOR RESEARCH BACKGROUND]:\n{biblio_data}" if biblio_data else ""
+            combined_input = f"{user_query}{full_context}{biblio_context}"
 
+            # Inicializacija API klientov
             groq_client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
             samba_client = OpenAI(api_key=sambanova_api_key, base_url="https://api.sambanova.ai/v1")
             
-            # --- 2. PHASE 1: GROQ (FOUNDATION) ---
-            with st.spinner('PHASE 1: Groq gradi strukturno podlago...'):
+            # --- 2. PHASE 1: GROQ (IMA ARHITEKTURA - TEMELJI) ---
+            with st.spinner('PHASE 1: Building Structural Foundation & IMA Analysis...'):
                 p1_response = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=[
-                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. Focus on structural integrity."}, 
-                        {"role": "user", "content": full_ai_input}
+                        {"role": "system", "content": f"You are the SIS Lead Hierarchologist. Use Integrated Metamodel Architecture (IMA). Focus on factual precision, classifications, and scientific grounding. Fields: {', '.join(sel_sciences)}. Paradigms: {', '.join(sel_paradigms)}."}, 
+                        {"role": "user", "content": combined_input}
                     ],
-                    temperature=0.4
+                    temperature=0.35
                 )
                 groq_synthesis = p1_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
 
-            # --- 3. PHASE 2: SAMBANOVA (3D INNOVATION) ---
-            with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) ustvarja 3D inovacije...'):
-                samba_sys_prompt = """
-                You are the SIS 3D Systems Architect. 
-                Task: Build a HIGH-DENSITY 3D HIERARCHOGRAPHIC MAP.
-
-                MANDATORY 3D SHAPES:
-                1. Scientists/Persons: shape='triangle' (3D Cone) | color='#FFD700'
-                2. Innovative Ideas: shape='rectangle' (3D Cube) | color='#fd7e14'
-                3. Societies/Collectives: shape='diamond' (3D Pyramid) | color='#9b59b6'
-                4. Nature/Environment: shape='ellipse' (3D Sphere) | color='#2ecc71'
-
-                Rules: Generate at least 15 nodes and 20 edges in JSON.
+            # --- 3. PHASE 2: SAMBANOVA (MA ARHITEKTURA - INOVACIJE IN 3D JSON) ---
+            with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) generating innovations & 3D Hierarchography...'):
+                # Dinamična sinteza izbranih ideacijskih tehnik
+                ideation_context = " | ".join([f"{t}: {IDEATION_TECHNIQUES[t]}" for t in selected_techniques])
                 
-                OUTPUT FORMAT:
-                [Detailed Markdown Text]
-                ### SEMANTIC_GRAPH_JSON
-                {"nodes": [], "edges": []}
+                samba_sys_prompt = f"""
+                You are the SIS Hierarchography Specialist & Systems Architect.
+                Your task is to take the Phase 1 Foundation and transform it into a high-density set of 'Useful Innovative Ideas' using Mental Approaches (MA).
+                
+                INNOVATION STRATEGY: {ideation_context}
+                
+                MANDATORY 3D NODE SCHEMA:
+                1. Persons/Scientists: shape='triangle', color='#FFD700' (Gold)
+                2. Innovative Ideas (Cubes): shape='rectangle', color='#fd7e14' (Orange)
+                3. Societies/Collectives (Pyramids): shape='diamond', color='#9b59b6' (Purple)
+                4. Nature/Environment (Spheres): shape='ellipse', color='#2ecc71' (Green)
+                5. Systems/Data: shape='hexagon', color='#FFFF99' (Yellow)
+
+                MANDATORY UML EDGES (rel_type): Generalization, Realization, Composition, Aggregation, Dependency.
+
+                OUTPUT RULES:
+                - FIRST: Provide a very detailed, exhaustive innovation report.
+                - SECOND: Provide the '### SEMANTIC_GRAPH_JSON' tag.
+                - THIRD: Provide a valid JSON with AT LEAST 18 nodes and 25 edges for a complex 3D map.
                 """
 
                 samba_response = samba_client.chat.completions.create(
                     model=sambanova_id, 
                     messages=[
                         {"role": "system", "content": samba_sys_prompt}, 
-                        {"role": "user", "content": f"FOUNDATION:\n{groq_synthesis}\n\nGOAL: {idea_query}"}
+                        {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER INNOVATION GOAL: {idea_query}"}
                     ],
-                    temperature=0.8
+                    temperature=0.85
                 )
                 cerebras_innovation = samba_response.choices[0].message.content
 
-            # --- 4. PROCESSING RESULTS ---
+            # --- 4. PROCESIRANJE REZULTATOV IN SEMANTIČNO POVEZOVANJE ---
             if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
                 parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
-                innovation_text, json_raw = parts[0], parts[1]
+                innovation_text = parts[0]
+                json_raw = parts[1]
             else:
-                innovation_text, json_raw = cerebras_innovation, ""
+                innovation_text = cerebras_innovation
+                json_raw = ""
 
+            full_report = f"## 📚 Phase 1: Foundation (Groq)\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations (SambaNova)\n\n{innovation_text}"
+            
+            nodes_to_link = []
+            final_elements = []
+
+            # Iskanje JSON-a z Regexom
             json_match = re.search(r'(\{.*"nodes".*\})', json_raw if json_raw else cerebras_innovation, re.DOTALL | re.IGNORECASE)
             
-            final_elements = []
-            nodes_to_link = []
-
             if json_match:
                 try:
                     g_data = json.loads(json_match.group(1))
+                    
+                    # Vozlišča
                     for n in g_data.get("nodes", []):
                         lbl = n.get("label", "Node")
-                        final_elements.append({"data": {
-                            "id": n.get("id"), "label": lbl, 
-                            "color": n.get("color"), "shape": n.get("shape")
-                        }})
-                        nodes_to_link.append({"id": n.get("id"), "label": lbl})
-                    
+                        nid = n.get("id", f"n{lbl}")
+                        n_color = n.get("color", "#fd7e14")
+                        n_shape = n.get("shape", "rectangle")
+                        
+                        nodes_to_link.append({"id": nid, "label": lbl})
+                        final_elements.append({
+                            "data": {"id": nid, "label": lbl, "color": n_color, "shape": n_shape}
+                        })
+
+                    # Povezave
                     for e in g_data.get("edges", []):
-                        final_elements.append({"data": {
-                            "source": e.get("source"), "target": e.get("target"), 
-                            "rel_type": e.get("rel_type")
-                        }})
-                except:
-                    st.warning("Grafična struktura ni povsem berljiva, a poročilo je pripravljeno.")
+                        final_elements.append({
+                            "data": {
+                                "source": e.get("source"), "target": e.get("target"), 
+                                "rel_type": e.get("rel_type", "Association")
+                            }
+                        })
+                except Exception as json_err:
+                    st.warning(f"3D JSON Graph Structure Issue: {json_err}")
 
-            # --- 5. FINAL RENDERING ---
-            st.subheader("🧱 HIERARCHOLOGICAL SYNTHESIS REPORT")
-            
-            if biblio_data:
-                with st.expander("📚 IDENTIFIED AUTHOR DATA", expanded=False):
-                    st.markdown(biblio_data)
-
-            # Semantično povezovanje poročila z Google povezavami
-            full_report = f"## 📚 Phase 1: Foundation\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Innovations\n\n{innovation_text}"
+            # AGRESIVNO SEMANTIČNO POVEZOVANJE Z GOOGLE SEARCH
             final_markdown = full_report
             if nodes_to_link:
+                # Razvrstimo po dolžini, da se izognemo napačnemu parsanju krajših besed znotraj daljših
                 sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
                 for item in sorted_keywords:
                     lbl = item['label']
-                    if len(lbl) > 3:
+                    if len(lbl) > 2:
                         g_url = urllib.parse.quote(lbl)
-                        link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}↗</a>'
+                        # Dodamo Google ikono in specifičen CSS razred
+                        link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
+                        # Uporabimo regex za zamenjavo samo celih besed
                         pattern = re.compile(r'\b' + re.escape(lbl) + r'\b', re.IGNORECASE)
                         final_markdown = pattern.sub(link_html, final_markdown, count=10)
 
+            # --- 5. KONČNI PRIKAZ NA ZASLONU ---
+            st.subheader("🧱 HIERARCHOLOGICAL SYNTHESIS REPORT")
+            
+            if biblio_data:
+                with st.expander("📚 EXTRACTED AUTHOR DATA & BIBLIOGRAPHIES", expanded=False):
+                    st.markdown(biblio_data)
+            
+            # Prikaz besedila z interaktivnimi semantičnimi povezavami
             st.markdown(final_markdown, unsafe_allow_html=True)
 
+            # IZRIS 3D PROSTORA
             if final_elements:
                 st.divider()
-                st.subheader("🌌 3D HIERARCHOGRAPHIC SPACE EXPLORER")
-                st.info("🕹️ Leva miška: Rotacija | Desna miška: Premik | Kolešček: Zoom")
-                render_3d_network(final_elements)
+                st.subheader(f"🌌 3D HIERARCHOGRAPHIC SPACE EXPLORER ({len(nodes_to_link)} Nodes)")
+                st.info("🕹️ **3D NAVIGACIJA:** Znanstveniki (Stožci), Ideje (Kocke), Družba (Piramide), Narava (Krogle). Miška za rotacijo in zoom.")
+                render_3d_network(final_elements, f"cy_{int(time.time())}")
 
         except Exception as e:
             st.error(f"❌ Pipeline Failure: {e}")
-
+            st.exception(e)
 # =============================================================================
-# 6. FOOTER
+# 6. FOOTER & METADATA
 # =============================================================================
 st.divider()
 st.caption(f"SIS Synthesizer | {VERSION_CODE} | {SYSTEM_DATE}")
