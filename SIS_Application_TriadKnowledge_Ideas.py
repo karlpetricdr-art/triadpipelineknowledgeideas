@@ -906,35 +906,43 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 groq_synthesis = p1_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
 
-            # --- 3. PHASE 2: SAMBANOVA (Gemma-4 Optimized) ---
+            # --- 3. PHASE 2: SAMBANOVA (Gemma-4 Semantic Synergy & Rich Thesaurus) ---
             with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) generating innovations...'):
                 samba_sys_prompt = f"""
-                You are the SIS Hierarchography Specialist & Systems Architect, operating on the Gemma-4 Neural Engine.
-                TASK: Transform the Phase 1 structural foundation into radical, useful innovations using {selected_techniques} frameworks.
+                You are the SIS Hierarchography Specialist. Your goal is to bridge Phase 1 logic with Phase 2 innovation.
 
-                MANDATORY OUTPUT STRUCTURE:
-                1. Provide a high-density expert analysis and innovative solutions.
-                2. At the very end, provide the UML system map strictly following this delimiter:
+                CRITICAL INSTRUCTION FOR SEMANTIC LINKING:
+                1. Look at the terminology used in PHASE 1.
+                2. You MUST use EXACTLY THE SAME KEYWORDS from Phase 1 as 'labels' for your nodes in the JSON whenever possible. 
+                3. This is mandatory for the system's hyperlinking engine to work.
+
+                TASK: Apply {selected_techniques} to generate radical ideas.
+
+                THESAURUS DENSITY RULE:
+                - For every UML edge (Generalization, etc.), you MUST create at least two THESAURUS edges.
+                - Use rich relations: 
+                    - TT (Top Term) for the main concept.
+                    - BT (Broader Term) for hierarchical context.
+                    - NT (Narrower Term) for specific sub-innovations.
+                    - RT (Related Term) for lateral associative thinking.
+
+                MANDATORY OUTPUT FORMAT:
+                [Detailed Innovation Analysis]
+                
                 ### SEMANTIC_GRAPH_JSON
-                [Your JSON code here]
-
-                MANDATORY NODE MATRIX:
-                - Actors/Stakeholders: shape='ellipse', color='#C6EFCE'
-                - Core Systems/Modules: shape='rectangle', color='#DDEBF7'
-                - Decisions/Conflicts: shape='diamond', color='#F2DCDB'
-                - Strategic Innovations: shape='round-rectangle', color='#fd7e14'
-                - Knowledge/Data: shape='hexagon', color='#FFFF99'
-
-                RELATIONSHIP RULES (rel_type):
-                - Use UML types: Generalization, Realization, Composition, Aggregation, Dependency.
-                - Use Thesaurus types: TT, BT, NT, RT, AS, EQ, IN.
-
-                STRICT JSON RULES:
-                - Minimum 12 nodes, 18 edges.
-                - No conversational filler after the JSON block.
-                - Ensure all 'source' and 'target' IDs match the node 'id' fields.
+                {{
+                  "nodes": [
+                    {{"id": "n1", "label": "KEYWORD_FROM_PHASE_1", "shape": "rectangle", "color": "#DDEBF7"}},
+                    ... (minimum 12 nodes)
+                  ],
+                  "edges": [
+                    {{"source": "n1", "target": "n2", "rel_type": "RT"}},
+                    ... (minimum 18 edges, focus on RT and NT)
+                  ]
+                }}
                 """
 
+                # Klic ostane enak kot prej
                 samba_response = samba_client.chat.completions.create(
                     model=sambanova_id, 
                     messages=[
