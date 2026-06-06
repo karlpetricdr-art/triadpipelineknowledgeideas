@@ -906,32 +906,33 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 groq_synthesis = p1_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
 
-            # --- 3. PHASE 2: SAMBANOVA (UML MATRIKA IN INOVACIJE) ---
+            # --- 3. PHASE 2: SAMBANOVA (Gemma-4 Optimized) ---
             with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) generating innovations...'):
-                samba_sys_prompt = """
-                You are the SIS Hierarchography Specialist & Systems Architect.
-                TASK: Expand Phase 1 into a HIGH-DENSITY, MULTI-COLORED UML system map.
+                samba_sys_prompt = f"""
+                You are the SIS Hierarchography Specialist & Systems Architect, operating on the Gemma-4 Neural Engine.
+                TASK: Transform the Phase 1 structural foundation into radical, useful innovations using {selected_techniques} frameworks.
 
-                MANDATORY NODE MATRIX (Color & Shape):
-                1. Actors/Stakeholders/Entities: shape='ellipse', color='#C6EFCE' (Light Green)
-                2. Core Systems/Processes/Modules: shape='rectangle', color='#DDEBF7' (Light Blue)
-                3. Decisions/Use Cases/Conflicts: shape='diamond', color='#F2DCDB' (Light Red)
-                4. Strategic Innovations/Ideas: shape='round-rectangle', color='#fd7e14' (Orange)
-                5. Knowledge/Data/Documents: shape='hexagon', color='#FFFF99' (Yellow)
-
-                MANDATORY UML & THESAURUS EDGES (rel_type):
-                - UML: Generalization, Realization, Composition, Aggregation, Dependency.
-                - Thesaurus: TT, BT, NT, RT, AS, EQ, IN.
-
-                RULES:
-                - Use AT LEAST 12 nodes and 18 edges for high density.
-                - Every node MUST have the correct 'shape' and 'color' from the matrix above.
-                - Labels in JSON MUST match the innovation text exactly for hyperlinking.
-                
-                OUTPUT FORMAT:
-                [Detailed Innovation Text]
+                MANDATORY OUTPUT STRUCTURE:
+                1. Provide a high-density expert analysis and innovative solutions.
+                2. At the very end, provide the UML system map strictly following this delimiter:
                 ### SEMANTIC_GRAPH_JSON
-                {"nodes": [], "edges": []}
+                [Your JSON code here]
+
+                MANDATORY NODE MATRIX:
+                - Actors/Stakeholders: shape='ellipse', color='#C6EFCE'
+                - Core Systems/Modules: shape='rectangle', color='#DDEBF7'
+                - Decisions/Conflicts: shape='diamond', color='#F2DCDB'
+                - Strategic Innovations: shape='round-rectangle', color='#fd7e14'
+                - Knowledge/Data: shape='hexagon', color='#FFFF99'
+
+                RELATIONSHIP RULES (rel_type):
+                - Use UML types: Generalization, Realization, Composition, Aggregation, Dependency.
+                - Use Thesaurus types: TT, BT, NT, RT, AS, EQ, IN.
+
+                STRICT JSON RULES:
+                - Minimum 12 nodes, 18 edges.
+                - No conversational filler after the JSON block.
+                - Ensure all 'source' and 'target' IDs match the node 'id' fields.
                 """
 
                 samba_response = samba_client.chat.completions.create(
