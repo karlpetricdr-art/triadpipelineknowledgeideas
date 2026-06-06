@@ -927,7 +927,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
 
                 RELATIONSHIP RULES (rel_type):
                 - Use UML types: Generalization, Realization, Composition, Aggregation, Dependency.
-                - Use Thesaurus types: TT, BT, NT, RT, AS, EQ, IN.
+                - Use Thesaurus types: TT, BT, NT, RT.
 
                 STRICT JSON RULES:
                 - Minimum 12 nodes, 18 edges.
