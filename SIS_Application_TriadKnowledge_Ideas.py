@@ -229,6 +229,8 @@ SVG_3D_RELIEF = """
 # =============================================================================
 
 def render_cytoscape_network(elements, container_id="cy_canvas"):
+    """Interaktivni Cytoscape.js motor z odpravljeno napako oklepajev."""
+    # Uporabljamo dvojne {{ in }} BREZ presledkov za vse dele JavaScripta
     cyto_html = f"""
     <div style="position: relative; width: 100%;">
         <button id="save_btn" style="position: absolute; top: 15px; right: 15px; z-index: 1000; padding: 10px 15px; background: #1d3557; color: white; border: none; border-radius: 8px; cursor: pointer; font-family: sans-serif; font-size: 12px; font-weight: 800;">💾 EXPORT PNG</button>
@@ -246,8 +248,8 @@ def render_cytoscape_network(elements, container_id="cy_canvas"):
                         style: {{
                             'label': 'data(label)', 'text-valign': 'center', 'color': '#1d3557',
                             'background-color': 'data(color)', 'width': 'data(size)', 'height': 'data(size)',
-                            'shape': 'data(shape)', 'font-size': '14px', 'font-weight': 'bold',
-                            'text-wrap': 'wrap', 'text-max-width': '100px', 'text-outline-width': 2, 'text-outline-color': '#ffffff'
+                            'shape': 'data(shape)', 'font-size': '13px', 'font-weight': 'bold',
+                            'text-wrap': 'wrap', 'text-max-width': '90px', 'text-outline-width': 2, 'text-outline-color': '#ffffff'
                         }}
                     }},
                     {{
@@ -257,28 +259,28 @@ def render_cytoscape_network(elements, container_id="cy_canvas"):
                             'font-size': '10px', 'color': '#2a9d8f', 'curve-style': 'bezier',
                             'target-arrow-shape': 'data(arrow)', 'target-arrow-color': 'data(color)',
                             'line-style': 'data(line_style)', 'text-background-opacity': 1,
-                            'text-background-color': '#ffffff', 'edge-distances': 'node-position'
+                            'text-background-color': '#ffffff'
                         }}
                     }},
-                    /* UML LOGIKA */
                     {{ selector: 'edge[rel_type="Generalization"]', style: {{ 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' }} }},
                     {{ selector: 'edge[rel_type="Realization"]', style: {{ 'line-style': 'dashed', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' }} }},
                     {{ selector: 'edge[rel_type="Composition"]', style: {{ 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'filled' }} }},
-                    {{ selector: 'edge[rel_type="AS"], edge[rel_type="EQ"]', style: {{ 'width': 5, 'line-style': 'solid' }} }}
+                    {{ selector: 'edge[rel_type="AS"], edge[rel_type="EQ"]', style: {{ 'width': 6, 'line-style': 'solid' }} }}
                 ],
-                layout: { 
+                layout: {{ 
                     name: 'cose', 
-                    componentSpacing: 120,    // Več prostora med skupinami
-                    nodeRepulsion: 10000,     // Močno odbijanje vozlišč (prepreči kupčke)
-                    idealEdgeLength: 180,     // Daljše povezave za večjo preglednost
+                    componentSpacing: 150, 
+                    nodeRepulsion: 12000, 
+                    idealEdgeLength: 250, 
                     edgeElasticity: 0.45,
                     nestingFactor: 1.2,
-                    gravity: 0.1,             // Manjša gravitacija pomeni bolj razpršen graf
-                    numIter: 1500,            // Več iteracij za boljšo končno postavitev
+                    gravity: 0.05, 
+                    numIter: 2500,
                     animate: true 
-                }
+                }}
             }});
 
+            // Povratni link na klik vozlišča
             cy.on('tap', 'node', function(evt){{
                 var label = evt.target.data('label');
                 var safeId = "ref-" + label.replace(/\s+/g, '_');
@@ -286,7 +288,7 @@ def render_cytoscape_network(elements, container_id="cy_canvas"):
                 if (el) {{
                     el.scrollIntoView({{ behavior: 'smooth', block: 'center' }});
                     el.style.backgroundColor = "#fff3cd";
-                    setTimeout(function() {{ el.style.backgroundColor = "transparent"; }}, 2000);
+                    setTimeout(function() {{ el.style.backgroundColor = "transparent"; }}, 2500);
                 }}
             }});
 
