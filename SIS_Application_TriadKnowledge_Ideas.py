@@ -229,11 +229,10 @@ SVG_3D_RELIEF = """
 # =============================================================================
 
 def render_cytoscape_network(elements, container_id="cy_canvas"):
-    """Interaktivni Cytoscape.js motor z UML notacijo in naprednim stiliziranjem."""
     cyto_html = f"""
     <div style="position: relative; width: 100%;">
         <button id="save_btn" style="position: absolute; top: 15px; right: 15px; z-index: 1000; padding: 10px 15px; background: #1d3557; color: white; border: none; border-radius: 8px; cursor: pointer; font-family: sans-serif; font-size: 12px; font-weight: 800;">💾 EXPORT PNG</button>
-        <div id="{container_id}" style="width: 100%; height: 750px; background: #ffffff; border-radius: 20px; border: 1px solid #e0e0e0; box-shadow: 0 8px 30px rgba(0,0,0,0.06);"></div>
+        <div id="{container_id}" style="width: 100%; height: 750px; background: #ffffff; border-radius: 20px; border: 1px solid #e0e0e0;"></div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
     <script>
@@ -242,50 +241,28 @@ def render_cytoscape_network(elements, container_id="cy_canvas"):
                 container: document.getElementById('{container_id}'),
                 elements: {json.dumps(elements)},
                 style: [
-                    {{
-                        selector: 'node',
-                        style: {{
-                            'label': 'data(label)', 'text-valign': 'center', 'color': '#1d3557',
-                            'background-color': 'data(color)', 'width': 'data(size)', 'height': 'data(size)',
-                            'shape': 'data(shape)', 'font-size': '14px', 'font-weight': '700',
-                            'text-outline-width': 2, 'text-outline-color': '#ffffff', 'cursor': 'pointer',
-                            'border-width': 2, 'border-color': '#adb5bd'
-                        }}
-                    }},
-                    {{
-                        selector: 'edge',
-                        style: {{
-                            'width': 3, 'line-color': 'data(color)', 'label': 'data(rel_type)',
-                            'font-size': '11px', 'font-weight': 'bold', 'color': '#2a9d8f',
-                            'target-arrow-color': 'data(color)', 'target-arrow-shape': 'data(arrow)',
-                            'line-style': 'data(line_style)', 'curve-style': 'bezier', 
-                            'text-background-opacity': 1, 'text-background-color': '#ffffff',
-                            'text-background-padding': '4px', 'text-background-shape': 'roundrectangle'
-                        }}
-                    }},
-                    /* UML SPECIFIČNE DEFINICIJE */
-                    {{ selector: 'edge[rel_type="Generalization"]', style: {{ 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' }} }},
-                    {{ selector: 'edge[rel_type="Realization"]', style: {{ 'line-style': 'dashed', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' }} }},
-                    {{ selector: 'edge[rel_type="Composition"]', style: {{ 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'filled' }} }},
-                    {{ selector: 'edge[rel_type="Aggregation"]', style: {{ 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'hollow' }} }},
-                    {{ selector: 'edge[rel_type="Dependency"]', style: {{ 'line-style': 'dashed', 'target-arrow-shape': 'vee' }} }},
-                    
-                    {{ selector: 'node.highlighted', style: {{ 'border-width': 6, 'border-color': '#e76f51', 'transform': 'scale(1.2)' }} }},
-                    {{ selector: '.dimmed', style: {{ 'opacity': 0.15, 'text-opacity': 0 }} }}
+                    {{ selector: 'node', style: {{ 'label': 'data(label)', 'text-valign': 'center', 'background-color': 'data(color)', 'shape': 'data(shape)', 'width': 'data(size)', 'height': 'data(size)', 'font-size': '14px', 'font-weight': '700' }} }},
+                    {{ selector: 'edge', style: {{ 'width': 3, 'line-color': 'data(color)', 'label': 'data(rel_type)', 'target-arrow-shape': 'data(arrow)', 'curve-style': 'bezier' }} }}
                 ],
-                layout: {{ name: 'cose', padding: 60, animate: true }}
+                layout: {{ name: 'cose', padding: 60 }}
             }});
 
-            cy.on('mouseover', 'node', function(e){{
-                var sel = e.target; cy.elements().addClass('dimmed');
-                sel.neighborhood().add(sel).removeClass('dimmed').addClass('highlighted');
+            // POVRATNI LINK: Klik na vozlišče skrola na besedilo
+            cy.on('tap', 'node', function(evt){{
+                var label = evt.target.data('label');
+                var safeId = "ref-" + label.replace(/\s+/g, '_');
+                var el = window.parent.document.getElementById(safeId);
+                if (el) {{
+                    el.scrollIntoView({{ behavior: 'smooth', block: 'center' }});
+                    el.style.border = "3px solid #e63946";
+                    setTimeout(function() {{ el.style.border = ""; }}, 3000);
+                }}
             }});
-            cy.on('mouseout', 'node', function(e){{ cy.elements().removeClass('dimmed highlighted'); }});
 
             document.getElementById('save_btn').addEventListener('click', function() {{
                 var png64 = cy.png({{full: true, bg: 'white', scale: 2}});
                 var link = document.createElement('a');
-                link.href = png64; link.download = 'sis_uml_graph.png';
+                link.href = png64; link.download = 'sis_graph.png';
                 link.click();
             }});
         }});
