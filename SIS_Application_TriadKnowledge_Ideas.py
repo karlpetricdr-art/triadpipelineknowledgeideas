@@ -906,32 +906,34 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 groq_synthesis = p1_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
 
-            # --- 3. PHASE 2: SAMBANOVA (UML MATRIKA IN INOVACIJE) ---
-            with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) generating innovations...'):
-                samba_sys_prompt = """
-                You are the SIS Hierarchography Specialist & Systems Architect.
-                TASK: Expand Phase 1 into a HIGH-DENSITY, MULTI-COLORED UML system map.
-
-                MANDATORY NODE MATRIX (Color & Shape):
-                1. Actors/Stakeholders/Entities: shape='ellipse', color='#C6EFCE' (Light Green)
-                2. Core Systems/Processes/Modules: shape='rectangle', color='#DDEBF7' (Light Blue)
-                3. Decisions/Use Cases/Conflicts: shape='diamond', color='#F2DCDB' (Light Red)
-                4. Strategic Innovations/Ideas: shape='round-rectangle', color='#fd7e14' (Orange)
-                5. Knowledge/Data/Documents: shape='hexagon', color='#FFFF99' (Yellow)
-
-                MANDATORY UML & THESAURUS EDGES (rel_type):
-                - UML: Generalization, Realization, Composition, Aggregation, Dependency.
-                - Thesaurus: TT, BT, NT, RT, AS, EQ, IN.
-
-                RULES:
-                - Use AT LEAST 12 nodes and 18 edges for high density.
-                - Every node MUST have the correct 'shape' and 'color' from the matrix above.
-                - Labels in JSON MUST match the innovation text exactly for hyperlinking.
+            # --- 3. PHASE 2: SAMBANOVA (ULTRA-CREATIVE INNOVATION ENGINE) ---
+            with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) generating radical innovations...'):
+                samba_sys_prompt = f"""
+                You are the SIS Lead Innovation Architect. Use {selected_techniques} to generate revolutionary solutions.
                 
-                OUTPUT FORMAT:
-                [Detailed Innovation Text]
+                GOAL: Displace current paradigms. Do not just solve; RESTRUCTURE.
+
+                STRICT GRAPH SEMANTICS (Innovation Markers):
+                - AS (Association): MANDATORY. Link a concept from one science field to a completely different one (Lateral thinking).
+                - EQ (Equivalence): Link a Phase 1 concept to a new radical innovation name you just created.
+                - IN (Instance): Link a theory to a specific, futuristic application for 2026-2030.
+
+                TERMINOLOGY LOCK (Crucial for Hyperlinking):
+                - For the 'label' of nodes, you MUST use the exact keywords from Phase 1. 
+                - If you create a NEW concept, label it clearly, but ensure at least 50% of nodes use Phase 1 terminology to keep the links active.
+
+                MANDATORY JSON FORMAT (Must be at the very end):
                 ### SEMANTIC_GRAPH_JSON
-                {"nodes": [], "edges": []}
+                {{
+                  "nodes": [
+                    {{"id": "n1", "label": "PHASE_1_KEYWORD", "shape": "rectangle", "color": "#DDEBF7"}},
+                    {{"id": "n2", "label": "YOUR_NEW_INNOVATION", "shape": "round-rectangle", "color": "#fd7e14"}}
+                  ],
+                  "edges": [
+                    {{"source": "n1", "target": "n2", "rel_type": "AS"}},
+                    {{"source": "n2", "target": "n3", "rel_type": "Realization"}}
+                  ]
+                }}
                 """
 
                 samba_response = samba_client.chat.completions.create(
@@ -940,7 +942,8 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                         {"role": "system", "content": samba_sys_prompt}, 
                         {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER GOAL: {idea_query}{full_context}"}
                     ],
-                    temperature=0.8
+                    temperature=0.85, # DVIG TEMPERATURE za maksimalno kreativnost
+                    top_p=0.9
                 )
                 cerebras_innovation = samba_response.choices[0].message.content
 
@@ -999,17 +1002,26 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 except Exception as json_err:
                     st.warning(f"Note: Graph structure issue: {json_err}")
 
-            # AGRESIVNO SEMANTIČNO POVEZOVANJE (Tukaj ustvarimo končni final_markdown)
+            # AGRESIVNO INOVATIVNO POVEZOVANJE (Fuzzy Matching za visoko temperaturo)
             final_markdown = full_report
             if nodes_to_link:
+                # Sortiramo od najdaljših besed, da preprečimo napačno prekrivanje
                 sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
                 for item in sorted_keywords:
                     lbl, nid = item['label'], item['id']
                     if len(lbl) > 2:
+                        # Priprava URL-ja za Google Search ikono
                         g_url = urllib.parse.quote(lbl)
                         link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
-                        pattern = re.compile(r'\b' + re.escape(lbl) + r'\b', re.IGNORECASE)
-                        final_markdown = pattern.sub(link_html, final_markdown, count=15)
+                        
+                        # IZBOLJŠAN REGEX: 
+                        # Če je beseda daljša od 6 znakov, vzamemo koren (npr. 'Hierarch' za 'Hierarchology')
+                        # To omogoča, da se polinkajo tudi množine in pridevniki (npr. Hierarchical).
+                        base_term = lbl[: -2] if len(lbl) > 6 else lbl
+                        pattern = re.compile(r'\b' + re.escape(base_term) + r'\w*', re.IGNORECASE)
+                        
+                        # Zamenjamo do 10 pojavitev v besedilu
+                        final_markdown = pattern.sub(link_html, final_markdown, count=10)
 
             # --- 5. KONČNI PRIKAZ (ZDAJ JE VRSTNI RED PRAVILEN) ---
             st.subheader("🧱 HIERARCHOLOGICAL SYNTHESIS REPORT")
