@@ -906,45 +906,50 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 groq_synthesis = p1_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
 
-            # --- 3. PHASE 2: SAMBANOVA (ULTRA-SYNERGY MASTER PROMPT) ---
+            # --- 3. PHASE 2: SAMBANOVA (Gemma-4 Semantic Synergy & Rich Thesaurus) ---
             with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) generating innovations...'):
                 samba_sys_prompt = f"""
-                You are the SIS Hierarchography Specialist & Systems Architect.
-                TASK: Transform Phase 1 foundation into radical innovations using {selected_techniques}.
+                You are the SIS Hierarchography Specialist. Your goal is to bridge Phase 1 logic with Phase 2 innovation.
 
-                MANDATORY OUTPUT STRUCTURE:
-                1. Provide high-density expert analysis of innovations.
-                2. Use the delimiter '### SEMANTIC_GRAPH_JSON' followed ONLY by the JSON block.
+                CRITICAL INSTRUCTION FOR SEMANTIC LINKING:
+                1. Look at the terminology used in PHASE 1.
+                2. You MUST use EXACTLY THE SAME KEYWORDS from Phase 1 as 'labels' for your nodes in the JSON whenever possible. 
+                3. This is mandatory for the system's hyperlinking engine to work.
 
-                MANDATORY THESAURUS RELATIONS (High Density Required):
-                - AS (Association): Create lateral links between disparate fields (e.g., Biology AS Ethics).
-                - EQ (Equivalence): Link identical concepts across different vocabularies.
-                - IN (Instance/Inclusion): Link a theoretical node to a specific real-world example or technology.
-                - TT, BT, NT, RT: Standard hierarchical and associative relations.
+                TASK: Apply {selected_techniques} to generate radical ideas.
 
-                MANDATORY UML RELATIONS:
-                - Generalization, Realization, Composition, Aggregation, Dependency.
+                THESAURUS DENSITY RULE:
+                - For every UML edge (Generalization, etc.), you MUST create at least two THESAURUS edges.
+                - Use rich relations: 
+                    - TT (Top Term) for the main concept.
+                    - BT (Broader Term) for hierarchical context.
+                    - NT (Narrower Term) for specific sub-innovations.
+                    - RT (Related Term) for lateral associative thinking.
 
-                NODE MATRIX (Strictly follow these for visualization):
-                - Actors/Stakeholders: shape='ellipse', color='#C6EFCE'
-                - Core Systems/Modules: shape='rectangle', color='#DDEBF7'
-                - Decisions/Conflicts: shape='diamond', color='#F2DCDB'
-                - Strategic Innovations: shape='round-rectangle', color='#fd7e14'
-                - Knowledge/Data: shape='hexagon', color='#FFFF99'
-
-                STRICT GRAPH RULES:
-                - Minimum 12 nodes, 18 edges.
-                - You MUST include at least two 'AS' and one 'EQ' or 'IN' relation.
-                - Node labels MUST exactly match keywords from Phase 1 for hyperlinking to work.
+                MANDATORY OUTPUT FORMAT:
+                [Detailed Innovation Analysis]
+                
+                ### SEMANTIC_GRAPH_JSON
+                {{
+                  "nodes": [
+                    {{"id": "n1", "label": "KEYWORD_FROM_PHASE_1", "shape": "rectangle", "color": "#DDEBF7"}},
+                    ... (minimum 12 nodes)
+                  ],
+                  "edges": [
+                    {{"source": "n1", "target": "n2", "rel_type": "RT"}},
+                    ... (minimum 18 edges, focus on RT and NT)
+                  ]
+                }}
                 """
 
+                # Klic ostane enak kot prej
                 samba_response = samba_client.chat.completions.create(
                     model=sambanova_id, 
                     messages=[
                         {"role": "system", "content": samba_sys_prompt}, 
                         {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER GOAL: {idea_query}{full_context}"}
                     ],
-                    temperature=0.7 # Malo nižja temperatura za boljšo strukturo JSON-a
+                    temperature=0.8
                 )
                 cerebras_innovation = samba_response.choices[0].message.content
 
