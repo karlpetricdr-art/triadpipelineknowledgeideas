@@ -909,7 +909,11 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             # --- 3. PHASE 2: SAMBANOVA (Gemma-4 Semantic Synergy & Rich Thesaurus) ---
             with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) generating innovations...'):
                 samba_sys_prompt = f"""
-                You are the SIS Hierarchography Specialist. Your goal is to bridge Phase 1 logic with Phase 2 innovation.
+                You are the SIS Architect. Use {selected_techniques} to bridge Phase 1 and Phase 2.
+
+                MANDATORY GRAPH COMPOSITION:
+                - 40% UML STRUCTURAL EDGES: Generalization, Composition, Realization.
+                - 60% THESAURUS ASSOCI
 
                 CRITICAL INSTRUCTION FOR SEMANTIC LINKING:
                 1. Look at the terminology used in PHASE 1.
