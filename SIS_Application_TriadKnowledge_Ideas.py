@@ -907,8 +907,24 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             # --- 3. PHASE 2: SAMBANOVA (ULTRA-CREATIVE INNOVATION ENGINE) ---
             with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) generating radical innovations...'):
                 samba_sys_prompt = f"""
-You are the SIS Lead Multi-Dimensional Architect & Hierarchologist. 
-Your mission is to transform the structural foundation from Phase 1 into a radical, futuristic innovation system (Year 2026-2030).
+You are the SIS Lead Multi-Dimensional Architect. 
+MISSION: Generate radical innovations based on Phase 1.
+
+### 1. MANDATORY JSON STRUCTURE
+Every innovation (diamond) MUST have a detailed description.
+### SEMANTIC_GRAPH_JSON
+{{
+  "nodes": [
+    {{
+      "id": "inv1", 
+      "label": "INNOVATION_NAME", 
+      "shape": "diamond", 
+      "color": "#fd7e14", 
+      "description": "A 2-3 sentence technical and strategic explanation of this specific breakthrough."
+    }}
+  ],
+  "edges": [ ... ]
+}}
 
 ### 1. SHAPE DICTIONARY (MANDATORY GEOMETRY)
 Assign shapes based on the nature of the concept:
@@ -1038,9 +1054,9 @@ MANDATORY JSON STRUCTURE:
                         pattern = re.compile(r'\b' + re.escape(base_term) + r'\w*', re.IGNORECASE)
                         final_markdown = pattern.sub(link_html, final_markdown, count=10)
 
-            # --- 5. FINAL DISPLAY: FOCUS ON INNOVATIVE IDEAS ---
+            # --- 5. FINAL DISPLAY: INTERACTIVE REPORT & INNOVATION HUB ---
             
-            # 5a. SEMANTIC HIGHLIGHTER (Connects text to the graph)
+            # 5a. ADVANCED SEMANTIC HIGHLIGHTER (Supports non-ASCII/Slovenian characters)
             final_markdown = full_report
             if nodes_to_link:
                 # Sort by length descending to prevent partial matching issues
@@ -1049,13 +1065,12 @@ MANDATORY JSON STRUCTURE:
                     lbl = item['label']
                     if len(lbl) > 2:
                         g_url = urllib.parse.quote(lbl)
-                        # Create a highlighted link for the report text
                         link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
                         
-                        # Regex to find the word and its variations
-                        base_term = lbl[: -2] if len(lbl) > 6 else lbl
-                        pattern = re.compile(r'\b' + re.escape(base_term) + r'\w*', re.IGNORECASE)
-                        final_markdown = pattern.sub(link_html, final_markdown, count=10)
+                        # IMPROVED REGEX: Handles Slovenian characters and avoids \b issues
+                        # We use lookahead/lookbehind to ensure we don't replace parts of other words
+                        pattern = re.compile(rf'(?<!\w){re.escape(lbl)}(?!\w)', re.IGNORECASE | re.UNICODE)
+                        final_markdown = pattern.sub(link_html, final_markdown)
 
             # 5b. MAIN REPORT DISPLAY
             st.subheader("🧱 HIERARCHOLOGICAL SYNTHESIS REPORT")
@@ -1065,35 +1080,40 @@ MANDATORY JSON STRUCTURE:
             
             st.markdown(final_markdown, unsafe_allow_html=True)
 
-            # 5c. INNOVATION HUB: STRATEGIC BREAKTHROUGHS
+            # 5c. INNOVATION HUB: STRATEGIC BREAKTHROUGHS (With Descriptions)
             if final_elements:
                 st.divider()
                 st.markdown("### 🚀 ACTIVE STRATEGIC BREAKTHROUGHS")
                 
-                # Extract innovations (nodes with 'diamond' shape)
+                # Extract innovations with their descriptions
                 innovations = [n['data'] for n in final_elements if n['data'].get('shape') == 'diamond']
                 
                 if innovations:
-                    # Dynamic display of innovation cards
-                    cols = st.columns(len(innovations) if len(innovations) < 4 else 3)
-                    for idx, inv in enumerate(innovations):
-                        with cols[idx % 3]:
-                            g_url = urllib.parse.quote(inv['label'])
-                            st.markdown(f"""
-                            <div style="background-color: #ffffff; border-left: 5px solid #fd7e14; padding: 15px; border-radius: 8px; box-shadow: 2px 2px 10px rgba(0,0,0,0.05); border: 1px solid #eee; height: 100px; display: flex; flex-direction: column; justify-content: center;">
-                                <div style="font-size: 0.75em; color: #fd7e14; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">Innovation</div>
-                                <div style="font-size: 1.1em; font-weight: 700; color: #1d3557; margin-bottom: 5px;">{inv['label']}</div>
-                                <a href="https://www.google.com/search?q={g_url}" target="_blank" style="text-decoration: none; color: #457b9d; font-size: 0.85em; font-weight: 600;">Concept Analysis ↗</a>
+                    # Display innovation cards in a clean layout
+                    for inv in innovations:
+                        g_url = urllib.parse.quote(inv['label'])
+                        # Get description from node data or fallback to generic text
+                        desc = inv.get('description', "Detailed technical analysis integrated into the graph structure.")
+                        
+                        st.markdown(f"""
+                        <div style="background-color: #ffffff; border-left: 5px solid #fd7e14; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid #eee; margin-bottom: 20px;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                <div style="font-size: 0.8em; color: #fd7e14; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Strategic Breakthrough</div>
+                                <a href="https://www.google.com/search?q={g_url}" target="_blank" style="text-decoration: none; color: #457b9d; font-size: 0.85em; font-weight: 600;">Deep Dive Analysis ↗</a>
                             </div>
-                            """, unsafe_allow_html=True)
+                            <h3 style="margin: 10px 0; color: #1d3557; font-size: 1.4em;">{inv['label']}</h3>
+                            <p style="color: #444; font-size: 1em; line-height: 1.6; margin-bottom: 0;">{desc}</p>
+                        </div>
+                        """, unsafe_allow_html=True)
                 else:
-                    st.info("💡 The model integrated innovations directly into system nodes (refer to the graph).")
+                    st.info("💡 Innovations are mapped within the system network (see graph below).")
 
-                # 5d. MINIMALIST LEGEND (Space-saving)
+                # 5d. MINIMALIST LEGEND
                 st.markdown("""
-                <div style="font-size: 0.75em; color: #666; background: #f9f9f9; padding: 5px 15px; border-radius: 20px; border: 1px solid #eee; margin-top: 20px; display: flex; justify-content: space-between;">
-                    <span><b>Shapes:</b> ⭐ Goal | ⬢ Science | 💠 Innovation | △ Process | ▭ Fact</span>
-                    <span><b>Lines:</b> <span style="color:#e63946;">⬤ Architecture</span> | <span style="color:#1d3557;">⬤ Hierarchy</span> | <span style="color:#2a9d8f;">⬤ Association</span></span>
+                <div style="font-size: 0.75em; color: #666; background: #f9f9f9; padding: 10px 20px; border-radius: 25px; border: 1px solid #eee; margin-top: 25px; display: flex; justify-content: space-between; align-items: center;">
+                    <span><b>Visual Logic:</b> ⭐ Goal | ⬢ Domain | 💠 Innovation | △ Process | ▭ Data</span>
+                    <span style="height: 12px; width: 1px; background: #ddd;"></span>
+                    <span><b>Semantic Lines:</b> <span style="color:#e63946;">⬤ Structural</span> | <span style="color:#1d3557;">⬤ Hierarchical</span> | <span style="color:#2a9d8f;">⬤ Associative</span></span>
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -1103,7 +1123,6 @@ MANDATORY JSON STRUCTURE:
 
         except Exception as e:
             st.error(f"❌ Pipeline Failure: {str(e)}")
-            st.info("Check your API keys or model selection in the sidebar.")
 
 # =============================================================================
 # 6. FOOTER
