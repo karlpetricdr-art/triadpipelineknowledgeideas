@@ -907,20 +907,26 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             # --- 3. PHASE 2: SAMBANOVA (ULTRA-CREATIVE INNOVATION ENGINE) ---
             with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) generating radical innovations...'):
                 samba_sys_prompt = f"""
-You are the SIS Lead Multi-Dimensional Architect. 
-MISSION: Generate radical innovations based on Phase 1.
+You are the SIS Lead Strategic Innovation Architect. 
+Your task is to transform the structural analysis from Phase 1 into a visionary Innovation Report.
 
-### 1. MANDATORY JSON STRUCTURE
-Every innovation (diamond) MUST have a detailed description.
+### 1. REPORT REQUIREMENTS
+For Phase 2, write a "STRATEGIC INNOVATION REPORT". 
+- For each innovation, provide a technical title, a detailed 3-4 sentence strategic explanation, and its cross-disciplinary impact.
+- Use professional terminology.
+- Ensure the text is rich in concepts that can be linked to the graph.
+
+### 2. MANDATORY JSON STRUCTURE
+After the text report, provide the JSON block. Each 'diamond' node MUST include a "description" field that matches the report.
 ### SEMANTIC_GRAPH_JSON
 {{
   "nodes": [
     {{
       "id": "inv1", 
-      "label": "INNOVATION_NAME", 
+      "label": "Innovation Name", 
       "shape": "diamond", 
       "color": "#fd7e14", 
-      "description": "A 2-3 sentence technical and strategic explanation of this specific breakthrough."
+      "description": "Full detailed description here for the deep-dive card."
     }}
   ],
   "edges": [ ... ]
@@ -1054,71 +1060,79 @@ MANDATORY JSON STRUCTURE:
                         pattern = re.compile(r'\b' + re.escape(base_term) + r'\w*', re.IGNORECASE)
                         final_markdown = pattern.sub(link_html, final_markdown, count=10)
 
-            # --- 5. FINAL DISPLAY: INTERACTIVE REPORT & INNOVATION HUB ---
+            # --- 5. FINAL DISPLAY: SEQUENTIAL INTERACTIVE SYNERGY REPORT ---
             
-            # 5a. ADVANCED SEMANTIC HIGHLIGHTER (Supports non-ASCII/Slovenian characters)
-            final_markdown = full_report
+            # Combine Phase 1 (Groq) and Phase 2 (SambaNova) text for full-spectrum highlighting
+            # This ensures words in BOTH phases are linked.
+            combined_report_text = f"## 📚 PHASE 1: Structural Foundation\n\n{groq_synthesis}\n\n---\n## 💡 PHASE 2: Strategic Innovation Report\n\n{innovation_text}"
+            
+            # 5a. GLOBAL SEMANTIC HIGHLIGHTER (Multi-Phase Linking)
+            final_interactive_report = combined_report_text
             if nodes_to_link:
-                # Sort by length descending to prevent partial matching issues
+                # Sort keywords by length descending to ensure accurate replacement
                 sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
                 for item in sorted_keywords:
                     lbl = item['label']
                     if len(lbl) > 2:
                         g_url = urllib.parse.quote(lbl)
+                        # The link style ensures high visibility
                         link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
                         
-                        # IMPROVED REGEX: Handles Slovenian characters and avoids \b issues
-                        # We use lookahead/lookbehind to ensure we don't replace parts of other words
+                        # Unicode-safe regex to catch terms in both Phase 1 and Phase 2
                         pattern = re.compile(rf'(?<!\w){re.escape(lbl)}(?!\w)', re.IGNORECASE | re.UNICODE)
-                        final_markdown = pattern.sub(link_html, final_markdown)
+                        final_interactive_report = pattern.sub(link_html, final_interactive_report)
 
-            # 5b. MAIN REPORT DISPLAY
-            st.subheader("🧱 HIERARCHOLOGICAL SYNTHESIS REPORT")
+            # 5b. RENDERING THE INTERACTIVE REPORT
+            st.subheader("🧱 INTEGRATED HIERARCHOLOGICAL REPORT")
             if biblio_data:
-                with st.expander("📚 EXTRACTED AUTHOR DATA", expanded=False):
+                with st.expander("📚 EXTRACTED AUTHOR BACKGROUND", expanded=False):
                     st.markdown(biblio_data)
             
-            st.markdown(final_markdown, unsafe_allow_html=True)
+            # Display the full linked report (P1 + P2)
+            st.markdown(final_interactive_report, unsafe_allow_html=True)
 
-            # 5c. INNOVATION HUB: STRATEGIC BREAKTHROUGHS (With Descriptions)
+            # 5c. INNOVATION DEEP-DIVE: DETAILED BREAKTHROUGH CATALOG
             if final_elements:
                 st.divider()
-                st.markdown("### 🚀 ACTIVE STRATEGIC BREAKTHROUGHS")
+                st.markdown("### 🚀 STRATEGIC INNOVATION DEEP-DIVE")
+                st.info("The following strategic breakthroughs have been synthesized from the multi-dimensional analysis above.")
                 
-                # Extract innovations with their descriptions
+                # Extract innovations (diamonds) for detailed report-style display
                 innovations = [n['data'] for n in final_elements if n['data'].get('shape') == 'diamond']
                 
                 if innovations:
-                    # Display innovation cards in a clean layout
                     for inv in innovations:
                         g_url = urllib.parse.quote(inv['label'])
-                        # Get description from node data or fallback to generic text
-                        desc = inv.get('description', "Detailed technical analysis integrated into the graph structure.")
+                        # Fetch the precise description generated by the model
+                        detailed_desc = inv.get('description', "Detailed strategic analysis is available in the integrated report above.")
                         
+                        # High-End Report Style Card
                         st.markdown(f"""
-                        <div style="background-color: #ffffff; border-left: 5px solid #fd7e14; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid #eee; margin-bottom: 20px;">
-                            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                                <div style="font-size: 0.8em; color: #fd7e14; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Strategic Breakthrough</div>
-                                <a href="https://www.google.com/search?q={g_url}" target="_blank" style="text-decoration: none; color: #457b9d; font-size: 0.85em; font-weight: 600;">Deep Dive Analysis ↗</a>
+                        <div style="background-color: #ffffff; border-left: 6px solid #fd7e14; padding: 25px; border-radius: 15px; box-shadow: 0 6px 15px rgba(0,0,0,0.1); border: 1px solid #eee; margin-bottom: 25px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <span style="background-color: #fff4ed; color: #fd7e14; padding: 5px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; border: 1px solid #fd7e14;">Strategic Breakthrough</span>
+                                <a href="https://www.google.com/search?q={g_url}" target="_blank" style="text-decoration: none; color: #457b9d; font-size: 0.85em; font-weight: 600;">Technical Search ↗</a>
                             </div>
-                            <h3 style="margin: 10px 0; color: #1d3557; font-size: 1.4em;">{inv['label']}</h3>
-                            <p style="color: #444; font-size: 1em; line-height: 1.6; margin-bottom: 0;">{desc}</p>
+                            <h2 style="margin: 0 0 15px 0; color: #1d3557; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">{inv['label']}</h2>
+                            <div style="color: #333; font-size: 1.05em; line-height: 1.7; border-top: 1px solid #f0f0f0; padding-top: 15px;">
+                                {detailed_desc}
+                            </div>
                         </div>
                         """, unsafe_allow_html=True)
                 else:
-                    st.info("💡 Innovations are mapped within the system network (see graph below).")
+                    st.warning("No specific 'Diamond' innovations were found. Review the structural graph for implicit breakthroughs.")
 
-                # 5d. MINIMALIST LEGEND
+                # 5d. MINIMALIST SYSTEM LEGEND
                 st.markdown("""
-                <div style="font-size: 0.75em; color: #666; background: #f9f9f9; padding: 10px 20px; border-radius: 25px; border: 1px solid #eee; margin-top: 25px; display: flex; justify-content: space-between; align-items: center;">
-                    <span><b>Visual Logic:</b> ⭐ Goal | ⬢ Domain | 💠 Innovation | △ Process | ▭ Data</span>
-                    <span style="height: 12px; width: 1px; background: #ddd;"></span>
-                    <span><b>Semantic Lines:</b> <span style="color:#e63946;">⬤ Structural</span> | <span style="color:#1d3557;">⬤ Hierarchical</span> | <span style="color:#2a9d8f;">⬤ Associative</span></span>
+                <div style="font-size: 0.75em; color: #666; background: #fdfdfd; padding: 12px 20px; border-radius: 30px; border: 1px solid #eee; margin-top: 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
+                    <span><b>Nodes:</b> ⭐ Goal | ⬢ Domain | 💠 Innovation | △ Process | ▭ Data</span>
+                    <span style="height: 15px; width: 1px; background: #ddd;"></span>
+                    <span><b>Logic:</b> <span style="color:#e63946;">⬤ Structural (UML)</span> | <span style="color:#1d3557;">⬤ Hierarchical (ISO)</span> | <span style="color:#2a9d8f;">⬤ Associative</span></span>
                 </div>
                 """, unsafe_allow_html=True)
 
-                # 5e. GRAPH RENDERING
-                st.subheader(f"🕸️ HYBRID SEMANTIC SYSTEM MAP ({len(nodes_to_link)} Nodes)")
+                # 5e. FINAL GRAPH RENDERING
+                st.subheader(f"🕸️ HYBRID SEMANTIC SYSTEM MAP")
                 render_cytoscape_network(final_elements, f"cy_{int(time.time())}")
 
         except Exception as e:
