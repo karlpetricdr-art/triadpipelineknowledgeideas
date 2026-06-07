@@ -722,7 +722,15 @@ with st.sidebar:
     
     # 3. Dual API Keys Access (Unikatna ključa preprečujeta DuplicateID napako)
     st.subheader("🔑 Dual-Engine API Access")
-    groq_api_key = st.text_input("Groq Key (Phase 1):", type="password", key="side_groq_v2026")
+    # Updated for Cerebras 2026
+cerebras_api_key = st.text_input("Cerebras Key (Phase 1):", type="password", key="side_cerebras_v2026")
+
+cerebras_model = st.selectbox(
+    "Cerebras Model (Phase 1):", 
+    ["llama-4-scout-70b", "llama-4-scout-109b", "gemma-4-31b"], 
+    index=0,
+    key="side_cerebras_model_v2026"
+)
     sambanova_api_key = st.text_input("SambaNova Key (Phase 2):", type="password", key="side_samba_v2026")
     
     # 4. POSODOBLJENO: Model Selection z novim Gemma-4 modelom
@@ -871,9 +879,10 @@ with col_inq3:
 # 5. SYNERGY EXECUTION ENGINE (GROQ + SAMBANOVA + ORCID + UML)
 # =============================================================================
 
-if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True, key="exec_pipeline_v2026"):
-    if not groq_api_key or not sambanova_api_key:
-        st.error("❌ Dual-Model synergy requires both Groq and SambaNova keys.")
+if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", ...):
+    # Changed groq_api_key to cerebras_api_key
+    if not cerebras_api_key or not sambanova_api_key:
+        st.error("❌ Dual-Model synergy requires both Cerebras and SambaNova keys.")
     elif not user_query:
         st.warning("⚠️ Phase 1 Research Inquiry is required.")
     else:
@@ -890,7 +899,8 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             full_ai_input = f"{user_query}{full_context}{biblio_context}"
 
             # Inicializacija klientov
-            groq_client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
+            # Now talking to the Cerebras Cloud
+cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
             samba_client = OpenAI(api_key=sambanova_api_key, base_url="https://api.sambanova.ai/v1")
             
             # --- 2. PHASE 1: GROQ (STRUKTURNA PODLAGA) ---
