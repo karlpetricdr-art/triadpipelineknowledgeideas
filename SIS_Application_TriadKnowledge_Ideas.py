@@ -910,43 +910,40 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
 You are the SIS Lead Multi-Dimensional Architect & Hierarchologist. 
 Your mission is to transform the structural foundation from Phase 1 into a radical, futuristic innovation system (Year 2026-2030).
 
-### 1. RELATIONSHIP PROTOCOL (MANDATORY USE)
-You must categorize every link using one of these two semantic standards:
+### 1. SHAPE DICTIONARY (MANDATORY GEOMETRY)
+Assign shapes based on the nature of the concept:
+- 'star': High-level Vision, ultimate Strategic Goals, or "North Star" objectives.
+- 'hexagon': Broad Science Fields, Academic Disciplines, or Knowledge Domains.
+- 'octagon': Constraints, Ethical Boundaries, Laws, or "Stop" parameters.
+- 'triangle': Active Processes, Triggers, Dynamic Actions, or Vectors.
+- 'diamond': Radical Innovations, New Inventions, or Disruptive Ideas.
+- 'ellipse': Core Identities, Human Factors, or Biological Entities.
+- 'rectangle': Standard Facts, Data Points, or Established Structural Components.
 
+### 2. RELATIONSHIP PROTOCOL
 A) THESAURUS (Conceptual Logic - ISO 25964):
-- 'TT' (Top Term): The highest-level root concept of this domain.
-- 'BT' (Broader Term): Hierarchical parent (e.g., Physics is BT to Quantum Mechanics).
-- 'NT' (Narrower Term): Hierarchical child (e.g., CRISPR is NT to Biotechnology).
-- 'RT' (Related Term): Associative link between disparate but related fields.
-- 'EQ' (Equivalence): Absolute synonym or identical concept in a different paradigm.
-- 'AS' (Association): General lateral connection (the 'spark' of innovation).
-- 'IN' (Instance): A specific, real-world example or prototype of a theory.
+- 'TT' (Top Term), 'BT' (Broader), 'NT' (Narrower), 'RT' (Related), 'EQ' (Equivalence), 'AS' (Association), 'IN' (Instance).
 
 B) UML (Structural Logic - OMG Standard):
-- 'Generalization': Inheritance; "is-a" relationship (hollow triangle arrow).
-- 'Realization': Implementation; "transforms theory into reality" (dashed line, hollow triangle).
-- 'Composition': Strong ownership; "part-of" where the part cannot exist without the whole (filled diamond).
-- 'Aggregation': Weak ownership; "part-of" where parts can exist independently (hollow diamond).
-- 'Dependency': Usage; "concept A requires concept B to function" (dashed arrow).
+- 'Generalization' (Inheritance), 'Realization' (Implementation), 'Composition' (Strong Part-of), 'Aggregation' (Weak Part-of), 'Dependency' (Usage).
 
-### 2. CORE OPERATING INSTRUCTIONS
-- INTERDISCIPLINARY FUSION: Link at least one concept from Phase 1 to a completely unrelated science field using an 'AS' or 'RT' link.
-- RADICAL INNOVATION: Create at least 3 NEW concepts (Innovations) and label them with 'shape': 'diamond'.
-- HIERARCHICAL RIGOR: Use 'BT' and 'NT' to build a vertical stack of knowledge.
+### 3. CORE OPERATING INSTRUCTIONS
+- INTERDISCIPLINARY FUSION: Link Phase 1 concepts to disparate science fields (hexagons) using 'AS' or 'RT'.
+- VISUAL HIERARCHY: Ensure the 'star' (Goal) is connected to 'diamonds' (Innovations) via 'Realization' or 'NT'.
+- HIERARCHICAL RIGOR: Use 'BT' and 'NT' to build a vertical stack.
 
-### 3. OUTPUT FORMAT
-You must provide a brief architectural explanation followed by the exact JSON block.
-
+### 4. OUTPUT FORMAT
 MANDATORY JSON STRUCTURE:
 ### SEMANTIC_GRAPH_JSON
 {{
   "nodes": [
-    {{"id": "n1", "label": "CONCEPT_NAME", "shape": "rectangle", "color": "#DDEBF7", "level": "Micro"}},
-    {{"id": "inv1", "label": "NEW_INNOVATION", "shape": "diamond", "color": "#fd7e14", "level": "Meso"}}
+    {{"id": "goal1", "label": "ULTIMATE_VISION", "shape": "star", "color": "#FFD700", "level": "Macro"}},
+    {{"id": "sci1", "label": "QUANTUM_PHYSICS", "shape": "hexagon", "color": "#C6EFCE", "level": "Meso"}},
+    {{"id": "inv1", "label": "NEURAL_LINK_V2", "shape": "diamond", "color": "#fd7e14", "level": "Micro"}}
   ],
   "edges": [
-    {{"source": "n1", "target": "inv1", "rel_type": "Composition"}},
-    {{"source": "inv1", "target": "n2", "rel_type": "EQ"}}
+    {{"source": "inv1", "target": "goal1", "rel_type": "Realization"}},
+    {{"source": "sci1", "target": "inv1", "rel_type": "BT"}}
   ]
 }}
 """
@@ -961,7 +958,7 @@ MANDATORY JSON STRUCTURE:
                 )
                 cerebras_innovation = samba_response.choices[0].message.content
 
-            # --- 4. PROCESIRANJE REZULTATOV ---
+            # --- 4. PROCESIRANJE REZULTATOV (Z GEOMETRIJSKO LOGIKO) ---
             if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
                 parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
                 innovation_text = parts[0]
@@ -981,33 +978,41 @@ MANDATORY JSON STRUCTURE:
                 try:
                     g_data = json.loads(json_match.group(1))
                     
+                    # --- PROCESIRANJE VOZLIŠČ Z DINAMIČNO VELIKOSTJO ---
                     for n in g_data.get("nodes", []):
                         lbl = n.get("label", "Node")
                         nid = n.get("id", f"n{lbl}")
                         n_color = n.get("color", "#DDEBF7")
                         n_shape = n.get("shape", "rectangle")
-                        n_size = 105 if n_shape == 'diamond' else 85
+                        
+                        # Velikostna hierarhija glede na obliko
+                        if n_shape == 'star': n_size = 125
+                        elif n_shape == 'diamond': n_size = 110
+                        elif n_shape == 'octagon': n_size = 105
+                        elif n_shape == 'hexagon': n_size = 100
+                        elif n_shape == 'triangle': n_size = 95
+                        elif n_shape == 'ellipse': n_size = 90
+                        else: n_size = 85
                         
                         nodes_to_link.append({"id": nid, "label": lbl})
                         final_elements.append({
                             "data": {"id": nid, "label": lbl, "color": n_color, "shape": n_shape, "size": n_size}
                         })
 
-                    # --- NADGRAJENA LOGIKA ZA POVEZAVE (UML + THESAURUS) ---
+                    # --- PROCESIRANJE POVEZAV (UML + THESAURUS) ---
                     for e in g_data.get("edges", []):
                         rel = e.get("rel_type", "Association")
                         
-                        # Dodelitev barv glede na tip semantike
                         if rel in ["Composition", "Aggregation", "Generalization", "Realization", "Dependency"]:
-                            e_color = "#e63946"  # RDEČA za UML (Struktura)
+                            e_color = "#e63946"  # RDEČA (UML Arhitektura)
                         elif rel in ["BT", "NT", "TT"]:
-                            e_color = "#1d3557"  # MODRA za Hierarhijo
+                            e_color = "#1d3557"  # MODRA (Hierarhija)
                         elif rel == "EQ":
-                            e_color = "#f1c40f"  # RUMENA za Ekvivalenco
+                            e_color = "#f1c40f"  # RUMENA (Ekvivalenca)
                         elif rel == "RT":
-                            e_color = "#2a9d8f"  # ZELENA za Lateralne povezave
+                            e_color = "#2a9d8f"  # ZELENA (Lateralne povezave)
                         else:
-                            e_color = "#adb5bd"  # SIVA za splošne asociacije (AS)
+                            e_color = "#adb5bd"  # SIVA (Splošno)
 
                         final_elements.append({
                             "data": {
@@ -1033,21 +1038,62 @@ MANDATORY JSON STRUCTURE:
                         pattern = re.compile(r'\b' + re.escape(base_term) + r'\w*', re.IGNORECASE)
                         final_markdown = pattern.sub(link_html, final_markdown, count=10)
 
-            # --- 5. KONČNI PRIKAZ ---
+            # --- 5. KONČNI PRIKAZ (DOPOLNJEN Z LOGIKO ZA POVEZAVE IN LEGENDO) ---
+            
+            # 5a. SEMANTIČNI HIGHLIGHTER (Poveže besedilo z grafom)
+            final_markdown = full_report
+            if nodes_to_link:
+                # Sortiramo od najdaljših besed, da preprečimo napačno prekrivanje
+                sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
+                for item in sorted_keywords:
+                    lbl = item['label']
+                    if len(lbl) > 2:
+                        # Ustvarimo Google Search povezavo za vsako vozlišče v grafu
+                        g_url = urllib.parse.quote(lbl)
+                        link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
+                        
+                        # Regex, ki najde besedo in njene izpeljanke (množine, sklanjanje)
+                        base_term = lbl[: -2] if len(lbl) > 6 else lbl
+                        pattern = re.compile(r'\b' + re.escape(base_term) + r'\w*', re.IGNORECASE)
+                        final_markdown = pattern.sub(link_html, final_markdown, count=10)
+
+            # 5b. IZPIS POROČILA NA ZASLON
             st.subheader("🧱 HIERARCHOLOGICAL SYNTHESIS REPORT")
+            
+            # Prikaz bibliografije (ORCID/Scholar)
             if biblio_data:
-                with st.expander("📚 EXTRACTED AUTHOR DATA", expanded=False):
+                with st.expander("📚 EXTRACTED AUTHOR DATA (ORCID/SCHOLAR)", expanded=False):
                     st.markdown(biblio_data)
             
+            # Izpis glavnega besedila (z uporabo HTML za povezave)
             st.markdown(final_markdown, unsafe_allow_html=True)
 
+            # 5c. IZRIS GRAFA Z LEGENDO
             if final_elements:
                 st.divider()
-                st.subheader(f"🕸️ HYBRID SEMANTIC SYSTEM MAP")
+                
+                # Dodana vizualna legenda za uporabnika
+                with st.expander("🎨 GRAPH LEGEND (Shapes & Colors Help)", expanded=False):
+                    st.markdown("""
+                    **GEOMETRIJA (Shapes):**
+                    - ⭐ **Star**: Glavna Vizija/Cilj | ⬢ **Hexagon**: Znanstveno polje | 🛑 **Octagon**: Omejitve/Etika
+                    - 💠 **Diamond**: Inovacija | △ **Triangle**: Proces/Akcija | ▭ **Rectangle**: Dejstva
+                    
+                    **POVEZAVE (Lines):**
+                    - 🔴 **Rdeča (UML)**: Arhitektura (Composition, Generalization)
+                    - 🔵 **Modra (Thesaurus)**: Hierarhija pojmov (BT, NT, TT)
+                    - 🟡 **Rumena**: Ekvivalenca/Sinonimi (EQ)
+                    - 🟢 **Zelena**: Lateralne povezave in asociacije (RT, AS)
+                    """)
+                
+                st.subheader(f"🕸️ HYBRID SEMANTIC SYSTEM MAP ({len(nodes_to_link)} Nodes)")
+                # Ponovni izris z unikatnim ID-jem za osveževanje
                 render_cytoscape_network(final_elements, f"cy_{int(time.time())}")
 
         except Exception as e:
-            st.error(f"❌ Pipeline Failure: {e}")
+            # Izboljšan izpis napake za lažje reševanje težav
+            st.error(f"❌ Pipeline Failure: {str(e)}")
+            st.info("Check your API keys or model selection in the sidebar.")
 
 # =============================================================================
 # 6. FOOTER
