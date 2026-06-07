@@ -720,35 +720,24 @@ with st.sidebar:
     
     st.header("⚙️ SYSTEM CONTROL")
     
-    # --- 3. DUAL API KEYS ACCESS ---
+    # 3. DUAL-ENGINE API ACCESS (MODERN 2026 STACK)
     st.subheader("🔑 Dual-Engine API Access")
-    
-    # These lines are now correctly aligned
     cerebras_api_key = st.text_input("Cerebras Key (Phase 1):", type="password", key="side_cerebras_v2026")
     sambanova_api_key = st.text_input("SambaNova Key (Phase 2):", type="password", key="side_samba_v2026")
     
-    # Aktualni produkcijski modeli za junij 2026
+    # Samo moderni modeli, ki ne bodo upokojeni (Gemma-4, GPT-OSS, ZAI)
     cerebras_model = st.selectbox(
         "Cerebras Model (Phase 1):", 
-        [
-            "gpt-oss-120b",    # Najboljša izbira za kompleksno logiko in razmišljanje
-            "llama-3.3-70b",   # Zelo hiter in stabilen produkcijski model
-            "gemma-4-31b",     # Odličen za strukturirane JSON izhode
-            "zai-glm-4.7"      # Preview model z izjemno hitrostjo
-        ], 
+        ["gpt-oss-120b", "zai-glm-4.7", "gemma-4-31b"], 
         index=0,
         key="side_cerebras_model_v2026"
     )
-    
-    # 4. POSODOBLJENO: Model Selection z novim Gemma-4 modelom
+
+    # SambaNova fiksirana na Gemma-4 serijo
     sambanova_id = st.selectbox(
-        "SambaNova Model Endpoint:", 
-        [
-            "gemma-4-31b-it",                # Novi priporočeni model
-            "meta-llama-4-70b-instruct",      # Naslednik Llama 3 serije
-            "Meta-Llama-3.3-70B-Instruct"     # Vaš trenutni (Legacy)
-        ], 
-        index=0, # To postavi gemma-4 kot privzeto izbiro
+        "SambaNova Model (Phase 2):", 
+        ["gemma-4-31b-it", "gemma-4-9b-it"], 
+        index=0,
         key="side_model_select_v2026"
     )
     
@@ -883,7 +872,7 @@ with col_inq3:
             st.error(f"Error reading file: {e}")
 
 # =============================================================================
-# 5. SYNERGY EXECUTION ENGINE (CEREBRAS + SAMBANOVA: GEMMA-4 EDITION)
+# 5. SYNERGY EXECUTION ENGINE (GEMMA-4 / GPT-OSS STACK - 2026 STANDARD)
 # =============================================================================
 
 if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True, key="exec_pipeline_v2026"):
@@ -897,12 +886,11 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             with st.spinner('🔍 Accessing ORCID & Scholar databases...'):
                 biblio_data = fetch_author_bibliographies(target_authors) if target_authors else ""
             
-            # Pametno omejevanje konteksta za preprečevanje 429 TPM Rate Limita
-            file_snippet = file_content[:10000] if file_content else ""
-            full_context = f"\n\n[FILE CONTEXT]:\n{file_snippet}"
-            biblio_context = f"\n\n[AUTHOR RESEARCH BACKGROUND]:\n{biblio_data}"
-            full_ai_input = f"{user_query}{full_context}{biblio_context}"
+            # Omejitev za SambaNova stabilnost (preprečevanje 429 napake)
+            clean_file_context = file_content[:10000] if file_content else ""
+            full_ai_input = f"{user_query}\n\n[FILE DATA]:\n{clean_file_context}\n\n[BIBLIO]:\n{biblio_data}"
 
+            # Pravilno poravnana inicializacija klientov
             cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
             samba_client = OpenAI(api_key=sambanova_api_key, base_url="https://api.sambanova.ai/v1")
             
@@ -911,55 +899,44 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 p1_response = cerebras_client.chat.completions.create(
                     model=cerebras_model,
                     messages=[
-                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. Use IMA architecture for the structural foundation."}, 
+                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. Use Integrated Metamodel Architecture (IMA)."}, 
                         {"role": "user", "content": full_ai_input}
                     ],
                     temperature=0.4,
-                    max_completion_tokens=3500 
+                    max_completion_tokens=3000 
                 )
                 groq_synthesis = p1_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
 
-            # --- POVEČAN PREMOR ZA STABILIZACIJO (Nedeljska konica RPM) ---
-            time.sleep(6) 
+            # --- PREMOR ZA STABILIZACIJO (Cool-off pred Phase 2) ---
+            time.sleep(5) 
 
-            # --- 3. PHASE 2: SAMBANOVA (FIKSIRAN MODEL: GEMMA-4-31B-IT) ---
-            cerebras_innovation = ""
-            # Uporabljamo izključno model, ki ste ga določili
-            fixed_samba_model = "gemma-4-31b-it" 
-            
-            with st.spinner(f'PHASE 2: Generating Innovations with {fixed_samba_model}...'):
+            # --- 3. PHASE 2: SAMBANOVA (INOVACIJSKA GENERACIJA - GEMMA-4) ---
+            with st.spinner(f'PHASE 2: Generating Innovations with {sambanova_id}...'):
                 samba_sys_prompt = f"""
                 You are the SIS Hierarchography Specialist. 
                 TASK: Transform Phase 1 foundation into radical innovations using {selected_techniques}.
                 
                 MANDATORY OUTPUT STRUCTURE:
-                1. Provide high-density analysis and solutions.
-                2. End with: ### SEMANTIC_GRAPH_JSON
-                [UML JSON block]
+                1. Provide high-density expert analysis and solutions.
+                2. End with exactly: ### SEMANTIC_GRAPH_JSON
+                [UML JSON code]
 
-                NODE MATRIX: ellipse (#C6EFCE), rectangle (#DDEBF7), diamond (#F2DCDB), round-rectangle (#fd7e14).
+                NODE MATRIX: Actors (ellipse), Modules (rectangle), Decisions (diamond), Innovation (round-rectangle).
                 """
+
+                # TPM FIX: SambaNova dobi samo najpomembnejši del Phase 1
+                compressed_foundation = groq_synthesis[:7000] 
                 
-                # Retry logika samo za ta specifičen model
-                for attempt in range(2):
-                    try:
-                        samba_response = samba_client.chat.completions.create(
-                            model=fixed_samba_model, 
-                            messages=[
-                                {"role": "system", "content": samba_sys_prompt}, 
-                                {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis[:7000]}\n\nGOAL: {idea_query}"}
-                            ],
-                            temperature=0.8
-                        )
-                        cerebras_innovation = samba_response.choices[0].message.content
-                        break 
-                    except Exception as e:
-                        if "429" in str(e) and attempt == 0:
-                            st.warning(f"⚠️ {fixed_samba_model} je zaseden. Ponovni poskus čez 15s...")
-                            time.sleep(15)
-                        else:
-                            raise e
+                samba_response = samba_client.chat.completions.create(
+                    model=sambanova_id, 
+                    messages=[
+                        {"role": "system", "content": samba_sys_prompt}, 
+                        {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{compressed_foundation}\n\nGOAL: {idea_query}"}
+                    ],
+                    temperature=0.8
+                )
+                cerebras_innovation = samba_response.choices[0].message.content
 
             # --- 4. PROCESIRANJE REZULTATOV (REŠITEV ZA VSE FUNKCIJE) ---
             if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
@@ -968,7 +945,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             else:
                 innovation_text, json_raw = cerebras_innovation, ""
 
-            full_report = f"## 📚 Phase 1: Foundation (Cerebras)\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Innovations ({fixed_samba_model})\n\n{innovation_text}"
+            full_report = f"## 📚 Phase 1: Foundation (Cerebras)\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Innovations ({sambanova_id})\n\n{innovation_text}"
             
             # --- OBNOVA VIZUALNIH FUNKCIJ (UML + Google Povezave) ---
             nodes_to_link = []
@@ -993,7 +970,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                         final_elements.append({"data": {"source": e.get("source"), "target": e.get("target"), "rel_type": rel, "color": e_color, "arrow": arrow_type, "line_style": l_style}})
                 except: pass
 
-            # Obnova Google Search semantičnih povezav z ikonami
+            # RESTAVRACIJA SEMANTIČNIH POVEZAV Z IKONAMI ↗
             final_markdown = full_report
             if nodes_to_link:
                 sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
@@ -1005,7 +982,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                         pattern = re.compile(r'\b' + re.escape(lbl) + r'\b', re.IGNORECASE)
                         final_markdown = pattern.sub(link_html, final_markdown, count=1)
 
-            # --- 5. PRIKAZ ---
+            # --- 5. PRIKAZ REZULTATOV ---
             st.subheader("🧱 HIERARCHOLOGICAL SYNTHESIS REPORT")
             if biblio_data:
                 with st.expander("📚 EXTRACTED AUTHOR DATA", expanded=False):
@@ -1015,12 +992,12 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
 
             if final_elements:
                 st.divider()
-                st.subheader("🕸️ HIERARCHOGRAPHIC SYSTEM MAP")
+                st.subheader(f"🕸️ HIERARCHOGRAPHIC SYSTEM MAP ({len(nodes_to_link)} Nodes)")
                 render_cytoscape_network(final_elements, f"cy_{int(time.time())}")
 
         except Exception as e:
             if "429" in str(e):
-                st.error("❌ RATE LIMIT: SambaNova Free Tier je trenutno preobremenjen. Počakajte 60s.")
+                st.error("❌ RATE LIMIT: SambaNova Free Tier je trenutno preobremenjen zaradi TPM omejitev. Počakajte 60s.")
             else:
                 st.error(f"❌ Pipeline Failure: {e}")
 
