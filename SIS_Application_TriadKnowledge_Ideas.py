@@ -727,15 +727,16 @@ with st.sidebar:
     cerebras_api_key = st.text_input("Cerebras Key (Phase 1):", type="password", key="side_cerebras_v2026")
     sambanova_api_key = st.text_input("SambaNova Key (Phase 2):", type="password", key="side_samba_v2026")
     
-    # Uporabljamo LTS (Long Term Support) in Flagship modele
+    # Aktualni produkcijski modeli za junij 2026
     cerebras_model = st.selectbox(
         "Cerebras Model (Phase 1):", 
         [
-            "llama3.3-70b",   # Trenutni "Flagship" (najboljša logika)
-            "llama3.1-70b",   # LTS Različica (najbolj "obstojen" model)
-            "llama3.1-8b"     # Hitra LTS različica
+            "gpt-oss-120b",    # Najboljša izbira za kompleksno logiko in razmišljanje
+            "llama-3.3-70b",   # Zelo hiter in stabilen produkcijski model
+            "gemma-4-31b",     # Odličen za strukturirane JSON izhode
+            "zai-glm-4.7"      # Preview model z izjemno hitrostjo
         ], 
-        index=1, # Privzeto izbere llama3.1-70b (LTS)
+        index=0,
         key="side_cerebras_model_v2026"
     )
     
@@ -905,17 +906,18 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
             samba_client = OpenAI(api_key=sambanova_api_key, base_url="https://api.sambanova.ai/v1")
             
-            # --- 2. PHASE 1: CEREBRAS (STRUKTURNA PODLAGA - IMA) ---
+            # --- 2. PHASE 1: CEREBRAS ---
             with st.spinner(f'PHASE 1: Building Architecture with Cerebras ({cerebras_model})...'):
                 p1_response = cerebras_client.chat.completions.create(
                     model=cerebras_model,
                     messages=[
-                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. Use Integrated Metamodel Architecture (IMA) to structure the foundation."}, 
+                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. Integrate data using IMA architecture."}, 
                         {"role": "user", "content": full_ai_input}
                     ],
-                    temperature=0.4
+                    temperature=0.4,
+                    # POSODOBLJENO: Uporabite ta parameter namesto starega max_tokens
+                    max_completion_tokens=4096 
                 )
-                # Shranimo v groq_synthesis, da ohranimo kompatibilnost s spodnjo logiko
                 groq_synthesis = p1_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
 
