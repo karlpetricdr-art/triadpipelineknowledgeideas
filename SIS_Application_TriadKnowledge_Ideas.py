@@ -720,18 +720,19 @@ with st.sidebar:
     
     st.header("⚙️ SYSTEM CONTROL")
     
-    # 3. Dual API Keys Access (Unikatna ključa preprečujeta DuplicateID napako)
+    # --- 3. DUAL API KEYS ACCESS ---
     st.subheader("🔑 Dual-Engine API Access")
-    # Updated for Cerebras 2026
-cerebras_api_key = st.text_input("Cerebras Key (Phase 1):", type="password", key="side_cerebras_v2026")
-
-cerebras_model = st.selectbox(
-    "Cerebras Model (Phase 1):", 
-    ["llama-4-scout-70b", "llama-4-scout-109b", "gemma-4-31b"], 
-    index=0,
-    key="side_cerebras_model_v2026"
-)
+    
+    # These lines are now correctly aligned
+    cerebras_api_key = st.text_input("Cerebras Key (Phase 1):", type="password", key="side_cerebras_v2026")
     sambanova_api_key = st.text_input("SambaNova Key (Phase 2):", type="password", key="side_samba_v2026")
+    
+    cerebras_model = st.selectbox(
+        "Cerebras Model (Phase 1):", 
+        ["llama-4-scout-70b", "llama-4-scout-109b", "gemma-4-31b"], 
+        index=0,
+        key="side_cerebras_model_v2026"
+    )
     
     # 4. POSODOBLJENO: Model Selection z novim Gemma-4 modelom
     sambanova_id = st.selectbox(
@@ -879,9 +880,8 @@ with col_inq3:
 # 5. SYNERGY EXECUTION ENGINE (GROQ + SAMBANOVA + ORCID + UML)
 # =============================================================================
 
-if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", ...):
-    # Changed groq_api_key to cerebras_api_key
-    if not cerebras_api_key or not sambanova_api_key:
+if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True, key="exec_pipeline_v2026"):
+    if not cerebras_api_key or not sambanova_api_key: # Update this line!
         st.error("❌ Dual-Model synergy requires both Cerebras and SambaNova keys.")
     elif not user_query:
         st.warning("⚠️ Phase 1 Research Inquiry is required.")
