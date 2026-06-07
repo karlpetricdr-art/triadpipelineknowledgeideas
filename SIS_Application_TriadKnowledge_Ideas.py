@@ -15,6 +15,16 @@ import streamlit.components.v1 as components
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
 VERSION_CODE = "v22.8.0-ULTRA-SYNERGY-FINAL-950"
 
+# =============================================================================
+# INITIALIZATION FIX: Preprečuje AttributeError pri zagonu in resetiranju
+# =============================================================================
+if 'show_user_guide' not in st.session_state:
+    st.session_state.show_user_guide = False
+
+# Zagotovimo, da so vsi ključi prisotni v session_state pred prvo uporabo
+if 'groq_synthesis' not in st.session_state:
+    st.session_state.groq_synthesis = ""
+
 st.set_page_config(
     page_title=f"SIS Universal Knowledge Synthesizer - {SYSTEM_DATE}",
     page_icon="🌳",
@@ -218,120 +228,108 @@ SVG_3D_RELIEF = """
 # 1. CORE RENDERING ENGINES & DATA FETCHING
 # =============================================================================
 
-def render_cytoscape_network(elements, container_id="cy_synergy_final_pipeline"):
-    """Interactive Cytoscape.js engine for high-density 18D graphs."""
+def render_cytoscape_network(elements, container_id="cy_canvas"):
     cyto_html = f"""
     <div style="position: relative; width: 100%;">
-        <button id="save_btn" style="position: absolute; top: 15px; right: 15px; z-index: 1000; padding: 12px 18px; background: #2a9d8f; color: white; border: none; border-radius: 8px; cursor: pointer; font-family: sans-serif; font-size: 13px; font-weight: 800; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">💾 EXPORT GRAPH PNG</button>
-        <div id="{container_id}" style="width: 100%; height: 750px; background: #ffffff; border-radius: 20px; border: 1px solid #e0e0e0; box-shadow: 0 8px 30px rgba(0,0,0,0.06);"></div>
+        <button id="save_btn" style="position: absolute; top: 15px; right: 15px; z-index: 1000; padding: 10px 15px; background: #1d3557; color: white; border: none; border-radius: 8px; cursor: pointer; font-family: sans-serif; font-size: 12px; font-weight: 800;">💾 EXPORT PNG</button>
+        <div id="{container_id}" style="width: 100%; height: 850px; background: #ffffff; border-radius: 20px; border: 1px solid #e0e0e0; box-shadow: 0 10px 40px rgba(0,0,0,0.1);"></div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {{
-            var cy = cytoscape({{
+            var cy = window.cy = cytoscape({{
                 container: document.getElementById('{container_id}'),
                 elements: {json.dumps(elements)},
                 style: [
                     {{
                         selector: 'node',
                         style: {{
-                            'label': 'data(label)', 'text-valign': 'center', 'color': '#212529',
-                            'background-color': 'data(color)', 'width': 'data(size)', 'height': 'data(size)',
-                            'shape': 'data(shape)', 'font-size': '14px', 'font-weight': '700',
-                            'text-outline-width': 2, 'text-outline-color': '#ffffff', 'cursor': 'pointer',
-                            'z-index': 'data(z_index)', 'box-shadow': '0 4px 6px rgba(0,0,0,0.1)'
+                            'label': 'data(label)',
+                            'text-valign': 'center',
+                            'color': '#1d3557',
+                            'background-color': 'data(color)',
+                            'shape': 'data(shape)',
+                            'width': 'data(size)',
+                            'height': 'data(size)',
+                            'font-size': '12px',
+                            'font-weight': '800',
+                            'text-wrap': 'wrap',
+                            'text-max-width': '100px',
+                            'border-width': 2,
+                            'border-color': '#adb5bd',
+                            'text-outline-width': 1,
+                            'text-outline-color': '#ffffff'
                         }}
                     }},
                     {{
                         selector: 'edge',
                         style: {{
-                            'width': 5, 'line-color': '#adb5bd', 'label': 'data(rel_type)',
-                            'font-size': '11px', 'font-weight': 'bold', 'color': '#2a9d8f',
-                            'target-arrow-color': '#adb5bd', 'target-arrow-shape': 'triangle',
-                            'curve-style': 'bezier', 'text-rotation': 'autorotate',
-                            'text-background-opacity': 1, 'text-background-color': '#ffffff',
-                            'text-background-padding': '4px', 'text-background-shape': 'roundrectangle'
+                            'width': 4,
+                            'line-color': 'data(color)',
+                            'target-arrow-color': 'data(color)',
+                            'target-arrow-shape': 'triangle',
+                            'curve-style': 'bezier',
+                            'label': 'data(rel_type)',
+                            'font-size': '10px',
+                            'color': '#1d3557',
+                            'text-background-opacity': 1,
+                            'text-background-color': '#ffffff',
+                            'line-style': 'data(line_style)'
                         }}
                     }},
-                    {{ selector: 'node.highlighted', style: {{ 'border-width': 6, 'border-color': '#e76f51', 'transform': 'scale(1.45)', 'z-index': 10000 }} }},
-                    {{ selector: '.dimmed', style: {{ 'opacity': 0.1, 'text-opacity': 0 }} }}
+                    /* UML SPECIFIKA */
+                    {{ selector: 'edge[rel_type="Generalization"]', style: {{ 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' }} }},
+                    {{ selector: 'edge[rel_type="Realization"]', style: {{ 'line-style': 'dashed', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' }} }},
+                    {{ selector: 'edge[rel_type="Composition"]', style: {{ 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'filled' }} }}
                 ],
-                layout: {{ name: 'cose', padding: 60, animate: true, nodeRepulsion: 50000, idealEdgeLength: 220 }}
-            }});
-
-            cy.on('mouseover', 'node', function(e){{
-                var sel = e.target;
-                cy.elements().addClass('dimmed');
-                sel.neighborhood().add(sel).removeClass('dimmed').addClass('highlighted');
-            }});
-            
-            cy.on('mouseout', 'node', function(e){{
-                cy.elements().removeClass('dimmed highlighted');
-            }});
-            
-            cy.on('tap', 'node', function(evt){{
-                var elementId = evt.target.id();
-                var target = window.parent.document.getElementById(elementId);
-                if (target) {{
-                    target.scrollIntoView({{behavior: "smooth", block: "center"}});
-                    target.style.backgroundColor = "#fff9db";
-                    setTimeout(function(){{ target.style.backgroundColor = "transparent"; }}, 3000);
+                layout: {{ 
+                    name: 'cose', 
+                    nodeRepulsion: 20000, 
+                    idealEdgeLength: 200, 
+                    edgeElasticity: 100,
+                    animate: true,
+                    numIter: 1500
                 }}
             }});
 
-            document.getElementById('save_btn').addEventListener('click', function() {{
-                var png64 = cy.png({{full: true, bg: 'white', scale: 2.5}});
-                var link = document.createElement('a');
-                link.href = png64;
-                link.download = 'sis_synergy_graph.png';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+            // Povratni link
+            cy.on('tap', 'node', function(evt){{
+                var label = evt.target.data('label');
+                var safeId = "ref-" + label.replace(/\s+/g, '_');
+                var el = window.parent.document.getElementById(safeId);
+                if (el) {{
+                    el.scrollIntoView({{ behavior: 'smooth', block: 'center' }});
+                    el.style.backgroundColor = "#fff3cd";
+                    setTimeout(function() {{ el.style.backgroundColor = "transparent"; }}, 2500);
+                }}
             }});
         }});
     </script>
     """
-    components.html(cyto_html, height=850)
+    components.html(cyto_html, height=900)
 
 def fetch_author_bibliographies(author_input):
-    """Retrieves high-fidelity bibliographic data from ORCID and Semantic Scholar with years."""
     if not author_input: return ""
     author_list = [a.strip() for a in author_input.split(",")]
     comprehensive_biblio = ""
     headers = {"Accept": "application/json"}
-    
     for auth in author_list:
-        orcid_id = None
         try:
             s_res = requests.get(f"https://pub.orcid.org/v3.0/search/?q={auth}", headers=headers, timeout=6).json()
             if s_res.get('result'):
                 orcid_id = s_res['result'][0]['orcid-identifier']['path']
-        except: pass
-
-        if orcid_id:
-            try:
                 r_res = requests.get(f"https://pub.orcid.org/v3.0/{orcid_id}/record", headers=headers, timeout=6).json()
                 works = r_res.get('activities-summary', {}).get('works', {}).get('group', [])
-                comprehensive_biblio += f"\n--- ORCID REPOSITORY: {auth.upper()} ({orcid_id}) ---\n"
-                if works:
-                    for work in works[:15]:
-                        summary = work.get('work-summary', [{}])[0]
-                        title = summary.get('title', {}).get('title', {}).get('value', 'Unknown Title')
-                        year = work.get('publication-date', {}).get('year', {}).get('value', 'n.d.')
-                        comprehensive_biblio += f"• ({year}) {title}\n"
-                else: comprehensive_biblio += "- No metadata found in ORCID.\n"
-            except: pass
-        else:
-            try:
-                ss_url = f"https://api.semanticscholar.org/graph/v1/paper/search?query=author:\"{auth}\"&limit=10&fields=title,year"
-                ss_res = requests.get(ss_url, timeout=6).json()
-                papers = ss_res.get("data", [])
-                if papers:
-                    comprehensive_biblio += f"\n--- SCHOLAR DATA: {auth.upper()} ---\n"
-                    for p in papers:
-                        comprehensive_biblio += f"• ({p.get('year','n.d.')}) {p['title']}\n"
-                else: comprehensive_biblio += f"- No record found for {auth}.\n"
-            except: pass
+                comprehensive_biblio += f"#### 🆔 ORCID: {auth.upper()} ({orcid_id})\n"
+                for work in works[:12]:
+                    summary = work.get('work-summary', [{}])[0]
+                    title = summary.get('title', {}).get('title', {}).get('value', 'Unknown Title')
+                    # Boljše iskanje letnice
+                    pub_date = summary.get('publication-date')
+                    year = pub_date.get('year', {}).get('value', 'n.d.') if pub_date else 'n.d.'
+                    comprehensive_biblio += f"- **{year}**: {title}\n"
+                comprehensive_biblio += "\n---\n"
+        except: pass
     return comprehensive_biblio
 
 # =============================================================================
@@ -726,63 +724,73 @@ IDEATION_TECHNIQUES = {
     "Synectics": "Use direct, personal, and symbolic analogies to make the strange familiar and the familiar strange."
 }
 # =============================================================================
-# 4. INTERFACE CONSTRUCTION (SIDEBAR & MAIN)
+# 4. KONČNI POPRAVLJEN SIDEBAR (Z SAMBANOVO IN UNIKATNIMI KLJUČI)
 # =============================================================================
-
-if 'show_user_guide' not in st.session_state: st.session_state.show_user_guide = False
-
-# --- EXPANDED LEFT SIDEBAR: LOGO, ARROW FIXES, & FORCED CONTRAST ---
 with st.sidebar:
     # 1. Original 3D Relief Logo
     st.markdown(f'<div class="sidebar-logo-container"><img src="data:image/svg+xml;base64,{get_svg_base64(SVG_3D_RELIEF)}" width="220"></div>', unsafe_allow_html=True)
     
-    # 2. Hardcoded Date Badge (FORCED VISIBILITY)
+    # 2. Date Badge
     st.markdown(f'<div class="date-badge">{SYSTEM_DATE.upper()}</div>', unsafe_allow_html=True)
     
     st.header("⚙️ SYSTEM CONTROL")
     
-    # Dual API Keys Access
+    # 3. Dual API Keys Access (Unikatna ključa preprečujeta DuplicateID napako)
     st.subheader("🔑 Dual-Engine API Access")
-    groq_api_key = st.text_input("Groq Key (Phase 1 Synthesis):", type="password", help="Provides structural dissertation base.")
-    cerebras_api_key = st.text_input("Cerebras Key (Phase 2 Ideas):", type="password", help="Provides innovations and graph JSON.")
+    groq_api_key = st.text_input("Groq Key (Phase 1):", type="password", key="side_groq_v2026")
+    sambanova_api_key = st.text_input("SambaNova Key (Phase 2):", type="password", key="side_samba_v2026")
     
-    # Model Identifier Override for Cerebras (Solves 404)
-    cerebras_id = st.selectbox("Cerebras Model Endpoint:", ["llama-3.1-70b", "llama3.1-70b", "llama3.1-8b"], index=0)
+    # 4. POSODOBLJENO: Model Selection z novim Gemma-4 modelom
+    sambanova_id = st.selectbox(
+        "SambaNova Model Endpoint:", 
+        [
+            "gemma-4-31b-it",                # Novi priporočeni model
+            "meta-llama-4-70b-instruct",      # Naslednik Llama 3 serije
+            "Meta-Llama-3.3-70B-Instruct"     # Vaš trenutni (Legacy)
+        ], 
+        index=0, # To postavi gemma-4 kot privzeto izbiro
+        key="side_model_select_v2026"
+    )
     
     st.divider()
+    
+    # 5. Reset in Guide Gumbi (Dodani unikatni ključi)
     col_res, col_gui = st.columns(2)
     with col_res:
-        if st.button("♻️ RESET"):
-            for key in list(st.session_state.keys()): del st.session_state[key]
+        if st.button("♻️ RESET", key="sidebar_reset_btn_unique"):
+            for key in list(st.session_state.keys()):
+                del st.session_state[key]
             st.rerun()
     with col_gui:
-        if st.button("📖 GUIDE"):
+        if st.button("📖 GUIDE", key="sidebar_guide_btn_unique"):
             st.session_state.show_user_guide = not st.session_state.show_user_guide
             st.rerun()
             
-    # MISSING LINK BUTTONS (RESTORED)
     st.divider()
     st.subheader("🌐 EXTERNAL CONNECTORS")
-    st.link_button("📂 GitHub Repository", "https://github.com/", use_container_width=True)
-    st.link_button("🆔 ORCID Registry", "https://orcid.org/", use_container_width=True)
-    st.link_button("🎓 Google Scholar", "https://scholar.google.com/", use_container_width=True)
+    st.link_button("📂 GitHub Repository", "https://github.com/", use_container_width=True, key="side_git_link")
+    st.link_button("🆔 ORCID Registry", "https://orcid.org/", use_container_width=True, key="side_orcid_link")
+    st.link_button("🎓 Google Scholar", "https://scholar.google.com/", use_container_width=True, key="side_scholar_link")
     
-    # KNOWLEDGE EXPLORER (FORCED HIGH CONTRAST)
+    # 6. KNOWLEDGE EXPLORER (Ohranjamo tvojo bogato vsebino)
     st.divider()
     st.subheader("📚 KNOWLEDGE EXPLORER")
     with st.expander("👤 User Profile Ontologies", expanded=False):
-        for p, d in KNOWLEDGE_BASE["User profiles"].items(): st.markdown(f"**{p}**: {d['description']}")
+        for p, d in KNOWLEDGE_BASE["User profiles"].items(): 
+            st.markdown(f"**{p}**: {d['description']}")
     with st.expander("🧠 Mental Approach (MA) Map", expanded=False):
-        for m, d in MENTAL_APPROACHES_ONTOLOGY["nodes"].items(): st.markdown(f"• **{m}**: {d['desc']}")
+        for m, d in MENTAL_APPROACHES_ONTOLOGY["nodes"].items(): 
+            st.markdown(f"• **{m}**: {d['desc']}")
     with st.expander("🏛️ Metamodel (IMA) Structures", expanded=False):
-        for n, d in HUMAN_THINKING_METAMODEL["nodes"].items(): st.markdown(f"• **{n}**: {d['desc']}")
-    with st.expander("🌍 Scientific Paradigms", expanded=False):
-        for p, d in KNOWLEDGE_BASE["Scientific paradigms"].items(): st.markdown(f"**{p}**: {d}")
-        # --- ADD THIS INSIDE THE SIDEBAR 'KNOWLEDGE EXPLORER' SECTION ---
+        for n, d in HUMAN_THINKING_METAMODEL["nodes"].items(): 
+            st.markdown(f"• **{n}**: {d['desc']}")
     with st.expander("📐 Hierarchology & Hierarchography", expanded=False):
         st.markdown("**Core Concepts:**")
         for key, val in HIERARCHOLOGY_ONTOLOGY["core_definitions"].items():
             st.markdown(f"• **{key}**: {val}")
+    with st.expander("🔬 Science Taxonomy", expanded=False):
+        for s in sorted(KNOWLEDGE_BASE["Science fields"].keys()): 
+            st.markdown(f"• **{s}**")
         
         st.markdown("---")
         st.markdown("**Hierarchical Levels:**")
@@ -853,160 +861,216 @@ else:
     st.info(f"**Active Hybrid Strategy:** {combined_desc}")
 st.divider()
 
-# DUAL INQUIRY INTERFACE (nadaljevanje obstoječe kode)
-col_inq1, col_inq2, col_inq3 = st.columns([2, 2, 1])
-# ...
 # DUAL INQUIRY INTERFACE
 col_inq1, col_inq2, col_inq3 = st.columns([2, 2, 1])
 with col_inq1:
-    user_query = st.text_area("❓ STEP 1: Research Inquiry (for GROQ):", placeholder="Fact-based Foundational Inquiry for structural synthesis...", height=200)
+    user_query = st.text_area("❓ STEP 1: Research Inquiry (for GROQ):", placeholder="Fact-based Foundational Inquiry...", height=200)
 with col_inq2:
-    idea_query = st.text_area("💡 STEP 2: Innovation Prompt (for CEREBRAS):", placeholder="Targets for innovative idea production based on Phase 1 foundation...", height=200)
+    idea_query = st.text_area("💡 STEP 2: Innovation Prompt (for SAMBANOVA):", placeholder="Targets for innovative idea production...", height=200)
+# --- POPRAVEK KORAK 1: Branje vsebine datoteke ---
+# --- KORAK 1: File Upload with English Translation ---
 with col_inq3:
-    uploaded_file = st.file_uploader("📂 ATTACH DATA (.txt only):", type=['txt'], help="Context for both AI engines.")
-    file_content = ""
-    if uploaded_file: 
-        file_content = uploaded_file.read().decode("utf-8")
-        st.success(f"Context from {uploaded_file.name} integrated.")
+    uploaded_file = st.file_uploader("📂 ATTACH DATA (.txt only):", type=['txt'], key="final_file_uploader_v2")
+    file_content = "" 
+    if uploaded_file is not None:
+        try:
+            file_content = uploaded_file.read().decode("utf-8")
+            st.success(f"📎 {uploaded_file.name} uploaded!")
+            # Prevedeno v angleščino:
+            with st.expander("File Preview"):
+                st.text(file_content[:300] + "...")
+        except Exception as e:
+            st.error(f"Error reading file: {e}")
 
 # =============================================================================
-# 5. SYNERGY EXECUTION ENGINE (HIERARCHOLOGY -> HIERARCHOGRAPHY PIPELINE)
+# 5. SYNERGY EXECUTION ENGINE (GROQ + SAMBANOVA + ORCID + UML)
 # =============================================================================
 
-if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True):
-    if not groq_api_key or not cerebras_api_key:
-        st.error("❌ Dual-Model synergy requires both Groq and Cerebras keys.")
+if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True, key="exec_pipeline_v2026"):
+    if not groq_api_key or not sambanova_api_key:
+        st.error("❌ Dual-Model synergy requires both Groq and SambaNova keys.")
     elif not user_query:
         st.warning("⚠️ Phase 1 Research Inquiry is required.")
-    elif not selected_techniques:
-        st.warning("⚠️ Prosim, izberite vsaj eno tehniko inoviranja.")
     else:
         try:
-            # Init Clients
-            groq_client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
-            cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
+            # --- 1. PRIDOBIVANJE PODATKOV (BIBLIOGRAFIJA + DATOTEKA) ---
+            with st.spinner('🔍 Accessing ORCID & Scholar databases...'):
+                biblio_data = fetch_author_bibliographies(target_authors) if target_authors else ""
             
-            # Priprava podatkov
-            h_ont_data = json.dumps(HIERARCHOLOGY_ONTOLOGY)
-            ima_data = json.dumps(HUMAN_THINKING_METAMODEL)
-            ma_data = json.dumps(MENTAL_APPROACHES_ONTOLOGY)
-            biblio_data = fetch_author_bibliographies(target_authors) if target_authors else "No bibliography provided."
+            # Priprava kontekstov
+            full_context = f"\n\n[FILE CONTEXT]:\n{file_content}" if file_content else ""
+            biblio_context = f"\n\n[AUTHOR RESEARCH BACKGROUND]:\n{biblio_data}" if biblio_data else ""
+            
+            # Združen vhod za Groq (Phase 1)
+            full_ai_input = f"{user_query}{full_context}{biblio_context}"
 
-            # --- PHASE 1: GROQ (ARCHITECTURAL FOUNDATION) ---
-            with st.spinner('PHASE 1: Groq gradi znanstveno arhitekturo...'):
-                p1_template = """
-                You are the SIS Lead Hierarchologist (Phase 1). 
-                TASK: Provide a deep structural analysis (1500 words).
-                MANDATORY: Focus on Biophysical drivers (Physics/Bio) and how they emerge as social patterns.
-                NO FILLER: Use dense, academic language.
-                """
-                groq_sys_prompt = p1_template.replace("[H_ONT]", h_ont_data).replace("[IMA_ONT]", ima_data)
-                
-                groq_response = groq_client.chat.completions.create(
+            # Inicializacija klientov
+            groq_client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
+            samba_client = OpenAI(api_key=sambanova_api_key, base_url="https://api.sambanova.ai/v1")
+            
+            # --- 2. PHASE 1: GROQ (STRUKTURNA PODLAGA) ---
+            with st.spinner('PHASE 1: Building Architecture & Analyzing Author Context...'):
+                p1_response = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
-                    messages=[{"role": "system", "content": groq_sys_prompt}, {"role": "user", "content": user_query}],
+                    messages=[
+                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. Integrate the provided Author Research Background and file data into your structural analysis."}, 
+                        {"role": "user", "content": full_ai_input}
+                    ],
                     temperature=0.4
                 )
-                groq_synthesis = groq_response.choices[0].message.content
+                groq_synthesis = p1_response.choices[0].message.content
+                st.session_state.groq_synthesis = groq_synthesis
 
-            # --- PHASE 2: CEREBRAS (INCREMENTAL INNOVATION) ---
-            with st.spinner('PHASE 2: Cerebras ustvarja inovacije in graf...'):
-                tech_names = ", ".join(selected_techniques)
-                tech_descriptions = "\n".join([f"- {t}: {IDEATION_TECHNIQUES.get(t, '')}" for t in selected_techniques])
+            # --- 3. PHASE 2: SAMBANOVA (STRUCTURAL ARCHITECT MODE) ---
+            with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) generating structured innovations...'):
+                samba_sys_prompt = f"""
+                You are the SIS Lead Architect. Use {selected_techniques} to create a radical innovation map.
+                
+                STRICT VISUAL ONTOLOGY (MANDATORY):
+                1. Stakeholders/Actors: shape='ellipse', color='#C6EFCE' (Light Green)
+                2. Systems/Modules: shape='rectangle', color='#DDEBF7' (Light Blue)
+                3. Decisions/Conflicts: shape='diamond', color='#F2DCDB' (Light Red)
+                4. Innovations/Ideas: shape='round-rectangle', color='#fd7e14' (Orange)
+                5. Knowledge/Data: shape='hexagon', color='#FFFF99' (Yellow)
 
-                p2_template = """
-                You are the SIS Hierarchography Specialist (Phase 2).
-                STRATEGY: [TECHNIQUE_NAMES]
-                
-                RULES: 
-                1. DO NOT REPEAT Phase 1. 
-                2. Generate 5-7 radical innovations. 
-                3. You MUST end with '### SEMANTIC_GRAPH_JSON' followed by a valid JSON.
-                
-                JSON SCHEMA: {"nodes": [{"id": "n1", "label": "TERM", "color": "#fd7e14", "shape": "rectangle"}], "edges": [{"source": "n1", "target": "n2", "rel_type": "AS"}]}
+                RELATIONAL RULES:
+                - Use 'AS' for lateral associations (Color: #2a9d8f).
+                - Use 'EQ' for semantic equivalence (Color: #e63946).
+                - Use UML types (Generalization, Realization, Composition).
+
+                STRICT JSON RULE:
+                - Use 'label' as 'id'. Every source/target must match a node id.
+                - Ensure EVERY node in the 'edges' is also defined in the 'nodes' list with a specific color and shape.
                 """
-                
-                cerebras_sys_prompt = p2_template.replace("[TECHNIQUE_NAMES]", tech_names)
-                # Pošljemo dovolj konteksta za linkanje, a prepovemo ponavljanje
-                cerebras_user_input = f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nGOAL: {idea_query}\n\nTASK: Build NEW innovations upon this foundation. Do not summarize."
-                
-                cerebras_response = cerebras_client.chat.completions.create(
-                    model=cerebras_id, 
-                    messages=[{"role": "system", "content": cerebras_sys_prompt}, {"role": "user", "content": cerebras_user_input}],
+
+                samba_response = samba_client.chat.completions.create(
+                    model=sambanova_id, 
+                    messages=[
+                        {"role": "system", "content": samba_sys_prompt}, 
+                        {"role": "user", "content": f"PHASE 1:\n{groq_synthesis}\n\nGOAL: {idea_query}"}
+                    ],
                     temperature=0.8
                 )
-                cerebras_innovation = cerebras_response.choices[0].message.content
+                cerebras_innovation = samba_response.choices[0].message.content
 
-            # --- PROCESIRANJE REZULTATOV ---
-            st.subheader("🧱 HIERARCHOLOGICAL SYNTHESIS REPORT")
-            
-            # Razdelitev teksta in JSON-a
+            # --- 4. PROCESIRANJE REZULTATOV (ONTOLOŠKI ZEMLJEVID IDEJ) ---
+            # Razdelimo tekst in JSON del
             if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
                 parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
                 innovation_text = parts[0]
                 json_raw = parts[1]
             else:
                 innovation_text = cerebras_innovation
-                json_raw = None
+                json_raw = ""
 
-            full_report = f"## 📚 Phase 1: Foundation\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations\n\n{innovation_text}"
+            # Priprava poročila za prikaz
+            full_report = f"## 📚 Phase 1: Foundation (Groq)\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations (SambaNova)\n\n{innovation_text}"
             
-            # --- ROBUSTEN PARSER ZA GRAF IN POVEZAVE ---
-            nodes_for_highlighting = []
-            elements = []
+            nodes_to_link = []
+            final_elements = []
+
+            # Iskanje JSON-a znotraj odgovora
+            json_match = re.search(r'(\{.*"nodes".*\})', json_raw if json_raw else cerebras_innovation, re.DOTALL | re.IGNORECASE)
             
-            if json_raw:
+            if json_match:
                 try:
-                    # Očistimo morebitne markdown narekovaje
-                    clean_json_str = re.search(r'(\{.*\})', json_raw, re.DOTALL).group(1)
-                    g_data = json.loads(clean_json_str)
+                    g_data = json.loads(json_match.group(1))
                     
-                    # Priprava elementov za Cytoscape
+                    # 1. Mapiranje vozlišč (Liki, barve in velikosti)
+                    defined_node_ids = set()
                     for n in g_data.get("nodes", []):
-                        nodes_for_highlighting.append(n)
-                        elements.append({
+                        lbl = n.get("label", "Node")
+                        nid = n.get("id", lbl)  # Uporabimo label kot ID za stabilno linkanje
+                        defined_node_ids.add(nid)
+                        
+                        # Vizualni parametri iz AI-ja ali privzete vrednosti
+                        n_color = n.get("color", "#DDEBF7") # Privzeto sistemsko modra
+                        n_shape = n.get("shape", "rectangle")
+                        
+                        # Prilagoditev velikosti glede na lik za boljšo preglednost
+                        n_size = 85
+                        if n_shape == 'diamond': n_size = 110
+                        if n_shape == 'hexagon': n_size = 100
+                        if n_shape == 'ellipse': n_size = 80
+                        
+                        nodes_to_link.append({"id": nid, "label": lbl})
+                        final_elements.append({
                             "data": {
-                                "id": n["id"], 
-                                "label": n["label"], 
-                                "color": n.get("color", "#fd7e14"), 
-                                "shape": n.get("shape", "rectangle"),
-                                "size": 100
+                                "id": nid, 
+                                "label": lbl, 
+                                "color": n_color, 
+                                "shape": n_shape, 
+                                "size": n_size
                             }
                         })
+
+                    # 2. Mapiranje povezav (UML stili in barvne relacije)
                     for e in g_data.get("edges", []):
-                        elements.append({
-                            "data": {
-                                "source": e["source"], 
-                                "target": e["target"], 
-                                "rel_type": e.get("rel_type", "AS")
-                            }
-                        })
-                except:
-                    json_raw = None # Če JSON ni veljaven, ne bomo linkali
+                        src = e.get("source")
+                        tgt = e.get("target")
+                        rel = e.get("rel_type", "Association")
+                        
+                        # Barvna koda relacij (Tezaver/UML)
+                        e_color = "#adb5bd" # Privzeta siva
+                        if rel in ["AS", "RT"]: e_color = "#2a9d8f" # Tealska za asociacije
+                        if rel in ["EQ", "BT", "TT"]: e_color = "#e63946" # Rdeča za hierarhijo/ekvivalenco
+                        
+                        # Stil črte
+                        l_style = 'dashed' if rel in ['Realization', 'Dependency', 'Realizes'] else 'solid'
+                        
+                        # Dodamo povezavo samo, če oba konca (src in tgt) dejansko obstajata
+                        if src in defined_node_ids and tgt in defined_node_ids:
+                            final_elements.append({
+                                "data": {
+                                    "source": src, 
+                                    "target": tgt, 
+                                    "rel_type": rel, 
+                                    "color": e_color, 
+                                    "line_style": l_style
+                                }
+                            })
+                except Exception as json_err:
+                    st.warning(f"Vizualna struktura grafa ni popolna: {json_err}")
 
-            # --- SEMANTIČNO POLINKANJE (HIGHLIGHTING) ---
+            # STABILNO SEMANTIČNO POVEZOVANJE (Fuzzy + Anchor Fix)
             final_markdown = full_report
-            if nodes_for_highlighting:
-                # Sortiramo po dolžini (daljši termini imajo prednost pri zamenjavi)
-                sorted_nodes = sorted(nodes_for_highlighting, key=lambda x: len(x['label']), reverse=True)
-                for node in sorted_nodes:
-                    lbl = node['label']
-                    nid = node['id']
-                    if len(lbl) > 3: # Samo za dovolj dolge besede
+            if nodes_to_link:
+                # Sortiramo od najdaljših besed, da preprečimo napačno gnezdenje
+                sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
+                for item in sorted_keywords:
+                    lbl, nid = item['label'], item['id']
+                    if len(lbl) > 2:
                         g_url = urllib.parse.quote(lbl)
-                        # Uporabimo Regex za zamenjavo prve pojavitve besede, ki ni že del HTML taga
-                        pattern = re.compile(r'(?i)\b(' + re.escape(lbl) + r')\b')
-                        replacement = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight" id="{nid}">\\1<i class="google-icon">↗</i></a>'
-                        final_markdown = pattern.sub(replacement, final_markdown, count=1)
+                        # Ustvarimo ID brez presledkov za JavaScript navigacijo
+                        safe_id = lbl.replace(" ", "_")
+                        
+                        # NOVO: Sidro postavimo kot nevidno točko tik pred besedo
+                        # To omogoča boljšo strukturo in natančnejši skok (scroll)
+                        link_html = f'<span id="ref-{safe_id}" style="position:absolute; visibility:hidden;"></span><a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
+                        
+                        # Fuzzy regex: polinka tudi če model uporabi pridevnik ali množino
+                        base_term = lbl[: -2] if len(lbl) > 6 else lbl
+                        pattern = re.compile(r'\b' + re.escape(base_term) + r'\w*', re.IGNORECASE)
+                        
+                        # Zamenjamo samo prvo pojavitev, da imamo samo eno sidro na besedo
+                        final_markdown = pattern.sub(link_html, final_markdown, count=1)
 
+            # --- 5. KONČNI PRIKAZ (ZDAJ JE VRSTNI RED PRAVILEN) ---
+            st.subheader("🧱 HIERARCHOLOGICAL SYNTHESIS REPORT")
+            
+            # Prikaz bibliografije
+            if biblio_data:
+                with st.expander("📚 EXTRACTED AUTHOR DATA (ORCID/SCHOLAR)", expanded=False):
+                    st.markdown(biblio_data)
+            
+            # Prikaz besedila s povezavami
             st.markdown(final_markdown, unsafe_allow_html=True)
 
-            # --- IZRIS GRAFA ---
-            if elements:
-                st.subheader("🕸️ HIERARCHOGRAPHIC SYSTEM MAP")
-                render_cytoscape_network(elements, f"cy_{int(time.time())}")
-            elif json_raw:
-                st.warning("⚠️ Grafični podatki so bili generirani, vendar niso v pravilnem JSON formatu.")
+            # Prikaz grafa na koncu
+            if final_elements:
+                st.divider()
+                st.subheader(f"🕸️ HIERARCHOGRAPHIC SYSTEM MAP ({len(nodes_to_link)} Nodes)")
+                render_cytoscape_network(final_elements, f"cy_{int(time.time())}")
 
         except Exception as e:
             st.error(f"❌ Pipeline Failure: {e}")
