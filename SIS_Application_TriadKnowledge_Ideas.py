@@ -1014,10 +1014,6 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
         except Exception as e:
             st.error(f"❌ Pipeline Failure: {e}")
 
-# Footer (Remains the same)
-st.divider()
-st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | {SYSTEM_DATE}")
-
 # =============================================================================
 # 6. FOOTER
 # =============================================================================
