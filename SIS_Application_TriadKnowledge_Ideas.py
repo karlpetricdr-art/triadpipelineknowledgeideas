@@ -229,69 +229,84 @@ SVG_3D_RELIEF = """
 # =============================================================================
 
 def render_cytoscape_network(elements, container_id="cy_canvas"):
-    """Interaktivni Cytoscape.js motor z UML notacijo in naprednim stiliziranjem."""
     cyto_html = f"""
     <div style="position: relative; width: 100%;">
         <button id="save_btn" style="position: absolute; top: 15px; right: 15px; z-index: 1000; padding: 10px 15px; background: #1d3557; color: white; border: none; border-radius: 8px; cursor: pointer; font-family: sans-serif; font-size: 12px; font-weight: 800;">💾 EXPORT PNG</button>
-        <div id="{container_id}" style="width: 100%; height: 750px; background: #ffffff; border-radius: 20px; border: 1px solid #e0e0e0; box-shadow: 0 8px 30px rgba(0,0,0,0.06);"></div>
+        <div id="{container_id}" style="width: 100%; height: 850px; background: #ffffff; border-radius: 20px; border: 1px solid #e0e0e0; box-shadow: 0 10px 40px rgba(0,0,0,0.1);"></div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {{
-            var cy = cytoscape({{
+            var cy = window.cy = cytoscape({{
                 container: document.getElementById('{container_id}'),
                 elements: {json.dumps(elements)},
                 style: [
                     {{
                         selector: 'node',
                         style: {{
-                            'label': 'data(label)', 'text-valign': 'center', 'color': '#1d3557',
-                            'background-color': 'data(color)', 'width': 'data(size)', 'height': 'data(size)',
-                            'shape': 'data(shape)', 'font-size': '14px', 'font-weight': '700',
-                            'text-outline-width': 2, 'text-outline-color': '#ffffff', 'cursor': 'pointer',
-                            'border-width': 2, 'border-color': '#adb5bd'
+                            'label': 'data(label)',
+                            'text-valign': 'center',
+                            'color': '#1d3557',
+                            'background-color': 'data(color)',
+                            'shape': 'data(shape)',
+                            'width': 'data(size)',
+                            'height': 'data(size)',
+                            'font-size': '12px',
+                            'font-weight': '800',
+                            'text-wrap': 'wrap',
+                            'text-max-width': '100px',
+                            'border-width': 2,
+                            'border-color': '#adb5bd',
+                            'text-outline-width': 1,
+                            'text-outline-color': '#ffffff'
                         }}
                     }},
                     {{
                         selector: 'edge',
                         style: {{
-                            'width': 3, 'line-color': 'data(color)', 'label': 'data(rel_type)',
-                            'font-size': '11px', 'font-weight': 'bold', 'color': '#2a9d8f',
-                            'target-arrow-color': 'data(color)', 'target-arrow-shape': 'data(arrow)',
-                            'line-style': 'data(line_style)', 'curve-style': 'bezier', 
-                            'text-background-opacity': 1, 'text-background-color': '#ffffff',
-                            'text-background-padding': '4px', 'text-background-shape': 'roundrectangle'
+                            'width': 4,
+                            'line-color': 'data(color)',
+                            'target-arrow-color': 'data(color)',
+                            'target-arrow-shape': 'triangle',
+                            'curve-style': 'bezier',
+                            'label': 'data(rel_type)',
+                            'font-size': '10px',
+                            'color': '#1d3557',
+                            'text-background-opacity': 1,
+                            'text-background-color': '#ffffff',
+                            'line-style': 'data(line_style)'
                         }}
                     }},
-                    /* UML SPECIFIČNE DEFINICIJE */
+                    /* UML SPECIFIKA */
                     {{ selector: 'edge[rel_type="Generalization"]', style: {{ 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' }} }},
                     {{ selector: 'edge[rel_type="Realization"]', style: {{ 'line-style': 'dashed', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' }} }},
-                    {{ selector: 'edge[rel_type="Composition"]', style: {{ 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'filled' }} }},
-                    {{ selector: 'edge[rel_type="Aggregation"]', style: {{ 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'hollow' }} }},
-                    {{ selector: 'edge[rel_type="Dependency"]', style: {{ 'line-style': 'dashed', 'target-arrow-shape': 'vee' }} }},
-                    
-                    {{ selector: 'node.highlighted', style: {{ 'border-width': 6, 'border-color': '#e76f51', 'transform': 'scale(1.2)' }} }},
-                    {{ selector: '.dimmed', style: {{ 'opacity': 0.15, 'text-opacity': 0 }} }}
+                    {{ selector: 'edge[rel_type="Composition"]', style: {{ 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'filled' }} }}
                 ],
-                layout: {{ name: 'cose', padding: 60, animate: true }}
+                layout: {{ 
+                    name: 'cose', 
+                    nodeRepulsion: 20000, 
+                    idealEdgeLength: 200, 
+                    edgeElasticity: 100,
+                    animate: true,
+                    numIter: 1500
+                }}
             }});
 
-            cy.on('mouseover', 'node', function(e){{
-                var sel = e.target; cy.elements().addClass('dimmed');
-                sel.neighborhood().add(sel).removeClass('dimmed').addClass('highlighted');
-            }});
-            cy.on('mouseout', 'node', function(e){{ cy.elements().removeClass('dimmed highlighted'); }});
-
-            document.getElementById('save_btn').addEventListener('click', function() {{
-                var png64 = cy.png({{full: true, bg: 'white', scale: 2}});
-                var link = document.createElement('a');
-                link.href = png64; link.download = 'sis_uml_graph.png';
-                link.click();
+            // Povratni link
+            cy.on('tap', 'node', function(evt){{
+                var label = evt.target.data('label');
+                var safeId = "ref-" + label.replace(/\s+/g, '_');
+                var el = window.parent.document.getElementById(safeId);
+                if (el) {{
+                    el.scrollIntoView({{ behavior: 'smooth', block: 'center' }});
+                    el.style.backgroundColor = "#fff3cd";
+                    setTimeout(function() {{ el.style.backgroundColor = "transparent"; }}, 2500);
+                }}
             }});
         }});
     </script>
     """
-    components.html(cyto_html, height=850)
+    components.html(cyto_html, height=900)
 
 def fetch_author_bibliographies(author_input):
     if not author_input: return ""
@@ -906,50 +921,40 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 groq_synthesis = p1_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
 
-            # --- 3. PHASE 2: SAMBANOVA (ULTRA-CREATIVE INNOVATION ENGINE) ---
-            with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) generating radical innovations...'):
+            # --- 3. PHASE 2: SAMBANOVA (STRUCTURAL ARCHITECT MODE) ---
+            with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) generating structured innovations...'):
                 samba_sys_prompt = f"""
-                You are the SIS Lead Innovation Architect. Use {selected_techniques} to generate revolutionary solutions.
+                You are the SIS Lead Architect. Use {selected_techniques} to create a radical innovation map.
                 
-                GOAL: Displace current paradigms. Do not just solve; RESTRUCTURE.
+                STRICT VISUAL ONTOLOGY (MANDATORY):
+                1. Stakeholders/Actors: shape='ellipse', color='#C6EFCE' (Light Green)
+                2. Systems/Modules: shape='rectangle', color='#DDEBF7' (Light Blue)
+                3. Decisions/Conflicts: shape='diamond', color='#F2DCDB' (Light Red)
+                4. Innovations/Ideas: shape='round-rectangle', color='#fd7e14' (Orange)
+                5. Knowledge/Data: shape='hexagon', color='#FFFF99' (Yellow)
 
-                STRICT GRAPH SEMANTICS (Innovation Markers):
-                - AS (Association): MANDATORY. Link a concept from one science field to a completely different one (Lateral thinking).
-                - EQ (Equivalence): Link a Phase 1 concept to a new radical innovation name you just created.
-                - IN (Instance): Link a theory to a specific, futuristic application for 2026-2030.
+                RELATIONAL RULES:
+                - Use 'AS' for lateral associations (Color: #2a9d8f).
+                - Use 'EQ' for semantic equivalence (Color: #e63946).
+                - Use UML types (Generalization, Realization, Composition).
 
-                TERMINOLOGY LOCK (Crucial for Hyperlinking):
-                - For the 'label' of nodes, you MUST use the exact keywords from Phase 1. 
-                - If you create a NEW concept, label it clearly, but ensure at least 50% of nodes use Phase 1 terminology to keep the links active.
-
-                MANDATORY JSON FORMAT (Must be at the very end):
-                ### SEMANTIC_GRAPH_JSON
-                {{
-                  "nodes": [
-                    {{"id": "n1", "label": "PHASE_1_KEYWORD", "shape": "rectangle", "color": "#DDEBF7"}},
-                    {{"id": "n2", "label": "YOUR_NEW_INNOVATION", "shape": "round-rectangle", "color": "#fd7e14"}}
-                  ],
-                  "edges": [
-                    {{"source": "n1", "target": "n2", "rel_type": "AS"}},
-                    {{"source": "n2", "target": "n3", "rel_type": "Realization"}}
-                  ]
-                }}
+                STRICT JSON RULE:
+                - Use 'label' as 'id'. Every source/target must match a node id.
+                - Ensure EVERY node in the 'edges' is also defined in the 'nodes' list with a specific color and shape.
                 """
 
                 samba_response = samba_client.chat.completions.create(
                     model=sambanova_id, 
                     messages=[
                         {"role": "system", "content": samba_sys_prompt}, 
-                        {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER GOAL: {idea_query}{full_context}"}
+                        {"role": "user", "content": f"PHASE 1:\n{groq_synthesis}\n\nGOAL: {idea_query}"}
                     ],
-                    temperature=0.85, # DVIG TEMPERATURE za maksimalno kreativnost
-                    top_p=0.9
+                    temperature=0.8
                 )
                 cerebras_innovation = samba_response.choices[0].message.content
 
-            # --- 4. PROCESIRANJE REZULTATOV (REŠITEV ZA NAMEERROR) ---
-            # Najprej pripravimo vse podatke, šele na koncu jih izpišemo!
-            
+            # --- 4. PROCESIRANJE REZULTATOV (ONTOLOŠKI ZEMLJEVID IDEJ) ---
+            # Razdelimo tekst in JSON del
             if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
                 parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
                 innovation_text = parts[0]
@@ -958,70 +963,97 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 innovation_text = cerebras_innovation
                 json_raw = ""
 
+            # Priprava poročila za prikaz
             full_report = f"## 📚 Phase 1: Foundation (Groq)\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations (SambaNova)\n\n{innovation_text}"
             
             nodes_to_link = []
             final_elements = []
 
-            # Iskanje JSON-a in procesiranje grafičnih elementov
+            # Iskanje JSON-a znotraj odgovora
             json_match = re.search(r'(\{.*"nodes".*\})', json_raw if json_raw else cerebras_innovation, re.DOTALL | re.IGNORECASE)
             
             if json_match:
                 try:
                     g_data = json.loads(json_match.group(1))
                     
-                    # Vozlišča
+                    # 1. Mapiranje vozlišč (Liki, barve in velikosti)
+                    defined_node_ids = set()
                     for n in g_data.get("nodes", []):
                         lbl = n.get("label", "Node")
-                        nid = n.get("id", f"n{lbl}")
-                        n_color = n.get("color", "#fd7e14")
+                        nid = n.get("id", lbl)  # Uporabimo label kot ID za stabilno linkanje
+                        defined_node_ids.add(nid)
+                        
+                        # Vizualni parametri iz AI-ja ali privzete vrednosti
+                        n_color = n.get("color", "#DDEBF7") # Privzeto sistemsko modra
                         n_shape = n.get("shape", "rectangle")
+                        
+                        # Prilagoditev velikosti glede na lik za boljšo preglednost
                         n_size = 85
-                        if n_shape == 'diamond': n_size = 105
-                        if n_shape == 'hexagon': n_size = 95
+                        if n_shape == 'diamond': n_size = 110
+                        if n_shape == 'hexagon': n_size = 100
                         if n_shape == 'ellipse': n_size = 80
                         
                         nodes_to_link.append({"id": nid, "label": lbl})
                         final_elements.append({
-                            "data": {"id": nid, "label": lbl, "color": n_color, "shape": n_shape, "size": n_size}
-                        })
-
-                    # Povezave
-                    for e in g_data.get("edges", []):
-                        rel = e.get("rel_type", "Association")
-                        e_color = "#2a9d8f" if rel in ["BT", "NT", "TT", "RT", "AS", "EQ", "IN"] else "#adb5bd"
-                        l_style = 'dashed' if rel in ['Realization', 'Dependency', 'Realizes', 'Depends'] else 'solid'
-                        arrow_type = 'triangle' if rel in ['Generalization', 'Realization', 'Composition', 'Aggregation'] else 'vee'
-                        
-                        final_elements.append({
                             "data": {
-                                "source": e.get("source"), "target": e.get("target"), 
-                                "rel_type": rel, "color": e_color, "arrow": arrow_type, "line_style": l_style
+                                "id": nid, 
+                                "label": lbl, 
+                                "color": n_color, 
+                                "shape": n_shape, 
+                                "size": n_size
                             }
                         })
-                except Exception as json_err:
-                    st.warning(f"Note: Graph structure issue: {json_err}")
 
-            # AGRESIVNO INOVATIVNO POVEZOVANJE (Fuzzy Matching za visoko temperaturo)
+                    # 2. Mapiranje povezav (UML stili in barvne relacije)
+                    for e in g_data.get("edges", []):
+                        src = e.get("source")
+                        tgt = e.get("target")
+                        rel = e.get("rel_type", "Association")
+                        
+                        # Barvna koda relacij (Tezaver/UML)
+                        e_color = "#adb5bd" # Privzeta siva
+                        if rel in ["AS", "RT"]: e_color = "#2a9d8f" # Tealska za asociacije
+                        if rel in ["EQ", "BT", "TT"]: e_color = "#e63946" # Rdeča za hierarhijo/ekvivalenco
+                        
+                        # Stil črte
+                        l_style = 'dashed' if rel in ['Realization', 'Dependency', 'Realizes'] else 'solid'
+                        
+                        # Dodamo povezavo samo, če oba konca (src in tgt) dejansko obstajata
+                        if src in defined_node_ids and tgt in defined_node_ids:
+                            final_elements.append({
+                                "data": {
+                                    "source": src, 
+                                    "target": tgt, 
+                                    "rel_type": rel, 
+                                    "color": e_color, 
+                                    "line_style": l_style
+                                }
+                            })
+                except Exception as json_err:
+                    st.warning(f"Vizualna struktura grafa ni popolna: {json_err}")
+
+            # STABILNO SEMANTIČNO POVEZOVANJE (Fuzzy + Anchor Fix)
             final_markdown = full_report
             if nodes_to_link:
-                # Sortiramo od najdaljših besed, da preprečimo napačno prekrivanje
+                # Sortiramo od najdaljših besed, da preprečimo napačno gnezdenje
                 sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
                 for item in sorted_keywords:
                     lbl, nid = item['label'], item['id']
                     if len(lbl) > 2:
-                        # Priprava URL-ja za Google Search ikono
                         g_url = urllib.parse.quote(lbl)
-                        link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
+                        # Ustvarimo ID brez presledkov za JavaScript navigacijo
+                        safe_id = lbl.replace(" ", "_")
                         
-                        # IZBOLJŠAN REGEX: 
-                        # Če je beseda daljša od 6 znakov, vzamemo koren (npr. 'Hierarch' za 'Hierarchology')
-                        # To omogoča, da se polinkajo tudi množine in pridevniki (npr. Hierarchical).
+                        # NOVO: Sidro postavimo kot nevidno točko tik pred besedo
+                        # To omogoča boljšo strukturo in natančnejši skok (scroll)
+                        link_html = f'<span id="ref-{safe_id}" style="position:absolute; visibility:hidden;"></span><a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
+                        
+                        # Fuzzy regex: polinka tudi če model uporabi pridevnik ali množino
                         base_term = lbl[: -2] if len(lbl) > 6 else lbl
                         pattern = re.compile(r'\b' + re.escape(base_term) + r'\w*', re.IGNORECASE)
                         
-                        # Zamenjamo do 10 pojavitev v besedilu
-                        final_markdown = pattern.sub(link_html, final_markdown, count=10)
+                        # Zamenjamo samo prvo pojavitev, da imamo samo eno sidro na besedo
+                        final_markdown = pattern.sub(link_html, final_markdown, count=1)
 
             # --- 5. KONČNI PRIKAZ (ZDAJ JE VRSTNI RED PRAVILEN) ---
             st.subheader("🧱 HIERARCHOLOGICAL SYNTHESIS REPORT")
