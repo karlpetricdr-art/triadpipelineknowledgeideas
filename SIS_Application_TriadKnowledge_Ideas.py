@@ -725,15 +725,16 @@ with st.sidebar:
     groq_api_key = st.text_input("Groq Key (Phase 1):", type="password", key="side_groq_v2026")
     sambanova_api_key = st.text_input("SambaNova Key (Phase 2):", type="password", key="side_samba_v2026")
     
-    # 4. POSODOBLJENO: Točna imena modelov za SambaNova (Feb 2026)
+   # 4. POSODOBLJENO: Najnovejša generacija modelov (Junij 2026)
+    # Model gemma-4-31B-it je trenutno 'flagship' model na SambaNova Cloud.
     sambanova_id = st.selectbox(
         "SambaNova Model Endpoint:", 
         [
-            "Gemma-2-27B-it",                  # Točno ime (pazi na velike črke!)
-            "Gemma-2-9B-it",                   # Manjši Gemma model
-            "Meta-Llama-3.1-70B-Instruct",     # Preverjena Llama 3.1
-            "Meta-Llama-3.1-405B-Instruct",    # Najmočnejša Llama
-            "Meta-Llama-3.3-70B-Instruct"      # Najnovejša različica
+            "gemma-4-31B-it",                  # Trenutno najboljša izbira (Flagship)
+            "gemma-4-26b-a4b-it",              # MoE različica za hitrost
+            "Meta-Llama-4-Maverick-17B-Instruct", # Alternativa Llama 4
+            "DeepSeek-V3.2",                   # Odličen za logiko in kodiranje
+            "Meta-Llama-3.3-70B-Instruct"      # Legacy stable model
         ], 
         index=0, 
         key="side_model_select_v2026"
