@@ -229,7 +229,7 @@ SVG_3D_RELIEF = """
 # =============================================================================
 
 def render_cytoscape_network(elements, container_id="cy_canvas"):
-    """Interaktivni Cytoscape.js motor z UML notacijo in naprednim stiliziranjem."""
+    """Interaktivni Cytoscape.js motor z UML in Thesaurus notacijo."""
     cyto_html = f"""
     <div style="position: relative; width: 100%;">
         <button id="save_btn" style="position: absolute; top: 15px; right: 15px; z-index: 1000; padding: 10px 15px; background: #1d3557; color: white; border: none; border-radius: 8px; cursor: pointer; font-family: sans-serif; font-size: 12px; font-weight: 800;">💾 EXPORT PNG</button>
@@ -242,75 +242,45 @@ def render_cytoscape_network(elements, container_id="cy_canvas"):
                 container: document.getElementById('{container_id}'),
                 elements: {json.dumps(elements)},
                 style: [
-    {
-        selector: 'node',
-        style: {
-            'label': 'data(label)', 'text-valign': 'center', 'color': '#1d3557',
-            'background-color': 'data(color)', 'width': 'data(size)', 'height': 'data(size)',
-            'shape': 'data(shape)', 'font-size': '13px', 'font-weight': '700',
-            'text-outline-width': 2, 'text-outline-color': '#ffffff', 'border-width': 2, 'border-color': '#adb5bd'
-        }
-    },
-    {
-        selector: 'edge',
-        style: {
-            'width': 3, 'line-color': 'data(color)', 'label': 'data(rel_type)',
-            'font-size': '9px', 'font-weight': 'bold', 'color': '#264653',
-            'curve-style': 'bezier', 'target-arrow-color': 'data(color)',
-            'text-background-opacity': 1, 'text-background-color': '#ffffff', 'text-background-padding': '2px'
-        }
-    },
-    /* --- THESAURUS LOGIKA (ISO 25964) --- */
-    { selector: 'edge[rel_type="BT"], edge[rel_type="NT"]', style: { 'width': 5, 'line-style': 'solid' } },
-    { selector: 'edge[rel_type="EQ"]', style: { 'line-style': 'double', 'width': 6 } },
-    { selector: 'edge[rel_type="RT"]', style: { 'line-style': 'dotted', 'target-arrow-shape': 'none' } },
-    { selector: 'edge[rel_type="IN"]', style: { 'line-style': 'dashed', 'target-arrow-shape': 'vee' } },
-
-    /* --- UML LOGIKA (OMG STANDARD) --- */
-    { 
-        selector: 'edge[rel_type="Generalization"]', 
-        style: { 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow', 'width': 3 } 
-    },
-    { 
-        selector: 'edge[rel_type="Realization"]', 
-        style: { 'line-style': 'dashed', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' } 
-    },
-    { 
-        selector: 'edge[rel_type="Composition"]', 
-        style: { 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'filled', 'source-endpoint': 'outside-to-node' } 
-    },
-    { 
-        selector: 'edge[rel_type="Aggregation"]', 
-        style: { 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'hollow' } 
-    },
-    { 
-        selector: 'edge[rel_type="Dependency"]', 
-        style: { 'line-style': 'dashed', 'target-arrow-shape': 'vee' } 
-    }
-],
-                    /* UML SPECIFIČNE DEFINICIJE */
+                    {{
+                        selector: 'node',
+                        style: {{
+                            'label': 'data(label)', 'text-valign': 'center', 'color': '#1d3557',
+                            'background-color': 'data(color)', 'width': 'data(size)', 'height': 'data(size)',
+                            'shape': 'data(shape)', 'font-size': '14px', 'font-weight': '700',
+                            'text-outline-width': 2, 'text-outline-color': '#ffffff',
+                            'border-width': 2, 'border-color': '#adb5bd'
+                        }}
+                    }},
+                    {{
+                        selector: 'edge',
+                        style: {{
+                            'width': 3, 'line-color': 'data(color)', 'label': 'data(rel_type)',
+                            'font-size': '11px', 'font-weight': 'bold', 'color': '#2a9d8f',
+                            'target-arrow-color': 'data(color)', 'curve-style': 'bezier', 
+                            'text-background-opacity': 1, 'text-background-color': '#ffffff',
+                            'text-background-padding': '4px'
+                        }}
+                    }},
+                    /* UML LOGIKA */
                     {{ selector: 'edge[rel_type="Generalization"]', style: {{ 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' }} }},
                     {{ selector: 'edge[rel_type="Realization"]', style: {{ 'line-style': 'dashed', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' }} }},
                     {{ selector: 'edge[rel_type="Composition"]', style: {{ 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'filled' }} }},
                     {{ selector: 'edge[rel_type="Aggregation"]', style: {{ 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'hollow' }} }},
                     {{ selector: 'edge[rel_type="Dependency"]', style: {{ 'line-style': 'dashed', 'target-arrow-shape': 'vee' }} }},
                     
-                    {{ selector: 'node.highlighted', style: {{ 'border-width': 6, 'border-color': '#e76f51', 'transform': 'scale(1.2)' }} }},
-                    {{ selector: '.dimmed', style: {{ 'opacity': 0.15, 'text-opacity': 0 }} }}
+                    /* THESAURUS LOGIKA */
+                    {{ selector: 'edge[rel_type="BT"], edge[rel_type="NT"]', style: {{ 'width': 5, 'line-style': 'solid' }} }},
+                    {{ selector: 'edge[rel_type="EQ"]', style: {{ 'line-style': 'double', 'width': 6 }} }},
+                    {{ selector: 'edge[rel_type="RT"]', style: {{ 'line-style': 'dotted', 'target-arrow-shape': 'none' }} }}
                 ],
                 layout: {{ name: 'cose', padding: 60, animate: true }}
             }});
 
-            cy.on('mouseover', 'node', function(e){{
-                var sel = e.target; cy.elements().addClass('dimmed');
-                sel.neighborhood().add(sel).removeClass('dimmed').addClass('highlighted');
-            }});
-            cy.on('mouseout', 'node', function(e){{ cy.elements().removeClass('dimmed highlighted'); }});
-
             document.getElementById('save_btn').addEventListener('click', function() {{
                 var png64 = cy.png({{full: true, bg: 'white', scale: 2}});
                 var link = document.createElement('a');
-                link.href = png64; link.download = 'sis_uml_graph.png';
+                link.href = png64; link.download = 'sis_hybrid_graph.png';
                 link.click();
             }});
         }});
