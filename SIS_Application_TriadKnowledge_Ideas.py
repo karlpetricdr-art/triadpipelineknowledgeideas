@@ -883,7 +883,7 @@ with col_inq3:
             st.error(f"Error reading file: {e}")
 
 # =============================================================================
-# 5. SYNERGY EXECUTION ENGINE (ULTRA-STABLE SUNDAY EDITION)
+# 5. SYNERGY EXECUTION ENGINE (CEREBRAS + SAMBANOVA: GEMMA-4 EDITION)
 # =============================================================================
 
 if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True, key="exec_pipeline_v2026"):
@@ -893,13 +893,12 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
         st.warning("⚠️ Phase 1 Research Inquiry is required.")
     else:
         try:
-            # --- 1. PRIDOBIVANJE PODATKOV ---
+            # --- 1. PRIDOBIVANJE PODATKOV (ORCID + DATOTEKA) ---
             with st.spinner('🔍 Accessing ORCID & Scholar databases...'):
                 biblio_data = fetch_author_bibliographies(target_authors) if target_authors else ""
             
-            # AGRESIVNO KRAJŠANJE ZA PREPREČEVANJE 429 (TPM LIMIT)
-            # Vsebino datoteke omejimo na 8000 znakov za Phase 2 stabilnost
-            file_snippet = file_content[:8000] if file_content else ""
+            # Pametno omejevanje konteksta za preprečevanje 429 TPM Rate Limita
+            file_snippet = file_content[:10000] if file_content else ""
             full_context = f"\n\n[FILE CONTEXT]:\n{file_snippet}"
             biblio_context = f"\n\n[AUTHOR RESEARCH BACKGROUND]:\n{biblio_data}"
             full_ai_input = f"{user_query}{full_context}{biblio_context}"
@@ -907,74 +906,71 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
             samba_client = OpenAI(api_key=sambanova_api_key, base_url="https://api.sambanova.ai/v1")
             
-            # --- 2. PHASE 1: CEREBRAS (VISOKA HITROST) ---
-            with st.spinner(f'PHASE 1: Building Architecture with Cerebras...'):
+            # --- 2. PHASE 1: CEREBRAS (STRUKTURNA PODLAGA) ---
+            with st.spinner(f'PHASE 1: Building Architecture with Cerebras ({cerebras_model})...'):
                 p1_response = cerebras_client.chat.completions.create(
                     model=cerebras_model,
                     messages=[
-                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. Structure the foundation using IMA architecture."}, 
+                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. Use IMA architecture for the structural foundation."}, 
                         {"role": "user", "content": full_ai_input}
                     ],
                     temperature=0.4,
-                    max_completion_tokens=3000 # Rahlo zmanjšano za boljšo prehodnost v Phase 2
+                    max_completion_tokens=3500 
                 )
                 groq_synthesis = p1_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
 
-            # --- POVEČAN PREMOR ZA NEDELJSKO KONICO (Cool-off) ---
-            st.info("⏳ Stabilizacija povezave za Phase 2...")
-            time.sleep(5) 
+            # --- POVEČAN PREMOR ZA STABILIZACIJO (Nedeljska konica RPM) ---
+            time.sleep(6) 
 
-            # --- 3. PHASE 2: SAMBANOVA (Z DVOJNIM FALLBACK-OM) ---
+            # --- 3. PHASE 2: SAMBANOVA (FIKSIRAN MODEL: GEMMA-4-31B-IT) ---
             cerebras_innovation = ""
-            samba_sys_prompt = """
-            You are the SIS Systems Architect. Transform Phase 1 foundation into innovations.
-            MANDATORY: End with ### SEMANTIC_GRAPH_JSON and a UML JSON block.
-            """
+            # Uporabljamo izključno model, ki ste ga določili
+            fixed_samba_model = "gemma-4-31b-it" 
             
-            # Omejimo dolžino vhoda za Phase 2, da preprečimo Rate Limit
-            phase2_input = f"PHASE 1 FOUNDATION (CORE):\n{groq_synthesis[:6000]}\n\nUSER GOAL: {idea_query}"
+            with st.spinner(f'PHASE 2: Generating Innovations with {fixed_samba_model}...'):
+                samba_sys_prompt = f"""
+                You are the SIS Hierarchography Specialist. 
+                TASK: Transform Phase 1 foundation into radical innovations using {selected_techniques}.
+                
+                MANDATORY OUTPUT STRUCTURE:
+                1. Provide high-density analysis and solutions.
+                2. End with: ### SEMANTIC_GRAPH_JSON
+                [UML JSON block]
 
-            with st.spinner(f'PHASE 2: Generating Innovations...'):
-                try:
-                    # POSKUS 1: Primarni model (70B)
-                    samba_response = samba_client.chat.completions.create(
-                        model=sambanova_id, 
-                        messages=[
-                            {"role": "system", "content": samba_sys_prompt}, 
-                            {"role": "user", "content": phase2_input}
-                        ],
-                        temperature=0.8
-                    )
-                    cerebras_innovation = samba_response.choices[0].message.content
-                except Exception as e:
-                    if "429" in str(e):
-                        st.warning("⚠️ SambaNova 70B je zaseden. Preklop na rezervni 8B model (hitrejša vrsta)...")
-                        time.sleep(10) # Daljši premor pred drugim poskusom
-                        
-                        # POSKUS 2: Rezervni model (8B), ki ima 10x višje limite
-                        fallback_model = "Meta-Llama-3.1-8B-Instruct"
+                NODE MATRIX: ellipse (#C6EFCE), rectangle (#DDEBF7), diamond (#F2DCDB), round-rectangle (#fd7e14).
+                """
+                
+                # Retry logika samo za ta specifičen model
+                for attempt in range(2):
+                    try:
                         samba_response = samba_client.chat.completions.create(
-                            model=fallback_model, 
+                            model=fixed_samba_model, 
                             messages=[
                                 {"role": "system", "content": samba_sys_prompt}, 
-                                {"role": "user", "content": phase2_input}
+                                {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis[:7000]}\n\nGOAL: {idea_query}"}
                             ],
-                            temperature=0.7
+                            temperature=0.8
                         )
                         cerebras_innovation = samba_response.choices[0].message.content
-                        st.success(f"💡 Rezultat generiran z modelom {fallback_model}.")
-                    else:
-                        raise e
+                        break 
+                    except Exception as e:
+                        if "429" in str(e) and attempt == 0:
+                            st.warning(f"⚠️ {fixed_samba_model} je zaseden. Ponovni poskus čez 15s...")
+                            time.sleep(15)
+                        else:
+                            raise e
 
-            # --- 4. PROCESIRANJE IN RESTAVRACIJA FUNKCIJ ---
+            # --- 4. PROCESIRANJE REZULTATOV (REŠITEV ZA VSE FUNKCIJE) ---
             if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
                 parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
                 innovation_text, json_raw = parts[0], parts[1]
             else:
                 innovation_text, json_raw = cerebras_innovation, ""
 
-            # Obnova grafične logike in semantičnih povezav (UML + Google Links)
+            full_report = f"## 📚 Phase 1: Foundation (Cerebras)\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Innovations ({fixed_samba_model})\n\n{innovation_text}"
+            
+            # --- OBNOVA VIZUALNIH FUNKCIJ (UML + Google Povezave) ---
             nodes_to_link = []
             final_elements = []
             json_match = re.search(r'(\{.*"nodes".*\})', json_raw if json_raw else cerebras_innovation, re.DOTALL | re.IGNORECASE)
@@ -997,11 +993,11 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                         final_elements.append({"data": {"source": e.get("source"), "target": e.get("target"), "rel_type": rel, "color": e_color, "arrow": arrow_type, "line_style": l_style}})
                 except: pass
 
-            # Google Search Highlights
-            final_markdown = f"## 📚 Phase 1: Foundation\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Innovations\n\n{innovation_text}"
+            # Obnova Google Search semantičnih povezav z ikonami
+            final_markdown = full_report
             if nodes_to_link:
                 sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
-                for item in sorted_keywords[:20]:
+                for item in sorted_keywords[:25]:
                     lbl = item['label']
                     if len(lbl) > 2:
                         g_url = urllib.parse.quote(lbl)
@@ -1009,7 +1005,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                         pattern = re.compile(r'\b' + re.escape(lbl) + r'\b', re.IGNORECASE)
                         final_markdown = pattern.sub(link_html, final_markdown, count=1)
 
-            # --- 5. KONČNI PRIKAZ ---
+            # --- 5. PRIKAZ ---
             st.subheader("🧱 HIERARCHOLOGICAL SYNTHESIS REPORT")
             if biblio_data:
                 with st.expander("📚 EXTRACTED AUTHOR DATA", expanded=False):
@@ -1023,7 +1019,10 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 render_cytoscape_network(final_elements, f"cy_{int(time.time())}")
 
         except Exception as e:
-            st.error(f"❌ Pipeline Failure: {e}")
+            if "429" in str(e):
+                st.error("❌ RATE LIMIT: SambaNova Free Tier je trenutno preobremenjen. Počakajte 60s.")
+            else:
+                st.error(f"❌ Pipeline Failure: {e}")
 
 # =============================================================================
 # 6. FOOTER (Ohranjeno)
