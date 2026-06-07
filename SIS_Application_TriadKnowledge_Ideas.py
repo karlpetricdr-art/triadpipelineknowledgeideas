@@ -906,33 +906,36 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 groq_synthesis = p1_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
 
-            # --- 3. PHASE 2: SAMBANOVA (Gemma-4 Optimized) ---
+            # --- 3. PHASE 2: SAMBANOVA (ULTRA-SYNERGY MASTER PROMPT) ---
             with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) generating innovations...'):
                 samba_sys_prompt = f"""
-                You are the SIS Hierarchography Specialist & Systems Architect, operating on the Gemma-4 Neural Engine.
-                TASK: Transform the Phase 1 structural foundation into radical, useful innovations using {selected_techniques} frameworks.
+                You are the SIS Hierarchography Specialist & Systems Architect.
+                TASK: Transform Phase 1 foundation into radical innovations using {selected_techniques}.
 
                 MANDATORY OUTPUT STRUCTURE:
-                1. Provide a high-density expert analysis and innovative solutions.
-                2. At the very end, provide the UML system map strictly following this delimiter:
-                ### SEMANTIC_GRAPH_JSON
-                [Your JSON code here]
+                1. Provide high-density expert analysis of innovations.
+                2. Use the delimiter '### SEMANTIC_GRAPH_JSON' followed ONLY by the JSON block.
 
-                MANDATORY NODE MATRIX:
+                MANDATORY THESAURUS RELATIONS (High Density Required):
+                - AS (Association): Create lateral links between disparate fields (e.g., Biology AS Ethics).
+                - EQ (Equivalence): Link identical concepts across different vocabularies.
+                - IN (Instance/Inclusion): Link a theoretical node to a specific real-world example or technology.
+                - TT, BT, NT, RT: Standard hierarchical and associative relations.
+
+                MANDATORY UML RELATIONS:
+                - Generalization, Realization, Composition, Aggregation, Dependency.
+
+                NODE MATRIX (Strictly follow these for visualization):
                 - Actors/Stakeholders: shape='ellipse', color='#C6EFCE'
                 - Core Systems/Modules: shape='rectangle', color='#DDEBF7'
                 - Decisions/Conflicts: shape='diamond', color='#F2DCDB'
                 - Strategic Innovations: shape='round-rectangle', color='#fd7e14'
                 - Knowledge/Data: shape='hexagon', color='#FFFF99'
 
-                RELATIONSHIP RULES (rel_type):
-                - Use UML types: Generalization, Realization, Composition, Aggregation, Dependency.
-                - Use Thesaurus types: TT, BT, NT, RT, AS, EQ, IN.
-
-                STRICT JSON RULES:
+                STRICT GRAPH RULES:
                 - Minimum 12 nodes, 18 edges.
-                - No conversational filler after the JSON block.
-                - Ensure all 'source' and 'target' IDs match the node 'id' fields.
+                - You MUST include at least two 'AS' and one 'EQ' or 'IN' relation.
+                - Node labels MUST exactly match keywords from Phase 1 for hyperlinking to work.
                 """
 
                 samba_response = samba_client.chat.completions.create(
@@ -941,7 +944,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                         {"role": "system", "content": samba_sys_prompt}, 
                         {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER GOAL: {idea_query}{full_context}"}
                     ],
-                    temperature=0.8
+                    temperature=0.7 # Malo nižja temperatura za boljšo strukturo JSON-a
                 )
                 cerebras_innovation = samba_response.choices[0].message.content
 
