@@ -229,7 +229,7 @@ SVG_3D_RELIEF = """
 # =============================================================================
 
 def render_cytoscape_network(elements, container_id="cy_canvas"):
-    """Interaktivni Cytoscape.js motor z UML notacijo in navigacijo na klik."""
+    """Interaktivni Cytoscape.js motor z UML notacijo in naprednim stiliziranjem."""
     cyto_html = f"""
     <div style="position: relative; width: 100%;">
         <button id="save_btn" style="position: absolute; top: 15px; right: 15px; z-index: 1000; padding: 10px 15px; background: #1d3557; color: white; border: none; border-radius: 8px; cursor: pointer; font-family: sans-serif; font-size: 12px; font-weight: 800;">💾 EXPORT PNG</button>
@@ -238,7 +238,7 @@ def render_cytoscape_network(elements, container_id="cy_canvas"):
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {{
-            var cy = window.cy = cytoscape({{
+            var cy = cytoscape({{
                 container: document.getElementById('{container_id}'),
                 elements: {json.dumps(elements)},
                 style: [
@@ -263,32 +263,24 @@ def render_cytoscape_network(elements, container_id="cy_canvas"):
                             'text-background-padding': '4px', 'text-background-shape': 'roundrectangle'
                         }}
                     }},
-                    /* UML SPECIFIKA */
+                    /* UML SPECIFIČNE DEFINICIJE */
                     {{ selector: 'edge[rel_type="Generalization"]', style: {{ 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' }} }},
                     {{ selector: 'edge[rel_type="Realization"]', style: {{ 'line-style': 'dashed', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' }} }},
                     {{ selector: 'edge[rel_type="Composition"]', style: {{ 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'filled' }} }},
                     {{ selector: 'edge[rel_type="Aggregation"]', style: {{ 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'hollow' }} }},
                     {{ selector: 'edge[rel_type="Dependency"]', style: {{ 'line-style': 'dashed', 'target-arrow-shape': 'vee' }} }},
-                    {{ selector: 'node:selected', style: {{ 'border-width': 6, 'border-color': '#e76f51' }} }}
+                    
+                    {{ selector: 'node.highlighted', style: {{ 'border-width': 6, 'border-color': '#e76f51', 'transform': 'scale(1.2)' }} }},
+                    {{ selector: '.dimmed', style: {{ 'opacity': 0.15, 'text-opacity': 0 }} }}
                 ],
                 layout: {{ name: 'cose', padding: 60, animate: true }}
             }});
 
-            // NAVIGACIJA: KLIK NA VOZLIŠČE SKOČI NA BESEDILO
-            cy.on('tap', 'node', function(evt){{
-                var label = evt.target.data('label');
-                var safeId = "ref-" + label.replace(/\s+/g, '_');
-                
-                // Iščemo v starševskem Streamlit oknu
-                var el = window.parent.document.getElementById(safeId);
-                if (el) {{
-                    el.scrollIntoView({{ behavior: 'smooth', block: 'center' }});
-                    // Vizualni feedback na besedilu
-                    el.style.backgroundColor = "#fff3cd";
-                    el.style.transition = "background-color 0.5s";
-                    setTimeout(function() {{ el.style.backgroundColor = "transparent"; }}, 2000);
-                }}
+            cy.on('mouseover', 'node', function(e){{
+                var sel = e.target; cy.elements().addClass('dimmed');
+                sel.neighborhood().add(sel).removeClass('dimmed').addClass('highlighted');
             }});
+            cy.on('mouseout', 'node', function(e){{ cy.elements().removeClass('dimmed highlighted'); }});
 
             document.getElementById('save_btn').addEventListener('click', function() {{
                 var png64 = cy.png({{full: true, bg: 'white', scale: 2}});
@@ -914,23 +906,34 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 groq_synthesis = p1_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
 
-            # --- 3. PHASE 2: SAMBANOVA (MASTER INNOVATION PROMPT) ---
-            with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) generating innovations...'):
+            # --- 3. PHASE 2: SAMBANOVA (ULTRA-CREATIVE INNOVATION ENGINE) ---
+            with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) generating radical innovations...'):
                 samba_sys_prompt = f"""
                 You are the SIS Lead Innovation Architect. Use {selected_techniques} to generate revolutionary solutions.
                 
-                STRICT SEMANTIC REQUIREMENTS:
-                - Use 'AS' (Association) for lateral links between different science fields.
-                - Use 'EQ' (Equivalence) to link theoretical concepts to new innovations.
-                - Use 'IN' (Instance) to link theory to specific technology.
+                GOAL: Displace current paradigms. Do not just solve; RESTRUCTURE.
 
-                TERMINOLOGY LOCK:
-                - Use exact keywords from Phase 1 as labels for at least 60% of nodes.
+                STRICT GRAPH SEMANTICS (Innovation Markers):
+                - AS (Association): MANDATORY. Link a concept from one science field to a completely different one (Lateral thinking).
+                - EQ (Equivalence): Link a Phase 1 concept to a new radical innovation name you just created.
+                - IN (Instance): Link a theory to a specific, futuristic application for 2026-2030.
 
-                OUTPUT FORMAT:
-                [Detailed Expert Analysis]
+                TERMINOLOGY LOCK (Crucial for Hyperlinking):
+                - For the 'label' of nodes, you MUST use the exact keywords from Phase 1. 
+                - If you create a NEW concept, label it clearly, but ensure at least 50% of nodes use Phase 1 terminology to keep the links active.
+
+                MANDATORY JSON FORMAT (Must be at the very end):
                 ### SEMANTIC_GRAPH_JSON
-                {{"nodes": [], "edges": []}}
+                {{
+                  "nodes": [
+                    {{"id": "n1", "label": "PHASE_1_KEYWORD", "shape": "rectangle", "color": "#DDEBF7"}},
+                    {{"id": "n2", "label": "YOUR_NEW_INNOVATION", "shape": "round-rectangle", "color": "#fd7e14"}}
+                  ],
+                  "edges": [
+                    {{"source": "n1", "target": "n2", "rel_type": "AS"}},
+                    {{"source": "n2", "target": "n3", "rel_type": "Realization"}}
+                  ]
+                }}
                 """
 
                 samba_response = samba_client.chat.completions.create(
@@ -939,7 +942,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                         {"role": "system", "content": samba_sys_prompt}, 
                         {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER GOAL: {idea_query}{full_context}"}
                     ],
-                    temperature=0.85, # KREATIVNOST
+                    temperature=0.85, # DVIG TEMPERATURE za maksimalno kreativnost
                     top_p=0.9
                 )
                 cerebras_innovation = samba_response.choices[0].message.content
@@ -999,27 +1002,26 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 except Exception as json_err:
                     st.warning(f"Note: Graph structure issue: {json_err}")
 
-            # IZBOLJŠANO LINKANJE Z UNIKATNIMI ID-JI ZA GRAF
+            # AGRESIVNO INOVATIVNO POVEZOVANJE (Fuzzy Matching za visoko temperaturo)
             final_markdown = full_report
             if nodes_to_link:
-                # Sortiranje po dolžini preprečuje prekrivanje
+                # Sortiramo od najdaljših besed, da preprečimo napačno prekrivanje
                 sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
                 for item in sorted_keywords:
                     lbl, nid = item['label'], item['id']
                     if len(lbl) > 2:
+                        # Priprava URL-ja za Google Search ikono
                         g_url = urllib.parse.quote(lbl)
-                        # Ustvarimo varen ID za JavaScript (brez presledkov)
-                        safe_id = lbl.replace(" ", "_")
+                        link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
                         
-                        # Sidro <span> z ID-jem za navigacijo iz grafa
-                        link_html = f'<span id="ref-{safe_id}"><a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a></span>'
-                        
-                        # Fuzzy regex za različne končnice besed
+                        # IZBOLJŠAN REGEX: 
+                        # Če je beseda daljša od 6 znakov, vzamemo koren (npr. 'Hierarch' za 'Hierarchology')
+                        # To omogoča, da se polinkajo tudi množine in pridevniki (npr. Hierarchical).
                         base_term = lbl[: -2] if len(lbl) > 6 else lbl
                         pattern = re.compile(r'\b' + re.escape(base_term) + r'\w*', re.IGNORECASE)
                         
-                        # Zamenjamo samo prvo pojavitev, da sidro ostane unikatno
-                        final_markdown = pattern.sub(link_html, final_markdown, count=1)
+                        # Zamenjamo do 10 pojavitev v besedilu
+                        final_markdown = pattern.sub(link_html, final_markdown, count=10)
 
             # --- 5. KONČNI PRIKAZ (ZDAJ JE VRSTNI RED PRAVILEN) ---
             st.subheader("🧱 HIERARCHOLOGICAL SYNTHESIS REPORT")
