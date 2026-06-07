@@ -725,14 +725,15 @@ with st.sidebar:
     groq_api_key = st.text_input("Groq Key (Phase 1):", type="password", key="side_groq_v2026")
     sambanova_api_key = st.text_input("SambaNova Key (Phase 2):", type="password", key="side_samba_v2026")
     
-    # 4. POSODOBLJENO: Model Selection z delujočim modelom Gemma-2
+    # 4. POSODOBLJENO: Točna imena modelov za SambaNova (Feb 2026)
     sambanova_id = st.selectbox(
         "SambaNova Model Endpoint:", 
         [
-            "gemma-2-27b-it",                 # Preverjeno delujoč model
-            "gemma-2-9b-it",                  # Hitrejša alternativa
-            "meta-llama-3.1-70b-instruct",    # Llama alternativa
-            "meta-llama-3.1-405b-instruct"    # Najmočnejša Llama
+            "Gemma-2-27B-it",                  # Točno ime (pazi na velike črke!)
+            "Gemma-2-9B-it",                   # Manjši Gemma model
+            "Meta-Llama-3.1-70B-Instruct",     # Preverjena Llama 3.1
+            "Meta-Llama-3.1-405B-Instruct",    # Najmočnejša Llama
+            "Meta-Llama-3.3-70B-Instruct"      # Najnovejša različica
         ], 
         index=0, 
         key="side_model_select_v2026"
