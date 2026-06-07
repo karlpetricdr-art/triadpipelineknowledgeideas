@@ -1038,60 +1038,70 @@ MANDATORY JSON STRUCTURE:
                         pattern = re.compile(r'\b' + re.escape(base_term) + r'\w*', re.IGNORECASE)
                         final_markdown = pattern.sub(link_html, final_markdown, count=10)
 
-            # --- 5. KONČNI PRIKAZ (DOPOLNJEN Z LOGIKO ZA POVEZAVE IN LEGENDO) ---
+            # --- 5. FINAL DISPLAY: FOCUS ON INNOVATIVE IDEAS ---
             
-            # 5a. SEMANTIČNI HIGHLIGHTER (Poveže besedilo z grafom)
+            # 5a. SEMANTIC HIGHLIGHTER (Connects text to the graph)
             final_markdown = full_report
             if nodes_to_link:
-                # Sortiramo od najdaljših besed, da preprečimo napačno prekrivanje
+                # Sort by length descending to prevent partial matching issues
                 sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
                 for item in sorted_keywords:
                     lbl = item['label']
                     if len(lbl) > 2:
-                        # Ustvarimo Google Search povezavo za vsako vozlišče v grafu
                         g_url = urllib.parse.quote(lbl)
+                        # Create a highlighted link for the report text
                         link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
                         
-                        # Regex, ki najde besedo in njene izpeljanke (množine, sklanjanje)
+                        # Regex to find the word and its variations
                         base_term = lbl[: -2] if len(lbl) > 6 else lbl
                         pattern = re.compile(r'\b' + re.escape(base_term) + r'\w*', re.IGNORECASE)
                         final_markdown = pattern.sub(link_html, final_markdown, count=10)
 
-            # 5b. IZPIS POROČILA NA ZASLON
+            # 5b. MAIN REPORT DISPLAY
             st.subheader("🧱 HIERARCHOLOGICAL SYNTHESIS REPORT")
-            
-            # Prikaz bibliografije (ORCID/Scholar)
             if biblio_data:
-                with st.expander("📚 EXTRACTED AUTHOR DATA (ORCID/SCHOLAR)", expanded=False):
+                with st.expander("📚 EXTRACTED AUTHOR DATA", expanded=False):
                     st.markdown(biblio_data)
             
-            # Izpis glavnega besedila (z uporabo HTML za povezave)
             st.markdown(final_markdown, unsafe_allow_html=True)
 
-            # 5c. IZRIS GRAFA Z LEGENDO
+            # 5c. INNOVATION HUB: STRATEGIC BREAKTHROUGHS
             if final_elements:
                 st.divider()
+                st.markdown("### 🚀 ACTIVE STRATEGIC BREAKTHROUGHS")
                 
-                # Dodana vizualna legenda za uporabnika
-                with st.expander("🎨 GRAPH LEGEND (Shapes & Colors Help)", expanded=False):
-                    st.markdown("""
-                    **GEOMETRIJA (Shapes):**
-                    - ⭐ **Star**: Glavna Vizija/Cilj | ⬢ **Hexagon**: Znanstveno polje | 🛑 **Octagon**: Omejitve/Etika
-                    - 💠 **Diamond**: Inovacija | △ **Triangle**: Proces/Akcija | ▭ **Rectangle**: Dejstva
-                    
-                    **POVEZAVE (Lines):**
-                    - 🔴 **Rdeča (UML)**: Arhitektura (Composition, Generalization)
-                    - 🔵 **Modra (Thesaurus)**: Hierarhija pojmov (BT, NT, TT)
-                    - 🟡 **Rumena**: Ekvivalenca/Sinonimi (EQ)
-                    - 🟢 **Zelena**: Lateralne povezave in asociacije (RT, AS)
-                    """)
+                # Extract innovations (nodes with 'diamond' shape)
+                innovations = [n['data'] for n in final_elements if n['data'].get('shape') == 'diamond']
                 
+                if innovations:
+                    # Dynamic display of innovation cards
+                    cols = st.columns(len(innovations) if len(innovations) < 4 else 3)
+                    for idx, inv in enumerate(innovations):
+                        with cols[idx % 3]:
+                            g_url = urllib.parse.quote(inv['label'])
+                            st.markdown(f"""
+                            <div style="background-color: #ffffff; border-left: 5px solid #fd7e14; padding: 15px; border-radius: 8px; box-shadow: 2px 2px 10px rgba(0,0,0,0.05); border: 1px solid #eee; height: 100px; display: flex; flex-direction: column; justify-content: center;">
+                                <div style="font-size: 0.75em; color: #fd7e14; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">Innovation</div>
+                                <div style="font-size: 1.1em; font-weight: 700; color: #1d3557; margin-bottom: 5px;">{inv['label']}</div>
+                                <a href="https://www.google.com/search?q={g_url}" target="_blank" style="text-decoration: none; color: #457b9d; font-size: 0.85em; font-weight: 600;">Concept Analysis ↗</a>
+                            </div>
+                            """, unsafe_allow_html=True)
+                else:
+                    st.info("💡 The model integrated innovations directly into system nodes (refer to the graph).")
+
+                # 5d. MINIMALIST LEGEND (Space-saving)
+                st.markdown("""
+                <div style="font-size: 0.75em; color: #666; background: #f9f9f9; padding: 5px 15px; border-radius: 20px; border: 1px solid #eee; margin-top: 20px; display: flex; justify-content: space-between;">
+                    <span><b>Shapes:</b> ⭐ Goal | ⬢ Science | 💠 Innovation | △ Process | ▭ Fact</span>
+                    <span><b>Lines:</b> <span style="color:#e63946;">⬤ Architecture</span> | <span style="color:#1d3557;">⬤ Hierarchy</span> | <span style="color:#2a9d8f;">⬤ Association</span></span>
+                </div>
+                """, unsafe_allow_html=True)
+
+                # 5e. GRAPH RENDERING
                 st.subheader(f"🕸️ HYBRID SEMANTIC SYSTEM MAP ({len(nodes_to_link)} Nodes)")
-                # Ponovni izris z unikatnim ID-jem za osveževanje
                 render_cytoscape_network(final_elements, f"cy_{int(time.time())}")
 
         except Exception as e:
-            # Izboljšan izpis napake za lažje reševanje težav
             st.error(f"❌ Pipeline Failure: {str(e)}")
             st.info("Check your API keys or model selection in the sidebar.")
 
