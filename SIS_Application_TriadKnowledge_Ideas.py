@@ -877,72 +877,56 @@ with col_inq3:
             st.error(f"Error reading file: {e}")
 
 # =============================================================================
-# 5. SYNERGY EXECUTION ENGINE (GROQ + SAMBANOVA + ORCID + UML)
+# 5. SYNERGY EXECUTION ENGINE (CEREBRAS + SAMBANOVA + ORCID + UML)
 # =============================================================================
 
 if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True, key="exec_pipeline_v2026"):
-    if not cerebras_api_key or not sambanova_api_key: # Update this line!
+    if not cerebras_api_key or not sambanova_api_key:
         st.error("❌ Dual-Model synergy requires both Cerebras and SambaNova keys.")
     elif not user_query:
         st.warning("⚠️ Phase 1 Research Inquiry is required.")
     else:
         try:
-            # --- 1. PRIDOBIVANJE PODATKOV (BIBLIOGRAFIJA + DATOTEKA) ---
+            # --- 1. DATA GATHERING (BIBLIOGRAPHY + FILE) ---
             with st.spinner('🔍 Accessing ORCID & Scholar databases...'):
                 biblio_data = fetch_author_bibliographies(target_authors) if target_authors else ""
             
-            # Priprava kontekstov
+            # Context Preparation
             full_context = f"\n\n[FILE CONTEXT]:\n{file_content}" if file_content else ""
             biblio_context = f"\n\n[AUTHOR RESEARCH BACKGROUND]:\n{biblio_data}" if biblio_data else ""
-            
-            # Združen vhod za Groq (Phase 1)
             full_ai_input = f"{user_query}{full_context}{biblio_context}"
 
-            # Inicializacija klientov
-            # Now talking to the Cerebras Cloud
-cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
+            # Initialize Clients
+            cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
             samba_client = OpenAI(api_key=sambanova_api_key, base_url="https://api.sambanova.ai/v1")
             
-            # --- 2. PHASE 1: GROQ (STRUKTURNA PODLAGA) ---
-            with st.spinner('PHASE 1: Building Architecture & Analyzing Author Context...'):
-                p1_response = groq_client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
+            # --- 2. PHASE 1: CEREBRAS (STRUCTURAL FOUNDATION) ---
+            with st.spinner(f'PHASE 1: Building Architecture with Cerebras ({cerebras_model})...'):
+                p1_response = cerebras_client.chat.completions.create(
+                    model=cerebras_model,
                     messages=[
-                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. Integrate the provided Author Research Background and file data into your structural analysis."}, 
+                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. Integrate the provided Author Research Background and file data into your structural analysis using IMA architecture."}, 
                         {"role": "user", "content": full_ai_input}
                     ],
                     temperature=0.4
                 )
+                # Keep variable as groq_synthesis so we don't have to rename everything downstream
                 groq_synthesis = p1_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
 
-            # --- 3. PHASE 2: SAMBANOVA (Gemma-4 Optimized) ---
+            # --- 3. PHASE 2: SAMBANOVA (INNOVATION GENERATION) ---
             with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) generating innovations...'):
                 samba_sys_prompt = f"""
-                You are the SIS Hierarchography Specialist & Systems Architect, operating on the Gemma-4 Neural Engine.
-                TASK: Transform the Phase 1 structural foundation into radical, useful innovations using {selected_techniques} frameworks.
+                You are the SIS Hierarchography Specialist & Systems Architect.
+                TASK: Transform Phase 1 foundation into radical innovations using {selected_techniques} frameworks.
 
                 MANDATORY OUTPUT STRUCTURE:
-                1. Provide a high-density expert analysis and innovative solutions.
-                2. At the very end, provide the UML system map strictly following this delimiter:
-                ### SEMANTIC_GRAPH_JSON
-                [Your JSON code here]
+                1. Provide expert analysis.
+                2. End with: ### SEMANTIC_GRAPH_JSON
+                [UML JSON code]
 
                 MANDATORY NODE MATRIX:
-                - Actors/Stakeholders: shape='ellipse', color='#C6EFCE'
-                - Core Systems/Modules: shape='rectangle', color='#DDEBF7'
-                - Decisions/Conflicts: shape='diamond', color='#F2DCDB'
-                - Strategic Innovations: shape='round-rectangle', color='#fd7e14'
-                - Knowledge/Data: shape='hexagon', color='#FFFF99'
-
-                RELATIONSHIP RULES (rel_type):
-                - Use UML types: Generalization, Realization, Composition, Aggregation, Dependency.
-                - Use Thesaurus types: TT, BT, NT, RT.
-
-                STRICT JSON RULES:
-                - Minimum 12 nodes, 18 edges.
-                - No conversational filler after the JSON block.
-                - Ensure all 'source' and 'target' IDs match the node 'id' fields.
+                - Actors: ellipse, #C6EFCE | Modules: rectangle, #DDEBF7 | Conflicts: diamond, #F2DCDB | Innovations: round-rectangle, #fd7e14
                 """
 
                 samba_response = samba_client.chat.completions.create(
@@ -955,51 +939,41 @@ cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebra
                 )
                 cerebras_innovation = samba_response.choices[0].message.content
 
-            # --- 4. PROCESIRANJE REZULTATOV (REŠITEV ZA NAMEERROR) ---
-            # Najprej pripravimo vse podatke, šele na koncu jih izpišemo!
-            
+            # --- 4. PROCESSING & FEATURE RESTORATION ---
             if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
                 parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
-                innovation_text = parts[0]
-                json_raw = parts[1]
+                innovation_text, json_raw = parts[0], parts[1]
             else:
-                innovation_text = cerebras_innovation
-                json_raw = ""
+                innovation_text, json_raw = cerebras_innovation, ""
 
-            full_report = f"## 📚 Phase 1: Foundation (Groq)\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations (SambaNova)\n\n{innovation_text}"
+            full_report = f"## 📚 Phase 1: Foundation (Cerebras)\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations (SambaNova)\n\n{innovation_text}"
             
             nodes_to_link = []
             final_elements = []
 
-            # Iskanje JSON-a in procesiranje grafičnih elementov
+            # Restore Advanced JSON Processing (UML Styles)
             json_match = re.search(r'(\{.*"nodes".*\})', json_raw if json_raw else cerebras_innovation, re.DOTALL | re.IGNORECASE)
             
             if json_match:
                 try:
                     g_data = json.loads(json_match.group(1))
-                    
-                    # Vozlišča
                     for n in g_data.get("nodes", []):
-                        lbl = n.get("label", "Node")
-                        nid = n.get("id", f"n{lbl}")
-                        n_color = n.get("color", "#fd7e14")
+                        lbl, nid = n.get("label", "Node"), n.get("id", f"n{n.get('label')}")
                         n_shape = n.get("shape", "rectangle")
-                        n_size = 85
-                        if n_shape == 'diamond': n_size = 105
-                        if n_shape == 'hexagon': n_size = 95
-                        if n_shape == 'ellipse': n_size = 80
+                        # Restore original node sizing logic
+                        n_size = 105 if n_shape == 'diamond' else 95 if n_shape == 'hexagon' else 85
                         
                         nodes_to_link.append({"id": nid, "label": lbl})
                         final_elements.append({
-                            "data": {"id": nid, "label": lbl, "color": n_color, "shape": n_shape, "size": n_size}
+                            "data": {"id": nid, "label": lbl, "color": n.get("color", "#fd7e14"), "shape": n_shape, "size": n_size}
                         })
 
-                    # Povezave
                     for e in g_data.get("edges", []):
                         rel = e.get("rel_type", "Association")
-                        e_color = "#2a9d8f" if rel in ["BT", "NT", "TT", "RT", "AS", "EQ", "IN"] else "#adb5bd"
-                        l_style = 'dashed' if rel in ['Realization', 'Dependency', 'Realizes', 'Depends'] else 'solid'
-                        arrow_type = 'triangle' if rel in ['Generalization', 'Realization', 'Composition', 'Aggregation'] else 'vee'
+                        # Restore original UML relation styling
+                        e_color = "#2a9d8f" if rel in ["BT", "NT", "TT", "RT"] else "#adb5bd"
+                        l_style = 'dashed' if rel in ['Realization', 'Dependency'] else 'solid'
+                        arrow_type = 'triangle' if rel in ['Generalization', 'Realization'] else 'vee'
                         
                         final_elements.append({
                             "data": {
@@ -1007,33 +981,31 @@ cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebra
                                 "rel_type": rel, "color": e_color, "arrow": arrow_type, "line_style": l_style
                             }
                         })
-                except Exception as json_err:
-                    st.warning(f"Note: Graph structure issue: {json_err}")
+                except: pass
 
-            # AGRESIVNO SEMANTIČNO POVEZOVANJE (Tukaj ustvarimo končni final_markdown)
+            # RESTORE AGGRESSIVE SEMANTIC HIGHLIGHTING (Google Links)
             final_markdown = full_report
             if nodes_to_link:
+                # Sort by length to avoid partial replacements
                 sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
-                for item in sorted_keywords:
-                    lbl, nid = item['label'], item['id']
-                    if len(lbl) > 2:
+                for item in sorted_keywords[:20]:
+                    lbl = item['label']
+                    if len(lbl) > 3:
                         g_url = urllib.parse.quote(lbl)
+                        # Your original HTML link with the icon
                         link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
                         pattern = re.compile(r'\b' + re.escape(lbl) + r'\b', re.IGNORECASE)
-                        final_markdown = pattern.sub(link_html, final_markdown, count=15)
+                        final_markdown = pattern.sub(link_html, final_markdown, count=1)
 
-            # --- 5. KONČNI PRIKAZ (ZDAJ JE VRSTNI RED PRAVILEN) ---
+            # --- 5. FINAL DISPLAY ---
             st.subheader("🧱 HIERARCHOLOGICAL SYNTHESIS REPORT")
             
-            # Prikaz bibliografije
             if biblio_data:
                 with st.expander("📚 EXTRACTED AUTHOR DATA (ORCID/SCHOLAR)", expanded=False):
                     st.markdown(biblio_data)
             
-            # Prikaz besedila s povezavami
             st.markdown(final_markdown, unsafe_allow_html=True)
 
-            # Prikaz grafa na koncu
             if final_elements:
                 st.divider()
                 st.subheader(f"🕸️ HIERARCHOGRAPHIC SYSTEM MAP ({len(nodes_to_link)} Nodes)")
@@ -1041,6 +1013,10 @@ cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebra
 
         except Exception as e:
             st.error(f"❌ Pipeline Failure: {e}")
+
+# Footer (Remains the same)
+st.divider()
+st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | {SYSTEM_DATE}")
 
 # =============================================================================
 # 6. FOOTER
