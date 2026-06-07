@@ -883,7 +883,7 @@ with col_inq3:
             st.error(f"Error reading file: {e}")
 
 # =============================================================================
-# 5. SYNERGY EXECUTION ENGINE (CEREBRAS LTS + SAMBANOVA - FULL FEATURE)
+# 5. SYNERGY EXECUTION ENGINE (ULTRA-STABLE SUNDAY EDITION)
 # =============================================================================
 
 if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True, key="exec_pipeline_v2026"):
@@ -893,163 +893,137 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
         st.warning("⚠️ Phase 1 Research Inquiry is required.")
     else:
         try:
-            # --- 1. PRIDOBIVANJE PODATKOV (BIBLIOGRAFIJA + DATOTEKA) ---
+            # --- 1. PRIDOBIVANJE PODATKOV ---
             with st.spinner('🔍 Accessing ORCID & Scholar databases...'):
                 biblio_data = fetch_author_bibliographies(target_authors) if target_authors else ""
             
-            # Priprava konteksta (Omejitev na 15k znakov za stabilnost SambaNove)
-            file_snippet = file_content[:15000] if file_content else ""
+            # AGRESIVNO KRAJŠANJE ZA PREPREČEVANJE 429 (TPM LIMIT)
+            # Vsebino datoteke omejimo na 8000 znakov za Phase 2 stabilnost
+            file_snippet = file_content[:8000] if file_content else ""
             full_context = f"\n\n[FILE CONTEXT]:\n{file_snippet}"
             biblio_context = f"\n\n[AUTHOR RESEARCH BACKGROUND]:\n{biblio_data}"
             full_ai_input = f"{user_query}{full_context}{biblio_context}"
 
-            # Inicializacija klientov
             cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
             samba_client = OpenAI(api_key=sambanova_api_key, base_url="https://api.sambanova.ai/v1")
             
-            # --- 2. PHASE 1: CEREBRAS (STRUKTURNA PODLAGA - IMA) ---
-            with st.spinner(f'PHASE 1: Building Architecture with Cerebras ({cerebras_model})...'):
+            # --- 2. PHASE 1: CEREBRAS (VISOKA HITROST) ---
+            with st.spinner(f'PHASE 1: Building Architecture with Cerebras...'):
                 p1_response = cerebras_client.chat.completions.create(
                     model=cerebras_model,
                     messages=[
-                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. Use Integrated Metamodel Architecture (IMA) to structure the foundation."}, 
+                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. Structure the foundation using IMA architecture."}, 
                         {"role": "user", "content": full_ai_input}
                     ],
                     temperature=0.4,
-                    max_completion_tokens=4096 
+                    max_completion_tokens=3000 # Rahlo zmanjšano za boljšo prehodnost v Phase 2
                 )
                 groq_synthesis = p1_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
 
-            # --- PREMOR ZA STABILIZACIJO RATE LIMITA (RPM) ---
-            time.sleep(2) 
+            # --- POVEČAN PREMOR ZA NEDELJSKO KONICO (Cool-off) ---
+            st.info("⏳ Stabilizacija povezave za Phase 2...")
+            time.sleep(5) 
 
-            # --- 3. PHASE 2: SAMBANOVA (INOVACIJSKA GENERACIJA - MA) ---
+            # --- 3. PHASE 2: SAMBANOVA (Z DVOJNIM FALLBACK-OM) ---
             cerebras_innovation = ""
-            with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) generating innovations...'):
-                samba_sys_prompt = f"""
-                You are the SIS Hierarchography Specialist & Systems Architect.
-                TASK: Transform Phase 1 foundation into radical innovations using {selected_techniques} frameworks.
+            samba_sys_prompt = """
+            You are the SIS Systems Architect. Transform Phase 1 foundation into innovations.
+            MANDATORY: End with ### SEMANTIC_GRAPH_JSON and a UML JSON block.
+            """
+            
+            # Omejimo dolžino vhoda za Phase 2, da preprečimo Rate Limit
+            phase2_input = f"PHASE 1 FOUNDATION (CORE):\n{groq_synthesis[:6000]}\n\nUSER GOAL: {idea_query}"
 
-                MANDATORY OUTPUT STRUCTURE:
-                1. Provide high-density expert analysis and innovative solutions.
-                2. At the very end, provide the UML system map strictly following this delimiter:
-                ### SEMANTIC_GRAPH_JSON
-                [Your JSON code here]
-
-                MANDATORY NODE MATRIX:
-                - Actors: ellipse, #C6EFCE | Modules: rectangle, #DDEBF7 | Conflicts: diamond, #F2DCDB | Innovations: round-rectangle, #fd7e14 | Knowledge: hexagon, #FFFF99
-                """
-                
-                # RETRY LOGIKA ZA RATE LIMIT (429)
-                for attempt in range(2):
-                    try:
+            with st.spinner(f'PHASE 2: Generating Innovations...'):
+                try:
+                    # POSKUS 1: Primarni model (70B)
+                    samba_response = samba_client.chat.completions.create(
+                        model=sambanova_id, 
+                        messages=[
+                            {"role": "system", "content": samba_sys_prompt}, 
+                            {"role": "user", "content": phase2_input}
+                        ],
+                        temperature=0.8
+                    )
+                    cerebras_innovation = samba_response.choices[0].message.content
+                except Exception as e:
+                    if "429" in str(e):
+                        st.warning("⚠️ SambaNova 70B je zaseden. Preklop na rezervni 8B model (hitrejša vrsta)...")
+                        time.sleep(10) # Daljši premor pred drugim poskusom
+                        
+                        # POSKUS 2: Rezervni model (8B), ki ima 10x višje limite
+                        fallback_model = "Meta-Llama-3.1-8B-Instruct"
                         samba_response = samba_client.chat.completions.create(
-                            model=sambanova_id, 
+                            model=fallback_model, 
                             messages=[
                                 {"role": "system", "content": samba_sys_prompt}, 
-                                {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER GOAL: {idea_query}"}
+                                {"role": "user", "content": phase2_input}
                             ],
-                            temperature=0.8
+                            temperature=0.7
                         )
                         cerebras_innovation = samba_response.choices[0].message.content
-                        break 
-                    except Exception as e:
-                        if "429" in str(e) and attempt == 0:
-                            st.warning("⚠️ SambaNova Busy. Waiting 12s to retry...")
-                            time.sleep(12)
-                        else:
-                            raise e
+                        st.success(f"💡 Rezultat generiran z modelom {fallback_model}.")
+                    else:
+                        raise e
 
-            # --- 4. PROCESIRANJE REZULTATOV (OBNOVA VSEH FUNKCIJ) ---
+            # --- 4. PROCESIRANJE IN RESTAVRACIJA FUNKCIJ ---
             if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
                 parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
                 innovation_text, json_raw = parts[0], parts[1]
             else:
                 innovation_text, json_raw = cerebras_innovation, ""
 
-            full_report = f"## 📚 Phase 1: Foundation (Cerebras)\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations (SambaNova)\n\n{innovation_text}"
-            
+            # Obnova grafične logike in semantičnih povezav (UML + Google Links)
             nodes_to_link = []
             final_elements = []
-
-            # Iskanje JSON-a in procesiranje UML stilov
             json_match = re.search(r'(\{.*"nodes".*\})', json_raw if json_raw else cerebras_innovation, re.DOTALL | re.IGNORECASE)
             
             if json_match:
                 try:
                     g_data = json.loads(json_match.group(1))
-                    
-                    # Vozlišča z naprednim oblikovanjem (Shapes & Sizes)
                     for n in g_data.get("nodes", []):
-                        lbl = n.get("label", "Node")
-                        nid = n.get("id", f"n{lbl}")
-                        n_color = n.get("color", "#fd7e14")
+                        lbl, nid = n.get("label", "Node"), n.get("id", f"n{n.get('label')}")
                         n_shape = n.get("shape", "rectangle")
-                        
-                        # Restavracija logike velikosti
-                        n_size = 85
-                        if n_shape == 'diamond': n_size = 105
-                        if n_shape == 'hexagon': n_size = 95
-                        if n_shape == 'ellipse': n_size = 80
-                        
+                        n_size = 105 if n_shape == 'diamond' else 95 if n_shape == 'hexagon' else 85
                         nodes_to_link.append({"id": nid, "label": lbl})
-                        final_elements.append({
-                            "data": {"id": nid, "label": lbl, "color": n_color, "shape": n_shape, "size": n_size}
-                        })
+                        final_elements.append({"data": {"id": nid, "label": lbl, "color": n.get("color", "#fd7e14"), "shape": n_shape, "size": n_size}})
 
-                    # Povezave z UML notacijo (Arrows & Line Styles)
                     for e in g_data.get("edges", []):
                         rel = e.get("rel_type", "Association")
-                        # Restavracija UML vizualnih pravil
-                        e_color = "#2a9d8f" if rel in ["BT", "NT", "TT", "RT", "AS", "EQ", "IN"] else "#adb5bd"
-                        l_style = 'dashed' if rel in ['Realization', 'Dependency', 'Realizes', 'Depends'] else 'solid'
-                        arrow_type = 'triangle' if rel in ['Generalization', 'Realization', 'Composition', 'Aggregation'] else 'vee'
-                        
-                        final_elements.append({
-                            "data": {
-                                "source": e.get("source"), "target": e.get("target"), 
-                                "rel_type": rel, "color": e_color, "arrow": arrow_type, "line_style": l_style
-                            }
-                        })
-                except Exception as json_err:
-                    st.warning(f"Note: Graph structure issue: {json_err}")
+                        e_color = "#2a9d8f" if rel in ["BT", "NT", "TT", "RT"] else "#adb5bd"
+                        l_style = 'dashed' if rel in ['Realization', 'Dependency'] else 'solid'
+                        arrow_type = 'triangle' if rel in ['Generalization', 'Realization'] else 'vee'
+                        final_elements.append({"data": {"source": e.get("source"), "target": e.get("target"), "rel_type": rel, "color": e_color, "arrow": arrow_type, "line_style": l_style}})
+                except: pass
 
-            # RESTAVRACIJA SEMANTIČNEGA POVEZOVANJA (Google Search + ↗ Icon)
-            final_markdown = full_report
+            # Google Search Highlights
+            final_markdown = f"## 📚 Phase 1: Foundation\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Innovations\n\n{innovation_text}"
             if nodes_to_link:
-                # Razvrstimo po dolžini za natančno regex zamenjavo
                 sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
-                for item in sorted_keywords[:25]:
-                    lbl, nid = item['label'], item['id']
+                for item in sorted_keywords[:20]:
+                    lbl = item['label']
                     if len(lbl) > 2:
                         g_url = urllib.parse.quote(lbl)
-                        # Originalna HTML koda za povezavo z ikono
                         link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
                         pattern = re.compile(r'\b' + re.escape(lbl) + r'\b', re.IGNORECASE)
                         final_markdown = pattern.sub(link_html, final_markdown, count=1)
 
             # --- 5. KONČNI PRIKAZ ---
             st.subheader("🧱 HIERARCHOLOGICAL SYNTHESIS REPORT")
-            
             if biblio_data:
-                with st.expander("📚 EXTRACTED AUTHOR DATA (ORCID/SCHOLAR)", expanded=False):
+                with st.expander("📚 EXTRACTED AUTHOR DATA", expanded=False):
                     st.markdown(biblio_data)
             
-            # Prikaz bogatega besedila
             st.markdown(final_markdown, unsafe_allow_html=True)
 
-            # Prikaz grafa
             if final_elements:
                 st.divider()
-                st.subheader(f"🕸️ HIERARCHOGRAPHIC SYSTEM MAP ({len(nodes_to_link)} Nodes)")
+                st.subheader("🕸️ HIERARCHOGRAPHIC SYSTEM MAP")
                 render_cytoscape_network(final_elements, f"cy_{int(time.time())}")
 
         except Exception as e:
-            if "429" in str(e):
-                st.error("❌ RATE LIMIT: SambaNova Free Tier je preobremenjen. Počakajte 60s.")
-            else:
-                st.error(f"❌ Pipeline Failure: {e}")
+            st.error(f"❌ Pipeline Failure: {e}")
 
 # =============================================================================
 # 6. FOOTER (Ohranjeno)
