@@ -242,27 +242,52 @@ def render_cytoscape_network(elements, container_id="cy_canvas"):
                 container: document.getElementById('{container_id}'),
                 elements: {json.dumps(elements)},
                 style: [
-                    {{
-                        selector: 'node',
-                        style: {{
-                            'label': 'data(label)', 'text-valign': 'center', 'color': '#1d3557',
-                            'background-color': 'data(color)', 'width': 'data(size)', 'height': 'data(size)',
-                            'shape': 'data(shape)', 'font-size': '14px', 'font-weight': '700',
-                            'text-outline-width': 2, 'text-outline-color': '#ffffff', 'cursor': 'pointer',
-                            'border-width': 2, 'border-color': '#adb5bd'
-                        }}
-                    }},
-                    {{
-                        selector: 'edge',
-                        style: {{
-                            'width': 3, 'line-color': 'data(color)', 'label': 'data(rel_type)',
-                            'font-size': '11px', 'font-weight': 'bold', 'color': '#2a9d8f',
-                            'target-arrow-color': 'data(color)', 'target-arrow-shape': 'data(arrow)',
-                            'line-style': 'data(line_style)', 'curve-style': 'bezier', 
-                            'text-background-opacity': 1, 'text-background-color': '#ffffff',
-                            'text-background-padding': '4px', 'text-background-shape': 'roundrectangle'
-                        }}
-                    }},
+    {
+        selector: 'node',
+        style: {
+            'label': 'data(label)', 'text-valign': 'center', 'color': '#1d3557',
+            'background-color': 'data(color)', 'width': 'data(size)', 'height': 'data(size)',
+            'shape': 'data(shape)', 'font-size': '13px', 'font-weight': '700',
+            'text-outline-width': 2, 'text-outline-color': '#ffffff', 'border-width': 2, 'border-color': '#adb5bd'
+        }
+    },
+    {
+        selector: 'edge',
+        style: {
+            'width': 3, 'line-color': 'data(color)', 'label': 'data(rel_type)',
+            'font-size': '9px', 'font-weight': 'bold', 'color': '#264653',
+            'curve-style': 'bezier', 'target-arrow-color': 'data(color)',
+            'text-background-opacity': 1, 'text-background-color': '#ffffff', 'text-background-padding': '2px'
+        }
+    },
+    /* --- THESAURUS LOGIKA (ISO 25964) --- */
+    { selector: 'edge[rel_type="BT"], edge[rel_type="NT"]', style: { 'width': 5, 'line-style': 'solid' } },
+    { selector: 'edge[rel_type="EQ"]', style: { 'line-style': 'double', 'width': 6 } },
+    { selector: 'edge[rel_type="RT"]', style: { 'line-style': 'dotted', 'target-arrow-shape': 'none' } },
+    { selector: 'edge[rel_type="IN"]', style: { 'line-style': 'dashed', 'target-arrow-shape': 'vee' } },
+
+    /* --- UML LOGIKA (OMG STANDARD) --- */
+    { 
+        selector: 'edge[rel_type="Generalization"]', 
+        style: { 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow', 'width': 3 } 
+    },
+    { 
+        selector: 'edge[rel_type="Realization"]', 
+        style: { 'line-style': 'dashed', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' } 
+    },
+    { 
+        selector: 'edge[rel_type="Composition"]', 
+        style: { 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'filled', 'source-endpoint': 'outside-to-node' } 
+    },
+    { 
+        selector: 'edge[rel_type="Aggregation"]', 
+        style: { 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'hollow' } 
+    },
+    { 
+        selector: 'edge[rel_type="Dependency"]', 
+        style: { 'line-style': 'dashed', 'target-arrow-shape': 'vee' } 
+    }
+],
                     /* UML SPECIFIČNE DEFINICIJE */
                     {{ selector: 'edge[rel_type="Generalization"]', style: {{ 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' }} }},
                     {{ selector: 'edge[rel_type="Realization"]', style: {{ 'line-style': 'dashed', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' }} }},
@@ -886,11 +911,11 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 biblio_data = fetch_author_bibliographies(target_authors) if target_authors else ""
             
             # Priprava kontekstov
-            full_context = f"\n\n[FILE CONTEXT]:\n{file_content}" if file_content else ""
+            file_context_str = f"\n\n[FILE CONTEXT]:\n{file_content}" if file_content else ""
             biblio_context = f"\n\n[AUTHOR RESEARCH BACKGROUND]:\n{biblio_data}" if biblio_data else ""
             
             # Združen vhod za Groq (Phase 1)
-            full_ai_input = f"{user_query}{full_context}{biblio_context}"
+            full_ai_input = f"{user_query}{file_context_str}{biblio_context}"
 
             # Inicializacija klientov
             groq_client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
@@ -912,47 +937,61 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             # --- 3. PHASE 2: SAMBANOVA (ULTRA-CREATIVE INNOVATION ENGINE) ---
             with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) generating radical innovations...'):
                 samba_sys_prompt = f"""
-                You are the SIS Lead Innovation Architect. Use {selected_techniques} to generate revolutionary solutions.
-                
-                GOAL: Displace current paradigms. Do not just solve; RESTRUCTURE.
+You are the SIS Lead Multi-Dimensional Architect & Hierarchologist. 
+Your mission is to transform the structural foundation from Phase 1 into a radical, futuristic innovation system (Year 2026-2030).
 
-                STRICT GRAPH SEMANTICS (Innovation Markers):
-                - AS (Association): MANDATORY. Link a concept from one science field to a completely different one (Lateral thinking).
-                - EQ (Equivalence): Link a Phase 1 concept to a new radical innovation name you just created.
-                - IN (Instance): Link a theory to a specific, futuristic application for 2026-2030.
+### 1. RELATIONSHIP PROTOCOL (MANDATORY USE)
+You must categorize every link using one of these two semantic standards:
 
-                TERMINOLOGY LOCK (Crucial for Hyperlinking):
-                - For the 'label' of nodes, you MUST use the exact keywords from Phase 1. 
-                - If you create a NEW concept, label it clearly, but ensure at least 50% of nodes use Phase 1 terminology to keep the links active.
+A) THESAURUS (Conceptual Logic - ISO 25964):
+- 'TT' (Top Term): The highest-level root concept of this domain.
+- 'BT' (Broader Term): Hierarchical parent (e.g., Physics is BT to Quantum Mechanics).
+- 'NT' (Narrower Term): Hierarchical child (e.g., CRISPR is NT to Biotechnology).
+- 'RT' (Related Term): Associative link between disparate but related fields.
+- 'EQ' (Equivalence): Absolute synonym or identical concept in a different paradigm.
+- 'AS' (Association): General lateral connection (the 'spark' of innovation).
+- 'IN' (Instance): A specific, real-world example or prototype of a theory.
 
-                MANDATORY JSON FORMAT (Must be at the very end):
-                ### SEMANTIC_GRAPH_JSON
-                {{
-                  "nodes": [
-                    {{"id": "n1", "label": "PHASE_1_KEYWORD", "shape": "rectangle", "color": "#DDEBF7"}},
-                    {{"id": "n2", "label": "YOUR_NEW_INNOVATION", "shape": "round-rectangle", "color": "#fd7e14"}}
-                  ],
-                  "edges": [
-                    {{"source": "n1", "target": "n2", "rel_type": "AS"}},
-                    {{"source": "n2", "target": "n3", "rel_type": "Realization"}}
-                  ]
-                }}
-                """
+B) UML (Structural Logic - OMG Standard):
+- 'Generalization': Inheritance; "is-a" relationship (hollow triangle arrow).
+- 'Realization': Implementation; "transforms theory into reality" (dashed line, hollow triangle).
+- 'Composition': Strong ownership; "part-of" where the part cannot exist without the whole (filled diamond).
+- 'Aggregation': Weak ownership; "part-of" where parts can exist independently (hollow diamond).
+- 'Dependency': Usage; "concept A requires concept B to function" (dashed arrow).
 
+### 2. CORE OPERATING INSTRUCTIONS
+- INTERDISCIPLINARY FUSION: Link at least one concept from Phase 1 to a completely unrelated science field using an 'AS' or 'RT' link.
+- RADICAL INNOVATION: Create at least 3 NEW concepts (Innovations) and label them with 'shape': 'diamond'.
+- HIERARCHICAL RIGOR: Use 'BT' and 'NT' to build a vertical stack of knowledge.
+
+### 3. OUTPUT FORMAT
+You must provide a brief architectural explanation followed by the exact JSON block.
+
+MANDATORY JSON STRUCTURE:
+### SEMANTIC_GRAPH_JSON
+{{
+  "nodes": [
+    {{"id": "n1", "label": "CONCEPT_NAME", "shape": "rectangle", "color": "#DDEBF7", "level": "Micro"}},
+    {{"id": "inv1", "label": "NEW_INNOVATION", "shape": "diamond", "color": "#fd7e14", "level": "Meso"}}
+  ],
+  "edges": [
+    {{"source": "n1", "target": "inv1", "rel_type": "Composition"}},
+    {{"source": "inv1", "target": "n2", "rel_type": "EQ"}}
+  ]
+}}
+"""
                 samba_response = samba_client.chat.completions.create(
                     model=sambanova_id, 
                     messages=[
                         {"role": "system", "content": samba_sys_prompt}, 
-                        {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER GOAL: {idea_query}{full_context}"}
+                        {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER GOAL: {idea_query}{file_context_str}"}
                     ],
-                    temperature=0.85, # DVIG TEMPERATURE za maksimalno kreativnost
+                    temperature=0.85, 
                     top_p=0.9
                 )
                 cerebras_innovation = samba_response.choices[0].message.content
 
-            # --- 4. PROCESIRANJE REZULTATOV (REŠITEV ZA NAMEERROR) ---
-            # Najprej pripravimo vse podatke, šele na koncu jih izpišemo!
-            
+            # --- 4. PROCESIRANJE REZULTATOV ---
             if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
                 parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
                 innovation_text = parts[0]
@@ -966,81 +1005,75 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             nodes_to_link = []
             final_elements = []
 
-            # Iskanje JSON-a in procesiranje grafičnih elementov
             json_match = re.search(r'(\{.*"nodes".*\})', json_raw if json_raw else cerebras_innovation, re.DOTALL | re.IGNORECASE)
             
             if json_match:
                 try:
                     g_data = json.loads(json_match.group(1))
                     
-                    # Vozlišča
                     for n in g_data.get("nodes", []):
                         lbl = n.get("label", "Node")
                         nid = n.get("id", f"n{lbl}")
-                        n_color = n.get("color", "#fd7e14")
+                        n_color = n.get("color", "#DDEBF7")
                         n_shape = n.get("shape", "rectangle")
-                        n_size = 85
-                        if n_shape == 'diamond': n_size = 105
-                        if n_shape == 'hexagon': n_size = 95
-                        if n_shape == 'ellipse': n_size = 80
+                        n_size = 105 if n_shape == 'diamond' else 85
                         
                         nodes_to_link.append({"id": nid, "label": lbl})
                         final_elements.append({
                             "data": {"id": nid, "label": lbl, "color": n_color, "shape": n_shape, "size": n_size}
                         })
 
-                    # Povezave
+                    # --- NADGRAJENA LOGIKA ZA POVEZAVE (UML + THESAURUS) ---
                     for e in g_data.get("edges", []):
                         rel = e.get("rel_type", "Association")
-                        e_color = "#2a9d8f" if rel in ["BT", "NT", "TT", "RT", "AS", "EQ", "IN"] else "#adb5bd"
-                        l_style = 'dashed' if rel in ['Realization', 'Dependency', 'Realizes', 'Depends'] else 'solid'
-                        arrow_type = 'triangle' if rel in ['Generalization', 'Realization', 'Composition', 'Aggregation'] else 'vee'
                         
+                        # Dodelitev barv glede na tip semantike
+                        if rel in ["Composition", "Aggregation", "Generalization", "Realization", "Dependency"]:
+                            e_color = "#e63946"  # RDEČA za UML (Struktura)
+                        elif rel in ["BT", "NT", "TT"]:
+                            e_color = "#1d3557"  # MODRA za Hierarhijo
+                        elif rel == "EQ":
+                            e_color = "#f1c40f"  # RUMENA za Ekvivalenco
+                        elif rel == "RT":
+                            e_color = "#2a9d8f"  # ZELENA za Lateralne povezave
+                        else:
+                            e_color = "#adb5bd"  # SIVA za splošne asociacije (AS)
+
                         final_elements.append({
                             "data": {
-                                "source": e.get("source"), "target": e.get("target"), 
-                                "rel_type": rel, "color": e_color, "arrow": arrow_type, "line_style": l_style
+                                "source": e.get("source"), 
+                                "target": e.get("target"), 
+                                "rel_type": rel, 
+                                "color": e_color
                             }
                         })
                 except Exception as json_err:
                     st.warning(f"Note: Graph structure issue: {json_err}")
 
-            # AGRESIVNO INOVATIVNO POVEZOVANJE (Fuzzy Matching za visoko temperaturo)
+            # Avtomatsko povezovanje besedila z grafom (Highlighting)
             final_markdown = full_report
             if nodes_to_link:
-                # Sortiramo od najdaljših besed, da preprečimo napačno prekrivanje
                 sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
                 for item in sorted_keywords:
-                    lbl, nid = item['label'], item['id']
+                    lbl = item['label']
                     if len(lbl) > 2:
-                        # Priprava URL-ja za Google Search ikono
                         g_url = urllib.parse.quote(lbl)
                         link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
-                        
-                        # IZBOLJŠAN REGEX: 
-                        # Če je beseda daljša od 6 znakov, vzamemo koren (npr. 'Hierarch' za 'Hierarchology')
-                        # To omogoča, da se polinkajo tudi množine in pridevniki (npr. Hierarchical).
                         base_term = lbl[: -2] if len(lbl) > 6 else lbl
                         pattern = re.compile(r'\b' + re.escape(base_term) + r'\w*', re.IGNORECASE)
-                        
-                        # Zamenjamo do 10 pojavitev v besedilu
                         final_markdown = pattern.sub(link_html, final_markdown, count=10)
 
-            # --- 5. KONČNI PRIKAZ (ZDAJ JE VRSTNI RED PRAVILEN) ---
+            # --- 5. KONČNI PRIKAZ ---
             st.subheader("🧱 HIERARCHOLOGICAL SYNTHESIS REPORT")
-            
-            # Prikaz bibliografije
             if biblio_data:
-                with st.expander("📚 EXTRACTED AUTHOR DATA (ORCID/SCHOLAR)", expanded=False):
+                with st.expander("📚 EXTRACTED AUTHOR DATA", expanded=False):
                     st.markdown(biblio_data)
             
-            # Prikaz besedila s povezavami
             st.markdown(final_markdown, unsafe_allow_html=True)
 
-            # Prikaz grafa na koncu
             if final_elements:
                 st.divider()
-                st.subheader(f"🕸️ HIERARCHOGRAPHIC SYSTEM MAP ({len(nodes_to_link)} Nodes)")
+                st.subheader(f"🕸️ HYBRID SEMANTIC SYSTEM MAP")
                 render_cytoscape_network(final_elements, f"cy_{int(time.time())}")
 
         except Exception as e:
