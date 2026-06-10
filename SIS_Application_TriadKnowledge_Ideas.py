@@ -229,11 +229,11 @@ SVG_3D_RELIEF = """
 # =============================================================================
 
 def render_cytoscape_network(elements, container_id="cy_canvas"):
-    """Interaktivni Cytoscape.js motor z UML in popolno ISO Thesaurus notacijo."""
+    """Napredni interaktivni Cytoscape.js motor z visoko gostoto prvin in UML/ISO notacijo."""
     cyto_html = f"""
     <div style="position: relative; width: 100%;">
-        <button id="save_btn" style="position: absolute; top: 15px; right: 15px; z-index: 1000; padding: 10px 15px; background: #1d3557; color: white; border: none; border-radius: 8px; cursor: pointer; font-family: sans-serif; font-size: 12px; font-weight: 800;">💾 EXPORT PNG</button>
-        <div id="{container_id}" style="width: 100%; height: 750px; background: #ffffff; border-radius: 20px; border: 1px solid #e0e0e0; box-shadow: 0 8px 30px rgba(0,0,0,0.06);"></div>
+        <button id="save_btn" style="position: absolute; top: 15px; right: 15px; z-index: 1000; padding: 10px 15px; background: #1d3557; color: white; border: none; border-radius: 8px; cursor: pointer; font-family: sans-serif; font-size: 12px; font-weight: 800; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">💾 EXPORT PNG</button>
+        <div id="{container_id}" style="width: 100%; height: 850px; background: #ffffff; border-radius: 20px; border: 1px solid #e0e0e0; box-shadow: 0 10px 40px rgba(0,0,0,0.08);"></div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
     <script>
@@ -245,69 +245,96 @@ def render_cytoscape_network(elements, container_id="cy_canvas"):
                     {{
                         selector: 'node',
                         style: {{
-                            'label': 'data(label)', 'text-valign': 'center', 'color': '#1d3557',
-                            'background-color': 'data(color)', 'width': 'data(size)', 'height': 'data(size)',
-                            'shape': 'data(shape)', 'font-size': '14px', 'font-weight': '700',
-                            'text-outline-width': 2, 'text-outline-color': '#ffffff',
-                            'border-width': 2, 'border-color': '#adb5bd'
+                            'label': 'data(label)',
+                            'text-valign': 'center',
+                            'text-halign': 'center',
+                            'color': '#1d3557',
+                            'background-color': 'data(color)',
+                            'width': 'data(size)',
+                            'height': 'data(size)',
+                            'shape': 'data(shape)',
+                            'font-size': '12px',
+                            'font-weight': 'bold',
+                            'text-wrap': 'wrap',
+                            'text-max-width': '80px',
+                            'border-width': 3,
+                            'border-color': '#ffffff',
+                            'border-opacity': 0.8,
+                            'text-outline-color': '#ffffff',
+                            'text-outline-width': 2,
+                            'box-shadow': '0 4px 10px rgba(0,0,0,0.2)'
                         }}
                     }},
                     {{
                         selector: 'edge',
                         style: {{
-                            'width': 3, 'line-color': 'data(color)', 'label': 'data(rel_type)',
-                            'font-size': '10px', 'font-weight': 'bold', 'color': '#333',
-                            'target-arrow-color': 'data(color)', 'curve-style': 'bezier', 
-                            'text-background-opacity': 1, 'text-background-color': '#ffffff',
-                            'text-background-padding': '3px', 'text-rotation': 'autorotate'
+                            'width': 2,
+                            'line-color': 'data(color)',
+                            'label': 'data(rel_type)',
+                            'font-size': '9px',
+                            'font-weight': 'bold',
+                            'color': '#2a9d8f',
+                            'curve-style': 'unbundled-bezier',
+                            'control-point-step-size': 40,
+                            'target-arrow-color': 'data(color)',
+                            'target-arrow-shape': 'vee',
+                            'text-background-opacity': 1,
+                            'text-background-color': '#ffffff',
+                            'text-background-padding': '3px',
+                            'text-background-shape': 'roundrectangle',
+                            'edge-distances': 'node-position',
+                            'opacity': 0.8
                         }}
                     }},
-                    /* --- UML NOTACIJA (STRUKTURNA) --- */
-                    {{ selector: 'edge[rel_type="Generalization"]', style: {{ 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow', 'width': 4 }} }},
+                    /* --- UML NOTACIJA --- */
+                    {{ selector: 'edge[rel_type="Generalization"]', style: {{ 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow', 'width': 3 }} }},
                     {{ selector: 'edge[rel_type="Realization"]', style: {{ 'line-style': 'dashed', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' }} }},
-                    {{ selector: 'edge[rel_type="Composition"]', style: {{ 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'filled', 'width': 5 }} }},
-                    {{ selector: 'edge[rel_type="Aggregation"]', style: {{ 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'hollow', 'width': 4 }} }},
+                    {{ selector: 'edge[rel_type="Composition"]', style: {{ 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'filled', 'width': 4 }} }},
+                    {{ selector: 'edge[rel_type="Aggregation"]', style: {{ 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'hollow', 'width': 3 }} }},
                     {{ selector: 'edge[rel_type="Dependency"]', style: {{ 'line-style': 'dashed', 'target-arrow-shape': 'vee' }} }},
                     
-                    /* --- THESAURUS NOTACIJA (ISO 25964 - HIERARHIČNA) --- */
-                    {{ 
-                        selector: 'edge[rel_type="TT"]', 
-                        style: {{ 'width': 8, 'line-style': 'solid', 'line-color': '#1d3557', 'target-arrow-shape': 'triangle' }} 
-                    }},
-                    {{ 
-                        selector: 'edge[rel_type="BT"], edge[rel_type="NT"]', 
-                        style: {{ 'width': 5, 'line-style': 'solid', 'line-color': '#1d3557', 'target-arrow-shape': 'chevron' }} 
-                    }},
-                    {{ 
-                        selector: 'edge[rel_type="EQ"]', 
-                        style: {{ 'line-style': 'double', 'width': 6, 'line-color': '#f1c40f' }} 
-                    }},
-                    {{ 
-                        selector: 'edge[rel_type="RT"]', 
-                        style: {{ 'line-style': 'dotted', 'width': 3, 'line-color': '#2a9d8f', 'target-arrow-shape': 'none' }} 
-                    }},
-                    {{ 
-                        selector: 'edge[rel_type="AS"]', 
-                        style: {{ 'line-style': 'dashed', 'width': 3, 'line-color': '#7b2cb1' }} 
-                    }},
-                    {{ 
-                        selector: 'edge[rel_type="IN"]', 
-                        style: {{ 'line-style': 'dotted', 'width': 4, 'line-color': '#0077b6', 'target-arrow-shape': 'triangle' }} 
-                    }}
+                    /* --- ISO THESAURUS --- */
+                    {{ selector: 'edge[rel_type="TT"]', style: {{ 'width': 6, 'line-color': '#1d3557' }} }},
+                    {{ selector: 'edge[rel_type="BT"]', style: {{ 'width': 4, 'line-color': '#1d3557' }} }},
+                    {{ selector: 'edge[rel_type="NT"]', style: {{ 'width': 4, 'line-color': '#1d3557' }} }},
+                    {{ selector: 'edge[rel_type="EQ"]', style: {{ 'line-style': 'double', 'width': 5, 'line-color': '#f1c40f' }} }},
+                    {{ selector: 'edge[rel_type="RT"]', style: {{ 'line-style': 'dotted', 'width': 2, 'line-color': '#2a9d8f', 'target-arrow-shape': 'none' }} }},
+                    {{ selector: 'edge[rel_type="AS"]', style: {{ 'line-style': 'dashed', 'width': 2, 'line-color': '#7b2cb1' }} }},
+                    {{ selector: 'edge[rel_type="IN"]', style: {{ 'line-style': 'dotted', 'width': 3, 'line-color': '#0077b6', 'target-arrow-shape': 'triangle' }} }},
+                    
+                    /* Poudarek na zvezdah (Macro cilji) */
+                    {{ selector: 'node[shape="star"]', style: {{ 'font-size': '16px', 'width': 130, 'height': 130, 'border-width': 5, 'border-color': '#FFD700' }} }}
                 ],
-                layout: {{ name: 'cose', padding: 60, animate: true }}
+                layout: {{
+                    name: 'cose',
+                    idealEdgeLength: 120,
+                    nodeOverlap: 50,
+                    refresh: 20,
+                    fit: true,
+                    padding: 50,
+                    randomize: false,
+                    componentSpacing: 120,
+                    nodeRepulsion: 1000000,
+                    edgeElasticity: 100,
+                    nestingFactor: 1.2,
+                    gravity: 1,
+                    numIter: 1500,
+                    initialTemp: 1000,
+                    coolingFactor: 0.99,
+                    minTemp: 1.0
+                }}
             }});
 
             document.getElementById('save_btn').addEventListener('click', function() {{
                 var png64 = cy.png({{full: true, bg: 'white', scale: 2}});
                 var link = document.createElement('a');
-                link.href = png64; link.download = 'sis_hierarchograph.png';
+                link.href = png64; link.download = 'hierarchograph_standard.png';
                 link.click();
             }});
         }});
     </script>
     """
-    components.html(cyto_html, height=850)
+    components.html(cyto_html, height=900)
 
 def fetch_author_bibliographies(author_input):
     if not author_input: return ""
