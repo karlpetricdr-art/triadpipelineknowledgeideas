@@ -1120,7 +1120,22 @@ MANDATORY JSON STRUCTURE:
                         
                         # Unicode-safe regex to catch terms in both Phase 1 and Phase 2
                         pattern = re.compile(rf'(?<!\w){re.escape(lbl)}(?!\w)', re.IGNORECASE | re.UNICODE)
-                        final_interactive_report = pattern.sub(link_html, final_interactive_report)
+                        # 5a. GLOBAL SEMANTIC HIGHLIGHTER (Multi-Phase Linking)
+            final_interactive_report = combined_report_text
+            if nodes_to_link:
+                # Razvrstimo ključne besede po dolžini (daljše prej), da se krajše ne vmešavajo
+                sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
+                for item in sorted_keywords:
+                    lbl = item['label']
+                    if len(lbl) > 2:
+                        g_url = urllib.parse.quote(lbl)
+                        link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
+                        
+                        # Unicode-safe regex
+                        pattern = re.compile(rf'(?<!\w){re.escape(lbl)}(?!\w)', re.IGNORECASE | re.UNICODE)
+                        
+                        # KLJUČNA SPREMEMBA: Dodan count=1, da se polinka le PRVA pojavitev besede
+                        final_interactive_report = pattern.sub(link_html, final_interactive_report, count=1)
 
             # 5b. RENDERING THE INTERACTIVE REPORT
             st.subheader("🧱 INTEGRATED HIERARCHOLOGICAL REPORT")
