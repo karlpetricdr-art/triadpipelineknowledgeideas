@@ -242,37 +242,39 @@ def render_cytoscape_network(elements, container_id="cy_canvas"):
                 container: document.getElementById('{container_id}'),
                 elements: {json.dumps(elements)},
                 style: [
-                    {{
+                    {
                         selector: 'node',
-                        style: {{
+                        style: {
                             'label': 'data(label)', 'text-valign': 'center', 'color': '#1d3557',
                             'background-color': 'data(color)', 'width': 'data(size)', 'height': 'data(size)',
                             'shape': 'data(shape)', 'font-size': '14px', 'font-weight': '700',
                             'text-outline-width': 2, 'text-outline-color': '#ffffff',
                             'border-width': 2, 'border-color': '#adb5bd'
-                        }}
-                    }},
-                    {{
+                        }
+                    },
+                    {
                         selector: 'edge',
-                        style: {{
+                        style: {
                             'width': 3, 'line-color': 'data(color)', 'label': 'data(rel_type)',
-                            'font-size': '11px', 'font-weight': 'bold', 'color': '#2a9d8f',
+                            'font-size': '10px', 'font-weight': 'bold', 'color': '#333',
                             'target-arrow-color': 'data(color)', 'curve-style': 'bezier', 
                             'text-background-opacity': 1, 'text-background-color': '#ffffff',
-                            'text-background-padding': '4px'
-                        }}
-                    }},
-                    /* UML LOGIKA */
-                    {{ selector: 'edge[rel_type="Generalization"]', style: {{ 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' }} }},
-                    {{ selector: 'edge[rel_type="Realization"]', style: {{ 'line-style': 'dashed', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' }} }},
-                    {{ selector: 'edge[rel_type="Composition"]', style: {{ 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'filled' }} }},
-                    {{ selector: 'edge[rel_type="Aggregation"]', style: {{ 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'hollow' }} }},
-                    {{ selector: 'edge[rel_type="Dependency"]', style: {{ 'line-style': 'dashed', 'target-arrow-shape': 'vee' }} }},
+                            'text-background-padding': '3px', 'text-rotation': 'autorotate'
+                        }
+                    },
+                    /* --- UML NOTACIJA --- */
+                    { selector: 'edge[rel_type="Generalization"]', style: { 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow', 'width': 4 } },
+                    { selector: 'edge[rel_type="Realization"]', style: { 'line-style': 'dashed', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' } },
+                    { selector: 'edge[rel_type="Composition"]', style: { 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'filled', 'width': 5 } },
+                    { selector: 'edge[rel_type="Aggregation"]', style: { 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'hollow', 'width': 4 } },
+                    { selector: 'edge[rel_type="Dependency"]', style: { 'line-style': 'dashed', 'target-arrow-shape': 'vee' } },
                     
-                    /* THESAURUS LOGIKA */
-                    {{ selector: 'edge[rel_type="BT"], edge[rel_type="NT"]', style: {{ 'width': 5, 'line-style': 'solid' }} }},
-                    {{ selector: 'edge[rel_type="EQ"]', style: {{ 'line-style': 'double', 'width': 6 }} }},
-                    {{ selector: 'edge[rel_type="RT"]', style: {{ 'line-style': 'dotted', 'target-arrow-shape': 'none' }} }}
+                    /* --- THESAURUS NOTACIJA (ISO 25964) --- */
+                    { selector: 'edge[rel_type="BT"], edge[rel_type="NT"]', style: { 'width': 5, 'line-style': 'solid' } },
+                    { selector: 'edge[rel_type="EQ"]', style: { 'line-style': 'double', 'width': 6 } },
+                    { selector: 'edge[rel_type="RT"]', style: { 'line-style': 'dotted', 'target-arrow-shape': 'none' } },
+                    { selector: 'edge[rel_type="AS"]', style: { 'line-style': 'dashed', 'width': 3, 'line-dash-pattern': [6, 3] } },
+                    { selector: 'edge[rel_type="IN"]', style: { 'line-style': 'dotted', 'width': 4, 'target-arrow-shape': 'triangle' } }
                 ],
                 layout: {{ name: 'cose', padding: 60, animate: true }}
             }});
@@ -907,65 +909,52 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             # --- 3. PHASE 2: SAMBANOVA (ULTRA-CREATIVE INNOVATION ENGINE) ---
             with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) generating radical innovations...'):
                 samba_sys_prompt = f"""
-You are the SIS Lead Strategic Innovation Architect. 
-Your task is to transform the structural analysis from Phase 1 into a visionary Innovation Report.
+You are the SIS Lead Strategic Innovation Architect and Hierarchographist. 
+Your task is to transform the structural analysis from Phase 1 into a visionary Innovation Report and a perfectly mapped Hierarchographic Network.
 
 ### 1. REPORT REQUIREMENTS
-For Phase 2, write a "STRATEGIC INNOVATION REPORT". 
+Write a "STRATEGIC INNOVATION REPORT". 
 - For each innovation, provide a technical title, a detailed 3-4 sentence strategic explanation, and its cross-disciplinary impact.
 - Use professional terminology.
-- Ensure the text is rich in concepts that can be linked to the graph.
 
-### 2. MANDATORY JSON STRUCTURE
-After the text report, provide the JSON block. Each 'diamond' node MUST include a "description" field that matches the report.
-### SEMANTIC_GRAPH_JSON
-{{
-  "nodes": [
-    {{
-      "id": "inv1", 
-      "label": "Innovation Name", 
-      "shape": "diamond", 
-      "color": "#fd7e14", 
-      "description": "Full detailed description here for the deep-dive card."
-    }}
-  ],
-  "edges": [ ... ]
-}}
+### 2. RELATIONSHIP LOGIC MATRIX (MANDATORY FOR JSON)
+You must interconnect nodes using the following two standards:
 
-### 1. SHAPE DICTIONARY (MANDATORY GEOMETRY)
-Assign shapes based on the nature of the concept:
-- 'star': High-level Vision, ultimate Strategic Goals, or "North Star" objectives.
-- 'hexagon': Broad Science Fields, Academic Disciplines, or Knowledge Domains.
-- 'octagon': Constraints, Ethical Boundaries, Laws, or "Stop" parameters.
-- 'triangle': Active Processes, Triggers, Dynamic Actions, or Vectors.
-- 'diamond': Radical Innovations, New Inventions, or Disruptive Ideas.
-- 'ellipse': Core Identities, Human Factors, or Biological Entities.
-- 'rectangle': Standard Facts, Data Points, or Established Structural Components.
+A) THESAURUS LOGIC (ISO 25964 / Conceptual Taxonomy):
+- 'TT' (Top Term): Absolute root of a knowledge domain.
+- 'BT' (Broader Term): Higher-level class/concept (Genus).
+- 'NT' (Narrower Term): Lower-level sub-concept (Species).
+- 'RT' (Related Term): Symmetrical lateral association between concepts.
+- 'EQ' (Equivalence): Synonyms or identical concepts in different fields.
+- 'AS' (Associative): Functional connection (e.g., Process AS Result, Tool AS Action).
+- 'IN' (Instance): Category to a specific unique entity/example (e.g., Physics IN Theory of Relativity).
 
-### 2. RELATIONSHIP PROTOCOL
-A) THESAURUS (Conceptual Logic - ISO 25964):
-- 'TT' (Top Term), 'BT' (Broader), 'NT' (Narrower), 'RT' (Related), 'EQ' (Equivalence), 'AS' (Association), 'IN' (Instance).
+B) UML LOGIC (OMG Standard / Structural Architecture):
+- 'Generalization': 'Is-a' Inheritance (e.g., Quantum Physics is a Generalization of Physics).
+- 'Realization': An Innovation/Tool implementing a Goal/Vision.
+- 'Composition': Strong 'Part-of' (Life-cycle dependent; the part cannot exist without the whole).
+- 'Aggregation': Weak 'Part-of' (The part can exist independently).
+- 'Dependency': Node A requires Node B to function.
 
-B) UML (Structural Logic - OMG Standard):
-- 'Generalization' (Inheritance), 'Realization' (Implementation), 'Composition' (Strong Part-of), 'Aggregation' (Weak Part-of), 'Dependency' (Usage).
-
-### 3. CORE OPERATING INSTRUCTIONS
-- INTERDISCIPLINARY FUSION: Link Phase 1 concepts to disparate science fields (hexagons) using 'AS' or 'RT'.
-- VISUAL HIERARCHY: Ensure the 'star' (Goal) is connected to 'diamonds' (Innovations) via 'Realization' or 'NT'.
-- HIERARCHICAL RIGOR: Use 'BT' and 'NT' to build a vertical stack.
+### 3. MANDATORY GEOMETRY (SHAPES)
+- 'star': Ultimate Goals / Macro-Vision.
+- 'hexagon': Science Fields / Academic Domains.
+- 'diamond': Strategic Innovations / New Breakthroughs.
+- 'triangle': Active Processes / Methods / Vectors.
+- 'octagon': Constraints / Ethical Boundaries / Rules.
+- 'ellipse': Human Factors / Identities / Biological Entities.
+- 'rectangle': Facts / Data Points / Micro-components.
 
 ### 4. OUTPUT FORMAT
 MANDATORY JSON STRUCTURE:
 ### SEMANTIC_GRAPH_JSON
 {{
   "nodes": [
-    {{"id": "goal1", "label": "ULTIMATE_VISION", "shape": "star", "color": "#FFD700", "level": "Macro"}},
-    {{"id": "sci1", "label": "QUANTUM_PHYSICS", "shape": "hexagon", "color": "#C6EFCE", "level": "Meso"}},
-    {{"id": "inv1", "label": "NEURAL_LINK_V2", "shape": "diamond", "color": "#fd7e14", "level": "Micro"}}
+    {{"id": "n1", "label": "LABEL", "shape": "diamond", "color": "#fd7e14", "description": "Full detailed description for the deep-dive."}}
   ],
   "edges": [
-    {{"source": "inv1", "target": "goal1", "rel_type": "Realization"}},
-    {{"source": "sci1", "target": "inv1", "rel_type": "BT"}}
+    {{"source": "n1", "target": "n2", "rel_type": "AS"}},
+    {{"source": "n3", "target": "n1", "rel_type": "Composition"}}
   ]
 }}
 """
@@ -1025,16 +1014,21 @@ MANDATORY JSON STRUCTURE:
                     for e in g_data.get("edges", []):
                         rel = e.get("rel_type", "Association")
                         
-                        if rel in ["Composition", "Aggregation", "Generalization", "Realization", "Dependency"]:
-                            e_color = "#e63946"  # RDEČA (UML Arhitektura)
+                        # Barvna matrika glede na tip ontologije
+                        if rel in ["Generalization", "Realization", "Composition", "Aggregation", "Dependency"]:
+                            e_color = "#E63946"  # UML = Rdeča (Struktura)
                         elif rel in ["BT", "NT", "TT"]:
-                            e_color = "#1d3557"  # MODRA (Hierarhija)
+                            e_color = "#1D3557"  # Tezaver = Temno modra (Hierarhija)
+                        elif rel == "IN":
+                            e_color = "#0077B6"  # Instance = Svetlo modra
+                        elif rel == "AS":
+                            e_color = "#7B2CB1"  # Associative = Vijolična
                         elif rel == "EQ":
-                            e_color = "#f1c40f"  # RUMENA (Ekvivalenca)
+                            e_color = "#F1C40F"  # Equivalence = Rumena
                         elif rel == "RT":
-                            e_color = "#2a9d8f"  # ZELENA (Lateralne povezave)
+                            e_color = "#2A9D8F"  # Related = Zelena
                         else:
-                            e_color = "#adb5bd"  # SIVA (Splošno)
+                            e_color = "#ADB5BD"  # Default = Siva
 
                         final_elements.append({
                             "data": {
