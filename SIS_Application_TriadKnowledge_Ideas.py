@@ -1069,250 +1069,140 @@ MANDATORY JSON STRUCTURE:
                 cerebras_innovation = samba_response.choices[0].message.content
 
             # =============================================================================
-# 5. SYNERGY EXECUTION ENGINE (MAX-DENSITY HIERARCHOLOGICAL PIPELINE)
-# =============================================================================
+                # A) RAZDRUŽITEV BESEDILA IN JSON-A
+                # =============================================================================
+                if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
+                    parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
+                    innovation_text = parts[0]
+                    json_raw = parts[1]
+                else:
+                    innovation_text = cerebras_innovation
+                    json_raw = ""
 
-if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True, key="exec_pipeline_v2026"):
-    if not groq_api_key or not sambanova_api_key:
-        st.error("❌ Dual-Model synergy requires both Groq and SambaNova keys.")
-    elif not user_query:
-        st.warning("⚠️ Phase 1 Research Inquiry je obvezen za vzpostavitev arhitekture.")
-    else:
-        try:
-            # --- 1. DATA ACQUISITION & CONTEXT BUILDING ---
-            with st.spinner('🔍 Dostopanje do ORCID, Google Scholar in datotečnih virov...'):
-                biblio_data = fetch_author_bibliographies(target_authors) if target_authors else ""
-            
-            # Konstrukcija razširjenega konteksta
-            file_context_str = f"\n\n[DODATNI PODATKI IZ DATOTEKE]:\n{file_content}" if file_content else ""
-            biblio_context = f"\n\n[BIBLIOGRAFSKO OZADJE AVTORJEV]:\n{biblio_data}" if biblio_data else ""
-            
-            # Združen vhod za Fazo 1 (Strukturna podlaga)
-            full_ai_input = f"INQUIRY: {user_query}{file_context_str}{biblio_context}"
+                # DEFINICIJA POROČILA (To prepreči vašo napako 'name not defined')
+                full_report = f"## 📚 Phase 1: Structural Foundation (Groq)\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovation Report (SambaNova)\n\n{innovation_text}"
+                
+                nodes_to_link = []
+                final_elements = []
 
-            # Inicializacija API klientov
-            groq_client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
-            samba_client = OpenAI(api_key=sambanova_api_key, base_url="https://api.sambanova.ai/v1")
-            
-            # --- 2. PHASE 1: GROQ (INTEGRATED METAMODEL ARCHITECTURE - IMA) ---
-            with st.spinner('PHASE 1: Gradnja strukturne podlage in IMA analize...'):
-                p1_response = groq_client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    messages=[
-                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. Use Integrated Metamodel Architecture (IMA) to build a factual, structural foundation. Focus on Identity, Mission, Problem, and Rules."}, 
-                        {"role": "user", "content": full_ai_input}
-                    ],
-                    temperature=0.35 # Nižja temperatura za večjo faktografsko natančnost
-                )
-                groq_synthesis = p1_response.choices[0].message.content
-                st.session_state.groq_synthesis = groq_synthesis
-
-            # --- 3. PHASE 2: SAMBANOVA (MENTAL APPROACHES & STRATEGIC INNOVATION) ---
-            with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) generira radikalne inovacije...'):
-                samba_sys_prompt = f"""
-You are the SIS Lead Strategic Innovation Architect and Hierarchographist. 
-Your mission is to transform Phase 1 logic into a high-level Innovation Report and a multi-dimensional Hierarchographic Network.
-
-### 1. STRATEGIC REPORT GUIDELINES
-- Synthesize 'Useful Innovative Ideas' using Mental Approaches (MA) logic (Dialectics, Perspective Shifting, Induction).
-- For each breakthrough, provide: Technical Title, Strategic Rationale (3-4 sentences), and Interdisciplinary Impact.
-
-### 2. RELATIONSHIP LOGIC MATRIX (MANDATORY FOR JSON)
-A) ISO THESAURUS (ISO 25964):
-- 'TT' (Top Term): Root of the domain.
-- 'BT' (Broader Term): Hierarchical parent.
-- 'NT' (Narrower Term): Hierarchical child.
-- 'RT' (Related Term): Lateral association.
-- 'EQ' (Equivalence): Synonyms/Identical concepts.
-- 'AS' (Associative): Functional connection (Process AS Result).
-- 'IN' (Instance): Specific unique entity (Theory IN Author's work).
-
-B) UML LOGIC (OMG Standard):
-- 'Generalization': 'Is-a' Inheritance.
-- 'Specialization': Deductive downward move (General law -> Specific case).
-- 'Containment': Structural inclusion (Logically trapped inside a 'Scientific Cage').
-- 'Realization': Implementation of Vision into Tool.
-- 'Composition': Life-cycle dependent Part-of.
-- 'Aggregation': Independent Part-of.
-- 'Dependency': Critical functional requirement.
-
-### 3. GEOMETRY & ONTOLOGY SHAPES
-- 'star': Ultimate Goals / Macro-Vision (Size: 135).
-- 'hexagon': Science Fields / Academic Domains (Size: 105).
-- 'diamond': Strategic Innovations / Breakthroughs (Size: 115).
-- 'triangle': Active Processes / Methods / Vectors (Size: 95).
-- 'octagon': Constraints / Ethical Rules (Size: 110).
-- 'ellipse': Human Factors / Identities (Size: 90).
-- 'rectangle': Facts / Data / Micro-components (Size: 85).
-
-### 4. OUTPUT FORMAT
-MANDATORY JSON STRUCTURE AT THE END:
-### SEMANTIC_GRAPH_JSON
-{{
-  "nodes": [
-    {{"id": "n1", "label": "LABEL", "shape": "diamond", "color": "#fd7e14", "description": "Full analysis."}}
-  ],
-  "edges": [
-    {{"source": "n1", "target": "n2", "rel_type": "Specialization"}}
-  ]
-}}
-"""
-                samba_response = samba_client.chat.completions.create(
-                    model=sambanova_id, 
-                    messages=[
-                        {"role": "system", "content": samba_sys_prompt}, 
-                        {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER INNOVATION GOAL: {idea_query}\nSTRATEGY: {selected_techniques}"}
-                    ],
-                    temperature=0.8, 
-                    top_p=0.95
-                )
-                cerebras_innovation = samba_response.choices[0].message.content
-
-            # --- 4. PROCESIRANJE REZULTATOV (KOMPLEKSNA ANALIZA) ---
-            
-            # Razvrstitev besedila in podatkov
-            if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
-                parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
-                innovation_text = parts[0]
-                json_raw = parts[1]
-            else:
-                innovation_text = cerebras_innovation
-                json_raw = ""
-
-            # DEFINICIJA CELOTNEGA POROČILA
-            full_report = f"## 📚 PHASE 1: Structural Foundation (Groq)\n\n{groq_synthesis}\n\n---\n## 💡 PHASE 2: Strategic Innovation Report (SambaNova)\n\n{innovation_text}"
-            
-            nodes_to_link = []
-            final_elements = []
-
-            # Iskanje in ekstrakcija JSON bloka
-            json_match = re.search(r'(\{.*"nodes".*\})', json_raw if json_raw else cerebras_innovation, re.DOTALL | re.IGNORECASE)
-            
-            if json_match:
-                try:
-                    g_data = json.loads(json_match.group(1))
-                    
-                    # 4a) Procesiranje VOZLIŠČ z Geometrijsko Hierarhijo
-                    for n in g_data.get("nodes", []):
-                        lbl = n.get("label", "Node")
-                        nid = n.get("id", f"n{lbl}")
-                        n_color = n.get("color", "#DDEBF7")
-                        n_shape = n.get("shape", "rectangle")
+                # =============================================================================
+                # B) PROCESIRANJE GRAFA (NODES & EDGES)
+                # =============================================================================
+                json_match = re.search(r'(\{.*"nodes".*\})', json_raw if json_raw else cerebras_innovation, re.DOTALL | re.IGNORECASE)
+                
+                if json_match:
+                    try:
+                        g_data = json.loads(json_match.group(1))
                         
-                        # Določanje velikosti glede na obliko (Hierarhologija)
-                        if n_shape == 'star': n_size = 135
-                        elif n_shape == 'diamond': n_size = 115
-                        elif n_shape == 'octagon': n_size = 110
-                        elif n_shape == 'hexagon': n_size = 105
-                        elif n_shape == 'triangle': n_size = 95
-                        elif n_shape == 'ellipse': n_size = 90
-                        else: n_size = 85
-                        
-                        nodes_to_link.append({"id": nid, "label": lbl})
-                        final_elements.append({
-                            "data": {
-                                "id": nid, "label": lbl, "color": n_color, 
-                                "shape": n_shape, "size": n_size,
-                                "description": n.get("description", "Podrobnosti so vključene v poročilu.")
-                            }
-                        })
+                        # 1. Procesiranje VOZLIŠČ (Geometrijska hierarhija)
+                        for n in g_data.get("nodes", []):
+                            lbl = n.get("label", "Node")
+                            nid = n.get("id", f"n{lbl}")
+                            n_color = n.get("color", "#DDEBF7")
+                            n_shape = n.get("shape", "rectangle")
+                            
+                            # Velikost glede na Macro-Meso-Micro nivo
+                            if n_shape == 'star': n_size = 135
+                            elif n_shape == 'diamond': n_size = 115
+                            elif n_shape == 'hexagon': n_size = 105
+                            elif n_shape == 'triangle': n_size = 95
+                            else: n_size = 85
+                            
+                            nodes_to_link.append({"id": nid, "label": lbl})
+                            final_elements.append({
+                                "data": {
+                                    "id": nid, "label": lbl, "color": n_color, 
+                                    "shape": n_shape, "size": n_size,
+                                    "description": n.get("description", "Podrobnosti v poročilu.")
+                                }
+                            })
 
-                    # 4b) Procesiranje POVEZAV z razširjeno UML/ISO barvno matriko
-                    for e in g_data.get("edges", []):
-                        rel = e.get("rel_type", "Association")
-                        
-                        # Barvna koda glede na ontološki pomen
-                        if rel in ["Generalization", "Realization", "Composition", "Aggregation", "Dependency"]:
-                            e_color = "#E63946" # UML Standard (Rdeča)
-                        elif rel == "Specialization":
-                            e_color = "#000000" # Dedukcija (Črna)
-                        elif rel == "Containment":
-                            e_color = "#1D3557" # Vsebovanost (Deep Navy)
-                        elif rel in ["BT", "NT", "TT"]:
-                            e_color = "#1D3557" # ISO Hierarhija (Deep Navy)
-                        elif rel == "IN":
-                            e_color = "#0077B6" # Instanca (Svetlo modra)
-                        elif rel == "EQ":
-                            e_color = "#F1C40F" # Sinonim (Rumena)
-                        elif rel == "AS":
-                            e_color = "#7B2CB1" # Asociacija (Vijolična)
-                        elif rel == "RT":
-                            e_color = "#2A9D8F" # Related (Zelena)
-                        else:
-                            e_color = "#ADB5BD" # Default siva
+                        # 2. Procesiranje POVEZAV (Polna UML + ISO kolorizacija)
+                        for e in g_data.get("edges", []):
+                            rel = e.get("rel_type", "Association")
+                            
+                            if rel in ["Generalization", "Realization", "Composition", "Aggregation", "Dependency"]:
+                                e_color = "#E63946" # UML Rdeča
+                            elif rel == "Specialization":
+                                e_color = "#000000" # Črna (Dedukcija)
+                            elif rel == "Containment":
+                                e_color = "#1D3557" # Temno modra (Vsebovanost)
+                            elif rel in ["BT", "NT", "TT"]:
+                                e_color = "#1D3557" # ISO Hierarhija
+                            elif rel == "IN":
+                                e_color = "#0077B6" # Instanca
+                            elif rel == "EQ":
+                                e_color = "#F1C40F" # Sinonim
+                            elif rel == "AS":
+                                e_color = "#7B2CB1" # Asociacija
+                            elif rel == "RT":
+                                e_color = "#2A9D8F" # Sorodno
+                            else:
+                                e_color = "#ADB5BD"
 
-                        final_elements.append({
-                            "data": {
-                                "source": e.get("source"), 
-                                "target": e.get("target"), 
-                                "rel_type": rel, 
-                                "color": e_color
-                            }
-                        })
-                except Exception as json_err:
-                    st.warning(f"Opomba: Grafični JSON format je nepopoln, vendar bo besedilno poročilo prikazano. ({json_err})")
+                            final_elements.append({
+                                "data": {
+                                    "source": e.get("source"), 
+                                    "target": e.get("target"), 
+                                    "rel_type": rel, 
+                                    "color": e_color
+                                }
+                            })
+                    except Exception as json_err:
+                        st.warning(f"Opomba: Grafična struktura ni popolna ({json_err}).")
 
-            # --- 5. GLOBAL SEMANTIC HIGHLIGHTER (Multi-Phase Linking) ---
-            final_interactive_report = full_report
-            if nodes_to_link:
-                # Daljše ključne besede prve za preprečevanje napačnega mapiranja
-                sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
-                for item in sorted_keywords:
-                    lbl = item['label']
-                    if len(lbl) > 2:
-                        g_url = urllib.parse.quote(lbl)
-                        link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
-                        # Regex za poudarjanje le prve pojavitve posameznega termina
-                        pattern = re.compile(rf'(?<!\w){re.escape(lbl)}(?!\w)', re.IGNORECASE | re.UNICODE)
-                        final_interactive_report = pattern.sub(link_html, final_interactive_report, count=1)
+                # =============================================================================
+                # C) SEMANTIČNO POVEZOVANJE (HIGHLIGHTING)
+                # =============================================================================
+                final_interactive_report = full_report
+                if nodes_to_link:
+                    # Daljše besede prve za natančno menjavo
+                    sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
+                    for item in sorted_keywords:
+                        lbl = item['label']
+                        if len(lbl) > 2:
+                            g_url = urllib.parse.quote(lbl)
+                            link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
+                            pattern = re.compile(rf'(?<!\w){re.escape(lbl)}(?!\w)', re.IGNORECASE | re.UNICODE)
+                            final_interactive_report = pattern.sub(link_html, final_interactive_report, count=1)
 
-            # --- 6. UI RENDERING (FINAL OUTPUT) ---
-            
-            st.subheader("🧱 INTEGRATED HIERARCHOLOGICAL REPORT")
-            
-            # Bibliografija (če obstaja)
-            if biblio_data:
-                with st.expander("📚 EXTRACTED AUTHOR BACKGROUND (ORCID)", expanded=False):
-                    st.markdown(biblio_data)
-            
-            # Prikaz glavnega poročila
-            st.markdown(final_interactive_report, unsafe_allow_html=True)
+                # =============================================================================
+                # D) PRIKAZ (UI RENDERING)
+                # =============================================================================
+                # 1. Integrirano poročilo
+                st.subheader("🧱 INTEGRATED HIERARCHOLOGICAL REPORT")
+                if biblio_data:
+                    with st.expander("📚 EXTRACTED AUTHOR BACKGROUND", expanded=False):
+                        st.markdown(biblio_data)
+                st.markdown(final_interactive_report, unsafe_allow_html=True)
 
-            # Deep-Dive kartice za Inovacije (Diamanti)
-            if final_elements:
-                st.divider()
-                st.markdown("### 🚀 STRATEGIC INNOVATION DEEP-DIVE")
-                innovations = [n['data'] for n in final_elements if n['data'].get('shape') == 'diamond']
-                if innovations:
+                # 2. Deep-Dive kartice za Inovacije
+                if final_elements:
+                    st.divider()
+                    st.markdown("### 🚀 STRATEGIC INNOVATION DEEP-DIVE")
+                    innovations = [n['data'] for n in final_elements if n['data'].get('shape') == 'diamond']
                     for inv in innovations:
                         st.markdown(f"""
-                        <div style="background-color: #ffffff; border-left: 6px solid #fd7e14; padding: 25px; border-radius: 15px; box-shadow: 0 6px 15px rgba(0,0,0,0.06); border: 1px solid #eee; margin-bottom: 25px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                                <span style="background-color: #fff4ed; color: #fd7e14; padding: 5px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 800; text-transform: uppercase;">Strategic Breakthrough</span>
-                                <span style="color: #666; font-size: 0.8em; font-weight: 600;">ID: {inv['id']}</span>
-                            </div>
-                            <h3 style="margin: 0 0 15px 0; color: #1d3557; font-size: 1.5em;">{inv['label']}</h3>
-                            <div style="color: #333; line-height: 1.8; font-size: 1.05em; border-top: 1px solid #f9f9f9; padding-top: 15px;">
-                                {inv.get('description', 'Podrobna strateška analiza je vključena v zgornjem poročilu pod semantično oznako.')}
-                            </div>
+                        <div style="background-color: #ffffff; border-left: 6px solid #fd7e14; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid #eee;">
+                            <h4 style="margin: 0; color: #1d3557;">{inv['label']}</h4>
+                            <p style="color: #444; font-size: 0.95em; line-height: 1.6;">{inv.get('description', 'Podrobna analiza je na voljo v zgornjem poročilu.')}</p>
                         </div>
                         """, unsafe_allow_html=True)
 
-                # LEGENDA (High Density)
-                st.markdown("""
-                <div style="font-size: 0.78em; color: #444; background: #ffffff; padding: 15px 25px; border-radius: 15px; border: 1px solid #e9ecef; margin-top: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-                    <div><b>Vozlišča:</b> ⭐ Macro | ⬢ Domena | 💠 Inovacija | △ Proces | ▭ Podatek</div>
-                    <div><b>UML:</b> <span style="color:#e63946;">⬤ Struktura</span> | <span style="color:#000000;">⬤ Specializacija</span> | <span style="color:#1d3557;">⬤ Vsebovanost</span></div>
-                    <div><b>ISO:</b> <span style="color:#1d3557;">⬤ Hierarhija</span> | <span style="color:#0077b6;">⬤ Instanca</span> | <span style="color:#7b2cb1;">⬤ Asociacija</span></div>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                # GRAF
-                st.subheader("🕸️ HYBRID SEMANTIC SYSTEM MAP")
-                render_cytoscape_network(final_elements, f"cy_{int(time.time())}")
+                    # 3. Legenda in Graf
+                    st.markdown("""
+                    <div style="font-size: 0.78em; color: #444; background: #fdfdfd; padding: 15px; border-radius: 15px; border: 1px solid #eee; margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+                        <span><b>Nodes:</b> ⭐ Goal | ⬢ Domain | 💠 Innovation | △ Process | ▭ Data</span>
+                        <span><b>Logic:</b> <span style="color:#e63946;">⬤ UML</span> | <span style="color:#000000;">⬤ Specialization</span> | <span style="color:#1d3557;">⬤ Hierarhija/Contain.</span></span>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    st.subheader("🕸️ HYBRID SEMANTIC SYSTEM MAP")
+                    render_cytoscape_network(final_elements, f"cy_{int(time.time())}")
 
-        except Exception as e:
-            st.error(f"❌ Pipeline Failure: {str(e)}")
+            # --- TUKAJ SE NADALJUJE VAŠ EXCEPT BLOK ---
+            except Exception as e:
+                st.error(f"❌ Pipeline Failure: {str(e)}")
 
 # =============================================================================
 # 6. FOOTER
