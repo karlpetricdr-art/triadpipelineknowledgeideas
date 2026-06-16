@@ -1069,220 +1069,220 @@ MANDATORY JSON STRUCTURE:
                 cerebras_innovation = samba_response.choices[0].message.content
 
             # --- 4. PROCESIRANJE REZULTATOV (Z NAPREDNO KOLORIZACIJO IN GEOMETRIJO) ---
-            if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
-                parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
-                innovation_text = parts[0]
-                json_raw = parts[1]
-            else:
-                innovation_text = cerebras_innovation
-                json_raw = ""
+        if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
+            parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
+            innovation_text = parts[0]
+            json_raw = parts[1]
+        else:
+            innovation_text = cerebras_innovation
+            json_raw = ""
 
-            nodes_to_link = []
-            final_elements = []
+        nodes_to_link = []
+        final_elements = []
 
-            # Iskanje JSON bloka v odgovoru
-            json_match = re.search(r'(\{.*"nodes".*\})', json_raw if json_raw else cerebras_innovation, re.DOTALL | re.IGNORECASE)
-            
-            if json_match:
-                try:
-                    g_data = json.loads(json_match.group(1))
+        # Iskanje JSON bloka v odgovoru
+        json_match = re.search(r'(\{.*"nodes".*\})', json_raw if json_raw else cerebras_innovation, re.DOTALL | re.IGNORECASE)
+        
+        if json_match:
+            try:
+                g_data = json.loads(json_match.group(1))
+                
+                # --- A) PROCESIRANJE VOZLIŠČ (NODES) ---
+                for n in g_data.get("nodes", []):
+                    lbl = n.get("label", "Node")
+                    nid = n.get("id", f"n{lbl}")
+                    n_color = n.get("color", "#DDEBF7")
+                    n_shape = n.get("shape", "rectangle")
                     
-                    # --- A) PROCESIRANJE VOZLIŠČ (NODES) ---
-                    for n in g_data.get("nodes", []):
-                        lbl = n.get("label", "Node")
-                        nid = n.get("id", f"n{lbl}")
-                        n_color = n.get("color", "#DDEBF7")
-                        n_shape = n.get("shape", "rectangle")
-                        
-                        # Dinamična velikost glede na hierarhično pomembnost (Macro > Meso > Micro)
-                        if n_shape == 'star': n_size = 135        # Macro Cilji
-                        elif n_shape == 'diamond': n_size = 115   # Inovacije
-                        elif n_shape == 'octagon': n_size = 110   # Pravila/Etika
-                        elif n_shape == 'hexagon': n_size = 105   # Znanstvena področja
-                        elif n_shape == 'triangle': n_size = 95   # Procesi
-                        elif n_shape == 'ellipse': n_size = 90    # Identitete
-                        else: n_size = 85                         # Podatki/Dejstva
-                        
-                        nodes_to_link.append({"id": nid, "label": lbl})
-                        final_elements.append({
-                            "data": {
-                                "id": nid, 
-                                "label": lbl, 
-                                "color": n_color, 
-                                "shape": n_shape, 
-                                "size": n_size,
-                                "description": n.get("description", "")
-                            }
-                        })
+                    # Dinamična velikost glede na hierarhično pomembnost (Macro > Meso > Micro)
+                    if n_shape == 'star': n_size = 135        # Macro Cilji
+                    elif n_shape == 'diamond': n_size = 115   # Inovacije
+                    elif n_shape == 'octagon': n_size = 110   # Pravila/Etika
+                    elif n_shape == 'hexagon': n_size = 105   # Znanstvena področja
+                    elif n_shape == 'triangle': n_size = 95   # Procesi
+                    elif n_shape == 'ellipse': n_size = 90    # Identitete
+                    else: n_size = 85                         # Podatki/Dejstva
+                    
+                    nodes_to_link.append({"id": nid, "label": lbl})
+                    final_elements.append({
+                        "data": {
+                            "id": nid, 
+                            "label": lbl, 
+                            "color": n_color, 
+                            "shape": n_shape, 
+                            "size": n_size,
+                            "description": n.get("description", "")
+                        }
+                    })
 
-                    # --- B) PROCESIRANJE POVEZAV (EDGES) - POLNA KOLORIZACIJA ---
-                    for e in g_data.get("edges", []):
-                        rel = e.get("rel_type", "Association")
-                        
-                        # 1. Skupina: UML Strukturne povezave (Rdeča)
-                        if rel in ["Generalization", "Realization", "Composition", "Aggregation", "Dependency"]:
-                            e_color = "#E63946" 
-                        
-                        # 2. Skupina: Specialni Hierarhografski konektorji
-                        elif rel == "Specialization":
-                            e_color = "#000000"  # Črna (Dedukcija)
-                        elif rel == "Containment":
-                            e_color = "#1D3557"  # Temno modra (Vsebovanost)
-                        
-                        # 3. Skupina: ISO Tezaver - Hierarhija (Temno modra/Navy)
-                        elif rel in ["TT", "BT", "NT"]:
-                            e_color = "#1D3557"
-                        
-                        # 4. Skupina: ISO Tezaver - Instance (Svetlo modra)
-                        elif rel == "IN":
-                            e_color = "#0077B6"
-                        
-                        # 5. Skupina: Semantične asociacije
-                        elif rel == "EQ":
-                            e_color = "#F1C40F"  # Sinonimi/Equivalence (Rumena)
-                        elif rel == "AS":
-                            e_color = "#7B2CB1"  # Associative (Vijolična)
-                        elif rel == "RT":
-                            e_color = "#2A9D8F"  # Related (Zelena)
-                        
-                        # Default barva za neznane tipe
-                        else:
-                            e_color = "#ADB5BD"
+                # --- B) PROCESIRANJE POVEZAV (EDGES) - POLNA KOLORIZACIJA ---
+                for e in g_data.get("edges", []):
+                    rel = e.get("rel_type", "Association")
+                    
+                    # 1. Skupina: UML Strukturne povezave (Rdeča)
+                    if rel in ["Generalization", "Realization", "Composition", "Aggregation", "Dependency"]:
+                        e_color = "#E63946" 
+                    
+                    # 2. Skupina: Specialni Hierarhografski konektorji
+                    elif rel == "Specialization":
+                        e_color = "#000000"  # Črna (Dedukcija)
+                    elif rel == "Containment":
+                        e_color = "#1D3557"  # Temno modra (Vsebovanost)
+                    
+                    # 3. Skupina: ISO Tezaver - Hierarhija (Temno modra/Navy)
+                    elif rel in ["TT", "BT", "NT"]:
+                        e_color = "#1D3557"
+                    
+                    # 4. Skupina: ISO Tezaver - Instance (Svetlo modra)
+                    elif rel == "IN":
+                        e_color = "#0077B6"
+                    
+                    # 5. Skupina: Semantične asociacije
+                    elif rel == "EQ":
+                        e_color = "#F1C40F"  # Sinonimi/Equivalence (Rumena)
+                    elif rel == "AS":
+                        e_color = "#7B2CB1"  # Associative (Vijolična)
+                    elif rel == "RT":
+                        e_color = "#2A9D8F"  # Related (Zelena)
+                    
+                    # Default barva za neznane tipe
+                    else:
+                        e_color = "#ADB5BD"
 
-                        final_elements.append({
-                            "data": {
-                                "source": e.get("source"), 
-                                "target": e.get("target"), 
-                                "rel_type": rel, 
-                                "color": e_color
-                            }
-                        })
-                except Exception as json_err:
-                    st.warning(f"Grafična struktura ni popolna: {json_err}")
+                    final_elements.append({
+                        "data": {
+                            "source": e.get("source"), 
+                            "target": e.get("target"), 
+                            "rel_type": rel, 
+                            "color": e_color
+                        }
+                    })
+            except Exception as json_err:
+                st.warning(f"Grafična struktura ni popolna: {json_err}")
 
-            # Avtomatsko povezovanje besedila z grafom (Highlighting)
-            final_markdown = full_report
-            if nodes_to_link:
-                sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
-                for item in sorted_keywords:
-                    lbl = item['label']
-                    if len(lbl) > 2:
-                        g_url = urllib.parse.quote(lbl)
-                        link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
-                        base_term = lbl[: -2] if len(lbl) > 6 else lbl
-                        pattern = re.compile(r'\b' + re.escape(base_term) + r'\w*', re.IGNORECASE)
-                        final_markdown = pattern.sub(link_html, final_markdown, count=10)
+        # Avtomatsko povezovanje besedila z grafom (Highlighting)
+        final_markdown = full_report
+        if nodes_to_link:
+            sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
+            for item in sorted_keywords:
+                lbl = item['label']
+                if len(lbl) > 2:
+                    g_url = urllib.parse.quote(lbl)
+                    link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
+                    base_term = lbl[: -2] if len(lbl) > 6 else lbl
+                    pattern = re.compile(r'\b' + re.escape(base_term) + r'\w*', re.IGNORECASE)
+                    final_markdown = pattern.sub(link_html, final_markdown, count=10)
 
-            # --- 5. FINAL DISPLAY: SEQUENTIAL INTERACTIVE SYNERGY REPORT ---
+        # --- 5. FINAL DISPLAY: SEQUENTIAL INTERACTIVE SYNERGY REPORT ---
+        
+        # Combine Phase 1 (Groq) and Phase 2 (SambaNova) text for full-spectrum highlighting
+        # This ensures words in BOTH phases are linked.
+        combined_report_text = f"## 📚 PHASE 1: Structural Foundation\n\n{groq_synthesis}\n\n---\n## 💡 PHASE 2: Strategic Innovation Report\n\n{innovation_text}"
+        
+        # 5a. GLOBAL SEMANTIC HIGHLIGHTER (Multi-Phase Linking)
+        final_interactive_report = combined_report_text
+        if nodes_to_link:
+            # Sort keywords by length descending to ensure accurate replacement
+            sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
+            for item in sorted_keywords:
+                lbl = item['label']
+                if len(lbl) > 2:
+                    g_url = urllib.parse.quote(lbl)
+                    # The link style ensures high visibility
+                    link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
+                    
+                    # Unicode-safe regex to catch terms in both Phase 1 and Phase 2
+                    pattern = re.compile(rf'(?<!\w){re.escape(lbl)}(?!\w)', re.IGNORECASE | re.UNICODE)
+                    # 5a. GLOBAL SEMANTIC HIGHLIGHTER (Multi-Phase Linking)
+        final_interactive_report = combined_report_text
+        if nodes_to_link:
+            # Razvrstimo ključne besede po dolžini (daljše prej), da se krajše ne vmešavajo
+            sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
+            for item in sorted_keywords:
+                lbl = item['label']
+                if len(lbl) > 2:
+                    g_url = urllib.parse.quote(lbl)
+                    link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
+                    
+                    # Unicode-safe regex
+                    pattern = re.compile(rf'(?<!\w){re.escape(lbl)}(?!\w)', re.IGNORECASE | re.UNICODE)
+                    
+                    # KLJUČNA SPREMEMBA: Dodan count=1, da se polinka le PRVA pojavitev besede
+                    final_interactive_report = pattern.sub(link_html, final_interactive_report, count=1)
+
+        # 5b. RENDERING THE INTERACTIVE REPORT
+        st.subheader("🧱 INTEGRATED HIERARCHOLOGICAL REPORT")
+        if biblio_data:
+            with st.expander("📚 EXTRACTED AUTHOR BACKGROUND", expanded=False):
+                st.markdown(biblio_data)
+        
+        # Display the full linked report (P1 + P2)
+        st.markdown(final_interactive_report, unsafe_allow_html=True)
+
+        # 5c. INNOVATION DEEP-DIVE: DETAILED BREAKTHROUGH CATALOG
+        if final_elements:
+            st.divider()
+            st.markdown("### 🚀 STRATEGIC INNOVATION DEEP-DIVE")
+            st.info("The following strategic breakthroughs have been synthesized from the multi-dimensional analysis above.")
             
-            # Combine Phase 1 (Groq) and Phase 2 (SambaNova) text for full-spectrum highlighting
-            # This ensures words in BOTH phases are linked.
-            combined_report_text = f"## 📚 PHASE 1: Structural Foundation\n\n{groq_synthesis}\n\n---\n## 💡 PHASE 2: Strategic Innovation Report\n\n{innovation_text}"
+            # Extract innovations (diamonds) for detailed report-style display
+            innovations = [n['data'] for n in final_elements if n['data'].get('shape') == 'diamond']
             
-            # 5a. GLOBAL SEMANTIC HIGHLIGHTER (Multi-Phase Linking)
-            final_interactive_report = combined_report_text
-            if nodes_to_link:
-                # Sort keywords by length descending to ensure accurate replacement
-                sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
-                for item in sorted_keywords:
-                    lbl = item['label']
-                    if len(lbl) > 2:
-                        g_url = urllib.parse.quote(lbl)
-                        # The link style ensures high visibility
-                        link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
-                        
-                        # Unicode-safe regex to catch terms in both Phase 1 and Phase 2
-                        pattern = re.compile(rf'(?<!\w){re.escape(lbl)}(?!\w)', re.IGNORECASE | re.UNICODE)
-                        # 5a. GLOBAL SEMANTIC HIGHLIGHTER (Multi-Phase Linking)
-            final_interactive_report = combined_report_text
-            if nodes_to_link:
-                # Razvrstimo ključne besede po dolžini (daljše prej), da se krajše ne vmešavajo
-                sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
-                for item in sorted_keywords:
-                    lbl = item['label']
-                    if len(lbl) > 2:
-                        g_url = urllib.parse.quote(lbl)
-                        link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
-                        
-                        # Unicode-safe regex
-                        pattern = re.compile(rf'(?<!\w){re.escape(lbl)}(?!\w)', re.IGNORECASE | re.UNICODE)
-                        
-                        # KLJUČNA SPREMEMBA: Dodan count=1, da se polinka le PRVA pojavitev besede
-                        final_interactive_report = pattern.sub(link_html, final_interactive_report, count=1)
-
-            # 5b. RENDERING THE INTERACTIVE REPORT
-            st.subheader("🧱 INTEGRATED HIERARCHOLOGICAL REPORT")
-            if biblio_data:
-                with st.expander("📚 EXTRACTED AUTHOR BACKGROUND", expanded=False):
-                    st.markdown(biblio_data)
-            
-            # Display the full linked report (P1 + P2)
-            st.markdown(final_interactive_report, unsafe_allow_html=True)
-
-            # 5c. INNOVATION DEEP-DIVE: DETAILED BREAKTHROUGH CATALOG
-            if final_elements:
-                st.divider()
-                st.markdown("### 🚀 STRATEGIC INNOVATION DEEP-DIVE")
-                st.info("The following strategic breakthroughs have been synthesized from the multi-dimensional analysis above.")
-                
-                # Extract innovations (diamonds) for detailed report-style display
-                innovations = [n['data'] for n in final_elements if n['data'].get('shape') == 'diamond']
-                
-                if innovations:
-                    for inv in innovations:
-                        g_url = urllib.parse.quote(inv['label'])
-                        # Fetch the precise description generated by the model
-                        detailed_desc = inv.get('description', "Detailed strategic analysis is available in the integrated report above.")
-                        
-                        # High-End Report Style Card
-                        st.markdown(f"""
-                        <div style="background-color: #ffffff; border-left: 6px solid #fd7e14; padding: 25px; border-radius: 15px; box-shadow: 0 6px 15px rgba(0,0,0,0.1); border: 1px solid #eee; margin-bottom: 25px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                                <span style="background-color: #fff4ed; color: #fd7e14; padding: 5px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; border: 1px solid #fd7e14;">Strategic Breakthrough</span>
-                                <a href="https://www.google.com/search?q={g_url}" target="_blank" style="text-decoration: none; color: #457b9d; font-size: 0.85em; font-weight: 600;">Technical Search ↗</a>
-                            </div>
-                            <h2 style="margin: 0 0 15px 0; color: #1d3557; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">{inv['label']}</h2>
-                            <div style="color: #333; font-size: 1.05em; line-height: 1.7; border-top: 1px solid #f0f0f0; padding-top: 15px;">
-                                {detailed_desc}
-                            </div>
+            if innovations:
+                for inv in innovations:
+                    g_url = urllib.parse.quote(inv['label'])
+                    # Fetch the precise description generated by the model
+                    detailed_desc = inv.get('description', "Detailed strategic analysis is available in the integrated report above.")
+                    
+                    # High-End Report Style Card
+                    st.markdown(f"""
+                    <div style="background-color: #ffffff; border-left: 6px solid #fd7e14; padding: 25px; border-radius: 15px; box-shadow: 0 6px 15px rgba(0,0,0,0.1); border: 1px solid #eee; margin-bottom: 25px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <span style="background-color: #fff4ed; color: #fd7e14; padding: 5px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; border: 1px solid #fd7e14;">Strategic Breakthrough</span>
+                            <a href="https://www.google.com/search?q={g_url}" target="_blank" style="text-decoration: none; color: #457b9d; font-size: 0.85em; font-weight: 600;">Technical Search ↗</a>
                         </div>
-                        """, unsafe_allow_html=True)
-                else:
-                    st.warning("No specific 'Diamond' innovations were found. Review the structural graph for implicit breakthroughs.")
-
-                # 5d. MINIMALIST SYSTEM LEGEND (FINAL ARCHITECTURE)
-                st.markdown("""
-                <div style="font-size: 0.78em; color: #444; background: #ffffff; padding: 15px 25px; border-radius: 15px; border: 1px solid #e9ecef; margin-top: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-                        <div>
-                            <b style="color: #1d3557; text-transform: uppercase; letter-spacing: 1px;">Nodes (Geometry):</b><br>
-                            ⭐ Goal | ⬢ Domain | 💠 Innovation | △ Process | ▭ Data | ⬣ Rule | ⭔ Bio
-                        </div>
-                        <div style="height: 30px; width: 1px; background: #dee2e6; display: block;"></div>
-                        <div>
-                            <b style="color: #1d3557; text-transform: uppercase; letter-spacing: 1px;">UML & Logic Connectors:</b><br>
-                            <span style="color:#e63946;">⬤ Structural (UML)</span> | 
-                            <span style="color:#000000;">⬤ Specialization (Deduction)</span> | 
-                            <span style="color:#1d3557;">⬤ Containment (Cage)</span>
-                        </div>
-                        <div style="height: 30px; width: 1px; background: #dee2e6; display: block;"></div>
-                        <div>
-                            <b style="color: #1d3557; text-transform: uppercase; letter-spacing: 1px;">Semantic Layers:</b><br>
-                            <span style="color:#1d3557;">⬤ Hierarchical (ISO)</span> | 
-                            <span style="color:#7b2cb1;">⬤ Associative</span> | 
-                            <span style="color:#2a9d8f;">⬤ Related</span> | 
-                            <span style="color:#f1c40f;">⬤ Equivalence</span>
+                        <h2 style="margin: 0 0 15px 0; color: #1d3557; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">{inv['label']}</h2>
+                        <div style="color: #333; font-size: 1.05em; line-height: 1.7; border-top: 1px solid #f0f0f0; padding-top: 15px;">
+                            {detailed_desc}
                         </div>
                     </div>
+                    """, unsafe_allow_html=True)
+            else:
+                st.warning("No specific 'Diamond' innovations were found. Review the structural graph for implicit breakthroughs.")
+
+            # 5d. MINIMALIST SYSTEM LEGEND (FINAL ARCHITECTURE)
+            st.markdown("""
+            <div style="font-size: 0.78em; color: #444; background: #ffffff; padding: 15px 25px; border-radius: 15px; border: 1px solid #e9ecef; margin-top: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                    <div>
+                        <b style="color: #1d3557; text-transform: uppercase; letter-spacing: 1px;">Nodes (Geometry):</b><br>
+                        ⭐ Goal | ⬢ Domain | 💠 Innovation | △ Process | ▭ Data | ⬣ Rule | ⭔ Bio
+                    </div>
+                    <div style="height: 30px; width: 1px; background: #dee2e6; display: block;"></div>
+                    <div>
+                        <b style="color: #1d3557; text-transform: uppercase; letter-spacing: 1px;">UML & Logic Connectors:</b><br>
+                        <span style="color:#e63946;">⬤ Structural (UML)</span> | 
+                        <span style="color:#000000;">⬤ Specialization (Deduction)</span> | 
+                        <span style="color:#1d3557;">⬤ Containment (Cage)</span>
+                    </div>
+                    <div style="height: 30px; width: 1px; background: #dee2e6; display: block;"></div>
+                    <div>
+                        <b style="color: #1d3557; text-transform: uppercase; letter-spacing: 1px;">Semantic Layers:</b><br>
+                        <span style="color:#1d3557;">⬤ Hierarchical (ISO)</span> | 
+                        <span style="color:#7b2cb1;">⬤ Associative</span> | 
+                        <span style="color:#2a9d8f;">⬤ Related</span> | 
+                        <span style="color:#f1c40f;">⬤ Equivalence</span>
+                    </div>
                 </div>
-                """, unsafe_allow_html=True)
+            </div>
+            """, unsafe_allow_html=True)
 
-                # 5e. FINAL GRAPH RENDERING
-                st.subheader(f"🕸️ HYBRID SEMANTIC SYSTEM MAP")
-                render_cytoscape_network(final_elements, f"cy_{int(time.time())}")
+            # 5e. FINAL GRAPH RENDERING
+            st.subheader(f"🕸️ HYBRID SEMANTIC SYSTEM MAP")
+            render_cytoscape_network(final_elements, f"cy_{int(time.time())}")
 
-        except Exception as e:
-            st.error(f"❌ Pipeline Failure: {str(e)}")
+    except Exception as e:
+        st.error(f"❌ Pipeline Failure: {str(e)}")
 
 # =============================================================================
 # 6. FOOTER
