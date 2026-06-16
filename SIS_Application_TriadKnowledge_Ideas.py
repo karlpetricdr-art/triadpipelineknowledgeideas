@@ -286,12 +286,18 @@ def render_cytoscape_network(elements, container_id="cy_canvas"):
                             'opacity': 0.8
                         }}
                     }},
-                    /* --- UML NOTACIJA --- */
+                    /* --- UML NOTACIJA (RAZŠIRJENA) --- */
                     {{ selector: 'edge[rel_type="Generalization"]', style: {{ 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow', 'width': 3 }} }},
                     {{ selector: 'edge[rel_type="Realization"]', style: {{ 'line-style': 'dashed', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' }} }},
                     {{ selector: 'edge[rel_type="Composition"]', style: {{ 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'filled', 'width': 4 }} }},
                     {{ selector: 'edge[rel_type="Aggregation"]', style: {{ 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'hollow', 'width': 3 }} }},
                     {{ selector: 'edge[rel_type="Dependency"]', style: {{ 'line-style': 'dashed', 'target-arrow-shape': 'vee' }} }},
+                    
+                    /* NOVO: Specialization (Deduktivna smer) */
+                    {{ selector: 'edge[rel_type="Specialization"]', style: {{ 'line-style': 'dashed', 'line-color': '#000000', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'filled', 'target-arrow-color': '#000000', 'width': 2 }} }},
+                    
+                    /* NOVO: Containment (Strukturna vsebovanost) */
+                    {{ selector: 'edge[rel_type="Containment"]', style: {{ 'line-color': '#1d3557', 'target-arrow-shape': 'circle', 'target-arrow-color': '#1d3557', 'target-arrow-fill': 'hollow', 'width': 4 }} }},
                     
                     /* --- ISO THESAURUS --- */
                     {{ selector: 'edge[rel_type="TT"]', style: {{ 'width': 6, 'line-color': '#1d3557' }} }},
@@ -803,23 +809,34 @@ with st.sidebar:
     st.link_button("🆔 ORCID Registry", "https://orcid.org/", use_container_width=True, key="side_orcid_link")
     st.link_button("🎓 Google Scholar", "https://scholar.google.com/", use_container_width=True, key="side_scholar_link")
     
-    # 6. KNOWLEDGE EXPLORER (Ohranjamo tvojo bogato vsebino)
+    # 6. KNOWLEDGE EXPLORER (POSODOBLJENA RAZŠIRJENA RAZLIČICA)
     st.divider()
     st.subheader("📚 KNOWLEDGE EXPLORER")
+
     with st.expander("👤 User Profile Ontologies", expanded=False):
         for p, d in KNOWLEDGE_BASE["User profiles"].items(): 
             st.markdown(f"**{p}**: {d['description']}")
+
     with st.expander("🧠 Mental Approach (MA) Map", expanded=False):
         for m, d in MENTAL_APPROACHES_ONTOLOGY["nodes"].items(): 
             st.markdown(f"• **{m}**: {d['desc']}")
+
     with st.expander("🏛️ Metamodel (IMA) Structures", expanded=False):
         for n, d in HUMAN_THINKING_METAMODEL["nodes"].items(): 
             st.markdown(f"• **{n}**: {d['desc']}")
+
     with st.expander("📐 Hierarchology & Hierarchography", expanded=False):
         st.markdown("**Core Concepts:**")
         for key, val in HIERARCHOLOGY_ONTOLOGY["core_definitions"].items():
             st.markdown(f"• **{key}**: {val}")
-    with st.expander("🔬 Science Taxonomy", expanded=False):
+        
+        st.markdown("---")
+        st.markdown("**Advanced Mapping Connectors:**")
+        st.markdown("• ⬛ ┄ ➤ **Specialization**: Deduktivna izpeljava iz splošnega zakona v specifičen primer (nasprotje generalizacije).")
+        st.markdown("• 🟦 — ◯ **Containment**: Močna strukturna vsebovanost; označuje elemente, ujetne znotraj 'znanstvene kletke'.")
+
+    with st.expander("🔬 Science Taxonomy & Levels", expanded=False):
+        st.markdown("**Field Domains:**")
         for s in sorted(KNOWLEDGE_BASE["Science fields"].keys()): 
             st.markdown(f"• **{s}**")
         
@@ -830,16 +847,16 @@ with st.sidebar:
             
         st.markdown("---")
         st.markdown("**Logic Flows:**")
-        st.markdown(f"• *Internal:* {HIERARCHOLOGY_ONTOLOGY['operational_logic']['Internal Processes']}")
-        st.markdown(f"• *External:* {HIERARCHOLOGY_ONTOLOGY['operational_logic']['External Functioning']}")
+        st.markdown(f"• *Internal (Inductive):* {HIERARCHOLOGY_ONTOLOGY['operational_logic']['Internal Processes']}")
+        st.markdown(f"• *External (Deductive):* {HIERARCHOLOGY_ONTOLOGY['operational_logic']['External Functioning']}")
         
         st.markdown("---")
         st.markdown("**Hierarchography Methods:**")
         st.write(", ".join(HIERARCHOLOGY_ONTOLOGY["hierarchography_tools"]))
-    with st.expander("🔬 Science Taxonomy", expanded=False):
-        for s in sorted(KNOWLEDGE_BASE["Science fields"].keys()): st.markdown(f"• **{s}**")
+
     with st.expander("🏗️ Structural Model Context", expanded=False):
-        for m, d in KNOWLEDGE_BASE["Structural models"].items(): st.markdown(f"**{m}**: {d}")
+        for m, d in KNOWLEDGE_BASE["Structural models"].items(): 
+            st.markdown(f"**{m}**: {d}")
 
 # --- MAIN PAGE CONTENT ---
 st.markdown('<h1 class="main-header-gradient">🧱 SIS Universal Knowledge Synthesizer</h1>', unsafe_allow_html=True)
@@ -977,9 +994,11 @@ A) THESAURUS LOGIC (ISO 25964 / Conceptual Taxonomy):
 
 B) UML LOGIC (OMG Standard / Structural Architecture):
 - 'Generalization': 'Is-a' Inheritance (e.g., Quantum Physics is a Generalization of Physics).
+- 'Specialization': The deductive opposite of Generalization. A downward move from a general law to a specific refined case.
+- 'Containment': A strong structural inclusion where a node is trapped or housed inside another. Mandatory for mapping concepts within a 'Scientific Cage'.
 - 'Realization': An Innovation/Tool implementing a Goal/Vision.
-- 'Composition': Strong 'Part-of' (Life-cycle dependent; the part cannot exist without the whole).
-- 'Aggregation': Weak 'Part-of' (The part can exist independently).
+- 'Composition': Strong 'Part-of' (Life-cycle dependent).
+- 'Aggregation': Weak 'Part-of' (Independent existence).
 - 'Dependency': Node A requires Node B to function.
 
 ### 3. MANDATORY GEOMETRY (SHAPES)
@@ -1061,8 +1080,15 @@ MANDATORY JSON STRUCTURE:
                         rel = e.get("rel_type", "Association")
                         
                         # Barvna matrika glede na tip ontologije
-                        if rel in ["Generalization", "Realization", "Composition", "Aggregation", "Dependency"]:
-                            e_color = "#E63946"  # UML = Rdeča (Struktura)
+                        # DODANO: Specialization in Containment v UML seznam
+                        if rel in ["Generalization", "Realization", "Composition", "Aggregation", "Dependency", "Specialization", "Containment"]:
+                            if rel == "Specialization":
+                                e_color = "#000000"  # Črna za deduktivno specializacijo
+                            elif rel == "Containment":
+                                e_color = "#1D3557"  # Temno modra za vsebovanost
+                            else:
+                                e_color = "#E63946"  # Standardna UML rdeča (Struktura)
+                                
                         elif rel in ["BT", "NT", "TT"]:
                             e_color = "#1D3557"  # Tezaver = Temno modra (Hierarhija)
                         elif rel == "IN":
@@ -1177,12 +1203,30 @@ MANDATORY JSON STRUCTURE:
                 else:
                     st.warning("No specific 'Diamond' innovations were found. Review the structural graph for implicit breakthroughs.")
 
-                # 5d. MINIMALIST SYSTEM LEGEND
+                # 5d. MINIMALIST SYSTEM LEGEND (FINAL ARCHITECTURE)
                 st.markdown("""
-                <div style="font-size: 0.75em; color: #666; background: #fdfdfd; padding: 12px 20px; border-radius: 30px; border: 1px solid #eee; margin-top: 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
-                    <span><b>Nodes:</b> ⭐ Goal | ⬢ Domain | 💠 Innovation | △ Process | ▭ Data</span>
-                    <span style="height: 15px; width: 1px; background: #ddd;"></span>
-                    <span><b>Logic:</b> <span style="color:#e63946;">⬤ Structural (UML)</span> | <span style="color:#1d3557;">⬤ Hierarchical (ISO)</span> | <span style="color:#2a9d8f;">⬤ Associative</span></span>
+                <div style="font-size: 0.78em; color: #444; background: #ffffff; padding: 15px 25px; border-radius: 15px; border: 1px solid #e9ecef; margin-top: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                        <div>
+                            <b style="color: #1d3557; text-transform: uppercase; letter-spacing: 1px;">Nodes (Geometry):</b><br>
+                            ⭐ Goal | ⬢ Domain | 💠 Innovation | △ Process | ▭ Data | ⬣ Rule | ⭔ Bio
+                        </div>
+                        <div style="height: 30px; width: 1px; background: #dee2e6; display: block;"></div>
+                        <div>
+                            <b style="color: #1d3557; text-transform: uppercase; letter-spacing: 1px;">UML & Logic Connectors:</b><br>
+                            <span style="color:#e63946;">⬤ Structural (UML)</span> | 
+                            <span style="color:#000000;">⬤ Specialization (Deduction)</span> | 
+                            <span style="color:#1d3557;">⬤ Containment (Cage)</span>
+                        </div>
+                        <div style="height: 30px; width: 1px; background: #dee2e6; display: block;"></div>
+                        <div>
+                            <b style="color: #1d3557; text-transform: uppercase; letter-spacing: 1px;">Semantic Layers:</b><br>
+                            <span style="color:#1d3557;">⬤ Hierarchical (ISO)</span> | 
+                            <span style="color:#7b2cb1;">⬤ Associative</span> | 
+                            <span style="color:#2a9d8f;">⬤ Related</span> | 
+                            <span style="color:#f1c40f;">⬤ Equivalence</span>
+                        </div>
+                    </div>
                 </div>
                 """, unsafe_allow_html=True)
 
