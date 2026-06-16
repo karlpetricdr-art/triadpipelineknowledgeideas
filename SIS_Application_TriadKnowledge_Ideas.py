@@ -229,16 +229,37 @@ SVG_3D_RELIEF = """
 # =============================================================================
 
 def render_cytoscape_network(elements, container_id="cy_canvas"):
-    """Napredni interaktivni Cytoscape.js motor z visoko gostoto prvin in UML/ISO notacijo."""
+    """
+    ULTRA-SYNERGY RENDERER: Vključuje celoten nabor UML in ISO standardov
+    z dinamičnim preklopom med hierarhičnimi in organskimi scenariji.
+    """
     cyto_html = f"""
-    <div style="position: relative; width: 100%;">
-        <button id="save_btn" style="position: absolute; top: 15px; right: 15px; z-index: 1000; padding: 10px 15px; background: #1d3557; color: white; border: none; border-radius: 8px; cursor: pointer; font-family: sans-serif; font-size: 12px; font-weight: 800; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">💾 EXPORT PNG</button>
-        <div id="{container_id}" style="width: 100%; height: 850px; background: #ffffff; border-radius: 20px; border: 1px solid #e0e0e0; box-shadow: 0 10px 40px rgba(0,0,0,0.08);"></div>
+    <div style="position: relative; width: 100%; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;">
+        
+        <!-- NAPREDNA KONTROLNA PLOŠČA ZA LAYOUT -->
+        <div style="position: absolute; top: 15px; left: 15px; z-index: 1000; background: rgba(255,255,255,0.96); padding: 12px; border-radius: 14px; box-shadow: 0 8px 30px rgba(0,0,0,0.12); border: 1px solid #e9ecef; display: flex; gap: 10px; align-items: center;">
+            <b style="font-size: 11px; color: #1d3557; text-transform: uppercase; letter-spacing: 0.5px;">Perspektiva:</b>
+            <button onclick="window.changeLayout('dagre', 'TB')" style="padding: 7px 14px; background: #1d3557; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 10px; font-weight: 800; transition: all 0.2s;">▼ DEDUKCIJA (V)</button>
+            <button onclick="window.changeLayout('dagre', 'LR')" style="padding: 7px 14px; background: #457b9d; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 10px; font-weight: 800; transition: all 0.2s;">▶ PROCES (H)</button>
+            <button onclick="window.changeLayout('cose')" style="padding: 7px 14px; background: #f1faee; color: #1d3557; border: 1px solid #a8dadc; border-radius: 8px; cursor: pointer; font-size: 10px; font-weight: 800; transition: all 0.2s;">☁ ASOCIACIJE</button>
+            <button onclick="window.changeLayout('concentric')" style="padding: 7px 14px; background: #e9ecef; color: #495057; border: none; border-radius: 8px; cursor: pointer; font-size: 10px; font-weight: 800; transition: all 0.2s;">◎ JEDRO</button>
+        </div>
+
+        <button id="save_btn" style="position: absolute; top: 15px; right: 15px; z-index: 1000; padding: 10px 20px; background: #e63946; color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 12px; font-weight: 800; box-shadow: 0 4px 15px rgba(230, 57, 70, 0.3); transition: transform 0.2s;">💾 IZVOZ PNG</button>
+        
+        <div id="{container_id}" style="width: 100%; height: 850px; background: #ffffff; border-radius: 20px; border: 1px solid #dee2e6; box-shadow: inset 0 2px 10px rgba(0,0,0,0.02);"></div>
     </div>
+
+    <!-- KNJIŽNICE -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"></script>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {{
-            var cy = cytoscape({{
+            if (typeof cytoscapeDagre !== 'undefined') {{ cytoscape.use(cytoscapeDagre); }}
+
+            var cy = window.cy = cytoscape({{
                 container: document.getElementById('{container_id}'),
                 elements: {json.dumps(elements)},
                 style: [
@@ -254,15 +275,14 @@ def render_cytoscape_network(elements, container_id="cy_canvas"):
                             'height': 'data(size)',
                             'shape': 'data(shape)',
                             'font-size': '12px',
-                            'font-weight': 'bold',
+                            'font-weight': '700',
                             'text-wrap': 'wrap',
                             'text-max-width': '80px',
                             'border-width': 3,
                             'border-color': '#ffffff',
-                            'border-opacity': 0.8,
                             'text-outline-color': '#ffffff',
                             'text-outline-width': 2,
-                            'box-shadow': '0 4px 10px rgba(0,0,0,0.2)'
+                            'box-shadow': '0 4px 10px rgba(0,0,0,0.1)'
                         }}
                     }},
                     {{
@@ -272,69 +292,83 @@ def render_cytoscape_network(elements, container_id="cy_canvas"):
                             'line-color': 'data(color)',
                             'label': 'data(rel_type)',
                             'font-size': '9px',
-                            'font-weight': 'bold',
-                            'color': '#2a9d8f',
-                            'curve-style': 'unbundled-bezier',
-                            'control-point-step-size': 40,
+                            'font-weight': '600',
+                            'color': '#457b9d',
                             'target-arrow-color': 'data(color)',
                             'target-arrow-shape': 'vee',
+                            'curve-style': 'bezier',
                             'text-background-opacity': 1,
                             'text-background-color': '#ffffff',
                             'text-background-padding': '3px',
                             'text-background-shape': 'roundrectangle',
-                            'edge-distances': 'node-position',
-                            'opacity': 0.8
+                            'opacity': 0.8,
+                            'edge-distances': 'node-position'
                         }}
                     }},
-                    /* --- UML NOTACIJA (RAZŠIRJENA) --- */
+                    
+                    /* --- UML SPECIFIKACIJE --- */
                     {{ selector: 'edge[rel_type="Generalization"]', style: {{ 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow', 'width': 3 }} }},
                     {{ selector: 'edge[rel_type="Realization"]', style: {{ 'line-style': 'dashed', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' }} }},
                     {{ selector: 'edge[rel_type="Composition"]', style: {{ 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'filled', 'width': 4 }} }},
                     {{ selector: 'edge[rel_type="Aggregation"]', style: {{ 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'hollow', 'width': 3 }} }},
                     {{ selector: 'edge[rel_type="Dependency"]', style: {{ 'line-style': 'dashed', 'target-arrow-shape': 'vee' }} }},
                     
-                    /* NOVO: Specialization (Deduktivna smer) */
+                    /* --- SPECIAL CONNECTORS (Hierarchology) --- */
                     {{ selector: 'edge[rel_type="Specialization"]', style: {{ 'line-style': 'dashed', 'line-color': '#000000', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'filled', 'target-arrow-color': '#000000', 'width': 2 }} }},
+                    {{ selector: 'edge[rel_type="Containment"]', style: {{ 'line-color': '#1d3557', 'target-arrow-shape': 'circle', 'target-arrow-fill': 'hollow', 'target-arrow-color': '#1d3557', 'width': 4 }} }},
                     
-                    /* NOVO: Containment (Strukturna vsebovanost) */
-                    {{ selector: 'edge[rel_type="Containment"]', style: {{ 'line-color': '#1d3557', 'target-arrow-shape': 'circle', 'target-arrow-color': '#1d3557', 'target-arrow-fill': 'hollow', 'width': 4 }} }},
-                    
-                    /* --- ISO THESAURUS --- */
-                    {{ selector: 'edge[rel_type="TT"]', style: {{ 'width': 6, 'line-color': '#1d3557' }} }},
-                    {{ selector: 'edge[rel_type="BT"]', style: {{ 'width': 4, 'line-color': '#1d3557' }} }},
-                    {{ selector: 'edge[rel_type="NT"]', style: {{ 'width': 4, 'line-color': '#1d3557' }} }},
-                    {{ selector: 'edge[rel_type="EQ"]', style: {{ 'line-style': 'double', 'width': 5, 'line-color': '#f1c40f' }} }},
-                    {{ selector: 'edge[rel_type="RT"]', style: {{ 'line-style': 'dotted', 'width': 2, 'line-color': '#2a9d8f', 'target-arrow-shape': 'none' }} }},
+                    /* --- ISO THESAURUS (Taksonomija) --- */
+                    {{ selector: 'edge[rel_type="TT"]', style: {{ 'width': 6, 'line-color': '#1d3557', 'target-arrow-shape': 'triangle' }} }},
+                    {{ selector: 'edge[rel_type="BT"]', style: {{ 'width': 4, 'line-color': '#1d3557', 'target-arrow-shape': 'triangle' }} }},
+                    {{ selector: 'edge[rel_type="NT"]', style: {{ 'width': 4, 'line-color': '#457b9d', 'target-arrow-shape': 'triangle' }} }},
+                    {{ selector: 'edge[rel_type="IN"]', style: {{ 'width': 3, 'line-style': 'dotted', 'line-color': '#0077b6', 'target-arrow-shape': 'chevron' }} }},
+                    {{ selector: 'edge[rel_type="EQ"]', style: {{ 'line-style': 'double', 'width': 4, 'line-color': '#f1c40f', 'target-arrow-shape': 'none' }} }},
                     {{ selector: 'edge[rel_type="AS"]', style: {{ 'line-style': 'dashed', 'width': 2, 'line-color': '#7b2cb1' }} }},
-                    {{ selector: 'edge[rel_type="IN"]', style: {{ 'line-style': 'dotted', 'width': 3, 'line-color': '#0077b6', 'target-arrow-shape': 'triangle' }} }},
-                    
-                    /* Poudarek na zvezdah (Macro cilji) */
-                    {{ selector: 'node[shape="star"]', style: {{ 'font-size': '16px', 'width': 130, 'height': 130, 'border-width': 5, 'border-color': '#FFD700' }} }}
+                    {{ selector: 'edge[rel_type="RT"]', style: {{ 'line-style': 'dotted', 'width': 2, 'line-color': '#2a9d8f', 'target-arrow-shape': 'none' }} }},
+
+                    /* STILI ZA POSEBNE OBLIKE */
+                    {{ selector: 'node[shape="star"]', style: {{ 'font-size': '16px', 'width': 135, 'height': 135, 'border-width': 5, 'border-color': '#FFD700' }} }},
+                    {{ selector: 'node[shape="diamond"]', style: {{ 'border-color': '#fd7e14' }} }}
                 ],
-                layout: {{
-                    name: 'cose',
-                    idealEdgeLength: 120,
-                    nodeOverlap: 50,
-                    refresh: 20,
-                    fit: true,
-                    padding: 50,
-                    randomize: false,
-                    componentSpacing: 120,
-                    nodeRepulsion: 1000000,
-                    edgeElasticity: 100,
-                    nestingFactor: 1.2,
-                    gravity: 1,
-                    numIter: 1500,
-                    initialTemp: 1000,
-                    coolingFactor: 0.99,
-                    minTemp: 1.0
+                layout: {{ 
+                    name: 'dagre', 
+                    rankDir: 'TB', 
+                    nodeSep: 70, 
+                    rankSep: 120,
+                    animate: true,
+                    animationDuration: 500
                 }}
             }});
 
+            // DINAMIČNA LOGIKA PREKLOPA
+            window.changeLayout = function(layoutName, direction) {{
+                var options = {{
+                    name: layoutName,
+                    animate: true,
+                    animationDuration: 800,
+                    refresh: 20
+                }};
+                
+                if (layoutName === 'dagre') {{
+                    options.rankDir = direction;
+                    options.nodeSep = 70;
+                    options.rankSep = 120;
+                }} else if (layoutName === 'cose') {{
+                    options.nodeOverlap = 100;
+                    options.componentSpacing = 150;
+                    options.nodeRepulsion = 1000000;
+                    options.edgeElasticity = 100;
+                    options.nestingFactor = 1.2;
+                }}
+                
+                cy.layout(options).run();
+            }};
+
+            // EXPORT PNG
             document.getElementById('save_btn').addEventListener('click', function() {{
                 var png64 = cy.png({{full: true, bg: 'white', scale: 2}});
                 var link = document.createElement('a');
-                link.href = png64; link.download = 'hierarchograph_standard.png';
+                link.href = png64; link.download = 'sis_knowledge_graph.png';
                 link.click();
             }});
         }});
@@ -1034,7 +1068,7 @@ MANDATORY JSON STRUCTURE:
                 )
                 cerebras_innovation = samba_response.choices[0].message.content
 
-            # --- 4. PROCESIRANJE REZULTATOV (Z GEOMETRIJSKO LOGIKO) ---
+            # --- 4. PROCESIRANJE REZULTATOV (Z NAPREDNO KOLORIZACIJO IN GEOMETRIJO) ---
             if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
                 parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
                 innovation_text = parts[0]
@@ -1043,64 +1077,77 @@ MANDATORY JSON STRUCTURE:
                 innovation_text = cerebras_innovation
                 json_raw = ""
 
-            full_report = f"## 📚 Phase 1: Foundation (Groq)\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations (SambaNova)\n\n{innovation_text}"
-            
             nodes_to_link = []
             final_elements = []
 
+            # Iskanje JSON bloka v odgovoru
             json_match = re.search(r'(\{.*"nodes".*\})', json_raw if json_raw else cerebras_innovation, re.DOTALL | re.IGNORECASE)
             
             if json_match:
                 try:
                     g_data = json.loads(json_match.group(1))
                     
-                    # --- PROCESIRANJE VOZLIŠČ Z DINAMIČNO VELIKOSTJO ---
+                    # --- A) PROCESIRANJE VOZLIŠČ (NODES) ---
                     for n in g_data.get("nodes", []):
                         lbl = n.get("label", "Node")
                         nid = n.get("id", f"n{lbl}")
                         n_color = n.get("color", "#DDEBF7")
                         n_shape = n.get("shape", "rectangle")
                         
-                        # Velikostna hierarhija glede na obliko
-                        if n_shape == 'star': n_size = 125
-                        elif n_shape == 'diamond': n_size = 110
-                        elif n_shape == 'octagon': n_size = 105
-                        elif n_shape == 'hexagon': n_size = 100
-                        elif n_shape == 'triangle': n_size = 95
-                        elif n_shape == 'ellipse': n_size = 90
-                        else: n_size = 85
+                        # Dinamična velikost glede na hierarhično pomembnost (Macro > Meso > Micro)
+                        if n_shape == 'star': n_size = 135        # Macro Cilji
+                        elif n_shape == 'diamond': n_size = 115   # Inovacije
+                        elif n_shape == 'octagon': n_size = 110   # Pravila/Etika
+                        elif n_shape == 'hexagon': n_size = 105   # Znanstvena področja
+                        elif n_shape == 'triangle': n_size = 95   # Procesi
+                        elif n_shape == 'ellipse': n_size = 90    # Identitete
+                        else: n_size = 85                         # Podatki/Dejstva
                         
                         nodes_to_link.append({"id": nid, "label": lbl})
                         final_elements.append({
-                            "data": {"id": nid, "label": lbl, "color": n_color, "shape": n_shape, "size": n_size}
+                            "data": {
+                                "id": nid, 
+                                "label": lbl, 
+                                "color": n_color, 
+                                "shape": n_shape, 
+                                "size": n_size,
+                                "description": n.get("description", "")
+                            }
                         })
 
-                    # --- PROCESIRANJE POVEZAV (UML + THESAURUS) ---
+                    # --- B) PROCESIRANJE POVEZAV (EDGES) - POLNA KOLORIZACIJA ---
                     for e in g_data.get("edges", []):
                         rel = e.get("rel_type", "Association")
                         
-                        # Barvna matrika glede na tip ontologije
-                        # DODANO: Specialization in Containment v UML seznam
-                        if rel in ["Generalization", "Realization", "Composition", "Aggregation", "Dependency", "Specialization", "Containment"]:
-                            if rel == "Specialization":
-                                e_color = "#000000"  # Črna za deduktivno specializacijo
-                            elif rel == "Containment":
-                                e_color = "#1D3557"  # Temno modra za vsebovanost
-                            else:
-                                e_color = "#E63946"  # Standardna UML rdeča (Struktura)
-                                
-                        elif rel in ["BT", "NT", "TT"]:
-                            e_color = "#1D3557"  # Tezaver = Temno modra (Hierarhija)
+                        # 1. Skupina: UML Strukturne povezave (Rdeča)
+                        if rel in ["Generalization", "Realization", "Composition", "Aggregation", "Dependency"]:
+                            e_color = "#E63946" 
+                        
+                        # 2. Skupina: Specialni Hierarhografski konektorji
+                        elif rel == "Specialization":
+                            e_color = "#000000"  # Črna (Dedukcija)
+                        elif rel == "Containment":
+                            e_color = "#1D3557"  # Temno modra (Vsebovanost)
+                        
+                        # 3. Skupina: ISO Tezaver - Hierarhija (Temno modra/Navy)
+                        elif rel in ["TT", "BT", "NT"]:
+                            e_color = "#1D3557"
+                        
+                        # 4. Skupina: ISO Tezaver - Instance (Svetlo modra)
                         elif rel == "IN":
-                            e_color = "#0077B6"  # Instance = Svetlo modra
-                        elif rel == "AS":
-                            e_color = "#7B2CB1"  # Associative = Vijolična
+                            e_color = "#0077B6"
+                        
+                        # 5. Skupina: Semantične asociacije
                         elif rel == "EQ":
-                            e_color = "#F1C40F"  # Equivalence = Rumena
+                            e_color = "#F1C40F"  # Sinonimi/Equivalence (Rumena)
+                        elif rel == "AS":
+                            e_color = "#7B2CB1"  # Associative (Vijolična)
                         elif rel == "RT":
-                            e_color = "#2A9D8F"  # Related = Zelena
+                            e_color = "#2A9D8F"  # Related (Zelena)
+                        
+                        # Default barva za neznane tipe
                         else:
-                            e_color = "#ADB5BD"  # Default = Siva
+                            e_color = "#ADB5BD"
 
                         final_elements.append({
                             "data": {
@@ -1111,7 +1158,7 @@ MANDATORY JSON STRUCTURE:
                             }
                         })
                 except Exception as json_err:
-                    st.warning(f"Note: Graph structure issue: {json_err}")
+                    st.warning(f"Grafična struktura ni popolna: {json_err}")
 
             # Avtomatsko povezovanje besedila z grafom (Highlighting)
             final_markdown = full_report
