@@ -1115,7 +1115,7 @@ MANDATORY JSON STRUCTURE:
                         
                         nodes_to_link.append({"id": nid, "label": lbl})
                         final_elements.append({
-                            "data": {"id": nid, "label": lbl, "color": n_color, "shape": n_shape, "size": n_size}
+                            "data": {"id": nid, "label": lbl, "color": n_color, "shape": n_shape, "size": n_size, "description": n.get("description", "Detail breakdown in report.")}
                         })
 
                     # --- PROCESIRANJE POVEZAV (UML + THESAURUS) ---
@@ -1281,11 +1281,48 @@ MANDATORY JSON STRUCTURE:
                     container_id=f"cy_{int(time.time())}"
                 )
 
+                # --- NOVO: SHRANJEVANJE ZA GALERIJO (DODANO NA KONEC POROČILA) ---
+                st.session_state.final_graph_elements = final_elements
+                st.session_state.report_ready = True
+
         except Exception as e:
             st.error(f"❌ Pipeline Failure: {str(e)}")
+			
+# =============================================================================
+# 6. MULTI-PERSPECTIVE GALLERY (SEQUENTIAL EXPORT)
+# =============================================================================
+
+if st.session_state.get('report_ready') and 'final_graph_elements' in st.session_state:
+    st.divider()
+    st.markdown('<h2 style="color: #1d3557; text-align: center;">🖼️ MULTI-PERSPECTIVE GRAPH GALLERY</h2>', unsafe_allow_html=True)
+    st.info("💡 **NAVODILO ZA ZAPOREDNO SHRANJEVANJE:** Spodaj so zavihki z različnimi vizualnimi perspektivami istega znanja. Odprite posamezen zavihek in kliknite gumb **EXPORT PNG**, da shranite vseh 5 verzij na svoj disk.")
+
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+        "🌿 ORGANIC", "🌲 HIERARCHICAL", "⭕ CIRCULAR", "🎯 CONCENTRIC", "🔲 GRID"
+    ])
+
+    with tab1:
+        st.markdown("**Organic View:** Najboljše za odkrivanje naravnih tematskih sklopov.")
+        render_cytoscape_network(st.session_state.final_graph_elements, layout_type="organic", container_id="gal_organic")
+    
+    with tab2:
+        st.markdown("**Hierarchical View:** Logično drevo od splošnega k specifičnemu.")
+        render_cytoscape_network(st.session_state.final_graph_elements, layout_type="hierarchical", container_id="gal_hierarchical")
+        
+    with tab3:
+        st.markdown("**Circular View:** Fokus na relacijah in krožni soodvisnosti.")
+        render_cytoscape_network(st.session_state.final_graph_elements, layout_type="circular", container_id="gal_circular")
+        
+    with tab4:
+        st.markdown("**Concentric View:** Razporeditev po sistemski pomembnosti (Jedro).")
+        render_cytoscape_network(st.session_state.final_graph_elements, layout_type="concentric", container_id="gal_concentric")
+
+    with tab5:
+        st.markdown("**Grid View:** Pregledna poravnava vseh prvin.")
+        render_cytoscape_network(st.session_state.final_graph_elements, layout_type="grid", container_id="gal_grid")
 
 # =============================================================================
-# 6. FOOTER
+# 7. FOOTER
 # =============================================================================
 st.divider()
 st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | {SYSTEM_DATE}")
