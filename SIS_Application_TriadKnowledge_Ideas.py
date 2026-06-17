@@ -228,11 +228,60 @@ SVG_3D_RELIEF = """
 # 1. CORE RENDERING ENGINES & DATA FETCHING
 # =============================================================================
 
-def render_cytoscape_network(elements, container_id="cy_canvas"):
-    """Napredni interaktivni Cytoscape.js motor z visoko gostoto prvin in UML/ISO notacijo."""
+def render_cytoscape_network(elements, layout_type="organic", container_id="cy_canvas"):
+    """
+    Posodobljen motor z več perspektivami (Multi-Perspective Layout Engine).
+    Podpira: organic, hierarchical, circular, concentric, grid.
+    """
+    
+    # Mapiranje Python izbire v Cytoscape JS konfiguracije
+    layout_configs = {
+        "organic": """{ 
+            name: 'cose', 
+            idealEdgeLength: 120, 
+            nodeOverlap: 50, 
+            refresh: 20, 
+            fit: true, 
+            padding: 50, 
+            nodeRepulsion: 1000000,
+            edgeElasticity: 100,
+            nestingFactor: 1.2,
+            numIter: 1500
+        }""",
+        "hierarchical": """{ 
+            name: 'breadthfirst', 
+            directed: true, 
+            padding: 50, 
+            circle: false, 
+            spacingFactor: 1.75,
+            maximal: true
+        }""",
+        "circular": """{ 
+            name: 'circle', 
+            padding: 50, 
+            radius: 400,
+            spacingFactor: 0.8
+        }""",
+        "concentric": """{ 
+            name: 'concentric', 
+            minNodeSpacing: 60, 
+            concentric: function(node){ return node.data('size'); },
+            levelWidth: function(nodes){ return 10; },
+            padding: 50
+        }""",
+        "grid": """{ 
+            name: 'grid', 
+            rows: 5, 
+            padding: 50, 
+            spacingFactor: 1.2 
+        }"""
+    }
+
+    selected_layout = layout_configs.get(layout_type, layout_configs["organic"])
+
     cyto_html = f"""
     <div style="position: relative; width: 100%;">
-        <button id="save_btn" style="position: absolute; top: 15px; right: 15px; z-index: 1000; padding: 10px 15px; background: #1d3557; color: white; border: none; border-radius: 8px; cursor: pointer; font-family: sans-serif; font-size: 12px; font-weight: 800; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">💾 EXPORT PNG</button>
+        <button id="save_btn" style="position: absolute; top: 15px; right: 15px; z-index: 1000; padding: 10px 15px; background: #1d3557; color: white; border: none; border-radius: 8px; cursor: pointer; font-family: sans-serif; font-size: 12px; font-weight: 800; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">💾 EXPORT {layout_type.upper()} PNG</button>
         <div id="{container_id}" style="width: 100%; height: 850px; background: #ffffff; border-radius: 20px; border: 1px solid #e0e0e0; box-shadow: 0 10px 40px rgba(0,0,0,0.08);"></div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
@@ -286,17 +335,13 @@ def render_cytoscape_network(elements, container_id="cy_canvas"):
                             'opacity': 0.8
                         }}
                     }},
-                    /* --- UML NOTACIJA (RAZŠIRJENA) --- */
+                    /* --- UML NOTACIJA --- */
                     {{ selector: 'edge[rel_type="Generalization"]', style: {{ 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow', 'width': 3 }} }},
                     {{ selector: 'edge[rel_type="Realization"]', style: {{ 'line-style': 'dashed', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' }} }},
                     {{ selector: 'edge[rel_type="Composition"]', style: {{ 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'filled', 'width': 4 }} }},
                     {{ selector: 'edge[rel_type="Aggregation"]', style: {{ 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'hollow', 'width': 3 }} }},
                     {{ selector: 'edge[rel_type="Dependency"]', style: {{ 'line-style': 'dashed', 'target-arrow-shape': 'vee' }} }},
-                    
-                    /* NOVO: Specialization (Deduktivna smer) */
                     {{ selector: 'edge[rel_type="Specialization"]', style: {{ 'line-style': 'dashed', 'line-color': '#000000', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'filled', 'target-arrow-color': '#000000', 'width': 2 }} }},
-                    
-                    /* NOVO: Containment (Strukturna vsebovanost) */
                     {{ selector: 'edge[rel_type="Containment"]', style: {{ 'line-color': '#1d3557', 'target-arrow-shape': 'circle', 'target-arrow-color': '#1d3557', 'target-arrow-fill': 'hollow', 'width': 4 }} }},
                     
                     /* --- ISO THESAURUS --- */
@@ -311,30 +356,15 @@ def render_cytoscape_network(elements, container_id="cy_canvas"):
                     /* Poudarek na zvezdah (Macro cilji) */
                     {{ selector: 'node[shape="star"]', style: {{ 'font-size': '16px', 'width': 130, 'height': 130, 'border-width': 5, 'border-color': '#FFD700' }} }}
                 ],
-                layout: {{
-                    name: 'cose',
-                    idealEdgeLength: 120,
-                    nodeOverlap: 50,
-                    refresh: 20,
-                    fit: true,
-                    padding: 50,
-                    randomize: false,
-                    componentSpacing: 120,
-                    nodeRepulsion: 1000000,
-                    edgeElasticity: 100,
-                    nestingFactor: 1.2,
-                    gravity: 1,
-                    numIter: 1500,
-                    initialTemp: 1000,
-                    coolingFactor: 0.99,
-                    minTemp: 1.0
-                }}
+                layout: {selected_layout}
             }});
 
             document.getElementById('save_btn').addEventListener('click', function() {{
                 var png64 = cy.png({{full: true, bg: 'white', scale: 2}});
                 var link = document.createElement('a');
-                link.href = png64; link.download = 'hierarchograph_standard.png';
+                var timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+                link.href = png64; 
+                link.download = 'hierarchograph_{layout_type}_' + timestamp + '.png';
                 link.click();
             }});
         }});
@@ -774,7 +804,7 @@ with st.sidebar:
     groq_api_key = st.text_input("Groq Key (Phase 1):", type="password", key="side_groq_v2026")
     sambanova_api_key = st.text_input("SambaNova Key (Phase 2):", type="password", key="side_samba_v2026")
     
-   # 4. POSODOBLJENO: Najnovejša generacija modelov (Junij 2026)
+   # 4. POSODOBLJENO: Najnovejša generacija modelov (Junij 2026) & VIZUALNI MOTOR
     # Model gemma-4-31B-it je trenutno 'flagship' model na SambaNova Cloud.
     sambanova_id = st.selectbox(
         "SambaNova Model Endpoint:", 
@@ -787,6 +817,19 @@ with st.sidebar:
         ], 
         index=0, 
         key="side_model_select_v2026"
+    )
+    
+    st.divider()
+
+    # --- NOVO: IZBIRA PERSPEKTIVE GRAFA ---
+    st.subheader("🎨 GRAPH PERSPECTIVE")
+    graph_perspective = st.selectbox(
+        "Select Visual Layout Engine:",
+        options=["organic", "hierarchical", "circular", "concentric", "grid"],
+        index=0,
+        format_func=lambda x: x.capitalize() + " View",
+        help="Organic: Naravno grupiranje | Hierarchical: Drevesna struktura | Circular: Relacije | Concentric: Centralnost",
+        key="side_graph_layout_v2026"
     )
     
     st.divider()
@@ -1230,9 +1273,13 @@ MANDATORY JSON STRUCTURE:
                 </div>
                 """, unsafe_allow_html=True)
 
-                # 5e. FINAL GRAPH RENDERING
-                st.subheader(f"🕸️ HYBRID SEMANTIC SYSTEM MAP")
-                render_cytoscape_network(final_elements, f"cy_{int(time.time())}")
+                # 5e. FINAL GRAPH RENDERING (Z DINAMIČNO PERSPEKTIVO)
+                st.subheader(f"🕸️ HYBRID SEMANTIC SYSTEM MAP ({graph_perspective.upper()} VIEW)")
+                render_cytoscape_network(
+                    final_elements, 
+                    layout_type=graph_perspective, 
+                    container_id=f"cy_{int(time.time())}"
+                )
 
         except Exception as e:
             st.error(f"❌ Pipeline Failure: {str(e)}")
