@@ -617,7 +617,17 @@ KNOWLEDGE_BASE = {
         "Rationalism": "Reliance on deductive logic, a priori reasoning, and mathematical certainty.",
         "Constructivism": "Knowledge as a social and cognitive build, dependent on perception.",
         "Positivism": "Strict adherence to verifiable facts and rejection of speculation.",
-        "Pragmatism": "Evaluation based on utility and real-world application."
+        "Pragmatism": "Evaluation based on utility and real-world application.",
+        "Reductionism": "Explaining complex phenomena by breaking them down into simpler, fundamental parts.",
+        "Holism": "Systems should be viewed as wholes, not just as a collection of parts.",
+        "Systems Theory": "Interdisciplinary study of systems where the focus is on relationships and patterns.",
+        "Phenomenology": "Study of structures of consciousness as experienced from the first-person point of view.",
+        "Falsificationism": "Popper’s principle that scientific theories must be inherently testable and refutable.",
+        "Critical Theory": "Social theory oriented toward critiquing and changing society as a whole.",
+        "Hermeneutics": "Theory and methodology of interpretation, especially of texts and human actions.",
+        "Relativism": "The view that truth and falsity, right and wrong, are products of social and historical contexts.",
+        "Structuralism": "Elements of human culture must be understood in terms of their relationship to a broader system.",
+        "Post-Structuralism": "Critique of structuralism, emphasizing the instability of meaning and systems."
     },
     "Structural models": {
         "Causal Connections": "Chains of cause and effect mapping systemic causality.",
@@ -974,7 +984,7 @@ with col_inq3:
             st.error(f"Error reading file: {e}")
 
 # =============================================================================
-# 5. SYNERGY EXECUTION ENGINE (GROQ + SAMBANOVA + ORCID + UML)
+# 5. SYNERGY EXECUTION ENGINE (WITH CONDITIONAL ACTIVATION)
 # =============================================================================
 
 if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True, key="exec_pipeline_v2026"):
@@ -984,32 +994,62 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
         st.warning("⚠️ Phase 1 Research Inquiry is required.")
     else:
         try:
-            # --- 1. PRIDOBIVANJE PODATKOV (BIBLIOGRAFIJA + DATOTEKA) ---
+            # --- CONDITIONAL DIMENSION ACTIVATION ---
+            # The system only injects sidebar selections if [ACTIVATE] is present in the prompt.
+            trigger_keyword = "[ACTIVATE]"
+            active_context = ""
+            
+            if trigger_keyword in user_query or (idea_query and trigger_keyword in idea_query):
+                active_context = f"""
+                \n### MANDATORY SYSTEM INSTRUCTION: APPLY INTERFACE PARAMETERS ###
+                The user has explicitly activated the following constraints for this specific run:
+                - Target Science Fields: {', '.join(sel_sciences)}
+                - Applied Scientific Paradigms: {', '.join(sel_paradigms)}
+                - Structural Model Focus: {', '.join(sel_models)}
+                - Innovation Frameworks: {', '.join(selected_techniques)}
+                - Expertise Level: {expertise}
+                - Project Strategic Goal: {goal_context}
+                \n###########################################################\n
+                """
+
             with st.spinner('🔍 Accessing ORCID & Scholar databases...'):
                 biblio_data = fetch_author_bibliographies(target_authors) if target_authors else ""
             
-            # Priprava kontekstov
             file_context_str = f"\n\n[FILE CONTEXT]:\n{file_content}" if file_content else ""
             biblio_context = f"\n\n[AUTHOR RESEARCH BACKGROUND]:\n{biblio_data}" if biblio_data else ""
             
-            # Združen vhod za Groq (Phase 1)
-            full_ai_input = f"{user_query}{file_context_str}{biblio_context}"
+            # Combine the trigger context with the user query
+            full_ai_input = f"{active_context}{user_query}{file_context_str}{biblio_context}"
 
-            # Inicializacija klientov
+            # Initialization of clients
             groq_client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
             samba_client = OpenAI(api_key=sambanova_api_key, base_url="https://api.sambanova.ai/v1")
             
-            # --- 2. PHASE 1: GROQ (STRUKTURNA PODLAGA) ---
-            with st.spinner('PHASE 1: Building Architecture & Analyzing Author Context...'):
+            # --- PHASE 1: GROQ ---
+            with st.spinner('PHASE 1: Building Architecture...'):
                 p1_response = groq_client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=[
-                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. Integrate the provided Author Research Background and file data into your structural analysis."}, 
+                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. If the user provides specific Paradigms or Models in the 'MANDATORY SYSTEM INSTRUCTION', you MUST prioritize them in your structural analysis."}, 
                         {"role": "user", "content": full_ai_input}
                     ],
                     temperature=0.4
                 )
                 groq_synthesis = p1_response.choices[0].message.content
+                st.session_state.groq_synthesis = groq_synthesis
+
+            # --- PHASE 2: SAMBANOVA ---
+            with st.spinner(f'PHASE 2: SambaNova generating innovations...'):
+                # We inject the same active_context here to ensure Phase 2 follows the rules too
+                samba_response = samba_client.chat.completions.create(
+                    model=sambanova_id, 
+                    messages=[
+                        {"role": "system", "content": "You are the SIS Strategic Innovation Architect. Adhere strictly to the requested Innovation Frameworks and Science Fields provided in the instructions."}, 
+                        {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\n{active_context}\nUSER INNOVATION GOAL: {idea_query}"}
+                    ],
+                    temperature=0.85
+                )
+                cerebras_innovation = samba_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
 
             # --- 3. PHASE 2: SAMBANOVA (ULTRA-CREATIVE INNOVATION ENGINE) ---
