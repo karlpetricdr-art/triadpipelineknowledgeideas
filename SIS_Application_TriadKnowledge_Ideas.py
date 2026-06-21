@@ -231,7 +231,7 @@ SVG_3D_RELIEF = """
 def render_cytoscape_network(elements, layout_type="organic", container_id="cy_canvas"):
     """
     Posodobljen motor z več perspektivami (Multi-Perspective Layout Engine).
-    Podpira: organic, hierarchical, circular, concentric, grid.
+    Vključuje UML, ISO Thesaurus in Logične konektorje (AND, OR, XOR, NOT, IF-THEN).
     """
     
     # Mapiranje Python izbire v Cytoscape JS konfiguracije
@@ -341,6 +341,7 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
                     {{ selector: 'edge[rel_type="Composition"]', style: {{ 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'filled', 'width': 4 }} }},
                     {{ selector: 'edge[rel_type="Aggregation"]', style: {{ 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'hollow', 'width': 3 }} }},
                     {{ selector: 'edge[rel_type="Dependency"]', style: {{ 'line-style': 'dashed', 'target-arrow-shape': 'vee' }} }},
+                    {{ selector: 'edge[rel_type="Conflict"]', style: {{ 'width': 6, 'line-color': '#b91d1d', 'line-style': 'solid', 'target-arrow-color': '#b91d1d', 'target-arrow-shape': 'triangle-cross', 'source-arrow-shape': 'triangle-cross', 'source-arrow-color': '#b91d1d' }} }},
                     {{ selector: 'edge[rel_type="Specialization"]', style: {{ 'line-style': 'dashed', 'line-color': '#000000', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'filled', 'target-arrow-color': '#000000', 'width': 2 }} }},
                     {{ selector: 'edge[rel_type="Containment"]', style: {{ 'line-color': '#1d3557', 'target-arrow-shape': 'circle', 'target-arrow-color': '#1d3557', 'target-arrow-fill': 'hollow', 'width': 4 }} }},
                     
@@ -353,6 +354,13 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
                     {{ selector: 'edge[rel_type="AS"]', style: {{ 'line-style': 'dashed', 'width': 2, 'line-color': '#7b2cb1' }} }},
                     {{ selector: 'edge[rel_type="IN"]', style: {{ 'line-style': 'dotted', 'width': 3, 'line-color': '#0077b6', 'target-arrow-shape': 'triangle' }} }},
                     
+                    /* --- LOGIČNI KONEKTORJI (Decision Logic) --- */
+                    {{ selector: 'edge[rel_type="AND"]', style: {{ 'width': 5, 'line-color': '#00FF00', 'target-arrow-color': '#00FF00', 'target-arrow-shape': 'triangle' }} }},
+                    {{ selector: 'edge[rel_type="OR"]', style: {{ 'width': 3, 'line-color': '#00BFFF', 'line-style': 'dashed', 'target-arrow-color': '#00BFFF', 'target-arrow-shape': 'vee' }} }},
+                    {{ selector: 'edge[rel_type="XOR"]', style: {{ 'width': 4, 'line-color': '#FF8C00', 'line-style': 'double', 'target-arrow-color': '#FF8C00', 'target-arrow-shape': 'diamond' }} }},
+                    {{ selector: 'edge[rel_type="NOT"]', style: {{ 'width': 4, 'line-color': '#FF0000', 'line-style': 'dashed', 'target-arrow-color': '#FF0000', 'target-arrow-shape': 'tee' }} }},
+                    {{ selector: 'edge[rel_type="IF-THEN"]', style: {{ 'width': 4, 'line-color': '#FFD700', 'target-arrow-color': '#FFD700', 'target-arrow-shape': 'triangle', 'arrow-scale': 1.3 }} }},
+
                     /* Poudarek na zvezdah (Macro cilji) */
                     {{ selector: 'node[shape="star"]', style: {{ 'font-size': '16px', 'width': 130, 'height': 130, 'border-width': 5, 'border-color': '#FFD700' }} }}
                 ],
@@ -1083,6 +1091,14 @@ B) UML LOGIC (OMG Standard / Structural Architecture):
 - 'Composition': Strong 'Part-of' (Life-cycle dependent).
 - 'Aggregation': Weak 'Part-of' (Independent existence).
 - 'Dependency': Node A requires Node B to function.
+- 'Conflict': A Systemic tension, incompatibility, or direct conflict between two elements.
+
+C) LOGICAL CONNECTORS (Decision Logic):
+- 'AND': Močna sinteza, kjer morata oba pogoja obstajati hkrati (Veznik IN).
+- 'OR': Alternativna pot ali izbira med koncepti (Veznik ALI).
+- 'XOR': Izključujoči ALI (Koncepta sta nezdružljiva ali paradoksalna).
+- 'NOT': Negacija ali prepovedana povezava (Meja znanstvene kletke).
+- 'IF-THEN': Vzročna posledica ali pogojni prehod.
 
 ### 3. MANDATORY GEOMETRY (SHAPES)
 - 'star': Ultimate Goals / Macro-Vision.
@@ -1158,32 +1174,51 @@ MANDATORY JSON STRUCTURE:
                             "data": {"id": nid, "label": lbl, "color": n_color, "shape": n_shape, "size": n_size, "description": n.get("description", "Detail breakdown in report.")}
                         })
 
-                    # --- PROCESIRANJE POVEZAV (UML + THESAURUS) ---
+                    # --- PROCESIRANJE POVEZAV (UML + THESAURUS + LOGIC) ---
                     for e in g_data.get("edges", []):
                         rel = e.get("rel_type", "Association")
                         
-                        # Barvna matrika glede na tip ontologije
-                        # DODANO: Specialization in Containment v UML seznam
-                        if rel in ["Generalization", "Realization", "Composition", "Aggregation", "Dependency", "Specialization", "Containment"]:
-                            if rel == "Specialization":
-                                e_color = "#000000"  # Črna za deduktivno specializacijo
+                        # A) UML IN STRUKTURNA LOGIKA (Rdeča/Črna/Modra skala)
+                        if rel in ["Generalization", "Realization", "Composition", "Aggregation", "Dependency", "Specialization", "Containment", "Conflict"]:
+                            if rel == "Conflict":
+                                e_color = "#b91d1d"  # Temno rdeča za trčenje/spor
+                            elif rel == "Specialization":
+                                e_color = "#000000"  # Črna za dedukcijo
                             elif rel == "Containment":
-                                e_color = "#1D3557"  # Temno modra za vsebovanost
+                                e_color = "#1D3557"  # Temno modra za "Scientific Cage"
+                            elif rel == "Generalization":
+                                e_color = "#E63946"  # UML rdeča
+                            elif rel == "Realization":
+                                e_color = "#E63946"  # UML rdeča
                             else:
-                                e_color = "#E63946"  # Standardna UML rdeča (Struktura)
+                                e_color = "#E63946"  # Privzeta UML rdeča (Dependency, Aggregation...)
                                 
+                        # B) ISO THESAURUS (Hierarhologija - Modra/Vijolična skala)
                         elif rel in ["BT", "NT", "TT"]:
-                            e_color = "#1D3557"  # Tezaver = Temno modra (Hierarhija)
+                            e_color = "#1D3557"  # Temno modra (Nivoji)
                         elif rel == "IN":
-                            e_color = "#0077B6"  # Instance = Svetlo modra
+                            e_color = "#0077B6"  # Svetlo modra (Instanca)
                         elif rel == "AS":
-                            e_color = "#7B2CB1"  # Associative = Vijolična
+                            e_color = "#7B2CB1"  # Vijolična (Asociativna)
                         elif rel == "EQ":
-                            e_color = "#F1C40F"  # Equivalence = Rumena
+                            e_color = "#F1C40F"  # Rumena (Ekvivalenca)
                         elif rel == "RT":
-                            e_color = "#2A9D8F"  # Related = Zelena
+                            e_color = "#2A9D8F"  # Zelena (Povezano)
+
+                        # C) LOGIČNI KONEKTORJI (Decision Logic - Neon skala)
+                        elif rel == "AND":
+                            e_color = "#00FF00"  # Neon zelena
+                        elif rel == "OR":
+                            e_color = "#00BFFF"  # Svetlo modra
+                        elif rel == "XOR":
+                            e_color = "#FF8C00"  # Oranžna
+                        elif rel == "NOT":
+                            e_color = "#FF0000"  # Rdeča
+                        elif rel == "IF-THEN":
+                            e_color = "#FFD700"  # Zlata
+                            
                         else:
-                            e_color = "#ADB5BD"  # Default = Siva
+                            e_color = "#ADB5BD"  # Če tipa ne pozna = Siva
 
                         final_elements.append({
                             "data": {
