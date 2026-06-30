@@ -689,6 +689,30 @@ KNOWLEDGE_BASE = {
             "tools": ["NVivo", "SPSS", "Census Data", "Social Graphs"], 
             "facets": ["Demography", "Stratification", "Dynamics", "Urban Sociology"]
         },
+        "Political Science": {
+            "cat": "Social",
+            "methods": ["Comparative Method", "Institutional Analysis", "Quantitative Modeling", "Political Theory Analysis"],
+            "tools": ["STATA", "Polling Data", "Legislative Archives"],
+            "facets": ["International Relations", "Comparative Politics", "Political Theory", "Public Policy", "Geopolitics"]
+        },
+        "Anthropology": {
+            "cat": "Social/Humanities",
+            "methods": ["Participant Observation", "Ethnography", "Cross-Cultural Comparison", "Archaeological Excavation"],
+            "tools": ["Field Journals", "GIS", "Radiocarbon Dating"],
+            "facets": ["Cultural Anthropology", "Biological Anthropology", "Archaeology", "Linguistic Anthropology"]
+        },
+        "Cognitive Science": {
+            "cat": "Interdisciplinary",
+            "methods": ["Computational Modeling", "Experimental Paradigm Design", "Turing Analysis"],
+            "tools": ["AI Architectures", "Eye-tracking", "Reaction-time Latency"],
+            "facets": ["Artificial Intelligence", "Philosophy of Mind", "Cognitive Psychology", "Linguistics"]
+        },
+        "Complexity Science": {
+            "cat": "Formal/Interdisciplinary",
+            "methods": ["Agent-Based Modeling", "Network Topology", "Chaos Theory", "Fractal Analysis"],
+            "tools": ["NetLogo", "Graph Theory Software", "Non-linear Simulators"],
+            "facets": ["Self-Organization", "Emergence", "System Dynamics", "Complex Adaptive Systems"]
+        },
         "Computer Science": {
             "cat": "Formal", 
             "methods": ["Algorithm Design", "Verification", "Complexity Analysis", "Parallelism"], 
@@ -704,14 +728,26 @@ KNOWLEDGE_BASE = {
         "Psychiatry": {
             "cat": "Applied/Medical", 
             "methods": ["Clinical Trials", "Diagnostic Interviewing", "Case Formulation", "Psychopharmacological Modeling", "Neuroimaging Analysis"], 
-            "tools": ["DSM-5-TR", "ICD-11", "EEG", "fMRI", "Standardized Rating Scales (PHQ-9, HAM-D)"], 
-            "facets": ["Clinical Psychiatry", "Neuropsychiatry", "Forensic Psychiatry", "Child & Adolescent Psychiatry", "Geriatric Psychiatry"]
+            "tools": ["DSM-5-TR", "ICD-11", "EEG", "fMRI", "Standardized Rating Scales"], 
+            "facets": ["Clinical Psychiatry", "Neuropsychiatry", "Forensic Psychiatry", "Geriatric Psychiatry"]
+        },
+        "Public Health": {
+            "cat": "Applied/Social",
+            "methods": ["Biostatistics", "Community Health Assessment", "Policy Advocacy", "Epidemiological Surveillance"],
+            "tools": ["Vital Statistics", "Health Registries", "GIS"],
+            "facets": ["Epidemiology", "Environmental Health", "Global Health", "Health Policy"]
         },
         "Engineering": {
             "cat": "Applied", 
             "methods": ["FEA Analysis", "Prototyping", "Stress Testing", "Systems Integration"], 
             "tools": ["CAD", "3D Printers", "CNC Machines", "Simulation SW"], 
             "facets": ["Robotics", "Nanotechnology", "Civil Eng", "Electrical Eng"]
+        },
+        "Materials Science": {
+            "cat": "Applied/Natural",
+            "methods": ["Crystallography", "Metallography", "Polymer Characterization", "Nano-fabrication"],
+            "tools": ["SEM (Scanning Electron Microscope)", "X-ray Diffraction", "Spectroscopy"],
+            "facets": ["Nanomaterials", "Biomaterials", "Metallurgy", "Semiconductors"]
         },
         "Economics": {
             "cat": "Social", 
@@ -758,14 +794,14 @@ KNOWLEDGE_BASE = {
         "Geography": {
             "cat": "Natural/Social", 
             "methods": ["Spatial Analysis", "Geospatial Modeling", "Remote Sensing", "Field Observation", "Regional Synthesis"], 
-            "tools": ["ArcGIS/QGIS", "GPS Systems", "Satellite Imagery", "Lidar Scan", "Cartographic Software"], 
-            "facets": ["Physical Geography", "Human Geography", "Geomorphology", "Urban Geography", "Biogeography"]
+            "tools": ["ArcGIS/QGIS", "GPS Systems", "Satellite Imagery", "Lidar Scan"], 
+            "facets": ["Physical Geography", "Human Geography", "Geomorphology", "Urban Geography"]
         },
         "Climatology": {
             "cat": "Natural", 
-            "methods": ["Climate Modeling", "Paleoclimatic Reconstruction", "Statistical Time-Series Analysis", "Numerical Simulation", "Isotope Analysis"], 
-            "tools": ["Supercomputers (HPC)", "Weather Station Arrays", "Satellite Radiometers", "Ice Core Analysis", "Radiosondes"], 
-            "facets": ["Meteorology", "Paleoclimatology", "Dynamic Climatology", "Synoptic Climatology", "Applied Climatology"]
+            "methods": ["Climate Modeling", "Paleoclimatic Reconstruction", "Statistical Time-Series Analysis"], 
+            "tools": ["Supercomputers (HPC)", "Weather Station Arrays", "Satellite Radiometers"], 
+            "facets": ["Meteorology", "Paleoclimatology", "Dynamic Climatology", "Applied Climatology"]
         },
         "Library Science": {
             "cat": "Applied", 
@@ -781,14 +817,14 @@ KNOWLEDGE_BASE = {
         },
         "Forensic sciences": {
             "cat": "Applied/Natural", 
-            "methods": ["DNA Profiling", "Ballistics", "Toxicology", "Trace Analysis", "Bloodstain Pattern Analysis", "Fingerprint Identification"], 
-            "tools": ["Mass Spectrometer", "Luminol", "Comparison Microscope", "AFIS (Automated Fingerprint Identification System)", "Gas Chromatography"], 
-            "facets": ["Forensic Biology", "Forensic Chemistry", "Forensic Pathology", "Digital Forensics", "Forensic Odontology"]
+            "methods": ["DNA Profiling", "Ballistics", "Toxicology", "Trace Analysis"], 
+            "tools": ["Mass Spectrometer", "Luminol", "Comparison Microscope", "AFIS"], 
+            "facets": ["Forensic Biology", "Forensic Chemistry", "Forensic Pathology", "Digital Forensics"]
         },
         "Legal science": {
             "cat": "Social", 
             "methods": ["Legal Hermeneutics", "Comparative Law", "Dogmatic Method", "Empirical Legal Research"], 
-            "tools": ["Legislative Databases", "Case Law Archives", "Constitutional Records", "Westlaw", "LexisNexis"], 
+            "tools": ["Legislative Databases", "Case Law Archives", "Constitutional Records", "Westlaw"], 
             "facets": ["Jurisprudence", "Constitutional Law", "Criminal Law", "Civil Law", "International Law"]
         }
     }
