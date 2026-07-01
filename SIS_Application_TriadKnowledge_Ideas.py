@@ -1076,9 +1076,9 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             samba_client = OpenAI(api_key=sambanova_api_key, base_url="https://api.sambanova.ai/v1")
             
             # --- C. PHASE 1: CEREBRAS (Structural Architecture) ---
-            with st.spinner('🚀 PHASE 1: Cerebras (llama-3.3-70b) building foundation...'):
+            with st.spinner('🚀 PHASE 1: Cerebras (llama-4-scout-17b-16e-instruct) building foundation...'):
                 p1_response = cerebras_client.chat.completions.create(
-                    model="llama-3.3-70b",
+                    model="llama-4-scout-17b-16e-instruct",
                     messages=[
                         {"role": "system", "content": "You are the SIS Lead Hierarchologist. Build a stable structural foundation using Integrated Metamodel Architecture (IMA)."}, 
                         {"role": "user", "content": full_ai_input}
