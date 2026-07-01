@@ -1032,28 +1032,28 @@ with col_inq3:
 # 5. SYNERGY EXECUTION ENGINE (WITH CONDITIONAL ACTIVATION)
 # =============================================================================
 
-if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True, key="exec_pipeline_v2026"):
-        # 1. Preverjanje ključev (zamenjali smo groq_api_key s cerebras_api_key)
+# =============================================================================
+    # 5. SYNERGY EXECUTION ENGINE
+    # =============================================================================
+    if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True, key="exec_pipeline_v2026"):
         if not cerebras_api_key or not sambanova_api_key:
             st.error("❌ Dual-Model synergy requires both Cerebras and SambaNova keys.")
         elif not user_query:
             st.warning("⚠️ Phase 1 Research Inquiry is required.")
         else:
             try:
-                # --- PRIPRAVA PODATKOV ---
+                # --- A. PRIPRAVA KONTEKSTA ---
                 trigger_keyword = "[ACTIVATE]"
                 active_context = ""
-                
                 if trigger_keyword in user_query or (idea_query and trigger_keyword in idea_query):
                     active_context = f"""
                     \n### MANDATORY SYSTEM INSTRUCTION: APPLY INTERFACE PARAMETERS ###
-                    The user has explicitly activated the following constraints for this specific run:
-                    - Target Science Fields: {', '.join(sel_sciences)}
-                    - Applied Scientific Paradigms: {', '.join(sel_paradigms)}
-                    - Structural Model Focus: {', '.join(sel_models)}
-                    - Innovation Frameworks: {', '.join(selected_techniques)}
-                    - Expertise Level: {expertise}
-                    - Project Strategic Goal: {goal_context}
+                    - Science Fields: {', '.join(sel_sciences)}
+                    - Paradigms: {', '.join(sel_paradigms)}
+                    - Models: {', '.join(sel_models)}
+                    - Frameworks: {', '.join(selected_techniques)}
+                    - Expertise: {expertise}
+                    - Goal: {goal_context}
                     \n###########################################################\n
                     """
 
@@ -1062,22 +1062,15 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 
                 file_context_str = f"\n\n[FILE CONTEXT]:\n{file_content}" if file_content else ""
                 biblio_context = f"\n\n[AUTHOR RESEARCH BACKGROUND]:\n{biblio_data}" if biblio_data else ""
-                
-                # Združevanje vhodnih podatkov
                 full_ai_input = f"{active_context}{user_query}{file_context_str}{biblio_context}"
 
-                # --- PHASE 1: CEREBRAS (Llama 3.3 70B) ---
+                # --- B. PHASE 1: CEREBRAS (Llama 3.3 70B) ---
                 with st.spinner('🚀 PHASE 1: Cerebras (Llama 3.3 70B) building foundation...'):
-                    # Inicializacija Cerebras klienta
-                    cerebras_client = OpenAI(
-                        api_key=cerebras_api_key, 
-                        base_url="https://api.cerebras.ai/v1"
-                    )
-                    
+                    cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
                     p1_response = cerebras_client.chat.completions.create(
                         model="llama-3.3-70b", 
                         messages=[
-                            {"role": "system", "content": "You are the SIS Lead Hierarchologist. Use the Integrated Metamodel Architecture (IMA) to build a stable structural foundation."},
+                            {"role": "system", "content": "You are the SIS Lead Hierarchologist. Build a stable structural foundation using IMA Architecture."},
                             {"role": "user", "content": full_ai_input}
                         ],
                         temperature=0.3
@@ -1085,10 +1078,63 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                     groq_synthesis = p1_response.choices[0].message.content
                     st.session_state.groq_synthesis = groq_synthesis
 
-                # --- TUKAJ SE NADALJUJE PHASE 2 (SambaNova) ---
-                # Prepričajte se, da je koda za SambaNovo zamaknjena na isto raven kot Phase 1 zgoraj.
+                # --- C. PHASE 2: SAMBANOVA (DeepSeek / Innovation) ---
+                with st.spinner(f'🧠 PHASE 2: SambaNova ({sambanova_id}) generating innovations...'):
+                    samba_client = OpenAI(api_key=sambanova_api_key, base_url="https://api.sambanova.ai/v1")
+                    samba_sys_prompt = """You are the SIS Strategic Innovation Architect. 
+                    Transform Phase 1 into a Strategic Innovation Report and a JSON map.
+                    Use ISO Thesaurus (TT, BT, NT, RT) and UML (Composition, Dependency, Conflict, Specialization) logic.
+                    MANDATORY: End with ### SEMANTIC_GRAPH_JSON followed by your JSON code."""
+                    
+                    samba_response = samba_client.chat.completions.create(
+                        model=sambanova_id, 
+                        messages=[
+                            {"role": "system", "content": samba_sys_prompt}, 
+                            {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER INNOVATION GOAL: {idea_query}"}
+                        ],
+                        temperature=0.8
+                    )
+                    cerebras_innovation = samba_response.choices[0].message.content
+
+                # --- D. PROCESIRANJE REZULTATOV & GRAFA ---
+                if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
+                    parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
+                    innovation_text = parts[0]
+                    json_raw = parts[1]
+                else:
+                    innovation_text = cerebras_innovation
+                    json_raw = ""
+
+                # Priprava poročila za prikaz
+                full_report = f"## 📚 Phase 1: Foundation (Cerebras)\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations (SambaNova)\n\n{innovation_text}"
+                st.markdown(full_report)
+
+                # Parsanje JSON za graf
+                final_elements = []
+                json_match = re.search(r'(\{.*"nodes".*\})', json_raw, re.DOTALL | re.IGNORECASE)
+                if json_match:
+                    g_data = json.loads(json_match.group(1))
+                    for n in g_data.get("nodes", []):
+                        final_elements.append({"data": {"id": n["id"], "label": n["label"], "color": n.get("color", "#DDEBF7"), "shape": n.get("shape", "rectangle"), "size": 90}})
+                    for e in g_data.get("edges", []):
+                        final_elements.append({"data": {"source": e["source"], "target": e["target"], "rel_type": e.get("rel_type", "AS"), "color": "#1D3557"}})
+                
+                st.session_state.final_graph_elements = final_elements
+                st.session_state.report_ready = True
+
+                # --- E. MULTI-PERSPECTIVE GALLERY ---
+                st.divider()
+                st.markdown("### 🖼️ MULTI-PERSPECTIVE GRAPH GALLERY")
+                tab1, tab2, tab3, tab4, tab5 = st.tabs(["🌿 ORGANIC", "🌲 HIERARCHICAL", "⭕ CIRCULAR", "🎯 CONCENTRIC", "🔲 GRID"])
+                
+                with tab1: render_cytoscape_network(final_elements, "organic", "gal_org")
+                with tab2: render_cytoscape_network(final_elements, "hierarchical", "gal_hier")
+                with tab3: render_cytoscape_network(final_elements, "circular", "gal_circ")
+                with tab4: render_cytoscape_network(final_elements, "concentric", "gal_conc")
+                with tab5: render_cytoscape_network(final_elements, "grid", "gal_grid")
 
             except Exception as e:
+                # Ta 'except' se zdaj pravilno ujema z 'try' zgoraj
                 st.error(f"❌ Pipeline Failure: {str(e)}")
                 st.stop()
 
