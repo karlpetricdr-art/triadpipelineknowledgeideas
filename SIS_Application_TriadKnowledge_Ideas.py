@@ -1083,15 +1083,47 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             samba_client = OpenAI(api_key=sambanova_api_key, base_url="https://api.sambanova.ai/v1")
             
             # --- PHASE 1: CEREBRAS (Structural Architecture) ---
-            with st.spinner(f'🚀 PHASE 1: Cerebras ({cerebras_id}) building foundation...'):
-                p1_response = cerebras_client.chat.completions.create(
-                    model=cerebras_id,  # Uporabi model, izbran v sidebar-u (npr. Llama 4 Scout)
-                    messages=[
-                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. Build a stable structural foundation using IMA Architecture."}, 
-                        {"role": "user", "content": full_ai_input}
-                    ],
-                    temperature=0.3
+            with st.spinner(f'🚀 PHASE 1: Cerebras Engine Initializing...'):
+                # 1. POSODOBLJENA INICIALIZACIJA (Zagotovimo sveže podatke)
+                c_api_key = cerebras_api_key.strip() # Odstranimo morebitne presledke
+                c_model_id = cerebras_id.strip()
+
+                cerebras_client = OpenAI(
+                    api_key=c_api_key, 
+                    base_url="https://api.cerebras.ai/v1"
                 )
+                
+                try:
+                    # 2. DEJANSKI KLIC
+                    p1_response = cerebras_client.chat.completions.create(
+                        model=c_model_id, 
+                        messages=[
+                            {"role": "system", "content": "You are the SIS Lead Hierarchologist. Build a stable structural foundation using IMA Architecture."},
+                            {"role": "user", "content": full_ai_input}
+                        ],
+                        temperature=0.3
+                    )
+                    
+                    # Shranimo rezultat
+                    groq_synthesis = p1_response.choices[0].message.content
+                    st.session_state.groq_synthesis = groq_synthesis
+                    
+                except Exception as api_err:
+                    # Če Llama 4 Scout še vedno javi 404, avtomatsko poskusimo z Llama 3.1 70b
+                    if "404" in str(api_err):
+                        st.warning(f"Model {c_model_id} trenutno ni dosegljiv preko API-ja. Avtomatski preklop na stabilen llama3.1-70b...")
+                        fallback_response = cerebras_client.chat.completions.create(
+                            model="llama3.1-70b", 
+                            messages=[
+                                {"role": "system", "content": "You are the SIS Lead Hierarchologist."},
+                                {"role": "user", "content": full_ai_input}
+                            ],
+                            temperature=0.3
+                        )
+                        groq_synthesis = fallback_response.choices[0].message.content
+                        st.session_state.groq_synthesis = groq_synthesis
+                    else:
+                        raise api_err # Če je druga napaka, jo izpišemo
                 # Rezultat shranimo v groq_synthesis, da ostalih 1000 vrstic kode še vedno deluje
                 groq_synthesis = p1_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
