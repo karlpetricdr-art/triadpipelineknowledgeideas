@@ -1033,66 +1033,64 @@ with col_inq3:
 # =============================================================================
 
 if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True, key="exec_pipeline_v2026"):
-    if not groq_api_key or not sambanova_api_key:
-        st.error("❌ Dual-Model synergy requires both Groq and SambaNova keys.")
-    elif not user_query:
-        st.warning("⚠️ Phase 1 Research Inquiry is required.")
-    else:
-        try:
-            # --- CONDITIONAL DIMENSION ACTIVATION ---
-            # The system only injects sidebar selections if [ACTIVATE] is present in the prompt.
-            trigger_keyword = "[ACTIVATE]"
-            active_context = ""
-            
-            if trigger_keyword in user_query or (idea_query and trigger_keyword in idea_query):
-                active_context = f"""
-                \n### MANDATORY SYSTEM INSTRUCTION: APPLY INTERFACE PARAMETERS ###
-                The user has explicitly activated the following constraints for this specific run:
-                - Target Science Fields: {', '.join(sel_sciences)}
-                - Applied Scientific Paradigms: {', '.join(sel_paradigms)}
-                - Structural Model Focus: {', '.join(sel_models)}
-                - Innovation Frameworks: {', '.join(selected_techniques)}
-                - Expertise Level: {expertise}
-                - Project Strategic Goal: {goal_context}
-                \n###########################################################\n
-                """
-
-            with st.spinner('🔍 Accessing ORCID & Scholar databases...'):
-                biblio_data = fetch_author_bibliographies(target_authors) if target_authors else ""
-            
-            file_context_str = f"\n\n[FILE CONTEXT]:\n{file_content}" if file_content else ""
-            biblio_context = f"\n\n[AUTHOR RESEARCH BACKGROUND]:\n{biblio_data}" if biblio_data else ""
-            
-            # Combine the trigger context with the user query
-            full_ai_input = f"{active_context}{user_query}{file_context_str}{biblio_context}"
-
-            # Initialization of clients
-            groq_client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
-            samba_client = OpenAI(api_key=sambanova_api_key, base_url="https://api.sambanova.ai/v1")
-            
-            # --- PHASE 1: CEREBRAS (Llama 3.3 70B) ---
-        try:
-            with st.spinner('🚀 PHASE 1: Cerebras (Llama 3.3 70B) building foundation...'):
-                # Initialize Cerebras Client
-                cerebras_client = OpenAI(
-                    api_key=cerebras_api_key, 
-                    base_url="https://api.cerebras.ai/v1"
-                )
+        # 1. Preverjanje ključev (zamenjali smo groq_api_key s cerebras_api_key)
+        if not cerebras_api_key or not sambanova_api_key:
+            st.error("❌ Dual-Model synergy requires both Cerebras and SambaNova keys.")
+        elif not user_query:
+            st.warning("⚠️ Phase 1 Research Inquiry is required.")
+        else:
+            try:
+                # --- PRIPRAVA PODATKOV ---
+                trigger_keyword = "[ACTIVATE]"
+                active_context = ""
                 
-                p1_response = cerebras_client.chat.completions.create(
-                    model="llama-3.3-70b", 
-                    messages=[
-                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. Use the Integrated Metamodel Architecture (IMA) to build a stable structural foundation."},
-                        {"role": "user", "content": full_ai_input}
-                    ],
-                    temperature=0.3
-                )
-                groq_synthesis = p1_response.choices[0].message.content
-                st.session_state.groq_synthesis = groq_synthesis
+                if trigger_keyword in user_query or (idea_query and trigger_keyword in idea_query):
+                    active_context = f"""
+                    \n### MANDATORY SYSTEM INSTRUCTION: APPLY INTERFACE PARAMETERS ###
+                    The user has explicitly activated the following constraints for this specific run:
+                    - Target Science Fields: {', '.join(sel_sciences)}
+                    - Applied Scientific Paradigms: {', '.join(sel_paradigms)}
+                    - Structural Model Focus: {', '.join(sel_models)}
+                    - Innovation Frameworks: {', '.join(selected_techniques)}
+                    - Expertise Level: {expertise}
+                    - Project Strategic Goal: {goal_context}
+                    \n###########################################################\n
+                    """
 
-        except Exception as e:  # <--- THIS IS THE BLOCK THAT WAS MISSING
-            st.error(f"❌ Cerebras Phase 1 Error: {str(e)}")
-            st.stop()
+                with st.spinner('🔍 Accessing ORCID & Scholar databases...'):
+                    biblio_data = fetch_author_bibliographies(target_authors) if target_authors else ""
+                
+                file_context_str = f"\n\n[FILE CONTEXT]:\n{file_content}" if file_content else ""
+                biblio_context = f"\n\n[AUTHOR RESEARCH BACKGROUND]:\n{biblio_data}" if biblio_data else ""
+                
+                # Združevanje vhodnih podatkov
+                full_ai_input = f"{active_context}{user_query}{file_context_str}{biblio_context}"
+
+                # --- PHASE 1: CEREBRAS (Llama 3.3 70B) ---
+                with st.spinner('🚀 PHASE 1: Cerebras (Llama 3.3 70B) building foundation...'):
+                    # Inicializacija Cerebras klienta
+                    cerebras_client = OpenAI(
+                        api_key=cerebras_api_key, 
+                        base_url="https://api.cerebras.ai/v1"
+                    )
+                    
+                    p1_response = cerebras_client.chat.completions.create(
+                        model="llama-3.3-70b", 
+                        messages=[
+                            {"role": "system", "content": "You are the SIS Lead Hierarchologist. Use the Integrated Metamodel Architecture (IMA) to build a stable structural foundation."},
+                            {"role": "user", "content": full_ai_input}
+                        ],
+                        temperature=0.3
+                    )
+                    groq_synthesis = p1_response.choices[0].message.content
+                    st.session_state.groq_synthesis = groq_synthesis
+
+                # --- TUKAJ SE NADALJUJE PHASE 2 (SambaNova) ---
+                # Prepričajte se, da je koda za SambaNovo zamaknjena na isto raven kot Phase 1 zgoraj.
+
+            except Exception as e:
+                st.error(f"❌ Pipeline Failure: {str(e)}")
+                st.stop()
 
 # --- PHASE 2: SAMBANOVA (Innovation) ---
 # (Keep your existing SambaNova / DeepSeek-V3.2 logic here)
