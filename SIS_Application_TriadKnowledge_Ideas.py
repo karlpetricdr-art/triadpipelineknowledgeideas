@@ -855,23 +855,23 @@ with st.sidebar:
     
     # 3. Dual-Engine API Access
     st.subheader("🔑 Dual-Engine API Access")
-    
-    # Zamenjava Groq ključa s Cerebras ključem
     cerebras_api_key = st.text_input("Cerebras Key (Phase 1):", type="password", key="side_cerebras_v2026")
-    
-	# --- 3.1 CEREBRAS ENGINE (Phase 1 Configuration) ---
-st.subheader("🏛️ PHASE 1 ENGINE (Cerebras)")
-cerebras_id = st.selectbox(
-    "Cerebras Model Choice:", 
-    [
-        "llama-4-scout-17b-16e-instruct", # Točen naziv iz Cerebras podpore
-        "llama-3.3-70b",                 # Flagship model
-        "llama3.1-70b",                 # Najbolj stabilen
-        "llama3.1-8b"                   # Ultra hitrost
-    ], 
-    index=0, # Nastavimo Scout kot privzeto izbiro
-    key="side_cerebras_model_v2026"
-)
+    sambanova_api_key = st.text_input("SambaNova Key (Phase 2):", type="password", key="side_samba_v2026")
+
+    # 3.1 CEREBRAS ENGINE (Phase 1 Configuration)
+    st.divider()
+    st.subheader("🏛️ PHASE 1 ENGINE (Cerebras)")
+    cerebras_id = st.selectbox(
+        "Cerebras Model Choice:", 
+        [
+            "llama-4-scout-17b-16e-instruct", # Točen naziv iz podpore
+            "llama-3.3-70b", 
+            "llama3.1-70b", 
+            "llama3.1-8b"
+        ], 
+        index=0, 
+        key="side_cerebras_model_v2026"
+    )
     
 	# SambaNova ključ ostane enak
 	sambanova_api_key = st.text_input("SambaNova Key (Phase 2):", type="password", key="side_samba_v2026")
