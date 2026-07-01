@@ -1070,28 +1070,29 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             groq_client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
             samba_client = OpenAI(api_key=sambanova_api_key, base_url="https://api.sambanova.ai/v1")
             
-            # --- PHASE 1: CEREBRAS (Foundation) ---
-with st.spinner('🚀 PHASE 1: Cerebras (Llama 3.3 70B) building foundation...'):
-    try:
-        from openai import OpenAI
-        cerebras_client = OpenAI(
-            api_key=cerebras_api_key, 
-            base_url="https://api.cerebras.ai/v1"
-        )
-        
-        p1_response = cerebras_client.chat.completions.create(
-            model="llama-3.3-70b", # Safe, stable, and fast
-            messages=[
-                {"role": "system", "content": "You are the SIS Lead Hierarchologist. Use IMA Architecture."},
-                {"role": "user", "content": full_ai_input}
-            ],
-            temperature=0.3
-        )
-        groq_synthesis = p1_response.choices[0].message.content
-        st.session_state.groq_synthesis = groq_synthesis
-    except Exception as e:
-        st.error(f"Cerebras Error: {e}")
-        st.stop()
+            # --- PHASE 1: CEREBRAS (Llama 3.3 70B) ---
+        try:
+            with st.spinner('🚀 PHASE 1: Cerebras (Llama 3.3 70B) building foundation...'):
+                # Initialize Cerebras Client
+                cerebras_client = OpenAI(
+                    api_key=cerebras_api_key, 
+                    base_url="https://api.cerebras.ai/v1"
+                )
+                
+                p1_response = cerebras_client.chat.completions.create(
+                    model="llama-3.3-70b", 
+                    messages=[
+                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. Use the Integrated Metamodel Architecture (IMA) to build a stable structural foundation."},
+                        {"role": "user", "content": full_ai_input}
+                    ],
+                    temperature=0.3
+                )
+                groq_synthesis = p1_response.choices[0].message.content
+                st.session_state.groq_synthesis = groq_synthesis
+
+        except Exception as e:  # <--- THIS IS THE BLOCK THAT WAS MISSING
+            st.error(f"❌ Cerebras Phase 1 Error: {str(e)}")
+            st.stop()
 
 # --- PHASE 2: SAMBANOVA (Innovation) ---
 # (Keep your existing SambaNova / DeepSeek-V3.2 logic here)
