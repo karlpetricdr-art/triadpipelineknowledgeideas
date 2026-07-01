@@ -22,8 +22,8 @@ if 'show_user_guide' not in st.session_state:
     st.session_state.show_user_guide = False
 
 # Zagotovimo, da so vsi ključi prisotni v session_state pred prvo uporabo
-if 'cerebras_synthesis' not in st.session_state:
-    st.session_state.cerebras_synthesis = ""
+if 'groq_synthesis' not in st.session_state:
+    st.session_state.groq_synthesis = ""
 
 st.set_page_config(
     page_title=f"SIS Universal Knowledge Synthesizer - {SYSTEM_DATE}",
@@ -853,31 +853,11 @@ with st.sidebar:
     
     st.header("⚙️ SYSTEM CONTROL")
     
-    # 3. Dual-Engine API Access
+    # 3. Dual API Keys Access (Unikatna ključa preprečujeta DuplicateID napako)
     st.subheader("🔑 Dual-Engine API Access")
-    
-    # Zamenjava Groq ključa s Cerebras ključem
-    cerebras_api_key = st.text_input("Cerebras Key (Phase 1):", type="password", key="side_cerebras_v2026")
-    
-	# --- 3.1 CEREBRAS ENGINE (Phase 1 Configuration) ---
-st.subheader("🏛️ PHASE 1 ENGINE (Cerebras)")
-cerebras_id = st.selectbox(
-    "Cerebras Model Choice:", 
-    [
-        "llama-3.3-70b",        # Flagship model
-        "llama3.1-70b",        # Najbolj stabilen (Safe Choice)
-        "llama-4-scout-17b",    # NOVO: Llama 4 Scout (17B)
-        "llama-4-scout-8b",     # NOVO: Llama 4 Scout (8B)
-        "llama3.1-8b"          # Ultra hitrost
-    ], 
-    index=1, # Privzeto nastavimo na 3.1-70b, da aplikacija ne javi takoj napake
-    key="side_cerebras_model_v2026",
-    help="Izberite Llama-3.3 ali 3.1 za kompleksno analizo, Scout pa za testiranje Llama 4 hitrosti."
-)
-    
-	# SambaNova ključ ostane enak
+    groq_api_key = st.text_input("Groq Key (Phase 1):", type="password", key="side_groq_v2026")
     sambanova_api_key = st.text_input("SambaNova Key (Phase 2):", type="password", key="side_samba_v2026")
-   
+    
    # 4. POSODOBLJENO: Najnovejša generacija modelov (Junij 2026) & VIZUALNI MOTOR
     # Model gemma-4-31B-it je trenutno 'flagship' model na SambaNova Cloud.
     sambanova_id = st.selectbox(
@@ -982,18 +962,18 @@ st.markdown(f"**Sequential Multi-Engine Pipeline** | Current Operating Date: **{
 if st.session_state.show_user_guide:
     st.info(f"""
     **Sequential Synergy Pipeline Workflow (Updated Feb 24, 2026):**
-    1. **Key Input**: Enter your Cerebras (Phase 1) and SambaNova (Phase 2) API keys in the sidebar.
-    2. **Research Foundation (Step 1)**: Cerebras performs structural synthesis foundation using Integrated Metamodel Architecture (IMA).
-    3. **Innovation Prompt (Step 2)**: SambaNova takes Cerebras's work and generates radical 'Useful Innovative Ideas' using Mental Approaches (MA) logic.
+    1. **Key Input**: Enter your Groq (Phase 1) and Cerebras (Phase 2) API keys in the sidebar.
+    2. **Research Foundation (Step 1)**: Groq performs structural synthesis foundation using Integrated Metamodel Architecture (IMA).
+    3. **Innovation Prompt (Step 2)**: Cerebras takes Groq's work and generates radical 'Useful Innovative Ideas' using Mental Approaches (MA) logic.
     4. **Visualization**: The interactive 18D graph maps structural facts against generative ideas.
     """)
 
 # REFERENCE ARCHITECTURE BOXES
 col_ref1, col_ref2 = st.columns(2)
 with col_ref1:
-    st.markdown("""<div class="metamodel-box"><b>🏛️ Phase 1: Cerebras (IMA Architecture)</b><br>Structural reasoning building the factual foundation. Focus: Identity, Mission, Problem. </div>""", unsafe_allow_html=True)
+    st.markdown("""<div class="metamodel-box"><b>🏛️ Phase 1: Groq (IMA Architecture)</b><br>Structural reasoning building the factual foundation. Focus: Identity, Mission, Problem. </div>""", unsafe_allow_html=True)
 with col_ref2:
-    st.markdown("""<div class="mental-approach-box"><b>🧠 Phase 2: SambaNova (MA Architecture)</b><br>Cognitive transformation generating innovative solutions. Focus: Dialectics, Perspective, Induction.</div>""", unsafe_allow_html=True)
+    st.markdown("""<div class="mental-approach-box"><b>🧠 Phase 2: Cerebras (MA Architecture)</b><br>Cognitive transformation generating innovative solutions. Focus: Dialectics, Perspective, Induction.</div>""", unsafe_allow_html=True)
 
 st.markdown("### 🛠️ CONFIGURE SYNERGY PIPELINE")
 
@@ -1029,7 +1009,7 @@ st.divider()
 # DUAL INQUIRY INTERFACE
 col_inq1, col_inq2, col_inq3 = st.columns([2, 2, 1])
 with col_inq1:
-    user_query = st.text_area("❓ STEP 1: Research Inquiry (for CEREBRAS):", placeholder="Fact-based Foundational Inquiry...", height=200)
+    user_query = st.text_area("❓ STEP 1: Research Inquiry (for GROQ):", placeholder="Fact-based Foundational Inquiry...", height=200)
 with col_inq2:
     idea_query = st.text_area("💡 STEP 2: Innovation Prompt (for SAMBANOVA):", placeholder="Targets for innovative idea production...", height=200)
 # --- POPRAVEK KORAK 1: Branje vsebine datoteke ---
@@ -1048,31 +1028,31 @@ with col_inq3:
             st.error(f"Error reading file: {e}")
 
 # =============================================================================
-# 5. SYNERGY EXECUTION ENGINE (MIGRATED TO CEREBRAS + SAMBANOVA)
+# 5. SYNERGY EXECUTION ENGINE (WITH CONDITIONAL ACTIVATION)
 # =============================================================================
 
 if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True, key="exec_pipeline_v2026"):
-    # 1. Preverjanje ključev
-    if not cerebras_api_key or not sambanova_api_key:
-        st.error("❌ Dual-Model synergy requires both Cerebras (Phase 1) and SambaNova (Phase 2) keys.")
+    if not groq_api_key or not sambanova_api_key:
+        st.error("❌ Dual-Model synergy requires both Groq and SambaNova keys.")
     elif not user_query:
         st.warning("⚠️ Phase 1 Research Inquiry is required.")
     else:
         try:
-            # --- A. PRIPRAVA KONTEKSTA & PARAMETROV ---
+            # --- CONDITIONAL DIMENSION ACTIVATION ---
+            # The system only injects sidebar selections if [ACTIVATE] is present in the prompt.
             trigger_keyword = "[ACTIVATE]"
             active_context = ""
             
             if trigger_keyword in user_query or (idea_query and trigger_keyword in idea_query):
                 active_context = f"""
                 \n### MANDATORY SYSTEM INSTRUCTION: APPLY INTERFACE PARAMETERS ###
-                The user has explicitly activated the following constraints:
-                - Science Fields: {', '.join(sel_sciences)}
-                - Paradigms: {', '.join(sel_paradigms)}
-                - Models: {', '.join(sel_models)}
+                The user has explicitly activated the following constraints for this specific run:
+                - Target Science Fields: {', '.join(sel_sciences)}
+                - Applied Scientific Paradigms: {', '.join(sel_paradigms)}
+                - Structural Model Focus: {', '.join(sel_models)}
                 - Innovation Frameworks: {', '.join(selected_techniques)}
-                - Expertise: {expertise}
-                - Project Goal: {goal_context}
+                - Expertise Level: {expertise}
+                - Project Strategic Goal: {goal_context}
                 \n###########################################################\n
                 """
 
@@ -1082,68 +1062,114 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             file_context_str = f"\n\n[FILE CONTEXT]:\n{file_content}" if file_content else ""
             biblio_context = f"\n\n[AUTHOR RESEARCH BACKGROUND]:\n{biblio_data}" if biblio_data else ""
             
-            # Združevanje v končni vhodni niz
+            # Combine the trigger context with the user query
             full_ai_input = f"{active_context}{user_query}{file_context_str}{biblio_context}"
 
-            # --- B. INICIALIZACIJA KLIENTOV ---
-            # Phase 1: Cerebras (llama-3.3-70b)
-            # Phase 2: SambaNova (DeepSeek-V3.2 / Gemma 4)
-            cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
+            # Initialization of clients
+            groq_client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
             samba_client = OpenAI(api_key=sambanova_api_key, base_url="https://api.sambanova.ai/v1")
             
-            # --- PHASE 1: CEREBRAS (Structural Architecture) ---
-with st.spinner(f'🚀 PHASE 1: Cerebras ({cerebras_id}) building foundation...'):
-    try:
-        # Inicializacija klienta
-        cerebras_client = OpenAI(
-            api_key=cerebras_api_key, 
-            base_url="https://api.cerebras.ai/v1"
-        )
-        
-        # Izvedba klica na izbrani model (vključno s Scout variantami)
-        p1_response = cerebras_client.chat.completions.create(
-            model=cerebras_id, 
-            messages=[
-                {"role": "system", "content": "You are the SIS Lead Hierarchologist. Build a stable structural foundation using IMA Architecture."},
-                {"role": "user", "content": full_ai_input}
-            ],
-            temperature=0.3
-        )
-        
-        # Rezultat shranimo v 'groq_synthesis' zaradi kompatibilnosti s Phase 2
-        groq_synthesis = p1_response.choices[0].message.content
-        st.session_state.groq_synthesis = groq_synthesis
+            # --- PHASE 1: GROQ ---
+            with st.spinner('PHASE 1: Building Architecture...'):
+                p1_response = groq_client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[
+                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. If the user provides specific Paradigms or Models in the 'MANDATORY SYSTEM INSTRUCTION', you MUST prioritize them in your structural analysis."}, 
+                        {"role": "user", "content": full_ai_input}
+                    ],
+                    temperature=0.4
+                )
+                groq_synthesis = p1_response.choices[0].message.content
+                st.session_state.groq_synthesis = groq_synthesis
 
-    except Exception as e:
-        # Če Scout model ne deluje (Error 404), uporabnika obvestimo, naj zamenja model
-        st.error(f"❌ Phase 1 Error ({cerebras_id}): {str(e)}")
-        st.info("💡 Nasvet: Če model ne obstaja (404), v stranski vrstici preklopite na 'llama3.1-70b'.")
-        st.stop()
-                # Shranimo v 'cerebras_synthesis', da ne podremo logike v nadaljevanju
-                cerebras_synthesis = p1_response.choices[0].message.content
-                st.session_state.cerebras_synthesis = cerebras_synthesis
+            # --- PHASE 2: SAMBANOVA ---
+            with st.spinner(f'PHASE 2: SambaNova generating innovations...'):
+                # We inject the same active_context here to ensure Phase 2 follows the rules too
+                samba_response = samba_client.chat.completions.create(
+                    model=sambanova_id, 
+                    messages=[
+                        {"role": "system", "content": "You are the SIS Strategic Innovation Architect. Adhere strictly to the requested Innovation Frameworks and Science Fields provided in the instructions."}, 
+                        {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\n{active_context}\nUSER INNOVATION GOAL: {idea_query}"}
+                    ],
+                    temperature=0.85
+                )
+                cerebras_innovation = samba_response.choices[0].message.content
+                st.session_state.groq_synthesis = groq_synthesis
 
-            # --- D. PHASE 2: SAMBANOVA (Strategic Innovation Engine) ---
-            with st.spinner(f'🧠 PHASE 2: SambaNova ({sambanova_id}) generating innovations...'):
-                samba_sys_prompt = """
-                You are the SIS Lead Strategic Innovation Architect and Hierarchographist. 
-                Transform Phase 1 into a Strategic Innovation Report and a JSON map.
-                Use ISO Thesaurus (TT, BT, NT, RT, EQ, AS, IN) and UML (Composition, Aggregation, Dependency, Conflict, Specialization, Containment) logic.
-                MANDATORY: You must end your output with ### SEMANTIC_GRAPH_JSON followed by the JSON object.
-                """
-                
+            # --- 3. PHASE 2: SAMBANOVA (ULTRA-CREATIVE INNOVATION ENGINE) ---
+            with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) generating radical innovations...'):
+                samba_sys_prompt = f"""
+You are the SIS Lead Strategic Innovation Architect and Hierarchographist. 
+Your task is to transform the structural analysis from Phase 1 into a visionary Innovation Report and a perfectly mapped Hierarchographic Network.
+
+### 1. REPORT REQUIREMENTS
+Write a "STRATEGIC INNOVATION REPORT". 
+- For each innovation, provide a technical title, a detailed 3-4 sentence strategic explanation, and its cross-disciplinary impact.
+- Use professional terminology.
+
+### 2. RELATIONSHIP LOGIC MATRIX (MANDATORY FOR JSON)
+You must interconnect nodes using the following two standards:
+
+A) THESAURUS LOGIC (ISO 25964 / Conceptual Taxonomy):
+- 'TT' (Top Term): Absolute root of a knowledge domain.
+- 'BT' (Broader Term): Higher-level class/concept (Genus).
+- 'NT' (Narrower Term): Lower-level sub-concept (Species).
+- 'RT' (Related Term): Symmetrical lateral association between concepts.
+- 'EQ' (Equivalence): Synonyms or identical concepts in different fields.
+- 'AS' (Associative): Functional connection (e.g., Process AS Result, Tool AS Action).
+- 'IN' (Instance): Category to a specific unique entity/example (e.g., Physics IN Theory of Relativity).
+
+B) UML LOGIC (OMG Standard / Structural Architecture):
+- 'Generalization': 'Is-a' Inheritance (e.g., Quantum Physics is a Generalization of Physics).
+- 'Specialization': The deductive opposite of Generalization. A downward move from a general law to a specific refined case.
+- 'Containment': A strong structural inclusion where a node is trapped or housed inside another. Mandatory for mapping concepts within a 'Scientific Cage'.
+- 'Realization': An Innovation/Tool implementing a Goal/Vision.
+- 'Composition': Strong 'Part-of' (Life-cycle dependent).
+- 'Aggregation': Weak 'Part-of' (Independent existence).
+- 'Dependency': Node A requires Node B to function.
+- 'Conflict': A Systemic tension, incompatibility, or direct conflict between two elements.
+
+C) LOGICAL CONNECTORS (Decision Logic):
+- 'AND': Močna sinteza, kjer morata oba pogoja obstajati hkrati (Veznik IN).
+- 'OR': Alternativna pot ali izbira med koncepti (Veznik ALI).
+- 'XOR': Izključujoči ALI (Koncepta sta nezdružljiva ali paradoksalna).
+- 'NOT': Negacija ali prepovedana povezava (Meja znanstvene kletke).
+- 'IF-THEN': Vzročna posledica ali pogojni prehod.
+
+### 3. MANDATORY GEOMETRY (SHAPES)
+- 'star': Ultimate Goals / Macro-Vision.
+- 'hexagon': Science Fields / Academic Domains.
+- 'diamond': Strategic Innovations / New Breakthroughs.
+- 'triangle': Active Processes / Methods / Vectors.
+- 'octagon': Constraints / Ethical Boundaries / Rules.
+- 'ellipse': Human Factors / Identities / Biological Entities.
+- 'rectangle': Facts / Data Points / Micro-components.
+
+### 4. OUTPUT FORMAT
+MANDATORY JSON STRUCTURE:
+### SEMANTIC_GRAPH_JSON
+{{
+  "nodes": [
+    {{"id": "n1", "label": "LABEL", "shape": "diamond", "color": "#fd7e14", "description": "Full detailed description for the deep-dive."}}
+  ],
+  "edges": [
+    {{"source": "n1", "target": "n2", "rel_type": "AS"}},
+    {{"source": "n3", "target": "n1", "rel_type": "Composition"}}
+  ]
+}}
+"""
                 samba_response = samba_client.chat.completions.create(
                     model=sambanova_id, 
                     messages=[
                         {"role": "system", "content": samba_sys_prompt}, 
-                        {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{cerebras_synthesis}\n\nUSER INNOVATION GOAL: {idea_query}"}
+                        {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER GOAL: {idea_query}{file_context_str}"}
                     ],
-                    temperature=0.85,
+                    temperature=0.85, 
                     top_p=0.9
                 )
                 cerebras_innovation = samba_response.choices[0].message.content
 
-            # --- E. PROCESIRANJE REZULTATOV (JSON & Text Split) ---
+            # --- 4. PROCESIRANJE REZULTATOV (Z GEOMETRIJSKO LOGIKO) ---
             if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
                 parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
                 innovation_text = parts[0]
@@ -1152,40 +1178,97 @@ with st.spinner(f'🚀 PHASE 1: Cerebras ({cerebras_id}) building foundation...'
                 innovation_text = cerebras_innovation
                 json_raw = ""
 
-            # --- F. SEMANTIČNO POVEZOVANJE & PRIKAZ POROČILA ---
-            st.subheader("🧱 INTEGRATED HIERARCHOLOGICAL REPORT")
-            combined_report_text = f"## 📚 PHASE 1: Structural Foundation (Cerebras)\n\n{cerebras_synthesis}\n\n---\n## 💡 PHASE 2: Strategic Innovations (SambaNova)\n\n{innovation_text}"
+            full_report = f"## 📚 Phase 1: Foundation (Groq)\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations (SambaNova)\n\n{innovation_text}"
             
-            # Parsanje JSON za elemente grafa in poudarjanje besedila
-            final_elements = []
             nodes_to_link = []
+            final_elements = []
+
             json_match = re.search(r'(\{.*"nodes".*\})', json_raw if json_raw else cerebras_innovation, re.DOTALL | re.IGNORECASE)
             
             if json_match:
                 try:
                     g_data = json.loads(json_match.group(1))
+                    
+                    # --- PROCESIRANJE VOZLIŠČ Z DINAMIČNO VELIKOSTJO ---
                     for n in g_data.get("nodes", []):
-                        nid = n.get("id")
                         lbl = n.get("label", "Node")
+                        nid = n.get("id", f"n{lbl}")
+                        n_color = n.get("color", "#DDEBF7")
                         n_shape = n.get("shape", "rectangle")
                         
-                        # Določanje velikosti
+                        # Velikostna hierarhija glede na obliko
                         if n_shape == 'star': n_size = 125
                         elif n_shape == 'diamond': n_size = 110
+                        elif n_shape == 'octagon': n_size = 105
+                        elif n_shape == 'hexagon': n_size = 100
+                        elif n_shape == 'triangle': n_size = 95
+                        elif n_shape == 'ellipse': n_size = 90
                         else: n_size = 85
                         
                         nodes_to_link.append({"id": nid, "label": lbl})
                         final_elements.append({
-                            "data": {"id": nid, "label": lbl, "color": n.get("color", "#DDEBF7"), "shape": n_shape, "size": n_size, "description": n.get("description", "")}
+                            "data": {"id": nid, "label": lbl, "color": n_color, "shape": n_shape, "size": n_size, "description": n.get("description", "Detail breakdown in report.")}
                         })
-                    for e in g_data.get("edges", []):
-                        final_elements.append({
-                            "data": {"source": e.get("source"), "target": e.get("target"), "rel_type": e.get("rel_type", "AS"), "color": "#1D3557"}
-                        })
-                except: pass
 
-            # Interaktivni Highlighter (povezave na Google Search)
-            final_interactive_report = combined_report_text
+                    # --- PROCESIRANJE POVEZAV (UML + THESAURUS + LOGIC) ---
+                    for e in g_data.get("edges", []):
+                        rel = e.get("rel_type", "Association")
+                        
+                        # A) UML IN STRUKTURNA LOGIKA (Rdeča/Črna/Modra skala)
+                        if rel in ["Generalization", "Realization", "Composition", "Aggregation", "Dependency", "Specialization", "Containment", "Conflict"]:
+                            if rel == "Conflict":
+                                e_color = "#b91d1d"  # Temno rdeča za trčenje/spor
+                            elif rel == "Specialization":
+                                e_color = "#000000"  # Črna za dedukcijo
+                            elif rel == "Containment":
+                                e_color = "#1D3557"  # Temno modra za "Scientific Cage"
+                            elif rel == "Generalization":
+                                e_color = "#E63946"  # UML rdeča
+                            elif rel == "Realization":
+                                e_color = "#E63946"  # UML rdeča
+                            else:
+                                e_color = "#E63946"  # Privzeta UML rdeča (Dependency, Aggregation...)
+                                
+                        # B) ISO THESAURUS (Hierarhologija - Modra/Vijolična skala)
+                        elif rel in ["BT", "NT", "TT"]:
+                            e_color = "#1D3557"  # Temno modra (Nivoji)
+                        elif rel == "IN":
+                            e_color = "#0077B6"  # Svetlo modra (Instanca)
+                        elif rel == "AS":
+                            e_color = "#7B2CB1"  # Vijolična (Asociativna)
+                        elif rel == "EQ":
+                            e_color = "#F1C40F"  # Rumena (Ekvivalenca)
+                        elif rel == "RT":
+                            e_color = "#2A9D8F"  # Zelena (Povezano)
+
+                        # C) LOGIČNI KONEKTORJI (Decision Logic - Neon skala)
+                        elif rel == "AND":
+                            e_color = "#00FF00"  # Neon zelena
+                        elif rel == "OR":
+                            e_color = "#00BFFF"  # Svetlo modra
+                        elif rel == "XOR":
+                            e_color = "#FF8C00"  # Oranžna
+                        elif rel == "NOT":
+                            e_color = "#FF0000"  # Rdeča
+                        elif rel == "IF-THEN":
+                            e_color = "#FFD700"  # Zlata
+                            
+                        else:
+                            e_color = "#ADB5BD"  # Če tipa ne pozna = Siva
+
+                        final_elements.append({
+                            "data": {
+                                "source": e.get("source"), 
+                                "target": e.get("target"), 
+                                "rel_type": rel, 
+                                "color": e_color
+                            }
+                        })
+                except Exception as json_err:
+                    st.warning(f"Note: Graph structure issue: {json_err}")
+
+            # Avtomatsko povezovanje besedila z grafom (Highlighting)
+            final_markdown = full_report
             if nodes_to_link:
                 sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
                 for item in sorted_keywords:
@@ -1193,72 +1276,160 @@ with st.spinner(f'🚀 PHASE 1: Cerebras ({cerebras_id}) building foundation...'
                     if len(lbl) > 2:
                         g_url = urllib.parse.quote(lbl)
                         link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
+                        base_term = lbl[: -2] if len(lbl) > 6 else lbl
+                        pattern = re.compile(r'\b' + re.escape(base_term) + r'\w*', re.IGNORECASE)
+                        final_markdown = pattern.sub(link_html, final_markdown, count=10)
+
+            # --- 5. FINAL DISPLAY: SEQUENTIAL INTERACTIVE SYNERGY REPORT ---
+            
+            # Combine Phase 1 (Groq) and Phase 2 (SambaNova) text for full-spectrum highlighting
+            # This ensures words in BOTH phases are linked.
+            combined_report_text = f"## 📚 PHASE 1: Structural Foundation\n\n{groq_synthesis}\n\n---\n## 💡 PHASE 2: Strategic Innovation Report\n\n{innovation_text}"
+            
+            # 5a. GLOBAL SEMANTIC HIGHLIGHTER (Multi-Phase Linking)
+            final_interactive_report = combined_report_text
+            if nodes_to_link:
+                # Sort keywords by length descending to ensure accurate replacement
+                sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
+                for item in sorted_keywords:
+                    lbl = item['label']
+                    if len(lbl) > 2:
+                        g_url = urllib.parse.quote(lbl)
+                        # The link style ensures high visibility
+                        link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
+                        
+                        # Unicode-safe regex to catch terms in both Phase 1 and Phase 2
                         pattern = re.compile(rf'(?<!\w){re.escape(lbl)}(?!\w)', re.IGNORECASE | re.UNICODE)
+                        # 5a. GLOBAL SEMANTIC HIGHLIGHTER (Multi-Phase Linking)
+            final_interactive_report = combined_report_text
+            if nodes_to_link:
+                # Razvrstimo ključne besede po dolžini (daljše prej), da se krajše ne vmešavajo
+                sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
+                for item in sorted_keywords:
+                    lbl = item['label']
+                    if len(lbl) > 2:
+                        g_url = urllib.parse.quote(lbl)
+                        link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
+                        
+                        # Unicode-safe regex
+                        pattern = re.compile(rf'(?<!\w){re.escape(lbl)}(?!\w)', re.IGNORECASE | re.UNICODE)
+                        
+                        # KLJUČNA SPREMEMBA: Dodan count=1, da se polinka le PRVA pojavitev besede
                         final_interactive_report = pattern.sub(link_html, final_interactive_report, count=1)
 
+            # 5b. RENDERING THE INTERACTIVE REPORT
+            st.subheader("🧱 INTEGRATED HIERARCHOLOGICAL REPORT")
+            if biblio_data:
+                with st.expander("📚 EXTRACTED AUTHOR BACKGROUND", expanded=False):
+                    st.markdown(biblio_data)
+            
+            # Display the full linked report (P1 + P2)
             st.markdown(final_interactive_report, unsafe_allow_html=True)
 
-            # --- G. INNOVATION CARDS & LEGEND ---
+            # 5c. INNOVATION DEEP-DIVE: DETAILED BREAKTHROUGH CATALOG
             if final_elements:
                 st.divider()
                 st.markdown("### 🚀 STRATEGIC INNOVATION DEEP-DIVE")
-                innovations = [n['data'] for n in final_elements if n['data'].get('shape') == 'diamond']
-                for inv in innovations:
-                    st.markdown(f"""
-                    <div style="background-color: #ffffff; border-left: 6px solid #fd7e14; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 20px;">
-                        <h4 style="margin: 0; color: #1d3557;">{inv['label']}</h4>
-                        <p style="color: #444; margin-top: 10px;">{inv['description']}</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-                # Legend Box
-                st.markdown('<div style="font-size: 0.8em; color: #666;">⭐ Goal | ⬢ Domain | 💠 Innovation | △ Process | ▭ Data</div>', unsafe_allow_html=True)
-
-                # --- H. GRAPH RENDERING ---
-                st.subheader(f"🕸️ HYBRID SEMANTIC MAP ({graph_perspective.upper()})")
-                render_cytoscape_network(final_elements, layout_type=graph_perspective, container_id=f"cy_{int(time.time())}")
+                st.info("The following strategic breakthroughs have been synthesized from the multi-dimensional analysis above.")
                 
-                # Shrani za galerijo
+                # Extract innovations (diamonds) for detailed report-style display
+                innovations = [n['data'] for n in final_elements if n['data'].get('shape') == 'diamond']
+                
+                if innovations:
+                    for inv in innovations:
+                        g_url = urllib.parse.quote(inv['label'])
+                        # Fetch the precise description generated by the model
+                        detailed_desc = inv.get('description', "Detailed strategic analysis is available in the integrated report above.")
+                        
+                        # High-End Report Style Card
+                        st.markdown(f"""
+                        <div style="background-color: #ffffff; border-left: 6px solid #fd7e14; padding: 25px; border-radius: 15px; box-shadow: 0 6px 15px rgba(0,0,0,0.1); border: 1px solid #eee; margin-bottom: 25px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <span style="background-color: #fff4ed; color: #fd7e14; padding: 5px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; border: 1px solid #fd7e14;">Strategic Breakthrough</span>
+                                <a href="https://www.google.com/search?q={g_url}" target="_blank" style="text-decoration: none; color: #457b9d; font-size: 0.85em; font-weight: 600;">Technical Search ↗</a>
+                            </div>
+                            <h2 style="margin: 0 0 15px 0; color: #1d3557; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">{inv['label']}</h2>
+                            <div style="color: #333; font-size: 1.05em; line-height: 1.7; border-top: 1px solid #f0f0f0; padding-top: 15px;">
+                                {detailed_desc}
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                else:
+                    st.warning("No specific 'Diamond' innovations were found. Review the structural graph for implicit breakthroughs.")
+
+                # 5d. MINIMALIST SYSTEM LEGEND (FINAL ARCHITECTURE)
+                st.markdown("""
+                <div style="font-size: 0.78em; color: #444; background: #ffffff; padding: 15px 25px; border-radius: 15px; border: 1px solid #e9ecef; margin-top: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                        <div>
+                            <b style="color: #1d3557; text-transform: uppercase; letter-spacing: 1px;">Nodes (Geometry):</b><br>
+                            ⭐ Goal | ⬢ Domain | 💠 Innovation | △ Process | ▭ Data | ⬣ Rule | ⭔ Bio
+                        </div>
+                        <div style="height: 30px; width: 1px; background: #dee2e6; display: block;"></div>
+                        <div>
+                            <b style="color: #1d3557; text-transform: uppercase; letter-spacing: 1px;">UML & Logic Connectors:</b><br>
+                            <span style="color:#e63946;">⬤ Structural (UML)</span> | 
+                            <span style="color:#000000;">⬤ Specialization (Deduction)</span> | 
+                            <span style="color:#1d3557;">⬤ Containment (Cage)</span>
+                        </div>
+                        <div style="height: 30px; width: 1px; background: #dee2e6; display: block;"></div>
+                        <div>
+                            <b style="color: #1d3557; text-transform: uppercase; letter-spacing: 1px;">Semantic Layers:</b><br>
+                            <span style="color:#1d3557;">⬤ Hierarchical (ISO)</span> | 
+                            <span style="color:#7b2cb1;">⬤ Associative</span> | 
+                            <span style="color:#2a9d8f;">⬤ Related</span> | 
+                            <span style="color:#f1c40f;">⬤ Equivalence</span>
+                        </div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+                # 5e. FINAL GRAPH RENDERING (Z DINAMIČNO PERSPEKTIVO)
+                st.subheader(f"🕸️ HYBRID SEMANTIC SYSTEM MAP ({graph_perspective.upper()} VIEW)")
+                render_cytoscape_network(
+                    final_elements, 
+                    layout_type=graph_perspective, 
+                    container_id=f"cy_{int(time.time())}"
+                )
+
+                # --- NOVO: SHRANJEVANJE ZA GALERIJO (DODANO NA KONEC POROČILA) ---
                 st.session_state.final_graph_elements = final_elements
                 st.session_state.report_ready = True
 
         except Exception as e:
             st.error(f"❌ Pipeline Failure: {str(e)}")
-            st.stop()
 			
 # =============================================================================
 # 6. MULTI-PERSPECTIVE GALLERY (SEQUENTIAL EXPORT)
 # =============================================================================
 
-# Ta blok se izvede le, če je poročilo pripravljeno (report_ready == True)
 if st.session_state.get('report_ready') and 'final_graph_elements' in st.session_state:
     st.divider()
     st.markdown('<h2 style="color: #1d3557; text-align: center;">🖼️ MULTI-PERSPECTIVE GRAPH GALLERY</h2>', unsafe_allow_html=True)
-    st.info("💡 **NAVODILO ZA SHRANJEVANJE:** Spodaj so zavihki z različnimi vizualnimi perspektivami vašega sistema. Kliknite gumb **EXPORT PNG** v vsakem zavihku za prenos.")
+    st.info("💡 **NAVODILO ZA ZAPOREDNO SHRANJEVANJE:** Spodaj so zavihki z različnimi vizualnimi perspektivami istega znanja. Odprite posamezen zavihek in kliknite gumb **EXPORT PNG**, da shranite vseh 5 verzij na svoj disk.")
 
-    # Ustvarimo zavihke za 5 različnih pogledov
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "🌿 ORGANIC", "🌲 HIERARCHICAL", "⭕ CIRCULAR", "🎯 CONCENTRIC", "🔲 GRID"
     ])
 
     with tab1:
-        st.markdown("**Organic View:** Najboljše za odkrivanje naravnih tematskih sklopov in grozdov (clusters).")
+        st.markdown("**Organic View:** Najboljše za odkrivanje naravnih tematskih sklopov.")
         render_cytoscape_network(st.session_state.final_graph_elements, layout_type="organic", container_id="gal_organic")
     
     with tab2:
-        st.markdown("**Hierarchical View:** Stroga drevesna struktura od korenine (Root) do vej.")
+        st.markdown("**Hierarchical View:** Logično drevo od splošnega k specifičnemu.")
         render_cytoscape_network(st.session_state.final_graph_elements, layout_type="hierarchical", container_id="gal_hierarchical")
         
     with tab3:
-        st.markdown("**Circular View:** Poudarja krožne relacije in povratne zanke v sistemu.")
+        st.markdown("**Circular View:** Fokus na relacijah in krožni soodvisnosti.")
         render_cytoscape_network(st.session_state.final_graph_elements, layout_type="circular", container_id="gal_circular")
         
     with tab4:
-        st.markdown("**Concentric View:** Razporedi vozlišča glede na njihovo sistemsko pomembnost (v jedru so najpomembnejši).")
+        st.markdown("**Concentric View:** Razporeditev po sistemski pomembnosti (Jedro).")
         render_cytoscape_network(st.session_state.final_graph_elements, layout_type="concentric", container_id="gal_concentric")
 
     with tab5:
-        st.markdown("**Grid View:** Geometrijska poravnava za hiter pregled vseh prvin.")
+        st.markdown("**Grid View:** Pregledna poravnava vseh prvin.")
         render_cytoscape_network(st.session_state.final_graph_elements, layout_type="grid", container_id="gal_grid")
 
 # =============================================================================
