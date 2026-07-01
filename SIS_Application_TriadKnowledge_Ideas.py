@@ -874,7 +874,7 @@ cerebras_id = st.selectbox(
 )
     
 	# SambaNova ključ ostane enak
-    sambanova_api_key = st.text_input("SambaNova Key (Phase 2):", type="password", key="side_samba_v2026")
+	sambanova_api_key = st.text_input("SambaNova Key (Phase 2):", type="password", key="side_samba_v2026")
    
    # 4. POSODOBLJENO: Najnovejša generacija modelov (Junij 2026) & VIZUALNI MOTOR
     # Model gemma-4-31B-it je trenutno 'flagship' model na SambaNova Cloud.
@@ -891,10 +891,10 @@ cerebras_id = st.selectbox(
         key="side_model_select_v2026"
     )
     
-    st.divider()
+	st.divider()
 
     # --- NOVO: IZBIRA PERSPEKTIVE GRAFA ---
-    st.subheader("🎨 GRAPH PERSPECTIVE")
+	st.subheader("🎨 GRAPH PERSPECTIVE")
     graph_perspective = st.selectbox(
         "Select Visual Layout Engine:",
         options=["organic", "hierarchical", "circular", "concentric", "grid"],
