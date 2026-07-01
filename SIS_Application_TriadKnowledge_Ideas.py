@@ -1070,15 +1070,15 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             full_ai_input = f"{active_context}{user_query}{file_context_str}{biblio_context}"
 
             # --- B. INICIALIZACIJA KLIENTOV ---
-            # Phase 1: Cerebras (Llama 3.3 70B)
+            # Phase 1: Cerebras (llama3.3-70b)
             # Phase 2: SambaNova (DeepSeek-V3.2 / Gemma 4)
             cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
             samba_client = OpenAI(api_key=sambanova_api_key, base_url="https://api.sambanova.ai/v1")
             
             # --- C. PHASE 1: CEREBRAS (Structural Architecture) ---
-            with st.spinner('🚀 PHASE 1: Cerebras (Llama 3.3 70B) building foundation...'):
+            with st.spinner('🚀 PHASE 1: Cerebras (llama3.3-70b) building foundation...'):
                 p1_response = cerebras_client.chat.completions.create(
-                    model="llama-3.3-70b",
+                    model="llama3.3-70b",
                     messages=[
                         {"role": "system", "content": "You are the SIS Lead Hierarchologist. Build a stable structural foundation using Integrated Metamodel Architecture (IMA)."}, 
                         {"role": "user", "content": full_ai_input}
