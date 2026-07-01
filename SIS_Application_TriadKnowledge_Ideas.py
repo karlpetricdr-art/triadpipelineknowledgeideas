@@ -853,24 +853,11 @@ with st.sidebar:
     
     st.header("⚙️ SYSTEM CONTROL")
     
-    # 3. Dual API Keys Access (Zamenjava Groq -> Cerebras)
+    # 3. Dual API Keys Access (Unikatna ključa preprečujeta DuplicateID napako)
     st.subheader("🔑 Dual-Engine API Access")
-    cerebras_api_key = st.text_input("Cerebras Key (Phase 1):", type="password", key="side_cerebras_v2026")
+    groq_api_key = st.text_input("Groq Key (Phase 1):", type="password", key="side_groq_v2026")
     sambanova_api_key = st.text_input("SambaNova Key (Phase 2):", type="password", key="side_samba_v2026")
-# 3.1 CEREBRAS ENGINE (Phase 1 Configuration)
-    st.divider()
-    st.subheader("🏛️ PHASE 1 ENGINE (Cerebras)")
-    cerebras_id = st.selectbox(
-        "Cerebras Model Choice:", 
-        [
-            "llama-4-scout-17b-16e-instruct", 
-            "llama-3.3-70b", 
-            "llama3.1-70b"
-        ], 
-        index=0, 
-        key="side_cerebras_model_v2026",
-        help="Izberite Llama-4 Scout za najnovejšo tehnologijo ali Llama-3.3 za maksimalno stabilnost."
-    )    
+    
    # 4. POSODOBLJENO: Najnovejša generacija modelov (Junij 2026) & VIZUALNI MOTOR
     # Model gemma-4-31B-it je trenutno 'flagship' model na SambaNova Cloud.
     sambanova_id = st.selectbox(
@@ -975,8 +962,8 @@ st.markdown(f"**Sequential Multi-Engine Pipeline** | Current Operating Date: **{
 if st.session_state.show_user_guide:
     st.info(f"""
     **Sequential Synergy Pipeline Workflow (Updated Feb 24, 2026):**
-    1. **Key Input**: Enter your Cerebras (Phase 1) and Cerebras (Phase 2) API keys in the sidebar.
-    2. **Research Foundation (Step 1)**: Cerebras performs structural synthesis foundation using Integrated Metamodel Architecture (IMA).
+    1. **Key Input**: Enter your Groq (Phase 1) and Cerebras (Phase 2) API keys in the sidebar.
+    2. **Research Foundation (Step 1)**: Groq performs structural synthesis foundation using Integrated Metamodel Architecture (IMA).
     3. **Innovation Prompt (Step 2)**: Cerebras takes Groq's work and generates radical 'Useful Innovative Ideas' using Mental Approaches (MA) logic.
     4. **Visualization**: The interactive 18D graph maps structural facts against generative ideas.
     """)
@@ -984,7 +971,7 @@ if st.session_state.show_user_guide:
 # REFERENCE ARCHITECTURE BOXES
 col_ref1, col_ref2 = st.columns(2)
 with col_ref1:
-    st.markdown("""<div class="metamodel-box"><b>🏛️ Phase 1: Cerebras (IMA Architecture)</b><br>Structural reasoning building the factual foundation. Focus: Identity, Mission, Problem. </div>""", unsafe_allow_html=True)
+    st.markdown("""<div class="metamodel-box"><b>🏛️ Phase 1: Groq (IMA Architecture)</b><br>Structural reasoning building the factual foundation. Focus: Identity, Mission, Problem. </div>""", unsafe_allow_html=True)
 with col_ref2:
     st.markdown("""<div class="mental-approach-box"><b>🧠 Phase 2: SambaNova (MA Architecture)</b><br>Cognitive transformation generating innovative solutions. Focus: Dialectics, Perspective, Induction.</div>""", unsafe_allow_html=True)
 
@@ -1022,7 +1009,7 @@ st.divider()
 # DUAL INQUIRY INTERFACE
 col_inq1, col_inq2, col_inq3 = st.columns([2, 2, 1])
 with col_inq1:
-    user_query = st.text_area("❓ STEP 1: Research Inquiry (for CEREBRAS):", placeholder="Fact-based Foundational Inquiry...", height=200)
+    user_query = st.text_area("❓ STEP 1: Research Inquiry (for GROQ):", placeholder="Fact-based Foundational Inquiry...", height=200)
 with col_inq2:
     idea_query = st.text_area("💡 STEP 2: Innovation Prompt (for SAMBANOVA):", placeholder="Targets for innovative idea production...", height=200)
 # --- POPRAVEK KORAK 1: Branje vsebine datoteke ---
@@ -1045,8 +1032,8 @@ with col_inq3:
 # =============================================================================
 
 if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True, key="exec_pipeline_v2026"):
-    if not cerebras_api_key or not sambanova_api_key:
-        st.error("❌ Dual-Model synergy requires both Cerebras and SambaNova keys.")
+    if not groq_api_key or not sambanova_api_key:
+        st.error("❌ Dual-Model synergy requires both Groq and SambaNova keys.")
     elif not user_query:
         st.warning("⚠️ Phase 1 Research Inquiry is required.")
     else:
@@ -1079,55 +1066,25 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             full_ai_input = f"{active_context}{user_query}{file_context_str}{biblio_context}"
 
             # Initialization of clients
-            cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
+            groq_client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
             samba_client = OpenAI(api_key=sambanova_api_key, base_url="https://api.sambanova.ai/v1")
             
-            # --- PHASE 1: CEREBRAS (Structural Architecture) ---
-            with st.spinner(f'🚀 PHASE 1: Cerebras Engine Initializing...'):
-                # 1. POSODOBLJENA INICIALIZACIJA (Zagotovimo sveže podatke)
-                c_api_key = cerebras_api_key.strip() 
-                c_model_id = cerebras_id.strip()
-
-                cerebras_client = OpenAI(
-                    api_key=c_api_key, 
-                    base_url="https://api.cerebras.ai/v1"
+            # --- PHASE 1: GROQ ---
+            with st.spinner('PHASE 1: Building Architecture...'):
+                p1_response = groq_client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[
+                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. If the user provides specific Paradigms or Models in the 'MANDATORY SYSTEM INSTRUCTION', you MUST prioritize them in your structural analysis."}, 
+                        {"role": "user", "content": full_ai_input}
+                    ],
+                    temperature=0.4
                 )
-                
-                try:
-                    # 2. DEJANSKI KLIC
-                    p1_response = cerebras_client.chat.completions.create(
-                        model=c_model_id, 
-                        messages=[
-                            {"role": "system", "content": "You are the SIS Lead Hierarchologist. Build a stable structural foundation using IMA Architecture."},
-                            {"role": "user", "content": full_ai_input}
-                        ],
-                        temperature=0.3
-                    )
-                    
-                    # Shranimo rezultat v lokalno spremenljivko
-                    groq_synthesis = p1_response.choices[0].message.content
-                    st.session_state.groq_synthesis = groq_synthesis
-                    
-                except Exception as api_err:
-                    # Fallback logika, če Scout model javi 404
-                    if "404" in str(api_err):
-                        st.warning(f"Model {c_model_id} ni dosegljiv. Avtomatski preklop na llama3.1-70b...")
-                        fallback_response = cerebras_client.chat.completions.create(
-                            model="llama3.1-70b", 
-                            messages=[
-                                {"role": "system", "content": "You are the SIS Lead Hierarchologist."},
-                                {"role": "user", "content": full_ai_input}
-                            ],
-                            temperature=0.3
-                        )
-                        groq_synthesis = fallback_response.choices[0].message.content
-                        st.session_state.groq_synthesis = groq_synthesis
-                    else:
-                        raise api_err
+                groq_synthesis = p1_response.choices[0].message.content
+                st.session_state.groq_synthesis = groq_synthesis
 
             # --- PHASE 2: SAMBANOVA ---
-            # Ta vrstica je poravnana točno pod 'with' prve faze
             with st.spinner(f'PHASE 2: SambaNova generating innovations...'):
+                # We inject the same active_context here to ensure Phase 2 follows the rules too
                 samba_response = samba_client.chat.completions.create(
                     model=sambanova_id, 
                     messages=[
@@ -1136,8 +1093,8 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                     ],
                     temperature=0.85
                 )
-                # Rezultat druge faze shranimo v cerebras_innovation
                 cerebras_innovation = samba_response.choices[0].message.content
+                st.session_state.groq_synthesis = groq_synthesis
 
             # --- 3. PHASE 2: SAMBANOVA (ULTRA-CREATIVE INNOVATION ENGINE) ---
             with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) generating radical innovations...'):
@@ -1221,7 +1178,7 @@ MANDATORY JSON STRUCTURE:
                 innovation_text = cerebras_innovation
                 json_raw = ""
 
-            full_report = f"## 📚 Phase 1: Foundation (Cerebras)\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations (SambaNova)\n\n{innovation_text}"
+            full_report = f"## 📚 Phase 1: Foundation (Groq)\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations (SambaNova)\n\n{innovation_text}"
             
             nodes_to_link = []
             final_elements = []
@@ -1325,9 +1282,9 @@ MANDATORY JSON STRUCTURE:
 
             # --- 5. FINAL DISPLAY: SEQUENTIAL INTERACTIVE SYNERGY REPORT ---
             
-            # Combine Phase 1 (Cerebras) and Phase 2 (SambaNova) text for full-spectrum highlighting
+            # Combine Phase 1 (Groq) and Phase 2 (SambaNova) text for full-spectrum highlighting
             # This ensures words in BOTH phases are linked.
-            combined_report_text = f"## 📚 PHASE 1: Structural Foundation (Cerebras)\n\n{groq_synthesis}\n\n---\n## 💡 PHASE 2: Strategic Innovation Report (SambaNova)\n\n{innovation_text}"
+            combined_report_text = f"## 📚 PHASE 1: Structural Foundation\n\n{groq_synthesis}\n\n---\n## 💡 PHASE 2: Strategic Innovation Report\n\n{innovation_text}"
             
             # 5a. GLOBAL SEMANTIC HIGHLIGHTER (Multi-Phase Linking)
             final_interactive_report = combined_report_text
@@ -1342,6 +1299,19 @@ MANDATORY JSON STRUCTURE:
                         link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
                         
                         # Unicode-safe regex to catch terms in both Phase 1 and Phase 2
+                        pattern = re.compile(rf'(?<!\w){re.escape(lbl)}(?!\w)', re.IGNORECASE | re.UNICODE)
+                        # 5a. GLOBAL SEMANTIC HIGHLIGHTER (Multi-Phase Linking)
+            final_interactive_report = combined_report_text
+            if nodes_to_link:
+                # Razvrstimo ključne besede po dolžini (daljše prej), da se krajše ne vmešavajo
+                sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
+                for item in sorted_keywords:
+                    lbl = item['label']
+                    if len(lbl) > 2:
+                        g_url = urllib.parse.quote(lbl)
+                        link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
+                        
+                        # Unicode-safe regex
                         pattern = re.compile(rf'(?<!\w){re.escape(lbl)}(?!\w)', re.IGNORECASE | re.UNICODE)
                         
                         # KLJUČNA SPREMEMBA: Dodan count=1, da se polinka le PRVA pojavitev besede
