@@ -1455,7 +1455,7 @@ MANDATORY JSON STRUCTURE:
                 st.session_state.final_graph_elements = final_elements
                 st.session_state.report_ready = True
 
-        except Exception as e:
+            except Exception as e:
             st.error(f"❌ Pipeline Failure: {str(e)}")
 			
 # =============================================================================
@@ -1489,10 +1489,11 @@ MANDATORY JSON STRUCTURE:
 
         with tab5:
             st.markdown("**Grid View:** Pregledna poravnava vseh prvin.")
+            # Preverite, da je spodnji oklepaj ) na koncu te vrstice!
             render_cytoscape_network(st.session_state.final_graph_elements, layout_type="grid", container_id="gal_grid")
 
-    # --- KLJUČNI DEL: EXCEPT MORA BITI TUKAJ (Vrstica 1412) ---
-    # Ta zamik (8 presledkov) ga poravna z 'try:' iz vrstice 1074.
+    # --- VRSTICA 1458 ---
+    # Ta beseda MORA biti poravnana TOČNO pod besedo 'try' iz vrstice 1074.
     except Exception as e:
         st.error(f"❌ Pipeline Failure: {str(e)}")
         st.stop()
