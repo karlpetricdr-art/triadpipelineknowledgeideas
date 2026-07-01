@@ -1078,7 +1078,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             # --- C. PHASE 1: CEREBRAS (Structural Architecture) ---
             with st.spinner('🚀 PHASE 1: Cerebras (llama-4-scout-17b-16e-instruct) building foundation...'):
                 p1_response = cerebras_client.chat.completions.create(
-                    model="llama-4-scout-17b-16e-instruct",
+                    model="llama-4-scout",
                     messages=[
                         {"role": "system", "content": "You are the SIS Lead Hierarchologist. Build a stable structural foundation using Integrated Metamodel Architecture (IMA)."}, 
                         {"role": "user", "content": full_ai_input}
