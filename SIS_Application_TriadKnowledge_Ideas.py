@@ -859,9 +859,25 @@ with st.sidebar:
     # Zamenjava Groq ključa s Cerebras ključem
     cerebras_api_key = st.text_input("Cerebras Key (Phase 1):", type="password", key="side_cerebras_v2026")
     
-    # SambaNova ključ ostane enak
-    sambanova_api_key = st.text_input("SambaNova Key (Phase 2):", type="password", key="side_samba_v2026")
+	# --- 3.1 CEREBRAS ENGINE (Phase 1 Configuration) ---
+st.subheader("🏛️ PHASE 1 ENGINE (Cerebras)")
+cerebras_id = st.selectbox(
+    "Cerebras Model Choice:", 
+    [
+        "llama-3.3-70b",        # Flagship model
+        "llama3.1-70b",        # Najbolj stabilen (Safe Choice)
+        "llama-4-scout-17b",    # NOVO: Llama 4 Scout (17B)
+        "llama-4-scout-8b",     # NOVO: Llama 4 Scout (8B)
+        "llama3.1-8b"          # Ultra hitrost
+    ], 
+    index=1, # Privzeto nastavimo na 3.1-70b, da aplikacija ne javi takoj napake
+    key="side_cerebras_model_v2026",
+    help="Izberite Llama-3.3 ali 3.1 za kompleksno analizo, Scout pa za testiranje Llama 4 hitrosti."
+)
     
+	# SambaNova ključ ostane enak
+    sambanova_api_key = st.text_input("SambaNova Key (Phase 2):", type="password", key="side_samba_v2026")
+   
    # 4. POSODOBLJENO: Najnovejša generacija modelov (Junij 2026) & VIZUALNI MOTOR
     # Model gemma-4-31B-it je trenutno 'flagship' model na SambaNova Cloud.
     sambanova_id = st.selectbox(
@@ -1075,16 +1091,34 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
             samba_client = OpenAI(api_key=sambanova_api_key, base_url="https://api.sambanova.ai/v1")
             
-            # --- C. PHASE 1: CEREBRAS (Structural Architecture) ---
-            with st.spinner('🚀 PHASE 1: Cerebras (llama-4-scout-17b-16e-instruct) building foundation...'):
-                p1_response = cerebras_client.chat.completions.create(
-                    model="llama-4-scout",
-                    messages=[
-                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. Build a stable structural foundation using Integrated Metamodel Architecture (IMA)."}, 
-                        {"role": "user", "content": full_ai_input}
-                    ],
-                    temperature=0.3
-                )
+            # --- PHASE 1: CEREBRAS (Structural Architecture) ---
+with st.spinner(f'🚀 PHASE 1: Cerebras ({cerebras_id}) building foundation...'):
+    try:
+        # Inicializacija klienta
+        cerebras_client = OpenAI(
+            api_key=cerebras_api_key, 
+            base_url="https://api.cerebras.ai/v1"
+        )
+        
+        # Izvedba klica na izbrani model (vključno s Scout variantami)
+        p1_response = cerebras_client.chat.completions.create(
+            model=cerebras_id, 
+            messages=[
+                {"role": "system", "content": "You are the SIS Lead Hierarchologist. Build a stable structural foundation using IMA Architecture."},
+                {"role": "user", "content": full_ai_input}
+            ],
+            temperature=0.3
+        )
+        
+        # Rezultat shranimo v 'groq_synthesis' zaradi kompatibilnosti s Phase 2
+        groq_synthesis = p1_response.choices[0].message.content
+        st.session_state.groq_synthesis = groq_synthesis
+
+    except Exception as e:
+        # Če Scout model ne deluje (Error 404), uporabnika obvestimo, naj zamenja model
+        st.error(f"❌ Phase 1 Error ({cerebras_id}): {str(e)}")
+        st.info("💡 Nasvet: Če model ne obstaja (404), v stranski vrstici preklopite na 'llama3.1-70b'.")
+        st.stop()
                 # Shranimo v 'cerebras_synthesis', da ne podremo logike v nadaljevanju
                 cerebras_synthesis = p1_response.choices[0].message.content
                 st.session_state.cerebras_synthesis = cerebras_synthesis
