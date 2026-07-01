@@ -386,7 +386,7 @@ def fetch_author_bibliographies(author_input):
     comprehensive_biblio = ""
     headers = {"Accept": "application/json"}
     for auth in author_list:
-        try:
+            try:
             s_res = requests.get(f"https://pub.orcid.org/v3.0/search/?q={auth}", headers=headers, timeout=6).json()
             if s_res.get('result'):
                 orcid_id = s_res['result'][0]['orcid-identifier']['path']
@@ -1019,7 +1019,7 @@ with col_inq3:
     uploaded_file = st.file_uploader("📂 ATTACH DATA (.txt only):", type=['txt'], key="final_file_uploader_v2")
     file_content = "" 
     if uploaded_file is not None:
-        try:
+            try:
             file_content = uploaded_file.read().decode("utf-8")
             st.success(f"📎 {uploaded_file.name} uploaded!")
             # Prevedeno v angleščino:
@@ -1245,7 +1245,7 @@ MANDATORY JSON STRUCTURE:
             json_match = re.search(r'(\{.*"nodes".*\})', json_raw if json_raw else cerebras_innovation, re.DOTALL | re.IGNORECASE)
             
             if json_match:
-                try:
+            try:
                     g_data = json.loads(json_match.group(1))
                     
                     # --- PROCESIRANJE VOZLIŠČ Z DINAMIČNO VELIKOSTJO ---
@@ -1491,9 +1491,10 @@ MANDATORY JSON STRUCTURE:
             st.markdown("**Grid View:** Pregledna poravnava vseh prvin.")
             # Preverite, da je spodnji oklepaj ) na koncu te vrstice!
             render_cytoscape_network(st.session_state.final_graph_elements, layout_type="grid", container_id="gal_grid")
+
             except Exception as e:
-            st.error(f"❌ Pipeline Failure: {str(e)}")
-            st.stop()
+        st.error(f"❌ Pipeline Failure: {str(e)}")
+        st.stop()
 
 # =============================================================================
 # 7. FOOTER
