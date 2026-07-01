@@ -1492,9 +1492,7 @@ MANDATORY JSON STRUCTURE:
             # Preverite, da je spodnji oklepaj ) na koncu te vrstice!
             render_cytoscape_network(st.session_state.final_graph_elements, layout_type="grid", container_id="gal_grid")
 
-    # --- VRSTICA 1458 ---
-    # Ta beseda MORA biti poravnana TOČNO pod besedo 'try' iz vrstice 1074.
-    except Exception as e:
+            except Exception as e:
         st.error(f"❌ Pipeline Failure: {str(e)}")
         st.stop()
 
