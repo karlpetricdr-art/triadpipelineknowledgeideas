@@ -386,7 +386,7 @@ def fetch_author_bibliographies(author_input):
     comprehensive_biblio = ""
     headers = {"Accept": "application/json"}
     for auth in author_list:
-            try:
+        try:
             s_res = requests.get(f"https://pub.orcid.org/v3.0/search/?q={auth}", headers=headers, timeout=6).json()
             if s_res.get('result'):
                 orcid_id = s_res['result'][0]['orcid-identifier']['path']
@@ -853,10 +853,9 @@ with st.sidebar:
     
     st.header("⚙️ SYSTEM CONTROL")
     
-    # 3. with st.sidebar:
+    # 3. Dual API Keys Access (Unikatna ključa preprečujeta DuplicateID napako)
     st.subheader("🔑 Dual-Engine API Access")
-    # Replace Groq with Cerebras
-    cerebras_api_key = st.text_input("Cerebras Key (Phase 1):", type="password", key="side_cerebras_v2026")
+    groq_api_key = st.text_input("Groq Key (Phase 1):", type="password", key="side_groq_v2026")
     sambanova_api_key = st.text_input("SambaNova Key (Phase 2):", type="password", key="side_samba_v2026")
     
    # 4. POSODOBLJENO: Najnovejša generacija modelov (Junij 2026) & VIZUALNI MOTOR
@@ -1019,7 +1018,7 @@ with col_inq3:
     uploaded_file = st.file_uploader("📂 ATTACH DATA (.txt only):", type=['txt'], key="final_file_uploader_v2")
     file_content = "" 
     if uploaded_file is not None:
-            try:
+        try:
             file_content = uploaded_file.read().decode("utf-8")
             st.success(f"📎 {uploaded_file.name} uploaded!")
             # Prevedeno v angleščino:
@@ -1032,114 +1031,56 @@ with col_inq3:
 # 5. SYNERGY EXECUTION ENGINE (WITH CONDITIONAL ACTIVATION)
 # =============================================================================
 
-# =============================================================================
-    # 5. SYNERGY EXECUTION ENGINE
-    # =============================================================================
-    if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True, key="exec_pipeline_v2026"):
-        if not cerebras_api_key or not sambanova_api_key:
-            st.error("❌ Dual-Model synergy requires both Cerebras and SambaNova keys.")
-        elif not user_query:
-            st.warning("⚠️ Phase 1 Research Inquiry is required.")
-        else:
-            try:
-                # --- A. PRIPRAVA KONTEKSTA ---
-                trigger_keyword = "[ACTIVATE]"
-                active_context = ""
-                if trigger_keyword in user_query or (idea_query and trigger_keyword in idea_query):
-                    active_context = f"""
-                    \n### MANDATORY SYSTEM INSTRUCTION: APPLY INTERFACE PARAMETERS ###
-                    - Science Fields: {', '.join(sel_sciences)}
-                    - Paradigms: {', '.join(sel_paradigms)}
-                    - Models: {', '.join(sel_models)}
-                    - Frameworks: {', '.join(selected_techniques)}
-                    - Expertise: {expertise}
-                    - Goal: {goal_context}
-                    \n###########################################################\n
-                    """
+if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True, key="exec_pipeline_v2026"):
+    if not groq_api_key or not sambanova_api_key:
+        st.error("❌ Dual-Model synergy requires both Groq and SambaNova keys.")
+    elif not user_query:
+        st.warning("⚠️ Phase 1 Research Inquiry is required.")
+    else:
+        try:
+            # --- CONDITIONAL DIMENSION ACTIVATION ---
+            # The system only injects sidebar selections if [ACTIVATE] is present in the prompt.
+            trigger_keyword = "[ACTIVATE]"
+            active_context = ""
+            
+            if trigger_keyword in user_query or (idea_query and trigger_keyword in idea_query):
+                active_context = f"""
+                \n### MANDATORY SYSTEM INSTRUCTION: APPLY INTERFACE PARAMETERS ###
+                The user has explicitly activated the following constraints for this specific run:
+                - Target Science Fields: {', '.join(sel_sciences)}
+                - Applied Scientific Paradigms: {', '.join(sel_paradigms)}
+                - Structural Model Focus: {', '.join(sel_models)}
+                - Innovation Frameworks: {', '.join(selected_techniques)}
+                - Expertise Level: {expertise}
+                - Project Strategic Goal: {goal_context}
+                \n###########################################################\n
+                """
 
-                with st.spinner('🔍 Accessing ORCID & Scholar databases...'):
-                    biblio_data = fetch_author_bibliographies(target_authors) if target_authors else ""
-                
-                file_context_str = f"\n\n[FILE CONTEXT]:\n{file_content}" if file_content else ""
-                biblio_context = f"\n\n[AUTHOR RESEARCH BACKGROUND]:\n{biblio_data}" if biblio_data else ""
-                full_ai_input = f"{active_context}{user_query}{file_context_str}{biblio_context}"
+            with st.spinner('🔍 Accessing ORCID & Scholar databases...'):
+                biblio_data = fetch_author_bibliographies(target_authors) if target_authors else ""
+            
+            file_context_str = f"\n\n[FILE CONTEXT]:\n{file_content}" if file_content else ""
+            biblio_context = f"\n\n[AUTHOR RESEARCH BACKGROUND]:\n{biblio_data}" if biblio_data else ""
+            
+            # Combine the trigger context with the user query
+            full_ai_input = f"{active_context}{user_query}{file_context_str}{biblio_context}"
 
-                # --- B. PHASE 1: CEREBRAS (Llama 3.3 70B) ---
-                with st.spinner('🚀 PHASE 1: Cerebras (Llama 3.3 70B) building foundation...'):
-                    cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
-                    p1_response = cerebras_client.chat.completions.create(
-                        model="llama-3.3-70b", 
-                        messages=[
-                            {"role": "system", "content": "You are the SIS Lead Hierarchologist. Build a stable structural foundation using IMA Architecture."},
-                            {"role": "user", "content": full_ai_input}
-                        ],
-                        temperature=0.3
-                    )
-                    groq_synthesis = p1_response.choices[0].message.content
-                    st.session_state.groq_synthesis = groq_synthesis
-
-                # --- C. PHASE 2: SAMBANOVA (DeepSeek / Innovation) ---
-                with st.spinner(f'🧠 PHASE 2: SambaNova ({sambanova_id}) generating innovations...'):
-                    samba_client = OpenAI(api_key=sambanova_api_key, base_url="https://api.sambanova.ai/v1")
-                    samba_sys_prompt = """You are the SIS Strategic Innovation Architect. 
-                    Transform Phase 1 into a Strategic Innovation Report and a JSON map.
-                    Use ISO Thesaurus (TT, BT, NT, RT) and UML (Composition, Dependency, Conflict, Specialization) logic.
-                    MANDATORY: End with ### SEMANTIC_GRAPH_JSON followed by your JSON code."""
-                    
-                    samba_response = samba_client.chat.completions.create(
-                        model=sambanova_id, 
-                        messages=[
-                            {"role": "system", "content": samba_sys_prompt}, 
-                            {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER INNOVATION GOAL: {idea_query}"}
-                        ],
-                        temperature=0.8
-                    )
-                    cerebras_innovation = samba_response.choices[0].message.content
-
-                # --- D. PROCESIRANJE REZULTATOV & GRAFA ---
-                if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
-                    parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
-                    innovation_text = parts[0]
-                    json_raw = parts[1]
-                else:
-                    innovation_text = cerebras_innovation
-                    json_raw = ""
-
-                # Priprava poročila za prikaz
-                full_report = f"## 📚 Phase 1: Foundation (Cerebras)\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations (SambaNova)\n\n{innovation_text}"
-                st.markdown(full_report)
-
-                # Parsanje JSON za graf
-                final_elements = []
-                json_match = re.search(r'(\{.*"nodes".*\})', json_raw, re.DOTALL | re.IGNORECASE)
-                if json_match:
-                    g_data = json.loads(json_match.group(1))
-                    for n in g_data.get("nodes", []):
-                        final_elements.append({"data": {"id": n["id"], "label": n["label"], "color": n.get("color", "#DDEBF7"), "shape": n.get("shape", "rectangle"), "size": 90}})
-                    for e in g_data.get("edges", []):
-                        final_elements.append({"data": {"source": e["source"], "target": e["target"], "rel_type": e.get("rel_type", "AS"), "color": "#1D3557"}})
-                
-                st.session_state.final_graph_elements = final_elements
-                st.session_state.report_ready = True
-
-                # --- E. MULTI-PERSPECTIVE GALLERY ---
-                st.divider()
-                st.markdown("### 🖼️ MULTI-PERSPECTIVE GRAPH GALLERY")
-                tab1, tab2, tab3, tab4, tab5 = st.tabs(["🌿 ORGANIC", "🌲 HIERARCHICAL", "⭕ CIRCULAR", "🎯 CONCENTRIC", "🔲 GRID"])
-                
-                with tab1: render_cytoscape_network(final_elements, "organic", "gal_org")
-                with tab2: render_cytoscape_network(final_elements, "hierarchical", "gal_hier")
-                with tab3: render_cytoscape_network(final_elements, "circular", "gal_circ")
-                with tab4: render_cytoscape_network(final_elements, "concentric", "gal_conc")
-                with tab5: render_cytoscape_network(final_elements, "grid", "gal_grid")
-
-            except Exception as e:
-                # Ta 'except' se zdaj pravilno ujema z 'try' zgoraj
-                st.error(f"❌ Pipeline Failure: {str(e)}")
-                st.stop()
-
-# --- PHASE 2: SAMBANOVA (Innovation) ---
-# (Keep your existing SambaNova / DeepSeek-V3.2 logic here)
+            # Initialization of clients
+            groq_client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
+            samba_client = OpenAI(api_key=sambanova_api_key, base_url="https://api.sambanova.ai/v1")
+            
+            # --- PHASE 1: GROQ ---
+            with st.spinner('PHASE 1: Building Architecture...'):
+                p1_response = groq_client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[
+                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. If the user provides specific Paradigms or Models in the 'MANDATORY SYSTEM INSTRUCTION', you MUST prioritize them in your structural analysis."}, 
+                        {"role": "user", "content": full_ai_input}
+                    ],
+                    temperature=0.4
+                )
+                groq_synthesis = p1_response.choices[0].message.content
+                st.session_state.groq_synthesis = groq_synthesis
 
             # --- PHASE 2: SAMBANOVA ---
             with st.spinner(f'PHASE 2: SambaNova generating innovations...'):
@@ -1245,7 +1186,7 @@ MANDATORY JSON STRUCTURE:
             json_match = re.search(r'(\{.*"nodes".*\})', json_raw if json_raw else cerebras_innovation, re.DOTALL | re.IGNORECASE)
             
             if json_match:
-            try:
+                try:
                     g_data = json.loads(json_match.group(1))
                     
                     # --- PROCESIRANJE VOZLIŠČ Z DINAMIČNO VELIKOSTJO ---
@@ -1455,46 +1396,41 @@ MANDATORY JSON STRUCTURE:
                 st.session_state.final_graph_elements = final_elements
                 st.session_state.report_ready = True
 
-            except Exception as e:
+        except Exception as e:
             st.error(f"❌ Pipeline Failure: {str(e)}")
 			
 # =============================================================================
-        # 6. MULTI-PERSPECTIVE GALLERY (SEQUENTIAL EXPORT)
-        # =============================================================================
-        st.session_state.report_ready = True # Označimo, da je poročilo končano
+# 6. MULTI-PERSPECTIVE GALLERY (SEQUENTIAL EXPORT)
+# =============================================================================
+
+if st.session_state.get('report_ready') and 'final_graph_elements' in st.session_state:
+    st.divider()
+    st.markdown('<h2 style="color: #1d3557; text-align: center;">🖼️ MULTI-PERSPECTIVE GRAPH GALLERY</h2>', unsafe_allow_html=True)
+    st.info("💡 **NAVODILO ZA ZAPOREDNO SHRANJEVANJE:** Spodaj so zavihki z različnimi vizualnimi perspektivami istega znanja. Odprite posamezen zavihek in kliknite gumb **EXPORT PNG**, da shranite vseh 5 verzij na svoj disk.")
+
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+        "🌿 ORGANIC", "🌲 HIERARCHICAL", "⭕ CIRCULAR", "🎯 CONCENTRIC", "🔲 GRID"
+    ])
+
+    with tab1:
+        st.markdown("**Organic View:** Najboljše za odkrivanje naravnih tematskih sklopov.")
+        render_cytoscape_network(st.session_state.final_graph_elements, layout_type="organic", container_id="gal_organic")
+    
+    with tab2:
+        st.markdown("**Hierarchical View:** Logično drevo od splošnega k specifičnemu.")
+        render_cytoscape_network(st.session_state.final_graph_elements, layout_type="hierarchical", container_id="gal_hierarchical")
         
-        st.divider()
-        st.markdown('<h2 style="color: #1d3557; text-align: center;">🖼️ MULTI-PERSPECTIVE GRAPH GALLERY</h2>', unsafe_allow_html=True)
-        st.info("💡 **NAVODILO ZA ZAPOREDNO SHRANJEVANJE:** Spodaj so zavihki z različnimi vizualnimi perspektivami istega znanja. Odprite posamezen zavihek in kliknite gumb **EXPORT PNG**, da shranite vseh 5 verzij na svoj disk.")
-
-        tab1, tab2, tab3, tab4, tab5 = st.tabs([
-            "🌿 ORGANIC", "🌲 HIERARCHICAL", "⭕ CIRCULAR", "🎯 CONCENTRIC", "🔲 GRID"
-        ])
-
-        with tab1:
-            st.markdown("**Organic View:** Najboljše za odkrivanje naravnih tematskih sklopov.")
-            render_cytoscape_network(st.session_state.final_graph_elements, layout_type="organic", container_id="gal_organic")
+    with tab3:
+        st.markdown("**Circular View:** Fokus na relacijah in krožni soodvisnosti.")
+        render_cytoscape_network(st.session_state.final_graph_elements, layout_type="circular", container_id="gal_circular")
         
-        with tab2:
-            st.markdown("**Hierarchical View:** Logično drevo od splošnega k specifičnemu.")
-            render_cytoscape_network(st.session_state.final_graph_elements, layout_type="hierarchical", container_id="gal_hierarchical")
-            
-        with tab3:
-            st.markdown("**Circular View:** Fokus na relacijah in krožni soodvisnosti.")
-            render_cytoscape_network(st.session_state.final_graph_elements, layout_type="circular", container_id="gal_circular")
-            
-        with tab4:
-            st.markdown("**Concentric View:** Razporeditev po sistemski pomembnosti (Jedro).")
-            render_cytoscape_network(st.session_state.final_graph_elements, layout_type="concentric", container_id="gal_concentric")
+    with tab4:
+        st.markdown("**Concentric View:** Razporeditev po sistemski pomembnosti (Jedro).")
+        render_cytoscape_network(st.session_state.final_graph_elements, layout_type="concentric", container_id="gal_concentric")
 
-        with tab5:
-            st.markdown("**Grid View:** Pregledna poravnava vseh prvin.")
-            # Preverite, da je spodnji oklepaj ) na koncu te vrstice!
-            render_cytoscape_network(st.session_state.final_graph_elements, layout_type="grid", container_id="gal_grid")
-
-            except Exception as e:
-        st.error(f"❌ Pipeline Failure: {str(e)}")
-        st.stop()
+    with tab5:
+        st.markdown("**Grid View:** Pregledna poravnava vseh prvin.")
+        render_cytoscape_network(st.session_state.final_graph_elements, layout_type="grid", container_id="gal_grid")
 
 # =============================================================================
 # 7. FOOTER
