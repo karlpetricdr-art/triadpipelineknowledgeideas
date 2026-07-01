@@ -1491,10 +1491,9 @@ MANDATORY JSON STRUCTURE:
             st.markdown("**Grid View:** Pregledna poravnava vseh prvin.")
             # Preverite, da je spodnji oklepaj ) na koncu te vrstice!
             render_cytoscape_network(st.session_state.final_graph_elements, layout_type="grid", container_id="gal_grid")
-
             except Exception as e:
-        st.error(f"❌ Pipeline Failure: {str(e)}")
-        st.stop()
+            st.error(f"❌ Pipeline Failure: {str(e)}")
+            st.stop()
 
 # =============================================================================
 # 7. FOOTER
