@@ -853,9 +853,10 @@ with st.sidebar:
     
     st.header("⚙️ SYSTEM CONTROL")
     
-    # 3. Dual API Keys Access (Unikatna ključa preprečujeta DuplicateID napako)
+    # 3. with st.sidebar:
     st.subheader("🔑 Dual-Engine API Access")
-    groq_api_key = st.text_input("Groq Key (Phase 1):", type="password", key="side_groq_v2026")
+    # Replace Groq with Cerebras
+    cerebras_api_key = st.text_input("Cerebras Key (Phase 1):", type="password", key="side_cerebras_v2026")
     sambanova_api_key = st.text_input("SambaNova Key (Phase 2):", type="password", key="side_samba_v2026")
     
    # 4. POSODOBLJENO: Najnovejša generacija modelov (Junij 2026) & VIZUALNI MOTOR
@@ -1069,18 +1070,31 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             groq_client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
             samba_client = OpenAI(api_key=sambanova_api_key, base_url="https://api.sambanova.ai/v1")
             
-            # --- PHASE 1: GROQ ---
-            with st.spinner('PHASE 1: Building Architecture...'):
-                p1_response = groq_client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    messages=[
-                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. If the user provides specific Paradigms or Models in the 'MANDATORY SYSTEM INSTRUCTION', you MUST prioritize them in your structural analysis."}, 
-                        {"role": "user", "content": full_ai_input}
-                    ],
-                    temperature=0.4
-                )
-                groq_synthesis = p1_response.choices[0].message.content
-                st.session_state.groq_synthesis = groq_synthesis
+            # --- PHASE 1: CEREBRAS (Foundation) ---
+with st.spinner('🚀 PHASE 1: Cerebras (Llama 3.3 70B) building foundation...'):
+    try:
+        from openai import OpenAI
+        cerebras_client = OpenAI(
+            api_key=cerebras_api_key, 
+            base_url="https://api.cerebras.ai/v1"
+        )
+        
+        p1_response = cerebras_client.chat.completions.create(
+            model="llama-3.3-70b", # Safe, stable, and fast
+            messages=[
+                {"role": "system", "content": "You are the SIS Lead Hierarchologist. Use IMA Architecture."},
+                {"role": "user", "content": full_ai_input}
+            ],
+            temperature=0.3
+        )
+        groq_synthesis = p1_response.choices[0].message.content
+        st.session_state.groq_synthesis = groq_synthesis
+    except Exception as e:
+        st.error(f"Cerebras Error: {e}")
+        st.stop()
+
+# --- PHASE 2: SAMBANOVA (Innovation) ---
+# (Keep your existing SambaNova / DeepSeek-V3.2 logic here)
 
             # --- PHASE 2: SAMBANOVA ---
             with st.spinner(f'PHASE 2: SambaNova generating innovations...'):
