@@ -1442,8 +1442,16 @@ if st.session_state.get('report_ready') and 'final_graph_elements' in st.session
         render_cytoscape_network(st.session_state.final_graph_elements, layout_type="concentric", container_id="gal_concentric")
 
     with tab5:
-        st.markdown("**Grid View:** Pregledna poravnava vseh prvin.")
-        render_cytoscape_network(st.session_state.final_graph_elements, layout_type="grid", container_id="gal_grid")
+            st.markdown("**Grid View:** Pregledna poravnava vseh prvin.")
+            render_cytoscape_network(st.session_state.final_graph_elements, layout_type="grid", container_id="gal_grid")
+
+        # --- KONEC TRY BLOKA ---
+        st.session_state.report_ready = True
+
+    except Exception as e:
+        # Ta del mora biti poravnan točno pod 'try:' iz vrstice 1074
+        st.error(f"❌ Pipeline Failure: {str(e)}")
+        st.stop()
 
 # =============================================================================
 # 7. FOOTER
