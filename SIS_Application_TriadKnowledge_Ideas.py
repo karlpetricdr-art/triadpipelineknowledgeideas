@@ -970,16 +970,16 @@ st.markdown(f"**Sequential Multi-Engine Pipeline** | Current Operating Date: **{
 if st.session_state.show_user_guide:
     st.info(f"""
     **Sequential Synergy Pipeline Workflow (Updated Feb 24, 2026):**
-    1. **Key Input**: Enter your Groq (Phase 1) and Cerebras (Phase 2) API keys in the sidebar.
-    2. **Research Foundation (Step 1)**: Groq performs structural synthesis foundation using Integrated Metamodel Architecture (IMA).
-    3. **Innovation Prompt (Step 2)**: Cerebras takes Groq's work and generates radical 'Useful Innovative Ideas' using Mental Approaches (MA) logic.
+    1. **Key Input**: Enter your Cerebras (Phase 1) and SambaNova (Phase 2) API keys in the sidebar.
+    2. **Research Foundation (Step 1)**: Cerebras performs structural synthesis foundation using Integrated Metamodel Architecture (IMA).
+    3. **Innovation Prompt (Step 2)**: SambaNova takes Cerebras's work and generates radical 'Useful Innovative Ideas' using Mental Approaches (MA) logic.
     4. **Visualization**: The interactive 18D graph maps structural facts against generative ideas.
     """)
 
 # REFERENCE ARCHITECTURE BOXES
 col_ref1, col_ref2 = st.columns(2)
 with col_ref1:
-    st.markdown("""<div class="metamodel-box"><b>🏛️ Phase 1: Groq (IMA Architecture)</b><br>Structural reasoning building the factual foundation. Focus: Identity, Mission, Problem. </div>""", unsafe_allow_html=True)
+    st.markdown("""<div class="metamodel-box"><b>🏛️ Phase 1: Cerebras (IMA Architecture)</b><br>Structural reasoning building the factual foundation. Focus: Identity, Mission, Problem. </div>""", unsafe_allow_html=True)
 with col_ref2:
     st.markdown("""<div class="mental-approach-box"><b>🧠 Phase 2: SambaNova (MA Architecture)</b><br>Cognitive transformation generating innovative solutions. Focus: Dialectics, Perspective, Induction.</div>""", unsafe_allow_html=True)
 
@@ -1017,7 +1017,7 @@ st.divider()
 # DUAL INQUIRY INTERFACE
 col_inq1, col_inq2, col_inq3 = st.columns([2, 2, 1])
 with col_inq1:
-    user_query = st.text_area("❓ STEP 1: Research Inquiry (for GROQ):", placeholder="Fact-based Foundational Inquiry...", height=200)
+    user_query = st.text_area("❓ STEP 1: Research Inquiry (for CEREBRAS):", placeholder="Fact-based Foundational Inquiry...", height=200)
 with col_inq2:
     idea_query = st.text_area("💡 STEP 2: Innovation Prompt (for SAMBANOVA):", placeholder="Targets for innovative idea production...", height=200)
 # --- POPRAVEK KORAK 1: Branje vsebine datoteke ---
@@ -1100,7 +1100,8 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                         {"role": "system", "content": "You are the SIS Strategic Innovation Architect. Adhere strictly to the requested Innovation Frameworks and Science Fields provided in the instructions."}, 
                         {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\n{active_context}\nUSER INNOVATION GOAL: {idea_query}"}
                     ],
-                    temperature=0.85
+                    temperature=0.7, 
+                    top_p=0.9
                 )
                 cerebras_innovation = samba_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
@@ -1115,6 +1116,7 @@ Your task is to transform the structural analysis from Phase 1 into a visionary 
 Write a "STRATEGIC INNOVATION REPORT". 
 - For each innovation, provide a technical title, a detailed 3-4 sentence strategic explanation, and its cross-disciplinary impact.
 - Use professional terminology.
+- IMPORTANT: Inside the JSON section, do NOT use double quotes (") within descriptions. Use single quotes (') instead to ensure the JSON structure remains valid.
 
 ### 2. RELATIONSHIP LOGIC MATRIX (MANDATORY FOR JSON)
 You must interconnect nodes using the following two standards:
@@ -1187,12 +1189,22 @@ MANDATORY JSON STRUCTURE:
                 innovation_text = cerebras_innovation
                 json_raw = ""
 
-            full_report = f"## 📚 Phase 1: Foundation (Groq)\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations (SambaNova)\n\n{innovation_text}"
+            full_report = f"## 📚 Phase 1: Foundation (Cerebras)\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations (SambaNova)\n\n{innovation_text}"
             
             nodes_to_link = []
             final_elements = []
 
+            # Izboljšano iskanje in varnostno čiščenje JSON-a
             json_match = re.search(r'(\{.*"nodes".*\})', json_raw if json_raw else cerebras_innovation, re.DOTALL | re.IGNORECASE)
+            
+            if json_match:
+                try:
+                    # Izvlečemo JSON tekst in odstranimo nevarne nove vrstice, ki lomijo format
+                    raw_json_str = json_match.group(1)
+                    clean_json = raw_json_str.replace('\n', ' ').replace('\r', '')
+                    
+                    # Preberemo očiščene podatke
+                    g_data = json.loads(clean_json)
             
             if json_match:
                 try:
@@ -1291,7 +1303,7 @@ MANDATORY JSON STRUCTURE:
 
             # --- 5. FINAL DISPLAY: SEQUENTIAL INTERACTIVE SYNERGY REPORT ---
             
-            # Combine Phase 1 (Groq) and Phase 2 (SambaNova) text for full-spectrum highlighting
+            # Combine Phase 1 (Cerebras) and Phase 2 (SambaNova) text for full-spectrum highlighting
             # This ensures words in BOTH phases are linked.
             combined_report_text = f"## 📚 PHASE 1: Structural Foundation\n\n{groq_synthesis}\n\n---\n## 💡 PHASE 2: Strategic Innovation Report\n\n{innovation_text}"
             
