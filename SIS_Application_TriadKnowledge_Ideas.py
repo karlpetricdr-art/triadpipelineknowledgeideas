@@ -7,6 +7,7 @@ import re
 import time
 from datetime import datetime
 from openai import OpenAI
+from cerebras.cloud.sdk import Cerebras
 import streamlit.components.v1 as components
 
 # =============================================================================
@@ -855,11 +856,18 @@ with st.sidebar:
     
     # 3. Dual API Keys Access (Unikatna ključa preprečujeta DuplicateID napako)
     st.subheader("🔑 Dual-Engine API Access")
-    groq_api_key = st.text_input("Groq Key (Phase 1):", type="password", key="side_groq_v2026")
+    cerebras_api_key = st.text_input("Cerebras Key (Phase 1):", type="password", key="side_cerebras_v2026")
     sambanova_api_key = st.text_input("SambaNova Key (Phase 2):", type="password", key="side_samba_v2026")
     
-   # 4. POSODOBLJENO: Najnovejša generacija modelov (Junij 2026) & VIZUALNI MOTOR
-    # Model gemma-4-31B-it je trenutno 'flagship' model na SambaNova Cloud.
+    # Izbira modela za Phase 1 (Cerebras)
+    cerebras_model_id = st.selectbox(
+        "Cerebras Model (Phase 1):", 
+        ["gpt-oss-120b", "gemma-4-31b"], 
+        index=0, 
+        key="side_cerebras_model_v2026"
+    )
+
+    # 4. POSODOBLJENO: Najnovejša generacija modelov (Junij 2026) & VIZUALNI MOTOR
     sambanova_id = st.selectbox(
         "SambaNova Model Endpoint:", 
         [
@@ -1032,8 +1040,8 @@ with col_inq3:
 # =============================================================================
 
 if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True, key="exec_pipeline_v2026"):
-    if not groq_api_key or not sambanova_api_key:
-        st.error("❌ Dual-Model synergy requires both Groq and SambaNova keys.")
+    if not cerebras_api_key or not sambanova_api_key:
+        st.error("❌ Dual-Model synergy requires both Cerebras and SambaNova keys.")
     elif not user_query:
         st.warning("⚠️ Phase 1 Research Inquiry is required.")
     else:
@@ -1065,20 +1073,21 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             # Combine the trigger context with the user query
             full_ai_input = f"{active_context}{user_query}{file_context_str}{biblio_context}"
 
-            # Initialization of clients
-            groq_client = OpenAI(api_key=groq_api_key, base_url="https://api.groq.com/openai/v1")
+            # Inicializacija povezav (Cerebras namesto Groq)
+            cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
             samba_client = OpenAI(api_key=sambanova_api_key, base_url="https://api.sambanova.ai/v1")
             
-            # --- PHASE 1: GROQ ---
-            with st.spinner('PHASE 1: Building Architecture...'):
-                p1_response = groq_client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
+            # --- PHASE 1: CEREBRAS (Logična sinteza namesto Groq) ---
+            with st.spinner('PHASE 1: Building Architecture (Cerebras Logic)...'):
+                p1_response = cerebras_client.chat.completions.create(
+                    model=cerebras_model_id,
                     messages=[
                         {"role": "system", "content": "You are the SIS Lead Hierarchologist. If the user provides specific Paradigms or Models in the 'MANDATORY SYSTEM INSTRUCTION', you MUST prioritize them in your structural analysis."}, 
                         {"role": "user", "content": full_ai_input}
                     ],
                     temperature=0.4
                 )
+                # Rezultat shranimo v isto spremenljivko, da ostala koda deluje brez sprememb
                 groq_synthesis = p1_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
 
