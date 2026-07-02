@@ -1091,26 +1091,12 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 groq_synthesis = p1_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
 
-            # --- PHASE 2: SAMBANOVA ---
-            with st.spinner(f'PHASE 2: SambaNova generating innovations...'):
-                # We inject the same active_context here to ensure Phase 2 follows the rules too
-                samba_response = samba_client.chat.completions.create(
-                    model=sambanova_id, 
-                    messages=[
-                        {"role": "system", "content": "You are the SIS Strategic Innovation Architect. Adhere strictly to the requested Innovation Frameworks and Science Fields provided in the instructions."}, 
-                        {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\n{active_context}\nUSER INNOVATION GOAL: {idea_query}"}
-                    ],
-                    temperature=0.7, 
-                    top_p=0.9
-                )
-                cerebras_innovation = samba_response.choices[0].message.content
-                st.session_state.groq_synthesis = groq_synthesis
-
             # --- 3. PHASE 2: SAMBANOVA (ULTRA-CREATIVE INNOVATION ENGINE) ---
             with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) generating radical innovations...'):
                 samba_sys_prompt = f"""
 You are the SIS Lead Strategic Innovation Architect and Hierarchographist. 
 Your task is to transform the structural analysis from Phase 1 into a visionary Innovation Report and a perfectly mapped Hierarchographic Network.
+"""
 
 ### 1. REPORT REQUIREMENTS
 Write a "STRATEGIC INNOVATION REPORT". 
@@ -1175,7 +1161,7 @@ MANDATORY JSON STRUCTURE:
                         {"role": "system", "content": samba_sys_prompt}, 
                         {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER GOAL: {idea_query}{file_context_str}"}
                     ],
-                    temperature=0.85, 
+                    temperature=0.7, # Preverite, da je tukaj 0.7 za stabilnost grafa
                     top_p=0.9
                 )
                 cerebras_innovation = samba_response.choices[0].message.content
