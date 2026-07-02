@@ -1199,16 +1199,15 @@ MANDATORY JSON STRUCTURE:
             
             if json_match:
                 try:
-                    # Izvlečemo JSON tekst in odstranimo nevarne nove vrstice, ki lomijo format
+                    # 1. Izvlečemo surovi JSON tekst
                     raw_json_str = json_match.group(1)
+                    # 2. Očistimo nove vrstice, ki lomijo format
                     clean_json = raw_json_str.replace('\n', ' ').replace('\r', '')
-                    
-                    # Preberemo očiščene podatke
+                    # 3. Poskusimo prebrati JSON podatke
                     g_data = json.loads(clean_json)
-            
-            if json_match:
-                try:
-                    g_data = json.loads(json_match.group(1))
+                except Exception as json_err:
+                    # To je tisti 'except' blok, ki je manjkal:
+                    st.warning(f"Note: Graph structure issue: {json_err}")
                     
                     # --- PROCESIRANJE VOZLIŠČ Z DINAMIČNO VELIKOSTJO ---
                     for n in g_data.get("nodes", []):
