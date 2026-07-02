@@ -1166,6 +1166,9 @@ MANDATORY JSON STRUCTURE:
                 cerebras_innovation = samba_response.choices[0].message.content
 
             # --- 4. PROCESIRANJE REZULTATOV (Z GEOMETRIJSKO LOGIKO) ---
+            # Inicializacija g_data, da preprečimo napako 'name not defined'
+            g_data = {"nodes": [], "edges": []}
+            
             if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
                 parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
                 innovation_text = parts[0]
@@ -1186,91 +1189,91 @@ MANDATORY JSON STRUCTURE:
                 try:
                     # 1. Izvlečemo surovi JSON tekst
                     raw_json_str = json_match.group(1)
-                    # 2. Očistimo nove vrstice, ki lomijo format
+                    # 2. Očistimo nove vrstice in nevarne znake, ki lomijo format
                     clean_json = raw_json_str.replace('\n', ' ').replace('\r', '')
                     # 3. Poskusimo prebrati JSON podatke
                     g_data = json.loads(clean_json)
                 except Exception as json_err:
-                    # To je tisti 'except' blok, ki je manjkal:
                     st.warning(f"Note: Graph structure issue: {json_err}")
+                    # Če branje ne uspe, g_data ostane prazna mapa, ki smo jo inicializirali zgoraj
+
+            # --- PROCESIRANJE VOZLIŠČ Z DINAMIČNO VELIKOSTJO ---
+            # Ta del je zdaj varno izven except bloka, da koda vedno deluje
+            if g_data.get("nodes"):
+                for n in g_data.get("nodes", []):
+                    lbl = n.get("label", "Node")
+                    nid = n.get("id", f"n{lbl}")
+                    n_color = n.get("color", "#DDEBF7")
+                    n_shape = n.get("shape", "rectangle")
                     
-                    # --- PROCESIRANJE VOZLIŠČ Z DINAMIČNO VELIKOSTJO ---
-                    for n in g_data.get("nodes", []):
-                        lbl = n.get("label", "Node")
-                        nid = n.get("id", f"n{lbl}")
-                        n_color = n.get("color", "#DDEBF7")
-                        n_shape = n.get("shape", "rectangle")
-                        
-                        # Velikostna hierarhija glede na obliko
-                        if n_shape == 'star': n_size = 125
-                        elif n_shape == 'diamond': n_size = 110
-                        elif n_shape == 'octagon': n_size = 105
-                        elif n_shape == 'hexagon': n_size = 100
-                        elif n_shape == 'triangle': n_size = 95
-                        elif n_shape == 'ellipse': n_size = 90
-                        else: n_size = 85
-                        
-                        nodes_to_link.append({"id": nid, "label": lbl})
-                        final_elements.append({
-                            "data": {"id": nid, "label": lbl, "color": n_color, "shape": n_shape, "size": n_size, "description": n.get("description", "Detail breakdown in report.")}
-                        })
+                    # Velikostna hierarhija glede na obliko
+                    if n_shape == 'star': n_size = 125
+                    elif n_shape == 'diamond': n_size = 110
+                    elif n_shape == 'octagon': n_size = 105
+                    elif n_shape == 'hexagon': n_size = 100
+                    elif n_shape == 'triangle': n_size = 95
+                    elif n_shape == 'ellipse': n_size = 90
+                    else: n_size = 85
+                    
+                    nodes_to_link.append({"id": nid, "label": lbl})
+                    final_elements.append({
+                        "data": {"id": nid, "label": lbl, "color": n_color, "shape": n_shape, "size": n_size, "description": n.get("description", "Detail breakdown in report.")}
+                    })
 
-                    # --- PROCESIRANJE POVEZAV (UML + THESAURUS + LOGIC) ---
-                    for e in g_data.get("edges", []):
-                        rel = e.get("rel_type", "Association")
-                        
-                        # A) UML IN STRUKTURNA LOGIKA (Rdeča/Črna/Modra skala)
-                        if rel in ["Generalization", "Realization", "Composition", "Aggregation", "Dependency", "Specialization", "Containment", "Conflict"]:
-                            if rel == "Conflict":
-                                e_color = "#b91d1d"  # Temno rdeča za trčenje/spor
-                            elif rel == "Specialization":
-                                e_color = "#000000"  # Črna za dedukcijo
-                            elif rel == "Containment":
-                                e_color = "#1D3557"  # Temno modra za "Scientific Cage"
-                            elif rel == "Generalization":
-                                e_color = "#E63946"  # UML rdeča
-                            elif rel == "Realization":
-                                e_color = "#E63946"  # UML rdeča
-                            else:
-                                e_color = "#E63946"  # Privzeta UML rdeča (Dependency, Aggregation...)
-                                
-                        # B) ISO THESAURUS (Hierarhologija - Modra/Vijolična skala)
-                        elif rel in ["BT", "NT", "TT"]:
-                            e_color = "#1D3557"  # Temno modra (Nivoji)
-                        elif rel == "IN":
-                            e_color = "#0077B6"  # Svetlo modra (Instanca)
-                        elif rel == "AS":
-                            e_color = "#7B2CB1"  # Vijolična (Asociativna)
-                        elif rel == "EQ":
-                            e_color = "#F1C40F"  # Rumena (Ekvivalenca)
-                        elif rel == "RT":
-                            e_color = "#2A9D8F"  # Zelena (Povezano)
-
-                        # C) LOGIČNI KONEKTORJI (Decision Logic - Neon skala)
-                        elif rel == "AND":
-                            e_color = "#00FF00"  # Neon zelena
-                        elif rel == "OR":
-                            e_color = "#00BFFF"  # Svetlo modra
-                        elif rel == "XOR":
-                            e_color = "#FF8C00"  # Oranžna
-                        elif rel == "NOT":
-                            e_color = "#FF0000"  # Rdeča
-                        elif rel == "IF-THEN":
-                            e_color = "#FFD700"  # Zlata
-                            
+                # --- PROCESIRANJE POVEZAV (UML + THESAURUS + LOGIC) ---
+                for e in g_data.get("edges", []):
+                    rel = e.get("rel_type", "Association")
+                    
+                    # A) UML IN STRUKTURNA LOGIKA (Rdeča/Črna/Modra skala)
+                    if rel in ["Generalization", "Realization", "Composition", "Aggregation", "Dependency", "Specialization", "Containment", "Conflict"]:
+                        if rel == "Conflict":
+                            e_color = "#b91d1d"  # Temno rdeča za trčenje/spor
+                        elif rel == "Specialization":
+                            e_color = "#000000"  # Črna za dedukcijo
+                        elif rel == "Containment":
+                            e_color = "#1D3557"  # Temno modra za "Scientific Cage"
+                        elif rel == "Generalization":
+                            e_color = "#E63946"  # UML rdeča
+                        elif rel == "Realization":
+                            e_color = "#E63946"  # UML rdeča
                         else:
-                            e_color = "#ADB5BD"  # Če tipa ne pozna = Siva
+                            e_color = "#E63946"  # Privzeta UML rdeča (Dependency, Aggregation...)
+                            
+                    # B) ISO THESAURUS (Hierarhologija - Modra/Vijolična skala)
+                    elif rel in ["BT", "NT", "TT"]:
+                        e_color = "#1D3557"  # Temno modra (Nivoji)
+                    elif rel == "IN":
+                        e_color = "#0077B6"  # Svetlo modra (Instanca)
+                    elif rel == "AS":
+                        e_color = "#7B2CB1"  # Vijolična (Asociativna)
+                    elif rel == "EQ":
+                        e_color = "#F1C40F"  # Rumena (Ekvivalenca)
+                    elif rel == "RT":
+                        e_color = "#2A9D8F"  # Zelena (Povezano)
 
-                        final_elements.append({
-                            "data": {
-                                "source": e.get("source"), 
-                                "target": e.get("target"), 
-                                "rel_type": rel, 
-                                "color": e_color
-                            }
-                        })
-                except Exception as json_err:
-                    st.warning(f"Note: Graph structure issue: {json_err}")
+                    # C) LOGIČNI KONEKTORJI (Decision Logic - Neon skala)
+                    elif rel == "AND":
+                        e_color = "#00FF00"  # Neon zelena
+                    elif rel == "OR":
+                        e_color = "#00BFFF"  # Svetlo modra
+                    elif rel == "XOR":
+                        e_color = "#FF8C00"  # Oranžna
+                    elif rel == "NOT":
+                        e_color = "#FF0000"  # Rdeča
+                    elif rel == "IF-THEN":
+                        e_color = "#FFD700"  # Zlata
+                        
+                    else:
+                        e_color = "#ADB5BD"  # Če tipa ne pozna = Siva
+
+                    final_elements.append({
+                        "data": {
+                            "source": e.get("source"), 
+                            "target": e.get("target"), 
+                            "rel_type": rel, 
+                            "color": e_color
+                        }
+                    })
 
             # Avtomatsko povezovanje besedila z grafom (Highlighting)
             final_markdown = full_report
