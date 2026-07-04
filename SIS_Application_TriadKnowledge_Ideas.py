@@ -855,20 +855,20 @@ with st.sidebar:
     
     st.header("⚙️ SYSTEM CONTROL")
     
-    # 3. Dual API Keys Access (Brez tabulatorjev, samo presledki)
+    # 3. Dual API Keys Access
     st.subheader("🔑 Dual-Engine API Access")
     cerebras_api_key = st.text_input("Cerebras Key (Phase 1):", type="password", key="side_cerebras_v2026")
     gemini_api_key = st.text_input("Google Gemini Key (Phase 2):", type="password", key="side_gemini_v2026")
     
-    # Izbira modela za Phase 1 (Cerebras)
+    # Izbira modelov za Cerebras po tvoji želji
     cerebras_model_id = st.selectbox(
         "Cerebras Model (Phase 1):", 
-        ["llama3.1-70b", "llama3.1-8b"], 
+        ["gpt-oss-120b", "gemma-4-31b"], 
         index=0, 
         key="side_cerebras_model_v2026"
     )
 
-    # 4. Google Gemini (Phase 2)
+    # Izbira za Gemini (Phase 2)
     gemini_model_id = st.selectbox(
         "Gemini Model (Phase 2):", 
         ["gemini-1.5-pro", "gemini-1.5-flash"], 
@@ -1069,10 +1069,10 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             # Combine the trigger context with the user query
             full_ai_input = f"{active_context}{user_query}{file_context_str}{biblio_context}"
 
-            # Inicializacija povezav (Cerebras)
+            # Inicializacija Cerebras (Phase 1)
             cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
             
-            # --- PHASE 1: CEREBRAS (Logična sinteza namesto Groq) ---
+            # --- PHASE 1: CEREBRAS (Logična sinteza) ---
             with st.spinner('PHASE 1: Building Architecture (Cerebras Logic)...'):
                 p1_response = cerebras_client.chat.completions.create(
                     model=cerebras_model_id,
@@ -1082,7 +1082,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                     ],
                     temperature=0.4
                 )
-                # Rezultat shranimo v isto spremenljivko, da ostala koda deluje brez sprememb
+                # Rezultat shranimo v isto spremenljivko
                 groq_synthesis = p1_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
 
@@ -1168,11 +1168,14 @@ MANDATORY JSON STRUCTURE:
                     )
                 )
                 
-                # Varnostno preverjanje odgovora
+                # Varnostni preverjanje odgovora
                 try:
                     cerebras_innovation = response.text
                 except Exception:
-                    cerebras_innovation = "❌ Error: Response blocked by safety filters or could not be parsed."
+                    if response.candidates:
+                        cerebras_innovation = "⚠️ Response blocked by safety filters or could not be parsed as text."
+                    else:
+                        cerebras_innovation = "❌ Error: Gemini failed to generate a response."
 
             # --- 4. PROCESIRANJE REZULTATOV (Z GEOMETRIJSKO LOGIKO) ---
             # Inicializacija g_data, da preprečimo napako 'name not defined'
@@ -1204,10 +1207,8 @@ MANDATORY JSON STRUCTURE:
                     g_data = json.loads(clean_json)
                 except Exception as json_err:
                     st.warning(f"Note: Graph structure issue: {json_err}")
-                    # Če branje ne uspe, g_data ostane prazna mapa, ki smo jo inicializirali zgoraj
 
             # --- PROCESIRANJE VOZLIŠČ Z DINAMIČNO VELIKOSTJO ---
-            # Ta del je zdaj varno izven except bloka, da koda vedno deluje
             if g_data.get("nodes"):
                 for n in g_data.get("nodes", []):
                     lbl = n.get("label", "Node")
@@ -1285,7 +1286,25 @@ MANDATORY JSON STRUCTURE:
                     })
 
             # Avtomatsko povezovanje besedila z grafom (Highlighting)
-            final_interactive_report = full_report
+            final_markdown = full_report
+            if nodes_to_link:
+                sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
+                for item in sorted_keywords:
+                    lbl = item['label']
+                    if len(lbl) > 2:
+                        g_url = urllib.parse.quote(lbl)
+                        link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
+                        base_term = lbl[: -2] if len(lbl) > 6 else lbl
+                        pattern = re.compile(r'\b' + re.escape(base_term) + r'\w*', re.IGNORECASE)
+                        final_markdown = pattern.sub(link_html, final_markdown, count=10)
+
+            # --- 5. FINAL DISPLAY: SEQUENTIAL INTERACTIVE SYNERGY REPORT ---
+            
+            # Combine Phase 1 (Cerebras) and Phase 2 (Gemini) text for full-spectrum highlighting
+            combined_report_text = f"## 📚 PHASE 1: Structural Foundation\n\n{groq_synthesis}\n\n---\n## 💡 PHASE 2: Strategic Innovation Report\n\n{innovation_text}"
+            
+            # 5a. GLOBAL SEMANTIC HIGHLIGHTER (Multi-Phase Linking)
+            final_interactive_report = combined_report_text
             if nodes_to_link:
                 # Razvrstimo ključne besede po dolžini (daljše prej), da se krajše ne vmešavajo
                 sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
@@ -1322,7 +1341,6 @@ MANDATORY JSON STRUCTURE:
                 if innovations:
                     for inv in innovations:
                         g_url = urllib.parse.quote(inv['label'])
-                        # Fetch the precise description generated by the model
                         detailed_desc = inv.get('description', "Detailed strategic analysis is available in the integrated report above.")
                         
                         # High-End Report Style Card
