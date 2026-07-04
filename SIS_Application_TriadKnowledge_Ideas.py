@@ -1072,10 +1072,10 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             # Combine the trigger context with the user query
             full_ai_input = f"{active_context}{user_query}{file_context_str}{biblio_context}"
 
-            # Inicializacija povezav (Cerebras namesto Groq)
+            # Inicializacija povezav (Cerebras)
             cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
             
-            # --- PHASE 1: CEREBRAS (Logična sinteza namesto Groq) ---
+            # --- PHASE 1: CEREBRAS (Logična sinteza) ---
             with st.spinner('PHASE 1: Building Architecture (Cerebras Logic)...'):
                 p1_response = cerebras_client.chat.completions.create(
                     model=cerebras_model_id,
@@ -1085,7 +1085,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                     ],
                     temperature=0.4
                 )
-                # Rezultat shranimo v isto spremenljivko, da ostala koda deluje brez sprememb
+                # Rezultat shranimo v isto spremenljivko
                 groq_synthesis = p1_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
 
@@ -1156,13 +1156,13 @@ MANDATORY JSON STRUCTURE:
   ]
 }}
 """
-                # Klic Gemini modela z uporabo system_instruction parametra
+                # Klic Gemini modela z uporabo system_instruction parametra za maksimalno stabilnost
                 model = genai.GenerativeModel(
                     model_name=gemini_model_id,
                     system_instruction=samba_sys_prompt
                 )
                 
-                # Proženje generiranja
+                # Proženje generiranja (zamenjava za samba_client.chat.completions)
                 response = model.generate_content(
                     f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER GOAL: {idea_query}{file_context_str}",
                     generation_config=genai.types.GenerationConfig(
@@ -1185,7 +1185,7 @@ MANDATORY JSON STRUCTURE:
                 innovation_text = cerebras_innovation
                 json_raw = ""
 
-            full_report = f"## 📚 Phase 1: Foundation (Cerebras)\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations (Gemini)\n\n{innovation_text}"
+            full_report = f"## 📚 Phase 1: Foundation (Cerebras)\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations (Google Gemini)\n\n{innovation_text}"
             
             nodes_to_link = []
             final_elements = []
@@ -1298,25 +1298,20 @@ MANDATORY JSON STRUCTURE:
 
             # --- 5. FINAL DISPLAY: SEQUENTIAL INTERACTIVE SYNERGY REPORT ---
             
-            # Combine Phase 1 (Cerebras) and Phase 2 (SambaNova) text for full-spectrum highlighting
-            # This ensures words in BOTH phases are linked.
+            # Combine Phase 1 (Cerebras) and Phase 2 (Gemini) text for full-spectrum highlighting
             combined_report_text = f"## 📚 PHASE 1: Structural Foundation\n\n{groq_synthesis}\n\n---\n## 💡 PHASE 2: Strategic Innovation Report\n\n{innovation_text}"
             
             # 5a. GLOBAL SEMANTIC HIGHLIGHTER (Multi-Phase Linking)
             final_interactive_report = combined_report_text
             if nodes_to_link:
-                # Razvrstimo ključne besede po dolžini (daljše prej), da se krajše ne vmešavajo
                 sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
                 for item in sorted_keywords:
                     lbl = item['label']
                     if len(lbl) > 2:
                         g_url = urllib.parse.quote(lbl)
                         link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
-                        
-                        # Unicode-safe regex
                         pattern = re.compile(rf'(?<!\w){re.escape(lbl)}(?!\w)', re.IGNORECASE | re.UNICODE)
-                        
-                        # KLJUČNA SPREMEMBA: Dodan count=1, da se polinka le PRVA pojavitev besede
+                        # Linkamo le prvo pojavitev za preglednost
                         final_interactive_report = pattern.sub(link_html, final_interactive_report, count=1)
 
             # 5b. RENDERING THE INTERACTIVE REPORT
@@ -1334,16 +1329,13 @@ MANDATORY JSON STRUCTURE:
                 st.markdown("### 🚀 STRATEGIC INNOVATION DEEP-DIVE")
                 st.info("The following strategic breakthroughs have been synthesized from the multi-dimensional analysis above.")
                 
-                # Extract innovations (diamonds) for detailed report-style display
                 innovations = [n['data'] for n in final_elements if n['data'].get('shape') == 'diamond']
                 
                 if innovations:
                     for inv in innovations:
                         g_url = urllib.parse.quote(inv['label'])
-                        # Fetch the precise description generated by the model
                         detailed_desc = inv.get('description', "Detailed strategic analysis is available in the integrated report above.")
                         
-                        # High-End Report Style Card
                         st.markdown(f"""
                         <div style="background-color: #ffffff; border-left: 6px solid #fd7e14; padding: 25px; border-radius: 15px; box-shadow: 0 6px 15px rgba(0,0,0,0.1); border: 1px solid #eee; margin-bottom: 25px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -1394,7 +1386,7 @@ MANDATORY JSON STRUCTURE:
                     container_id=f"cy_{int(time.time())}"
                 )
 
-                # --- NOVO: SHRANJEVANJE ZA GALERIJO (DODANO NA KONEC POROČILA) ---
+                # --- SHRANJEVANJE ZA GALERIJO ---
                 st.session_state.final_graph_elements = final_elements
                 st.session_state.report_ready = True
 
