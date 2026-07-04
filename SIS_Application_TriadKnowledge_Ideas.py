@@ -859,6 +859,7 @@ with st.sidebar:
     st.subheader("🔑 Dual-Engine API Access")
     cerebras_api_key = st.text_input("Cerebras Key (Phase 1):", type="password", key="side_cerebras_v2026")
     gemini_api_key = st.text_input("Google Gemini Key (Phase 2):", type="password", key="side_gemini_v2026")
+	gemini_model_id = st.selectbox("Gemini Model (Phase 2):", ["gemini-1.5-pro", "gemini-1.5-flash"], key="side_gemini_model_select")
     
     # Izbira modela za Phase 1 (Cerebras)
     cerebras_model_id = st.selectbox(
@@ -1075,7 +1076,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             # Inicializacija povezav (Cerebras)
             cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
             
-            # --- PHASE 1: CEREBRAS (Logična sinteza) ---
+            # --- PHASE 1: CEREBRAS (Logična sinteza namesto Groq) ---
             with st.spinner('PHASE 1: Building Architecture (Cerebras Logic)...'):
                 p1_response = cerebras_client.chat.completions.create(
                     model=cerebras_model_id,
@@ -1085,7 +1086,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                     ],
                     temperature=0.4
                 )
-                # Rezultat shranimo v isto spremenljivko
+                # Rezultat shranimo v isto spremenljivko, da ostala koda deluje brez sprememb
                 groq_synthesis = p1_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
 
@@ -1162,7 +1163,7 @@ MANDATORY JSON STRUCTURE:
                     system_instruction=samba_sys_prompt
                 )
                 
-                # Proženje generiranja (zamenjava za samba_client.chat.completions)
+                # Proženje generiranja
                 response = model.generate_content(
                     f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER GOAL: {idea_query}{file_context_str}",
                     generation_config=genai.types.GenerationConfig(
@@ -1171,7 +1172,11 @@ MANDATORY JSON STRUCTURE:
                     )
                 )
                 
-                cerebras_innovation = response.text
+                # Varnostno preverjanje odgovora
+                try:
+                    cerebras_innovation = response.text
+                except Exception:
+                    cerebras_innovation = "❌ Error: Response blocked by safety filters or could not be parsed."
 
             # --- 4. PROCESIRANJE REZULTATOV (Z GEOMETRIJSKO LOGIKO) ---
             # Inicializacija g_data, da preprečimo napako 'name not defined'
@@ -1284,34 +1289,20 @@ MANDATORY JSON STRUCTURE:
                     })
 
             # Avtomatsko povezovanje besedila z grafom (Highlighting)
-            final_markdown = full_report
+            final_interactive_report = full_report
             if nodes_to_link:
+                # Razvrstimo ključne besede po dolžini (daljše prej), da se krajše ne vmešavajo
                 sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
                 for item in sorted_keywords:
                     lbl = item['label']
                     if len(lbl) > 2:
                         g_url = urllib.parse.quote(lbl)
                         link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
-                        base_term = lbl[: -2] if len(lbl) > 6 else lbl
-                        pattern = re.compile(r'\b' + re.escape(base_term) + r'\w*', re.IGNORECASE)
-                        final_markdown = pattern.sub(link_html, final_markdown, count=10)
-
-            # --- 5. FINAL DISPLAY: SEQUENTIAL INTERACTIVE SYNERGY REPORT ---
-            
-            # Combine Phase 1 (Cerebras) and Phase 2 (Gemini) text for full-spectrum highlighting
-            combined_report_text = f"## 📚 PHASE 1: Structural Foundation\n\n{groq_synthesis}\n\n---\n## 💡 PHASE 2: Strategic Innovation Report\n\n{innovation_text}"
-            
-            # 5a. GLOBAL SEMANTIC HIGHLIGHTER (Multi-Phase Linking)
-            final_interactive_report = combined_report_text
-            if nodes_to_link:
-                sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
-                for item in sorted_keywords:
-                    lbl = item['label']
-                    if len(lbl) > 2:
-                        g_url = urllib.parse.quote(lbl)
-                        link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
+                        
+                        # Unicode-safe regex
                         pattern = re.compile(rf'(?<!\w){re.escape(lbl)}(?!\w)', re.IGNORECASE | re.UNICODE)
-                        # Linkamo le prvo pojavitev za preglednost
+                        
+                        # KLJUČNA SPREMEMBA: Dodan count=1, da se polinka le PRVA pojavitev besede
                         final_interactive_report = pattern.sub(link_html, final_interactive_report, count=1)
 
             # 5b. RENDERING THE INTERACTIVE REPORT
@@ -1329,13 +1320,16 @@ MANDATORY JSON STRUCTURE:
                 st.markdown("### 🚀 STRATEGIC INNOVATION DEEP-DIVE")
                 st.info("The following strategic breakthroughs have been synthesized from the multi-dimensional analysis above.")
                 
+                # Extract innovations (diamonds) for detailed report-style display
                 innovations = [n['data'] for n in final_elements if n['data'].get('shape') == 'diamond']
                 
                 if innovations:
                     for inv in innovations:
                         g_url = urllib.parse.quote(inv['label'])
+                        # Fetch the precise description generated by the model
                         detailed_desc = inv.get('description', "Detailed strategic analysis is available in the integrated report above.")
                         
+                        # High-End Report Style Card
                         st.markdown(f"""
                         <div style="background-color: #ffffff; border-left: 6px solid #fd7e14; padding: 25px; border-radius: 15px; box-shadow: 0 6px 15px rgba(0,0,0,0.1); border: 1px solid #eee; margin-bottom: 25px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -1386,7 +1380,7 @@ MANDATORY JSON STRUCTURE:
                     container_id=f"cy_{int(time.time())}"
                 )
 
-                # --- SHRANJEVANJE ZA GALERIJO ---
+                # --- NOVO: SHRANJEVANJE ZA GALERIJO (DODANO NA KONEC POROČILA) ---
                 st.session_state.final_graph_elements = final_elements
                 st.session_state.report_ready = True
 
