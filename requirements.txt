@@ -2,4 +2,4 @@ streamlit
 openai
 requests
 cerebras-cloud-sdk
-google-generativeai
+google-generativeai==0.7.2
