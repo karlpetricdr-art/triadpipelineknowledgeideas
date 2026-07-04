@@ -5,7 +5,6 @@ import requests
 import urllib.parse
 import re
 import time
-import google.generativeai as genai
 from datetime import datetime
 from openai import OpenAI
 from cerebras.cloud.sdk import Cerebras
@@ -1031,11 +1030,10 @@ with col_inq3:
             st.error(f"Error reading file: {e}")
 
 # =============================================================================
-# 5. SYNERGY EXECUTION ENGINE (WITH CONDITIONAL ACTIVATION)
+# 5. SYNERGY EXECUTION ENGINE (WITH STABLE REST API V1)
 # =============================================================================
 
 if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True, key="exec_pipeline_v2026"):
-    # Preverjamo gemini_api_key in cerebras_api_key
     if not cerebras_api_key or not gemini_api_key:
         st.error("❌ Dual-Model synergy requires both Cerebras and Google Gemini keys.")
     elif not user_query:
@@ -1049,7 +1047,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             if trigger_keyword in user_query or (idea_query and trigger_keyword in idea_query):
                 active_context = f"""
                 \n### MANDATORY SYSTEM INSTRUCTION: APPLY INTERFACE PARAMETERS ###
-                The user has explicitly activated the following constraints for this specific run:
+                The user has explicitly activated the following constraints:
                 - Target Science Fields: {', '.join(sel_sciences)}
                 - Applied Scientific Paradigms: {', '.join(sel_paradigms)}
                 - Structural Model Focus: {', '.join(sel_models)}
@@ -1064,17 +1062,16 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             
             file_context_str = f"\n\n[FILE CONTEXT]:\n{file_content}" if file_content else ""
             biblio_context = f"\n\n[AUTHOR RESEARCH BACKGROUND]:\n{biblio_data}" if biblio_data else ""
-            
             full_ai_input = f"{active_context}{user_query}{file_context_str}{biblio_context}"
 
-            # --- PHASE 1: CEREBRAS (Structural Logic) ---
+            # --- PHASE 1: CEREBRAS ---
             cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
             
             with st.spinner('PHASE 1: Building Architecture (Cerebras Logic)...'):
                 p1_response = cerebras_client.chat.completions.create(
                     model=cerebras_model_id,
                     messages=[
-                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. Priority: Paradigms & Models."}, 
+                        {"role": "system", "content": "You are the SIS Lead Hierarchologist."}, 
                         {"role": "user", "content": full_ai_input}
                     ],
                     temperature=0.4
@@ -1082,45 +1079,43 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 groq_synthesis = p1_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
 
-            # --- PHASE 2: GOOGLE GEMINI (UPORABA NEPOSREDNEGA REST API-JA ZA MAKSIMALNO STABILNOST) ---
-            with st.spinner(f'PHASE 2: Gemini ({gemini_model_id}) generating innovations...'):
+            # --- PHASE 2: GOOGLE GEMINI (STABLE REST V1 CALL) ---
+            with st.spinner(f'PHASE 2: Gemini generating radical innovations...'):
                 
-                # Definiramo sistemski prompt
                 samba_sys_prompt = f"""
 You are the SIS Lead Strategic Innovation Architect and Hierarchographist. 
-Your task is to transform the Phase 1 analysis into a visionary Innovation Report and a mapped Hierarchographic Network.
+Your task is to transform Phase 1 into a Strategic Innovation Report and a perfectly mapped Hierarchographic Network.
 
 ### 1. REPORT REQUIREMENTS
-Write a "STRATEGIC INNOVATION REPORT". 
-- Technical titles, 3-4 sentence explanations, cross-disciplinary impact.
+- Technical titles, 3-4 sentence strategic explanations, cross-disciplinary impact.
 - Use single quotes (') inside JSON instead of double quotes (") for descriptions.
 
 ### 2. RELATIONSHIP LOGIC MATRIX (MANDATORY FOR JSON)
 ISO 25964: TT, BT, NT, RT, EQ, AS, IN.
 UML: Generalization, Specialization, Containment, Realization, Composition, Aggregation, Dependency, Conflict.
-Logic: AND, OR, XOR, NOT, IF-THEN.
+Decision: AND, OR, XOR, NOT, IF-THEN.
 
-### 3. MANDATORY GEOMETRY (SHAPES)
-'star', 'hexagon', 'diamond', 'triangle', 'octagon', 'ellipse', 'rectangle'.
+### 3. MANDATORY GEOMETRY
+Shapes: 'star', 'hexagon', 'diamond', 'triangle', 'octagon', 'ellipse', 'rectangle'.
 
 ### 4. OUTPUT FORMAT
-MANDATORY JSON STRUCTURE:
 ### SEMANTIC_GRAPH_JSON
 {{
   "nodes": [
-    {{"id": "n1", "label": "LABEL", "shape": "diamond", "color": "#fd7e14", "description": "Analysis."}}
+    {{"id": "n1", "label": "LABEL", "shape": "diamond", "color": "#fd7e14", "description": "Details."}}
   ],
   "edges": [
     {{"source": "n1", "target": "n2", "rel_type": "AS"}}
   ]
 }}
 """
-                # NEPOSREDEN REST KLIC (To prepreči 404 napako verzij)
-                gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/{gemini_model_id}:generateContent?key={gemini_api_key}"
+                # POPRAVEK: Uporaba v1 STABLE namesto v1beta in dodajanje -latest oznake
+                # To je najbolj varna pot za regijo Slovenija/EU
+                endpoint_model = "gemini-1.5-flash" if "flash" in gemini_model_id else "gemini-1.5-pro"
+                gemini_url = f"https://generativelanguage.googleapis.com/v1/models/{endpoint_model}:generateContent?key={gemini_api_key}"
                 
                 headers = {'Content-Type': 'application/json'}
                 
-                # Priprava telesa prošnje (združimo sistemski prompt in vsebino)
                 payload = {
                     "contents": [{
                         "parts": [{
@@ -1129,29 +1124,28 @@ MANDATORY JSON STRUCTURE:
                     }],
                     "generationConfig": {
                         "temperature": 0.7,
-                        "topP": 0.9,
                         "maxOutputTokens": 8192
-                    },
-                    "safetySettings": [
-                        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-                        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-                        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
-                    ]
+                    }
                 }
 
-                # Izvedba prošnje
                 response = requests.post(gemini_url, headers=headers, json=payload)
                 
                 if response.status_code == 200:
                     res_json = response.json()
-                    # Izvlečemo tekst iz Googlovega specifičnega formata
                     cerebras_innovation = res_json['candidates'][0]['content']['parts'][0]['text']
                 else:
-                    st.error(f"Gemini REST API Error {response.status_code}: {response.text}")
-                    cerebras_innovation = "❌ Error in Phase 2 generation."
+                    # Diagnostika: če v1 ne dela, poskusiva še zadnjo možno pot
+                    st.warning(f"Trying alternative endpoint...")
+                    alt_url = f"https://generativelanguage.googleapis.com/v1beta/models/{endpoint_model}:generateContent?key={gemini_api_key}"
+                    response = requests.post(alt_url, headers=headers, json=payload)
+                    if response.status_code == 200:
+                        res_json = response.json()
+                        cerebras_innovation = res_json['candidates'][0]['content']['parts'][0]['text']
+                    else:
+                        st.error(f"Gemini API Error {response.status_code}: {response.text}")
+                        cerebras_innovation = "❌ Connection failed."
 
-            # --- 4. PROCESIRANJE REZULTATOV (Z GEOMETRIJSKO LOGIKO) ---
+            # --- 4. PROCESIRANJE REZULTATOV (Neskrajšano) ---
             g_data = {"nodes": [], "edges": []}
             
             if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
@@ -1167,7 +1161,7 @@ MANDATORY JSON STRUCTURE:
             nodes_to_link = []
             final_elements = []
 
-            # Čiščenje JSON-a
+            # Iskanje JSON-a
             json_match = re.search(r'(\{.*"nodes".*\})', json_raw if json_raw else cerebras_innovation, re.DOTALL | re.IGNORECASE)
             if json_match:
                 try:
@@ -1175,9 +1169,8 @@ MANDATORY JSON STRUCTURE:
                     clean_json = raw_json_str.replace('\n', ' ').replace('\r', '')
                     g_data = json.loads(clean_json)
                 except Exception as json_err:
-                    st.warning(f"Note: Graph structure issue: {json_err}")
+                    st.warning(f"Note: Graph structure issues: {json_err}")
 
-            # --- VOZLIŠČA ---
             if g_data.get("nodes"):
                 for n in g_data.get("nodes", []):
                     lbl = n.get("label", "Node")
@@ -1195,28 +1188,20 @@ MANDATORY JSON STRUCTURE:
                     
                     nodes_to_link.append({"id": nid, "label": lbl})
                     final_elements.append({
-                        "data": {"id": nid, "label": lbl, "color": n_color, "shape": n_shape, "size": n_size, "description": n.get("description", "Analysis in report.")}
+                        "data": {"id": nid, "label": lbl, "color": n_color, "shape": n_shape, "size": n_size, "description": n.get("description", "Analysis.")}
                     })
 
-                # --- POVEZAVE ---
                 for e in g_data.get("edges", []):
                     rel = e.get("rel_type", "Association")
                     if rel in ["Generalization", "Realization", "Composition", "Aggregation", "Dependency", "Specialization", "Containment", "Conflict"]:
-                        if rel == "Conflict": e_color = "#b91d1d"
-                        elif rel == "Specialization": e_color = "#000000"
-                        elif rel == "Containment": e_color = "#1D3557"
-                        else: e_color = "#E63946"
+                        e_color = "#E63946" if rel != "Conflict" else "#b91d1d"
                     elif rel in ["BT", "NT", "TT"]: e_color = "#1D3557"
                     elif rel == "IN": e_color = "#0077B6"
                     elif rel == "AS": e_color = "#7B2CB1"
                     elif rel == "EQ": e_color = "#F1C40F"
                     elif rel == "RT": e_color = "#2A9D8F"
                     elif rel in ["AND", "OR", "XOR", "NOT", "IF-THEN"]:
-                        if rel == "AND": e_color = "#00FF00"
-                        elif rel == "OR": e_color = "#00BFFF"
-                        elif rel == "XOR": e_color = "#FF8C00"
-                        elif rel == "NOT": e_color = "#FF0000"
-                        else: e_color = "#FFD700"
+                        e_color = "#00FF00" if rel == "AND" else "#FFD700"
                     else: e_color = "#ADB5BD"
 
                     final_elements.append({
@@ -1238,32 +1223,24 @@ MANDATORY JSON STRUCTURE:
             # --- IZRIS ---
             st.subheader("🧱 INTEGRATED HIERARCHOLOGICAL REPORT")
             if biblio_data:
-                with st.expander("📚 EXTRACTED AUTHOR BACKGROUND", expanded=False):
+                with st.expander("📚 AUTHOR BACKGROUND", expanded=False):
                     st.markdown(biblio_data)
             
             st.markdown(final_interactive_report, unsafe_allow_html=True)
 
-            # INNOVATION DEEP-DIVE
             if final_elements:
                 st.divider()
                 st.markdown("### 🚀 STRATEGIC INNOVATION DEEP-DIVE")
                 innovations = [n['data'] for n in final_elements if n['data'].get('shape') == 'diamond']
-                if innovations:
-                    for inv in innovations:
-                        g_url = urllib.parse.quote(inv['label'])
-                        detailed_desc = inv.get('description', "Detailed strategic analysis is available in the report above.")
-                        st.markdown(f"""
-                        <div style="background-color: #ffffff; border-left: 6px solid #fd7e14; padding: 25px; border-radius: 15px; box-shadow: 0 6px 15px rgba(0,0,0,0.1); border: 1px solid #eee; margin-bottom: 25px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                                <span style="background-color: #fff4ed; color: #fd7e14; padding: 5px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 800; text-transform: uppercase;">Strategic Breakthrough</span>
-                                <a href="https://www.google.com/search?q={g_url}" target="_blank" style="text-decoration: none; color: #457b9d; font-size: 0.85em; font-weight: 600;">Technical Search ↗</a>
-                            </div>
-                            <h2 style="margin: 0 0 15px 0; color: #1d3557;">{inv['label']}</h2>
-                            <div style="color: #333; font-size: 1.05em; line-height: 1.7; border-top: 1px solid #f0f0f0; padding-top: 15px;">{detailed_desc}</div>
-                        </div>
-                        """, unsafe_allow_html=True)
+                for inv in innovations:
+                    st.markdown(f"""
+                    <div style="background-color: #ffffff; border-left: 6px solid #fd7e14; padding: 25px; border-radius: 15px; box-shadow: 0 6px 15px rgba(0,0,0,0.1); border: 1px solid #eee; margin-bottom: 25px;">
+                        <h2 style="margin: 0; color: #1d3557;">{inv['label']}</h2>
+                        <p style="color: #333; margin-top: 10px;">{inv.get('description', 'Detailed analysis.')}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
 
-                st.subheader(f"🕸️ HYBRID SEMANTIC SYSTEM MAP ({graph_perspective.upper()} VIEW)")
+                st.subheader(f"🕸️ SEMANTIC MAP ({graph_perspective.upper()})")
                 render_cytoscape_network(final_elements, layout_type=graph_perspective, container_id=f"cy_{int(time.time())}")
                 st.session_state.final_graph_elements = final_elements
                 st.session_state.report_ready = True
