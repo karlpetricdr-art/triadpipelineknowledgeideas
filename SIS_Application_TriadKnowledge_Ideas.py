@@ -965,9 +965,9 @@ st.markdown(f"**Sequential Multi-Engine Pipeline** | Current Operating Date: **{
 if st.session_state.show_user_guide:
     st.info(f"""
     **Sequential Synergy Pipeline Workflow (Updated Feb 24, 2026):**
-    1. **Key Input**: Enter your Cerebras (Phase 1) and Google Gemini (Phase 2) API keys in the sidebar.
+    1. **Key Input**: Enter your Cerebras (Phase 1) and Cerebras (Phase 2) API keys in the sidebar.
     2. **Research Foundation (Step 1)**: Cerebras performs structural synthesis foundation using Integrated Metamodel Architecture (IMA).
-    3. **Innovation Prompt (Step 2)**: Google Gemini takes Cerebras's work and generates radical 'Useful Innovative Ideas' using Mental Approaches (MA) logic.
+    3. **Innovation Prompt (Step 2)**: Cerebras takes Cerebras's work and generates radical 'Useful Innovative Ideas' using Mental Approaches (MA) logic.
     4. **Visualization**: The interactive 18D graph maps structural facts against generative ideas.
     """)
 
@@ -976,7 +976,7 @@ col_ref1, col_ref2 = st.columns(2)
 with col_ref1:
     st.markdown("""<div class="metamodel-box"><b>🏛️ Phase 1: Cerebras (IMA Architecture)</b><br>Structural reasoning building the factual foundation. Focus: Identity, Mission, Problem. </div>""", unsafe_allow_html=True)
 with col_ref2:
-    st.markdown("""<div class="mental-approach-box"><b>🧠 Phase 2: Google Gemini (MA Architecture)</b><br>Cognitive transformation generating innovative solutions. Focus: Dialectics, Perspective, Induction.</div>""", unsafe_allow_html=True)
+    st.markdown("""<div class="mental-approach-box"><b>🧠 Phase 2: Cerebras (MA Architecture)</b><br>Cognitive transformation generating innovative solutions. Focus: Dialectics, Perspective, Induction.</div>""", unsafe_allow_html=True)
 
 st.markdown("### 🛠️ CONFIGURE SYNERGY PIPELINE")
 
@@ -1014,7 +1014,7 @@ col_inq1, col_inq2, col_inq3 = st.columns([2, 2, 1])
 with col_inq1:
     user_query = st.text_area("❓ STEP 1: Research Inquiry (for CEREBRAS):", placeholder="Fact-based Foundational Inquiry...", height=200)
 with col_inq2:
-    idea_query = st.text_area("💡 STEP 2: Innovation Prompt (for GEMINI):", placeholder="Targets for innovative idea production...", height=200)
+    idea_query = st.text_area("💡 STEP 2: Innovation Prompt (for CEREBRAS):", placeholder="Targets for innovative idea production...", height=200)
 # --- POPRAVEK KORAK 1: Branje vsebine datoteke ---
 # --- KORAK 1: File Upload with English Translation ---
 with col_inq3:
@@ -1171,7 +1171,7 @@ MANDATORY JSON STRUCTURE:
                 innovation_text = cerebras_innovation
                 json_raw = ""
 
-            full_report = f"## 📚 Phase 1: Foundation ({p1_model})\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations ({p2_model})\n\n{innovation_text}"
+            full_report = f"## 📚 Phase 1: Structural Foundation (Cerebras {p1_model})\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations (Cerebras {p2_model})\n\n{innovation_text}"
             
             nodes_to_link = []
             final_elements = []
