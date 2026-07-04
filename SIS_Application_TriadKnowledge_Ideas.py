@@ -854,32 +854,26 @@ with st.sidebar:
     
     st.header("⚙️ SYSTEM CONTROL")
     
-    # 3. Dual API Keys Access
-    st.subheader("🔑 Dual-Engine API Access")
-    cerebras_api_key = st.text_input("Cerebras Key (Phase 1):", type="password", key="side_cerebras_v2026")
-    gemini_api_key = st.text_input("Google Gemini Key (Phase 2):", type="password", key="side_gemini_v2026")
+    # 3. CEREBRAS SYSTEM CONTROL (JULIJ 2026 - SIS OPTIMIZED)
+    st.header("⚙️ CEREBRAS SYSTEM CONTROL")
+    cerebras_api_key = st.text_input("Cerebras API Key:", type="password", key="side_cerebras_v2026")
     
-    # Izbira modelov za Cerebras po tvoji želji
-    cerebras_model_id = st.selectbox(
-        "Cerebras Model (Phase 1):", 
+    st.subheader("🤖 Sequential Model Selection")
+    
+    # Izbira za Phase 1 (Foundation)
+    p1_model = st.selectbox(
+        "Phase 1 Model (Structure):", 
         ["gpt-oss-120b", "gemma-4-31b"], 
         index=0, 
-        key="side_cerebras_model_v2026"
+        help="Priporočeno: gpt-oss-120b za kompleksno IMA sintezo."
     )
-
-    # 4. Google Gemini (Phase 2) - Razširjen nabor za leto 2026
-    gemini_model_id = st.selectbox(
-        "Gemini Model (Phase 2):", 
-        [
-            "gemini-1.5-flash-latest", # Najbolj verjetno, da deluje v EU
-            "gemini-1.5-pro-latest",
-            "gemini-1.5-flash",
-            "gemini-1.5-pro",
-            "gemini-1.5-flash-8b",     # Lažji model, pogosto dostopnejši
-            "gemini-2.0-flash-exp"     # Eksperimentalni model nove generacije
-        ], 
+    
+    # Izbira za Phase 2 (Innovation)
+    p2_model = st.selectbox(
+        "Phase 2 Model (Innovation):", 
+        ["gemma-4-31b", "gpt-oss-120b"], 
         index=0, 
-        key="side_gemini_model_select"
+        help="Priporočeno: gemma-4-31b za MA inovativne preboje."
     )
     
     st.divider()
@@ -1037,13 +1031,13 @@ with col_inq3:
             st.error(f"Error reading file: {e}")
 
 # =============================================================================
-# 5. SYNERGY EXECUTION ENGINE (WITH CONDITIONAL ACTIVATION)
+# 5. SYNERGY EXECUTION ENGINE (PURE CEREBRAS SEQUENTIAL PIPELINE - UNABRIDGED)
 # =============================================================================
 
 if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True, key="exec_pipeline_v2026"):
-    # POPRAVEK: Preverjamo gemini_api_key namesto sambanova
-    if not cerebras_api_key or not gemini_api_key:
-        st.error("❌ Dual-Model synergy requires both Cerebras and Google Gemini keys.")
+    # Preverjamo le Cerebras ključ, saj Gemini ni več potreben
+    if not cerebras_api_key:
+        st.error("❌ Cerebras API key is required to proceed.")
     elif not user_query:
         st.warning("⚠️ Phase 1 Research Inquiry is required.")
     else:
@@ -1075,13 +1069,13 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             # Combine the trigger context with the user query
             full_ai_input = f"{active_context}{user_query}{file_context_str}{biblio_context}"
 
-            # Inicializacija povezav (Cerebras ostaja za Phase 1)
+            # Inicializacija skupnega Cerebras klienta
             cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
             
-            # --- PHASE 1: CEREBRAS (Logična sinteza namesto Groq) ---
-            with st.spinner('PHASE 1: Building Architecture (Cerebras Logic)...'):
+            # --- PHASE 1: CEREBRAS (Foundation - npr. GPT-OSS-120B) ---
+            with st.spinner(f'PHASE 1: Building Architecture with {p1_model}...'):
                 p1_response = cerebras_client.chat.completions.create(
-                    model=cerebras_model_id,
+                    model=p1_model,
                     messages=[
                         {"role": "system", "content": "You are the SIS Lead Hierarchologist. If the user provides specific Paradigms or Models in the 'MANDATORY SYSTEM INSTRUCTION', you MUST prioritize them in your structural analysis."}, 
                         {"role": "user", "content": full_ai_input}
@@ -1092,8 +1086,8 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 groq_synthesis = p1_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
 
-            # --- 3. PHASE 2: GOOGLE GEMINI (ZAMENJAVA ZA SAMBANOVO - PREKO NEPOSREDNEGA REST ADAPTERJA) ---
-            with st.spinner(f'PHASE 2: Gemini ({gemini_model_id}) generating radical innovations...'):
+            # --- 3. PHASE 2: CEREBRAS (Innovation - npr. GEMMA-4-31B) ---
+            with st.spinner(f'PHASE 2: Generating radical innovations with {p2_model}...'):
                 samba_sys_prompt = f"""
 You are the SIS Lead Strategic Innovation Architect and Hierarchographist. 
 Your task is to transform the structural analysis from Phase 1 into a visionary Innovation Report and a perfectly mapped Hierarchographic Network.
@@ -1155,50 +1149,18 @@ MANDATORY JSON STRUCTURE:
   ]
 }}
 """
-                # VARNO ČIŠČENJE ID-JA MODELA
-                clean_model_id = gemini_model_id.replace("models/", "")
-                
-                # NEPOSREDEN REST KLIC (Uporaba v1beta za najboljšo kompatibilnost v EU)
-                gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/{clean_model_id}:generateContent?key={gemini_api_key}"
-                
-                headers = {'Content-Type': 'application/json'}
-                
-                # Priprava telesa prošnje po Googlovih specifikacijah
-                payload = {
-                    "contents": [{
-                        "parts": [{
-                            "text": f"{samba_sys_prompt}\n\nPHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER GOAL: {idea_query}{file_context_str}"
-                        }]
-                    }],
-                    "generationConfig": {
-                        "temperature": 0.7,
-                        "topP": 0.9,
-                        "maxOutputTokens": 8192
-                    },
-                    "safetySettings": [
-                        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-                        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-                        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
-                    ]
-                }
-
-                # Izvedba mrežne prošnje s knjižnico requests
-                response_rest = requests.post(gemini_url, headers=headers, json=payload)
-                
-                if response_rest.status_code == 200:
-                    res_json = response_rest.json()
-                    # Izvlečemo tekst iz Googlovega specifičnega JSON formata
-                    if 'candidates' in res_json and len(res_json['candidates']) > 0:
-                        cerebras_innovation = res_json['candidates'][0]['content']['parts'][0]['text']
-                    else:
-                        cerebras_innovation = "❌ Error: Gemini returned no content candidates."
-                else:
-                    st.error(f"Gemini API Error {response_rest.status_code}: {response_rest.text}")
-                    cerebras_innovation = "❌ Error: Could not connect to Gemini."
+                samba_response = cerebras_client.chat.completions.create(
+                    model=p2_model, 
+                    messages=[
+                        {"role": "system", "content": samba_sys_prompt}, 
+                        {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER GOAL: {idea_query}{file_context_str}"}
+                    ],
+                    temperature=0.7,
+                    top_p=0.9
+                )
+                cerebras_innovation = samba_response.choices[0].message.content
 
             # --- 4. PROCESIRANJE REZULTATOV (Z GEOMETRIJSKO LOGIKO) ---
-            # Inicializacija g_data, da preprečimo napako 'name not defined'
             g_data = {"nodes": [], "edges": []}
             
             if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
@@ -1209,7 +1171,7 @@ MANDATORY JSON STRUCTURE:
                 innovation_text = cerebras_innovation
                 json_raw = ""
 
-            full_report = f"## 📚 Phase 1: Foundation (Cerebras)\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations (Google Gemini)\n\n{innovation_text}"
+            full_report = f"## 📚 Phase 1: Foundation ({p1_model})\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations ({p2_model})\n\n{innovation_text}"
             
             nodes_to_link = []
             final_elements = []
@@ -1305,8 +1267,10 @@ MANDATORY JSON STRUCTURE:
                         }
                     })
 
-            # Avtomatsko povezovanje besedila z grafom (Highlighting)
-            final_markdown = full_report
+            # --- 5. FINAL DISPLAY: SEQUENTIAL INTERACTIVE SYNERGY REPORT ---
+            
+            # 5a. GLOBAL SEMANTIC HIGHLIGHTER (Regex Highlighter)
+            final_interactive_report = full_report
             if nodes_to_link:
                 # Razvrstimo ključne besede po dolžini (daljše prej), da se krajše ne vmešavajo
                 sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
@@ -1314,13 +1278,14 @@ MANDATORY JSON STRUCTURE:
                     lbl = item['label']
                     if len(lbl) > 2:
                         g_url = urllib.parse.quote(lbl)
+                        # The link style ensures high visibility
                         link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
                         
-                        # Unicode-safe regex
+                        # Unicode-safe regex to catch terms in report
                         pattern = re.compile(rf'(?<!\w){re.escape(lbl)}(?!\w)', re.IGNORECASE | re.UNICODE)
                         
-                        # Linkamo le prvo pojavitev za preglednost
-                        final_markdown = pattern.sub(link_html, final_markdown, count=1)
+                        # Linkamo le PRVO pojavitev besede za čistočo
+                        final_interactive_report = pattern.sub(link_html, final_interactive_report, count=1)
 
             # 5b. RENDERING THE INTERACTIVE REPORT
             st.subheader("🧱 INTEGRATED HIERARCHOLOGICAL REPORT")
@@ -1329,7 +1294,7 @@ MANDATORY JSON STRUCTURE:
                     st.markdown(biblio_data)
             
             # Display the full linked report (P1 + P2)
-            st.markdown(final_markdown, unsafe_allow_html=True)
+            st.markdown(final_interactive_report, unsafe_allow_html=True)
 
             # 5c. INNOVATION DEEP-DIVE: DETAILED BREAKTHROUGH CATALOG
             if final_elements:
@@ -1343,6 +1308,7 @@ MANDATORY JSON STRUCTURE:
                 if innovations:
                     for inv in innovations:
                         g_url = urllib.parse.quote(inv['label'])
+                        # Fetch the precise description generated by the model
                         detailed_desc = inv.get('description', "Detailed strategic analysis is available in the integrated report above.")
                         
                         # High-End Report Style Card
@@ -1368,13 +1334,6 @@ MANDATORY JSON STRUCTURE:
                         <div>
                             <b style="color: #1d3557; text-transform: uppercase; letter-spacing: 1px;">Nodes (Geometry):</b><br>
                             ⭐ Goal | ⬢ Domain | 💠 Innovation | △ Process | ▭ Data | ⬣ Rule | ⭔ Bio
-                        </div>
-                        <div style="height: 30px; width: 1px; background: #dee2e6; display: block;"></div>
-                        <div>
-                            <b style="color: #1d3557; text-transform: uppercase; letter-spacing: 1px;">UML & Logic Connectors:</b><br>
-                            <span style="color:#e63946;">⬤ Structural (UML)</span> | 
-                            <span style="color:#000000;">⬤ Specialization (Deduction)</span> | 
-                            <span style="color:#1d3557;">⬤ Containment (Cage)</span>
                         </div>
                         <div style="height: 30px; width: 1px; background: #dee2e6; display: block;"></div>
                         <div>
