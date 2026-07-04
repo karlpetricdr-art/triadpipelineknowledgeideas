@@ -870,11 +870,11 @@ with st.sidebar:
 
     # Izbira za Gemini (Phase 2)
     gemini_model_id = st.selectbox(
-        "Gemini Model (Phase 2):", 
-        ["gemini-1.5-pro", "gemini-1.5-flash"], 
-        index=0, 
-        key="side_gemini_model_select"
-    )
+    "Gemini Model (Phase 2):", 
+    ["gemini-3.0-pro", "gemini-3.0-flash"], 
+    index=1, 
+    key="side_gemini_model_select"
+	)
     
     st.divider()
 
@@ -1069,11 +1069,11 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             # Combine the trigger context with the user query
             full_ai_input = f"{active_context}{user_query}{file_context_str}{biblio_context}"
 
-            # Inicializacija Cerebras (Phase 1)
+            # Inicializacija povezav (Cerebras - tvoj obstoječi Phase 1)
             cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
             
-            # --- PHASE 1: CEREBRAS (Logična sinteza) ---
-            with st.spinner('PHASE 1: Building Architecture (Cerebras Logic)...'):
+            # --- PHASE 1: CEREBRAS (Structural Logic) ---
+            with st.spinner(f'PHASE 1: Building Architecture ({cerebras_model_id})...'):
                 p1_response = cerebras_client.chat.completions.create(
                     model=cerebras_model_id,
                     messages=[
@@ -1153,7 +1153,15 @@ MANDATORY JSON STRUCTURE:
   ]
 }}
 """
-                # Klic Gemini modela z uporabo system_instruction parametra za maksimalno stabilnost
+                # Konfiguracija varnosti za leto 2026
+                safety_settings = [
+                    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+                ]
+
+                # Inicializacija Gemini 3 modela
                 model = genai.GenerativeModel(
                     model_name=gemini_model_id,
                     system_instruction=samba_sys_prompt
@@ -1165,20 +1173,21 @@ MANDATORY JSON STRUCTURE:
                     generation_config=genai.types.GenerationConfig(
                         temperature=0.7,
                         top_p=0.9
-                    )
+                    ),
+                    safety_settings=safety_settings
                 )
                 
-                # Varnostni preverjanje odgovora
+                # Varnostno preverjanje odgovora
                 try:
                     cerebras_innovation = response.text
                 except Exception:
                     if response.candidates:
-                        cerebras_innovation = "⚠️ Response blocked by safety filters or could not be parsed as text."
+                        cerebras_innovation = "⚠️ Response generated but partially blocked. Inspecting available candidates..."
+                        cerebras_innovation += "\n" + response.candidates[0].content.parts[0].text
                     else:
-                        cerebras_innovation = "❌ Error: Gemini failed to generate a response."
+                        cerebras_innovation = "❌ Error: Gemini failed to generate a response (Blocked by Safety Filters)."
 
             # --- 4. PROCESIRANJE REZULTATOV (Z GEOMETRIJSKO LOGIKO) ---
-            # Inicializacija g_data, da preprečimo napako 'name not defined'
             g_data = {"nodes": [], "edges": []}
             
             if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
@@ -1189,7 +1198,7 @@ MANDATORY JSON STRUCTURE:
                 innovation_text = cerebras_innovation
                 json_raw = ""
 
-            full_report = f"## 📚 Phase 1: Foundation (Cerebras)\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations (Google Gemini)\n\n{innovation_text}"
+            full_report = f"## 📚 Phase 1: Foundation (Cerebras)\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations (Google Gemini 3)\n\n{innovation_text}"
             
             nodes_to_link = []
             final_elements = []
@@ -1199,11 +1208,8 @@ MANDATORY JSON STRUCTURE:
             
             if json_match:
                 try:
-                    # 1. Izvlečemo surovi JSON tekst
                     raw_json_str = json_match.group(1)
-                    # 2. Očistimo nove vrstice in nevarne znake, ki lomijo format
                     clean_json = raw_json_str.replace('\n', ' ').replace('\r', '')
-                    # 3. Poskusimo prebrati JSON podatke
                     g_data = json.loads(clean_json)
                 except Exception as json_err:
                     st.warning(f"Note: Graph structure issue: {json_err}")
@@ -1216,7 +1222,6 @@ MANDATORY JSON STRUCTURE:
                     n_color = n.get("color", "#DDEBF7")
                     n_shape = n.get("shape", "rectangle")
                     
-                    # Velikostna hierarhija glede na obliko
                     if n_shape == 'star': n_size = 125
                     elif n_shape == 'diamond': n_size = 110
                     elif n_shape == 'octagon': n_size = 105
@@ -1234,55 +1239,26 @@ MANDATORY JSON STRUCTURE:
                 for e in g_data.get("edges", []):
                     rel = e.get("rel_type", "Association")
                     
-                    # A) UML IN STRUKTURNA LOGIKA (Rdeča/Črna/Modra skala)
                     if rel in ["Generalization", "Realization", "Composition", "Aggregation", "Dependency", "Specialization", "Containment", "Conflict"]:
-                        if rel == "Conflict":
-                            e_color = "#b91d1d"  # Temno rdeča za trčenje/spor
-                        elif rel == "Specialization":
-                            e_color = "#000000"  # Črna za dedukcijo
-                        elif rel == "Containment":
-                            e_color = "#1D3557"  # Temno modra za "Scientific Cage"
-                        elif rel == "Generalization":
-                            e_color = "#E63946"  # UML rdeča
-                        elif rel == "Realization":
-                            e_color = "#E63946"  # UML rdeča
-                        else:
-                            e_color = "#E63946"  # Privzeta UML rdeča (Dependency, Aggregation...)
-                            
-                    # B) ISO THESAURUS (Hierarhologija - Modra/Vijolična skala)
-                    elif rel in ["BT", "NT", "TT"]:
-                        e_color = "#1D3557"  # Temno modra (Nivoji)
-                    elif rel == "IN":
-                        e_color = "#0077B6"  # Svetlo modra (Instanca)
-                    elif rel == "AS":
-                        e_color = "#7B2CB1"  # Vijolična (Asociativna)
-                    elif rel == "EQ":
-                        e_color = "#F1C40F"  # Rumena (Ekvivalenca)
-                    elif rel == "RT":
-                        e_color = "#2A9D8F"  # Zelena (Povezano)
-
-                    # C) LOGIČNI KONEKTORJI (Decision Logic - Neon skala)
-                    elif rel == "AND":
-                        e_color = "#00FF00"  # Neon zelena
-                    elif rel == "OR":
-                        e_color = "#00BFFF"  # Svetlo modra
-                    elif rel == "XOR":
-                        e_color = "#FF8C00"  # Oranžna
-                    elif rel == "NOT":
-                        e_color = "#FF0000"  # Rdeča
-                    elif rel == "IF-THEN":
-                        e_color = "#FFD700"  # Zlata
-                        
-                    else:
-                        e_color = "#ADB5BD"  # Če tipa ne pozna = Siva
+                        if rel == "Conflict": e_color = "#b91d1d"
+                        elif rel == "Specialization": e_color = "#000000"
+                        elif rel == "Containment": e_color = "#1D3557"
+                        else: e_color = "#E63946"
+                    elif rel in ["BT", "NT", "TT"]: e_color = "#1D3557"
+                    elif rel == "IN": e_color = "#0077B6"
+                    elif rel == "AS": e_color = "#7B2CB1"
+                    elif rel == "EQ": e_color = "#F1C40F"
+                    elif rel == "RT": e_color = "#2A9D8F"
+                    elif rel in ["AND", "OR", "XOR", "NOT", "IF-THEN"]:
+                        if rel == "AND": e_color = "#00FF00"
+                        elif rel == "OR": e_color = "#00BFFF"
+                        elif rel == "XOR": e_color = "#FF8C00"
+                        elif rel == "NOT": e_color = "#FF0000"
+                        else: e_color = "#FFD700"
+                    else: e_color = "#ADB5BD"
 
                     final_elements.append({
-                        "data": {
-                            "source": e.get("source"), 
-                            "target": e.get("target"), 
-                            "rel_type": rel, 
-                            "color": e_color
-                        }
+                        "data": {"source": e.get("source"), "target": e.get("target"), "rel_type": rel, "color": e_color}
                     })
 
             # Avtomatsko povezovanje besedila z grafom (Highlighting)
@@ -1294,107 +1270,45 @@ MANDATORY JSON STRUCTURE:
                     if len(lbl) > 2:
                         g_url = urllib.parse.quote(lbl)
                         link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
-                        base_term = lbl[: -2] if len(lbl) > 6 else lbl
-                        pattern = re.compile(r'\b' + re.escape(base_term) + r'\w*', re.IGNORECASE)
-                        final_markdown = pattern.sub(link_html, final_markdown, count=10)
-
-            # --- 5. FINAL DISPLAY: SEQUENTIAL INTERACTIVE SYNERGY REPORT ---
-            
-            # Combine Phase 1 (Cerebras) and Phase 2 (Gemini) text for full-spectrum highlighting
-            combined_report_text = f"## 📚 PHASE 1: Structural Foundation\n\n{groq_synthesis}\n\n---\n## 💡 PHASE 2: Strategic Innovation Report\n\n{innovation_text}"
-            
-            # 5a. GLOBAL SEMANTIC HIGHLIGHTER (Multi-Phase Linking)
-            final_interactive_report = combined_report_text
-            if nodes_to_link:
-                # Razvrstimo ključne besede po dolžini (daljše prej), da se krajše ne vmešavajo
-                sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
-                for item in sorted_keywords:
-                    lbl = item['label']
-                    if len(lbl) > 2:
-                        g_url = urllib.parse.quote(lbl)
-                        link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
-                        
-                        # Unicode-safe regex
                         pattern = re.compile(rf'(?<!\w){re.escape(lbl)}(?!\w)', re.IGNORECASE | re.UNICODE)
-                        
-                        # KLJUČNA SPREMEMBA: Dodan count=1, da se polinka le PRVA pojavitev besede
-                        final_interactive_report = pattern.sub(link_html, final_interactive_report, count=1)
+                        final_markdown = pattern.sub(link_html, final_markdown, count=1)
 
-            # 5b. RENDERING THE INTERACTIVE REPORT
+            # --- 5. FINAL DISPLAY: INTERACTIVE REPORT ---
             st.subheader("🧱 INTEGRATED HIERARCHOLOGICAL REPORT")
             if biblio_data:
                 with st.expander("📚 EXTRACTED AUTHOR BACKGROUND", expanded=False):
                     st.markdown(biblio_data)
             
-            # Display the full linked report (P1 + P2)
-            st.markdown(final_interactive_report, unsafe_allow_html=True)
+            st.markdown(final_markdown, unsafe_allow_html=True)
 
-            # 5c. INNOVATION DEEP-DIVE: DETAILED BREAKTHROUGH CATALOG
+            # INNOVATION DEEP-DIVE
             if final_elements:
                 st.divider()
                 st.markdown("### 🚀 STRATEGIC INNOVATION DEEP-DIVE")
-                st.info("The following strategic breakthroughs have been synthesized from the multi-dimensional analysis above.")
-                
-                # Extract innovations (diamonds) for detailed report-style display
                 innovations = [n['data'] for n in final_elements if n['data'].get('shape') == 'diamond']
-                
                 if innovations:
                     for inv in innovations:
                         g_url = urllib.parse.quote(inv['label'])
                         detailed_desc = inv.get('description', "Detailed strategic analysis is available in the integrated report above.")
-                        
-                        # High-End Report Style Card
                         st.markdown(f"""
                         <div style="background-color: #ffffff; border-left: 6px solid #fd7e14; padding: 25px; border-radius: 15px; box-shadow: 0 6px 15px rgba(0,0,0,0.1); border: 1px solid #eee; margin-bottom: 25px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                                <span style="background-color: #fff4ed; color: #fd7e14; padding: 5px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; border: 1px solid #fd7e14;">Strategic Breakthrough</span>
+                                <span style="background-color: #fff4ed; color: #fd7e14; padding: 5px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 800; text-transform: uppercase; border: 1px solid #fd7e14;">Strategic Breakthrough</span>
                                 <a href="https://www.google.com/search?q={g_url}" target="_blank" style="text-decoration: none; color: #457b9d; font-size: 0.85em; font-weight: 600;">Technical Search ↗</a>
                             </div>
-                            <h2 style="margin: 0 0 15px 0; color: #1d3557; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">{inv['label']}</h2>
-                            <div style="color: #333; font-size: 1.05em; line-height: 1.7; border-top: 1px solid #f0f0f0; padding-top: 15px;">
-                                {detailed_desc}
-                            </div>
+                            <h2 style="margin: 0 0 15px 0; color: #1d3557;">{inv['label']}</h2>
+                            <div style="color: #333; font-size: 1.05em; line-height: 1.7; border-top: 1px solid #f0f0f0; padding-top: 15px;">{detailed_desc}</div>
                         </div>
                         """, unsafe_allow_html=True)
-                else:
-                    st.warning("No specific 'Diamond' innovations were found. Review the structural graph for implicit breakthroughs.")
 
-                # 5d. MINIMALIST SYSTEM LEGEND (FINAL ARCHITECTURE)
-                st.markdown("""
-                <div style="font-size: 0.78em; color: #444; background: #ffffff; padding: 15px 25px; border-radius: 15px; border: 1px solid #e9ecef; margin-top: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-                        <div>
-                            <b style="color: #1d3557; text-transform: uppercase; letter-spacing: 1px;">Nodes (Geometry):</b><br>
-                            ⭐ Goal | ⬢ Domain | 💠 Innovation | △ Process | ▭ Data | ⬣ Rule | ⭔ Bio
-                        </div>
-                        <div style="height: 30px; width: 1px; background: #dee2e6; display: block;"></div>
-                        <div>
-                            <b style="color: #1d3557; text-transform: uppercase; letter-spacing: 1px;">UML & Logic Connectors:</b><br>
-                            <span style="color:#e63946;">⬤ Structural (UML)</span> | 
-                            <span style="color:#000000;">⬤ Specialization (Deduction)</span> | 
-                            <span style="color:#1d3557;">⬤ Containment (Cage)</span>
-                        </div>
-                        <div style="height: 30px; width: 1px; background: #dee2e6; display: block;"></div>
-                        <div>
-                            <b style="color: #1d3557; text-transform: uppercase; letter-spacing: 1px;">Semantic Layers:</b><br>
-                            <span style="color:#1d3557;">⬤ Hierarchical (ISO)</span> | 
-                            <span style="color:#7b2cb1;">⬤ Associative</span> | 
-                            <span style="color:#2a9d8f;">⬤ Related</span> | 
-                            <span style="color:#f1c40f;">⬤ Equivalence</span>
-                        </div>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
+                # LEGEND
+                st.markdown("""<div style="font-size: 0.78em; color: #444; background: #ffffff; padding: 15px; border-radius: 15px; border: 1px solid #eee;">⭐ Goal | ⬢ Domain | 💠 Innovation | △ Process | ▭ Data | ⬣ Rule | ⭔ Bio</div>""", unsafe_allow_html=True)
 
-                # 5e. FINAL GRAPH RENDERING (Z DINAMIČNO PERSPEKTIVO)
+                # GRAPH
                 st.subheader(f"🕸️ HYBRID SEMANTIC SYSTEM MAP ({graph_perspective.upper()} VIEW)")
-                render_cytoscape_network(
-                    final_elements, 
-                    layout_type=graph_perspective, 
-                    container_id=f"cy_{int(time.time())}"
-                )
+                render_cytoscape_network(final_elements, layout_type=graph_perspective, container_id=f"cy_{int(time.time())}")
 
-                # --- NOVO: SHRANJEVANJE ZA GALERIJO (DODANO NA KONEC POROČILA) ---
+                # GALLERY STATE
                 st.session_state.final_graph_elements = final_elements
                 st.session_state.report_ready = True
 
