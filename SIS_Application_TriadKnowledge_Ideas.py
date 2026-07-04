@@ -855,27 +855,23 @@ with st.sidebar:
     
     st.header("⚙️ SYSTEM CONTROL")
     
-    # 3. Dual API Keys Access (Unikatna ključa preprečujeta DuplicateID napako)
+    # 3. Dual API Keys Access (Brez tabulatorjev, samo presledki)
     st.subheader("🔑 Dual-Engine API Access")
     cerebras_api_key = st.text_input("Cerebras Key (Phase 1):", type="password", key="side_cerebras_v2026")
     gemini_api_key = st.text_input("Google Gemini Key (Phase 2):", type="password", key="side_gemini_v2026")
-	gemini_model_id = st.selectbox("Gemini Model (Phase 2):", ["gemini-1.5-pro", "gemini-1.5-flash"], key="side_gemini_model_select")
     
     # Izbira modela za Phase 1 (Cerebras)
     cerebras_model_id = st.selectbox(
         "Cerebras Model (Phase 1):", 
-        ["gpt-oss-120b", "gemma-4-31b"], 
+        ["llama3.1-70b", "llama3.1-8b"], 
         index=0, 
         key="side_cerebras_model_v2026"
     )
 
-    # 4. POSODOBLJENO: Google Gemini (Namesto SambaNova)
+    # 4. Google Gemini (Phase 2)
     gemini_model_id = st.selectbox(
         "Gemini Model (Phase 2):", 
-        [
-            "gemini-1.5-pro",    # Najboljša izbira za kompleksno sintezo (ogromen kontekst)
-            "gemini-1.5-flash"   # Izjemno hitra različica
-        ], 
+        ["gemini-1.5-pro", "gemini-1.5-flash"], 
         index=0, 
         key="side_gemini_model_select"
     )
