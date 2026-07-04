@@ -1043,7 +1043,6 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
     else:
         try:
             # --- CONDITIONAL DIMENSION ACTIVATION ---
-            # The system only injects sidebar selections if [ACTIVATE] is present in the prompt.
             trigger_keyword = "[ACTIVATE]"
             active_context = ""
             
@@ -1069,7 +1068,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             # Combine the trigger context with the user query
             full_ai_input = f"{active_context}{user_query}{file_context_str}{biblio_context}"
 
-            # Inicializacija Cerebras (Phase 1)
+            # Inicializacija povezav (Cerebras)
             cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
             
             # --- PHASE 1: CEREBRAS (Logična sinteza) ---
@@ -1085,11 +1084,15 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 groq_synthesis = p1_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
 
-            # --- 3. PHASE 2: GOOGLE GEMINI (ZAMENJAVA ZA SAMBANOVO - ULTRA-CREATIVE INNOVATION ENGINE) ---
+            # --- 3. PHASE 2: GOOGLE GEMINI (ZAMENJAVA ZA SAMBANOVO - PREKO OPENAI ADAPTERJA) ---
             with st.spinner(f'PHASE 2: Gemini ({gemini_model_id}) generating radical innovations...'):
                 
-                # Konfiguracija Gemini SDK
-                genai.configure(api_key=gemini_api_key)
+                # Uporabimo OpenAI klienta za dostop do Googla (najbolj stabilna pot v 2026)
+                # To prepreči 404 napake Googlove specifične knjižnice
+                gemini_client = OpenAI(
+                    api_key=gemini_api_key,
+                    base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
+                )
                 
                 samba_sys_prompt = f"""
 You are the SIS Lead Strategic Innovation Architect and Hierarchographist. 
@@ -1152,39 +1155,20 @@ MANDATORY JSON STRUCTURE:
   ]
 }}
 """
-                # Konfiguracija varnosti
-                safety_settings = [
-                    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-                    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-                    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
-                ]
-
-                # Inicializacija modela
-                model = genai.GenerativeModel(
-                    model_name=gemini_model_id,
-                    system_instruction=samba_sys_prompt
+                # Klic modela preko OpenAI adapterja (veliko bolj stabilno)
+                samba_response = gemini_client.chat.completions.create(
+                    model=gemini_model_id, 
+                    messages=[
+                        {"role": "system", "content": samba_sys_prompt}, 
+                        {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER GOAL: {idea_query}{file_context_str}"}
+                    ],
+                    temperature=0.7,
+                    top_p=0.9
                 )
-                
-                # Proženje generiranja
-                response = model.generate_content(
-                    f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER GOAL: {idea_query}{file_context_str}",
-                    generation_config=genai.types.GenerationConfig(
-                        temperature=0.7,
-                        top_p=0.9
-                    ),
-                    safety_settings=safety_settings
-                )
-                
-                try:
-                    cerebras_innovation = response.text
-                except Exception:
-                    if response.candidates:
-                        cerebras_innovation = response.candidates[0].content.parts[0].text
-                    else:
-                        cerebras_innovation = "❌ Error: Gemini blocked the response due to safety restrictions."
+                cerebras_innovation = samba_response.choices[0].message.content
 
             # --- 4. PROCESIRANJE REZULTATOV (Z GEOMETRIJSKO LOGIKO) ---
+            # Inicializacija g_data, da preprečimo napako 'name not defined'
             g_data = {"nodes": [], "edges": []}
             
             if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
@@ -1205,8 +1189,11 @@ MANDATORY JSON STRUCTURE:
             
             if json_match:
                 try:
+                    # 1. Izvlečemo surovi JSON tekst
                     raw_json_str = json_match.group(1)
+                    # 2. Očistimo nove vrstice in nevarne znake, ki lomijo format
                     clean_json = raw_json_str.replace('\n', ' ').replace('\r', '')
+                    # 3. Poskusimo prebrati JSON podatke
                     g_data = json.loads(clean_json)
                 except Exception as json_err:
                     st.warning(f"Note: Graph structure issue: {json_err}")
@@ -1219,6 +1206,7 @@ MANDATORY JSON STRUCTURE:
                     n_color = n.get("color", "#DDEBF7")
                     n_shape = n.get("shape", "rectangle")
                     
+                    # Velikostna hierarhija glede na obliko
                     if n_shape == 'star': n_size = 125
                     elif n_shape == 'diamond': n_size = 110
                     elif n_shape == 'octagon': n_size = 105
@@ -1236,32 +1224,55 @@ MANDATORY JSON STRUCTURE:
                 for e in g_data.get("edges", []):
                     rel = e.get("rel_type", "Association")
                     
+                    # A) UML IN STRUKTURNA LOGIKA (Rdeča/Črna/Modra skala)
                     if rel in ["Generalization", "Realization", "Composition", "Aggregation", "Dependency", "Specialization", "Containment", "Conflict"]:
-                        if rel == "Conflict": e_color = "#b91d1d"
-                        elif rel == "Specialization": e_color = "#000000"
-                        elif rel == "Containment": e_color = "#1D3557"
-                        else: e_color = "#E63946"
+                        if rel == "Conflict":
+                            e_color = "#b91d1d"
+                        elif rel == "Specialization":
+                            e_color = "#000000"
+                        elif rel == "Containment":
+                            e_color = "#1D3557"
+                        else:
+                            e_color = "#E63946"
                             
-                    elif rel in ["BT", "NT", "TT"]: e_color = "#1D3557"
-                    elif rel == "IN": e_color = "#0077B6"
-                    elif rel == "AS": e_color = "#7B2CB1"
-                    elif rel == "EQ": e_color = "#F1C40F"
-                    elif rel == "RT": e_color = "#2A9D8F"
+                    # B) ISO THESAURUS (Hierarhologija - Modra/Vijolična skala)
+                    elif rel in ["BT", "NT", "TT"]:
+                        e_color = "#1D3557"
+                    elif rel == "IN":
+                        e_color = "#0077B6"
+                    elif rel == "AS":
+                        e_color = "#7B2CB1"
+                    elif rel == "EQ":
+                        e_color = "#F1C40F"
+                    elif rel == "RT":
+                        e_color = "#2A9D8F"
 
-                    elif rel == "AND": e_color = "#00FF00"
-                    elif rel == "OR": e_color = "#00BFFF"
-                    elif rel == "XOR": e_color = "#FF8C00"
-                    elif rel == "NOT": e_color = "#FF0000"
-                    elif rel == "IF-THEN": e_color = "#FFD700"
-                    else: e_color = "#ADB5BD"
+                    # C) LOGIČNI KONEKTORJI (Decision Logic - Neon skala)
+                    elif rel == "AND":
+                        e_color = "#00FF00"
+                    elif rel == "OR":
+                        e_color = "#00BFFF"
+                    elif rel == "XOR":
+                        e_color = "#FF8C00"
+                    elif rel == "NOT":
+                        e_color = "#FF0000"
+                    elif rel == "IF-THEN":
+                        e_color = "#FFD700"
+                        
+                    else:
+                        e_color = "#ADB5BD"
 
                     final_elements.append({
-                        "data": {"source": e.get("source"), "target": e.get("target"), "rel_type": rel, "color": e_color}
+                        "data": {
+                            "source": e.get("source"), 
+                            "target": e.get("target"), 
+                            "rel_type": rel, 
+                            "color": e_color
+                        }
                     })
 
-            # Highlighting prve pojavitve ključnih besed
-            combined_report_text = f"## 📚 PHASE 1: Structural Foundation\n\n{groq_synthesis}\n\n---\n## 💡 PHASE 2: Strategic Innovation Report\n\n{innovation_text}"
-            final_interactive_report = combined_report_text
+            # Avtomatsko povezovanje besedila z grafom (Highlighting)
+            final_markdown = full_report
             if nodes_to_link:
                 sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
                 for item in sorted_keywords:
@@ -1270,7 +1281,8 @@ MANDATORY JSON STRUCTURE:
                         g_url = urllib.parse.quote(lbl)
                         link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
                         pattern = re.compile(rf'(?<!\w){re.escape(lbl)}(?!\w)', re.IGNORECASE | re.UNICODE)
-                        final_interactive_report = pattern.sub(link_html, final_interactive_report, count=1)
+                        # Linkamo le prvo pojavitev za preglednost
+                        final_markdown = pattern.sub(link_html, final_markdown, count=1)
 
             # --- 5b. RENDERING THE INTERACTIVE REPORT ---
             st.subheader("🧱 INTEGRATED HIERARCHOLOGICAL REPORT")
@@ -1278,7 +1290,7 @@ MANDATORY JSON STRUCTURE:
                 with st.expander("📚 EXTRACTED AUTHOR BACKGROUND", expanded=False):
                     st.markdown(biblio_data)
             
-            st.markdown(final_interactive_report, unsafe_allow_html=True)
+            st.markdown(final_markdown, unsafe_allow_html=True)
 
             # 5c. INNOVATION DEEP-DIVE
             if final_elements:
@@ -1292,11 +1304,7 @@ MANDATORY JSON STRUCTURE:
                         detailed_desc = inv.get('description', "Detailed strategic analysis is available in the integrated report above.")
                         st.markdown(f"""
                         <div style="background-color: #ffffff; border-left: 6px solid #fd7e14; padding: 25px; border-radius: 15px; box-shadow: 0 6px 15px rgba(0,0,0,0.1); border: 1px solid #eee; margin-bottom: 25px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                                <span style="background-color: #fff4ed; color: #fd7e14; padding: 5px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 800; text-transform: uppercase; border: 1px solid #fd7e14;">Strategic Breakthrough</span>
-                                <a href="https://www.google.com/search?q={g_url}" target="_blank" style="text-decoration: none; color: #457b9d; font-size: 0.85em; font-weight: 600;">Technical Search ↗</a>
-                            </div>
-                            <h2 style="margin: 0 0 15px 0; color: #1d3557; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">{inv['label']}</h2>
+                            <h2 style="margin: 0 0 15px 0; color: #1d3557;">{inv['label']}</h2>
                             <div style="color: #333; font-size: 1.05em; line-height: 1.7; border-top: 1px solid #f0f0f0; padding-top: 15px;">{detailed_desc}</div>
                         </div>
                         """, unsafe_allow_html=True)
