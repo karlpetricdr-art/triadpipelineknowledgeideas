@@ -1,4 +1,5 @@
 streamlit
 openai
 requests
-cerebras_cloud_sdk
+cerebras-cloud-sdk
+google-generativeai
