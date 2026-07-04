@@ -5,6 +5,7 @@ import requests
 import urllib.parse
 import re
 import time
+import google.generativeai as genai
 from datetime import datetime
 from openai import OpenAI
 from cerebras.cloud.sdk import Cerebras
@@ -857,7 +858,7 @@ with st.sidebar:
     # 3. Dual API Keys Access (Unikatna ključa preprečujeta DuplicateID napako)
     st.subheader("🔑 Dual-Engine API Access")
     cerebras_api_key = st.text_input("Cerebras Key (Phase 1):", type="password", key="side_cerebras_v2026")
-    sambanova_api_key = st.text_input("SambaNova Key (Phase 2):", type="password", key="side_samba_v2026")
+    gemini_api_key = st.text_input("Google Gemini Key (Phase 2):", type="password", key="side_gemini_v2026")
     
     # Izbira modela za Phase 1 (Cerebras)
     cerebras_model_id = st.selectbox(
@@ -867,18 +868,15 @@ with st.sidebar:
         key="side_cerebras_model_v2026"
     )
 
-    # 4. POSODOBLJENO: Najnovejša generacija modelov (Junij 2026) & VIZUALNI MOTOR
-    sambanova_id = st.selectbox(
-        "SambaNova Model Endpoint:", 
+    # 4. POSODOBLJENO: Google Gemini (Namesto SambaNova)
+    gemini_model_id = st.selectbox(
+        "Gemini Model (Phase 2):", 
         [
-            "gemma-4-31B-it",                  # Trenutno najboljša izbira (Flagship)
-            "gemma-4-26b-a4b-it",              # MoE različica za hitrost
-            "Meta-Llama-4-Maverick-17B-Instruct", # Alternativa Llama 4
-            "DeepSeek-V3.2",                   # Odličen za logiko in kodiranje
-            "Meta-Llama-3.3-70B-Instruct"      # Legacy stable model
+            "gemini-1.5-pro",    # Najboljša izbira za kompleksno sintezo (ogromen kontekst)
+            "gemini-1.5-flash"   # Izjemno hitra različica
         ], 
         index=0, 
-        key="side_model_select_v2026"
+        key="side_gemini_model_select"
     )
     
     st.divider()
@@ -970,9 +968,9 @@ st.markdown(f"**Sequential Multi-Engine Pipeline** | Current Operating Date: **{
 if st.session_state.show_user_guide:
     st.info(f"""
     **Sequential Synergy Pipeline Workflow (Updated Feb 24, 2026):**
-    1. **Key Input**: Enter your Cerebras (Phase 1) and SambaNova (Phase 2) API keys in the sidebar.
+    1. **Key Input**: Enter your Cerebras (Phase 1) and Google Gemini (Phase 2) API keys in the sidebar.
     2. **Research Foundation (Step 1)**: Cerebras performs structural synthesis foundation using Integrated Metamodel Architecture (IMA).
-    3. **Innovation Prompt (Step 2)**: SambaNova takes Cerebras's work and generates radical 'Useful Innovative Ideas' using Mental Approaches (MA) logic.
+    3. **Innovation Prompt (Step 2)**: Google Gemini takes Cerebras's work and generates radical 'Useful Innovative Ideas' using Mental Approaches (MA) logic.
     4. **Visualization**: The interactive 18D graph maps structural facts against generative ideas.
     """)
 
@@ -981,7 +979,7 @@ col_ref1, col_ref2 = st.columns(2)
 with col_ref1:
     st.markdown("""<div class="metamodel-box"><b>🏛️ Phase 1: Cerebras (IMA Architecture)</b><br>Structural reasoning building the factual foundation. Focus: Identity, Mission, Problem. </div>""", unsafe_allow_html=True)
 with col_ref2:
-    st.markdown("""<div class="mental-approach-box"><b>🧠 Phase 2: SambaNova (MA Architecture)</b><br>Cognitive transformation generating innovative solutions. Focus: Dialectics, Perspective, Induction.</div>""", unsafe_allow_html=True)
+    st.markdown("""<div class="mental-approach-box"><b>🧠 Phase 2: Google Gemini (MA Architecture)</b><br>Cognitive transformation generating innovative solutions. Focus: Dialectics, Perspective, Induction.</div>""", unsafe_allow_html=True)
 
 st.markdown("### 🛠️ CONFIGURE SYNERGY PIPELINE")
 
@@ -1019,7 +1017,7 @@ col_inq1, col_inq2, col_inq3 = st.columns([2, 2, 1])
 with col_inq1:
     user_query = st.text_area("❓ STEP 1: Research Inquiry (for CEREBRAS):", placeholder="Fact-based Foundational Inquiry...", height=200)
 with col_inq2:
-    idea_query = st.text_area("💡 STEP 2: Innovation Prompt (for SAMBANOVA):", placeholder="Targets for innovative idea production...", height=200)
+    idea_query = st.text_area("💡 STEP 2: Innovation Prompt (for GEMINI):", placeholder="Targets for innovative idea production...", height=200)
 # --- POPRAVEK KORAK 1: Branje vsebine datoteke ---
 # --- KORAK 1: File Upload with English Translation ---
 with col_inq3:
@@ -1040,8 +1038,9 @@ with col_inq3:
 # =============================================================================
 
 if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True, key="exec_pipeline_v2026"):
-    if not cerebras_api_key or not sambanova_api_key:
-        st.error("❌ Dual-Model synergy requires both Cerebras and SambaNova keys.")
+    # POPRAVEK: Preverjamo gemini_api_key namesto sambanova
+    if not cerebras_api_key or not gemini_api_key:
+        st.error("❌ Dual-Model synergy requires both Cerebras and Google Gemini keys.")
     elif not user_query:
         st.warning("⚠️ Phase 1 Research Inquiry is required.")
     else:
@@ -1075,7 +1074,6 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
 
             # Inicializacija povezav (Cerebras namesto Groq)
             cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
-            samba_client = OpenAI(api_key=sambanova_api_key, base_url="https://api.sambanova.ai/v1")
             
             # --- PHASE 1: CEREBRAS (Logična sinteza namesto Groq) ---
             with st.spinner('PHASE 1: Building Architecture (Cerebras Logic)...'):
@@ -1091,8 +1089,12 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 groq_synthesis = p1_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
 
-            # --- 3. PHASE 2: SAMBANOVA (ULTRA-CREATIVE INNOVATION ENGINE) ---
-            with st.spinner(f'PHASE 2: SambaNova ({sambanova_id}) generating radical innovations...'):
+            # --- 3. PHASE 2: GOOGLE GEMINI (ZAMENJAVA ZA SAMBANOVO - ULTRA-CREATIVE INNOVATION ENGINE) ---
+            with st.spinner(f'PHASE 2: Gemini ({gemini_model_id}) generating radical innovations...'):
+                
+                # Konfiguracija Gemini SDK
+                genai.configure(api_key=gemini_api_key)
+                
                 samba_sys_prompt = f"""
 You are the SIS Lead Strategic Innovation Architect and Hierarchographist. 
 Your task is to transform the structural analysis from Phase 1 into a visionary Innovation Report and a perfectly mapped Hierarchographic Network.
@@ -1154,16 +1156,22 @@ MANDATORY JSON STRUCTURE:
   ]
 }}
 """
-                samba_response = samba_client.chat.completions.create(
-                    model=sambanova_id, 
-                    messages=[
-                        {"role": "system", "content": samba_sys_prompt}, 
-                        {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER GOAL: {idea_query}{file_context_str}"}
-                    ],
-                    temperature=0.7, # Preverite, da je tukaj 0.7 za stabilnost grafa
-                    top_p=0.9
+                # Klic Gemini modela z uporabo system_instruction parametra
+                model = genai.GenerativeModel(
+                    model_name=gemini_model_id,
+                    system_instruction=samba_sys_prompt
                 )
-                cerebras_innovation = samba_response.choices[0].message.content
+                
+                # Proženje generiranja
+                response = model.generate_content(
+                    f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER GOAL: {idea_query}{file_context_str}",
+                    generation_config=genai.types.GenerationConfig(
+                        temperature=0.7,
+                        top_p=0.9
+                    )
+                )
+                
+                cerebras_innovation = response.text
 
             # --- 4. PROCESIRANJE REZULTATOV (Z GEOMETRIJSKO LOGIKO) ---
             # Inicializacija g_data, da preprečimo napako 'name not defined'
@@ -1177,7 +1185,7 @@ MANDATORY JSON STRUCTURE:
                 innovation_text = cerebras_innovation
                 json_raw = ""
 
-            full_report = f"## 📚 Phase 1: Foundation (Cerebras)\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations (SambaNova)\n\n{innovation_text}"
+            full_report = f"## 📚 Phase 1: Foundation (Cerebras)\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations (Gemini)\n\n{innovation_text}"
             
             nodes_to_link = []
             final_elements = []
@@ -1295,20 +1303,6 @@ MANDATORY JSON STRUCTURE:
             combined_report_text = f"## 📚 PHASE 1: Structural Foundation\n\n{groq_synthesis}\n\n---\n## 💡 PHASE 2: Strategic Innovation Report\n\n{innovation_text}"
             
             # 5a. GLOBAL SEMANTIC HIGHLIGHTER (Multi-Phase Linking)
-            final_interactive_report = combined_report_text
-            if nodes_to_link:
-                # Sort keywords by length descending to ensure accurate replacement
-                sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
-                for item in sorted_keywords:
-                    lbl = item['label']
-                    if len(lbl) > 2:
-                        g_url = urllib.parse.quote(lbl)
-                        # The link style ensures high visibility
-                        link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
-                        
-                        # Unicode-safe regex to catch terms in both Phase 1 and Phase 2
-                        pattern = re.compile(rf'(?<!\w){re.escape(lbl)}(?!\w)', re.IGNORECASE | re.UNICODE)
-                        # 5a. GLOBAL SEMANTIC HIGHLIGHTER (Multi-Phase Linking)
             final_interactive_report = combined_report_text
             if nodes_to_link:
                 # Razvrstimo ključne besede po dolžini (daljše prej), da se krajše ne vmešavajo
