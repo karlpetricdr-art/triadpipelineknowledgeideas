@@ -871,8 +871,8 @@ with st.sidebar:
     # Izbira za Gemini (Phase 2)
     gemini_model_id = st.selectbox(
     "Gemini Model (Phase 2):", 
-    ["gemini-3.0-pro", "gemini-3.0-flash"], 
-    index=1, 
+    ["gemini-1.5-pro", "gemini-1.5-flash"], 
+    index=0, 
     key="side_gemini_model_select"
 	)
     
@@ -1069,11 +1069,11 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             # Combine the trigger context with the user query
             full_ai_input = f"{active_context}{user_query}{file_context_str}{biblio_context}"
 
-            # Inicializacija povezav (Cerebras - tvoj obstoječi Phase 1)
+            # Inicializacija Cerebras (Phase 1)
             cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
             
-            # --- PHASE 1: CEREBRAS (Structural Logic) ---
-            with st.spinner(f'PHASE 1: Building Architecture ({cerebras_model_id})...'):
+            # --- PHASE 1: CEREBRAS (Logična sinteza) ---
+            with st.spinner('PHASE 1: Building Architecture (Cerebras Logic)...'):
                 p1_response = cerebras_client.chat.completions.create(
                     model=cerebras_model_id,
                     messages=[
@@ -1082,7 +1082,6 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                     ],
                     temperature=0.4
                 )
-                # Rezultat shranimo v isto spremenljivko
                 groq_synthesis = p1_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
 
@@ -1153,7 +1152,7 @@ MANDATORY JSON STRUCTURE:
   ]
 }}
 """
-                # Konfiguracija varnosti za leto 2026
+                # Konfiguracija varnosti
                 safety_settings = [
                     {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
                     {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
@@ -1161,7 +1160,7 @@ MANDATORY JSON STRUCTURE:
                     {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
                 ]
 
-                # Inicializacija Gemini 3 modela
+                # Inicializacija modela
                 model = genai.GenerativeModel(
                     model_name=gemini_model_id,
                     system_instruction=samba_sys_prompt
@@ -1177,15 +1176,13 @@ MANDATORY JSON STRUCTURE:
                     safety_settings=safety_settings
                 )
                 
-                # Varnostno preverjanje odgovora
                 try:
                     cerebras_innovation = response.text
                 except Exception:
                     if response.candidates:
-                        cerebras_innovation = "⚠️ Response generated but partially blocked. Inspecting available candidates..."
-                        cerebras_innovation += "\n" + response.candidates[0].content.parts[0].text
+                        cerebras_innovation = response.candidates[0].content.parts[0].text
                     else:
-                        cerebras_innovation = "❌ Error: Gemini failed to generate a response (Blocked by Safety Filters)."
+                        cerebras_innovation = "❌ Error: Gemini blocked the response due to safety restrictions."
 
             # --- 4. PROCESIRANJE REZULTATOV (Z GEOMETRIJSKO LOGIKO) ---
             g_data = {"nodes": [], "edges": []}
@@ -1198,7 +1195,7 @@ MANDATORY JSON STRUCTURE:
                 innovation_text = cerebras_innovation
                 json_raw = ""
 
-            full_report = f"## 📚 Phase 1: Foundation (Cerebras)\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations (Google Gemini 3)\n\n{innovation_text}"
+            full_report = f"## 📚 Phase 1: Foundation (Cerebras)\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations (Google Gemini)\n\n{innovation_text}"
             
             nodes_to_link = []
             final_elements = []
@@ -1244,25 +1241,27 @@ MANDATORY JSON STRUCTURE:
                         elif rel == "Specialization": e_color = "#000000"
                         elif rel == "Containment": e_color = "#1D3557"
                         else: e_color = "#E63946"
+                            
                     elif rel in ["BT", "NT", "TT"]: e_color = "#1D3557"
                     elif rel == "IN": e_color = "#0077B6"
                     elif rel == "AS": e_color = "#7B2CB1"
                     elif rel == "EQ": e_color = "#F1C40F"
                     elif rel == "RT": e_color = "#2A9D8F"
-                    elif rel in ["AND", "OR", "XOR", "NOT", "IF-THEN"]:
-                        if rel == "AND": e_color = "#00FF00"
-                        elif rel == "OR": e_color = "#00BFFF"
-                        elif rel == "XOR": e_color = "#FF8C00"
-                        elif rel == "NOT": e_color = "#FF0000"
-                        else: e_color = "#FFD700"
+
+                    elif rel == "AND": e_color = "#00FF00"
+                    elif rel == "OR": e_color = "#00BFFF"
+                    elif rel == "XOR": e_color = "#FF8C00"
+                    elif rel == "NOT": e_color = "#FF0000"
+                    elif rel == "IF-THEN": e_color = "#FFD700"
                     else: e_color = "#ADB5BD"
 
                     final_elements.append({
                         "data": {"source": e.get("source"), "target": e.get("target"), "rel_type": rel, "color": e_color}
                     })
 
-            # Avtomatsko povezovanje besedila z grafom (Highlighting)
-            final_markdown = full_report
+            # Highlighting prve pojavitve ključnih besed
+            combined_report_text = f"## 📚 PHASE 1: Structural Foundation\n\n{groq_synthesis}\n\n---\n## 💡 PHASE 2: Strategic Innovation Report\n\n{innovation_text}"
+            final_interactive_report = combined_report_text
             if nodes_to_link:
                 sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
                 for item in sorted_keywords:
@@ -1271,21 +1270,22 @@ MANDATORY JSON STRUCTURE:
                         g_url = urllib.parse.quote(lbl)
                         link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
                         pattern = re.compile(rf'(?<!\w){re.escape(lbl)}(?!\w)', re.IGNORECASE | re.UNICODE)
-                        final_markdown = pattern.sub(link_html, final_markdown, count=1)
+                        final_interactive_report = pattern.sub(link_html, final_interactive_report, count=1)
 
-            # --- 5. FINAL DISPLAY: INTERACTIVE REPORT ---
+            # --- 5b. RENDERING THE INTERACTIVE REPORT ---
             st.subheader("🧱 INTEGRATED HIERARCHOLOGICAL REPORT")
             if biblio_data:
                 with st.expander("📚 EXTRACTED AUTHOR BACKGROUND", expanded=False):
                     st.markdown(biblio_data)
             
-            st.markdown(final_markdown, unsafe_allow_html=True)
+            st.markdown(final_interactive_report, unsafe_allow_html=True)
 
-            # INNOVATION DEEP-DIVE
+            # 5c. INNOVATION DEEP-DIVE
             if final_elements:
                 st.divider()
                 st.markdown("### 🚀 STRATEGIC INNOVATION DEEP-DIVE")
                 innovations = [n['data'] for n in final_elements if n['data'].get('shape') == 'diamond']
+                
                 if innovations:
                     for inv in innovations:
                         g_url = urllib.parse.quote(inv['label'])
@@ -1296,19 +1296,16 @@ MANDATORY JSON STRUCTURE:
                                 <span style="background-color: #fff4ed; color: #fd7e14; padding: 5px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 800; text-transform: uppercase; border: 1px solid #fd7e14;">Strategic Breakthrough</span>
                                 <a href="https://www.google.com/search?q={g_url}" target="_blank" style="text-decoration: none; color: #457b9d; font-size: 0.85em; font-weight: 600;">Technical Search ↗</a>
                             </div>
-                            <h2 style="margin: 0 0 15px 0; color: #1d3557;">{inv['label']}</h2>
+                            <h2 style="margin: 0 0 15px 0; color: #1d3557; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">{inv['label']}</h2>
                             <div style="color: #333; font-size: 1.05em; line-height: 1.7; border-top: 1px solid #f0f0f0; padding-top: 15px;">{detailed_desc}</div>
                         </div>
                         """, unsafe_allow_html=True)
 
-                # LEGEND
-                st.markdown("""<div style="font-size: 0.78em; color: #444; background: #ffffff; padding: 15px; border-radius: 15px; border: 1px solid #eee;">⭐ Goal | ⬢ Domain | 💠 Innovation | △ Process | ▭ Data | ⬣ Rule | ⭔ Bio</div>""", unsafe_allow_html=True)
-
-                # GRAPH
+                # 5e. FINAL GRAPH RENDERING
                 st.subheader(f"🕸️ HYBRID SEMANTIC SYSTEM MAP ({graph_perspective.upper()} VIEW)")
                 render_cytoscape_network(final_elements, layout_type=graph_perspective, container_id=f"cy_{int(time.time())}")
 
-                # GALLERY STATE
+                # SHRANJEVANJE ZA GALERIJO
                 st.session_state.final_graph_elements = final_elements
                 st.session_state.report_ready = True
 
