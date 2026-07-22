@@ -1007,17 +1007,17 @@ with r2c2: sel_models = st.multiselect("5. Structural Models:", list(KNOWLEDGE_B
 with r2c3: goal_context = st.selectbox("6. Strategic Project Goal:", ["Scientific Research", "Problem Solving", "Educational", "Policy Making"])
 
 # =============================================================================
-# 🧬 STRATEGIJA IN EPIPLEXITY FUZIJA (ZDRUŽEN IN POPRAVLJEN BLOK)
+# 🧬 INTEGRIRAN NADZOR: EPIPLEXITY & STRATEGIJA (SAMO ENKRAT!)
 # =============================================================================
 st.divider()
 
-# 1. DEL: EPIPLEXITY ENGINE
+# --- 1. EPIPLEXITY ENGINE ---
 st.markdown("### 🌀 EPIPLEXITY ENGINE")
 epiplexity_active = st.toggle(
     "Activate Epiplexity Protocol", 
     value=True, 
     help="Izklopi za standardno interdisciplinarno mapiranje.",
-    key="master_epiplexity_toggle_v1" # Unikaten ID
+    key="unique_master_toggle_final"
 )
 
 if epiplexity_active:
@@ -1025,7 +1025,7 @@ if epiplexity_active:
         "Set Epiplexity Fusion Depth:",
         options=["Linear", "Integrated", "Synergetic"],
         value="Integrated",
-        key="epiplexity_slider_v1" # Unikaten ID
+        key="unique_fusion_slider_final"
     )
 else:
     st.info("🚫 Epiplexity Engine is SHUT DOWN. AI will use standard logic.")
@@ -1033,14 +1033,13 @@ else:
 
 st.divider()
 
-# 2. DEL: INNOVATION STRATEGY
+# --- 2. INNOVATION STRATEGY ---
 st.markdown("### 🧬 INNOVATION STRATEGY")
 selected_techniques = st.multiselect(
     "Select Strategic Ideation Frameworks (Pick one or more):", 
     options=list(IDEATION_TECHNIQUES.keys()), 
     default=["Six Thinking Hats"],
-    help="AI bo te tehnike uporabil za generiranje rešitev v Phase 2.",
-    key="innovation_multiselect_v1" # Unikaten ID, ki prepreči rdečo napako
+    key="unique_strategy_multiselect_final"
 )
 
 if not selected_techniques:
