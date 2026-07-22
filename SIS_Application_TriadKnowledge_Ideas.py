@@ -1007,16 +1007,16 @@ with r2c2: sel_models = st.multiselect("5. Structural Models:", list(KNOWLEDGE_B
 with r2c3: goal_context = st.selectbox("6. Strategic Project Goal:", ["Scientific Research", "Problem Solving", "Educational", "Policy Making"])
 
 # =============================================================================
-# 🧬 INTEGRIRAN NADZOR: EPIPLEXITY & STRATEGIJA (SAMO ENKRAT!)
+# 🧬 INTEGRIRAN NADZOR: EPIPLEXITY & STRATEGIJA (OČIŠČENA VERZIJA)
 # =============================================================================
 st.divider()
 
-# --- 1. EPIPLEXITY ENGINE ---
+# --- 1. DEL: EPIPLEXITY ENGINE (Nadzor fuzije znanosti) ---
 st.markdown("### 🌀 EPIPLEXITY ENGINE")
 epiplexity_active = st.toggle(
     "Activate Epiplexity Protocol", 
     value=True, 
-    help="Izklopi za standardno interdisciplinarno mapiranje.",
+    help="Izklopi za standardno interdisciplinarno mapiranje brez transdisciplinarne fuzije.",
     key="unique_master_toggle_final"
 )
 
@@ -1033,49 +1033,44 @@ else:
 
 st.divider()
 
-# --- 2. INNOVATION STRATEGY ---
+# --- 2. DEL: INNOVATION STRATEGY (Kreativni miselni okvirji) ---
 st.markdown("### 🧬 INNOVATION STRATEGY")
 selected_techniques = st.multiselect(
     "Select Strategic Ideation Frameworks (Pick one or more):", 
     options=list(IDEATION_TECHNIQUES.keys()), 
     default=["Six Thinking Hats"],
+    help="Izbrani okvirji bodo usmerjali generiranje idej v Phase 2.",
     key="unique_strategy_multiselect_final"
 )
 
 if not selected_techniques:
     st.warning("⚠️ Please select at least one technique for Phase 2.")
 else:
+    # Prikaz opisa aktivnih tehnik
     combined_desc = " | ".join([f"**{t}**: {IDEATION_TECHNIQUES[t]}" for t in selected_techniques])
     st.info(f"**Active Hybrid Strategy:** {combined_desc}")
 
 st.divider()
 
-# --- KEEP: ADVANCED MULTI-IDEATION UI ---
-st.markdown("### 🧬 INNOVATION STRATEGY")
-selected_techniques = st.multiselect(
-    "Select Strategic Ideation Frameworks (Pick one or more):", 
-    options=list(IDEATION_TECHNIQUES.keys()), 
-    default=["Six Thinking Hats"],
-    help="If you select multiple, the AI will synthesize them into a hybrid innovation strategy.",
-    key="ideation_tech_multiselect"  # <--- DODAJ TA KLJUČ
-)
-
-if not selected_techniques:
-    st.warning("⚠️ Please select at least one technique for Phase 2.")
-else:
-    # Build a combined description for the info box
-    combined_desc = " | ".join([f"**{t}**: {IDEATION_TECHNIQUES[t]}" for t in selected_techniques])
-    st.info(f"**Active Hybrid Strategy:** {combined_desc}")
-st.divider()
-
-# DUAL INQUIRY INTERFACE
+# =============================================================================
+# ❓ DUAL INQUIRY INTERFACE (Vnosna polja in podatki)
+# =============================================================================
 col_inq1, col_inq2, col_inq3 = st.columns([2, 2, 1])
+
 with col_inq1:
-    user_query = st.text_area("❓ STEP 1: Research Inquiry (for CEREBRAS):", placeholder="Fact-based Foundational Inquiry...", height=200)
+    user_query = st.text_area(
+        "❓ STEP 1: Research Inquiry (for CEREBRAS):", 
+        placeholder="Fact-based Foundational Inquiry...", 
+        height=200
+    )
+
 with col_inq2:
-    idea_query = st.text_area("💡 STEP 2: Innovation Prompt (for CEREBRAS):", placeholder="Targets for innovative idea production...", height=200)
-# --- POPRAVEK KORAK 1: Branje vsebine datoteke ---
-# --- KORAK 1: File Upload with English Translation ---
+    idea_query = st.text_area(
+        "💡 STEP 2: Innovation Prompt (for CEREBRAS):", 
+        placeholder="Targets for innovative idea production...", 
+        height=200
+    )
+
 with col_inq3:
     uploaded_file = st.file_uploader("📂 ATTACH DATA (.txt only):", type=['txt'], key="final_file_uploader_v2")
     file_content = "" 
@@ -1083,7 +1078,6 @@ with col_inq3:
         try:
             file_content = uploaded_file.read().decode("utf-8")
             st.success(f"📎 {uploaded_file.name} uploaded!")
-            # Prevedeno v angleščino:
             with st.expander("File Preview"):
                 st.text(file_content[:300] + "...")
         except Exception as e:
