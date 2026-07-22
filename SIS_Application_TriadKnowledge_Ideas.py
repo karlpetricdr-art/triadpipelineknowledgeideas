@@ -230,19 +230,60 @@ SVG_3D_RELIEF = """
 # =============================================================================
 
 def render_cytoscape_network(elements, layout_type="organic", container_id="cy_canvas"):
+    """
+    ULTRA-SYNERGY Multi-Perspective Hierarhografski motor.
+    Vključuje: ISO 25964 Thesaurus, UML 2.5 Standard, Petrič HA Logiko, Logic Gates in EX fuzijo.
+    """
+    
+    # Mapiranje Python izbire v Cytoscape JS konfiguracije (POLNE KONFIGURACIJE)
     layout_configs = {
-        "organic": "{ name: 'cose', idealEdgeLength: 150, nodeOverlap: 60, refresh: 20, fit: true, padding: 50, nodeRepulsion: 1200000 }",
-        "hierarchical": "{ name: 'breadthfirst', directed: true, padding: 50, spacingFactor: 1.75 }",
-        "circular": "{ name: 'circle', padding: 50, radius: 400 }",
-        "concentric": "{ name: 'concentric', minNodeSpacing: 60, padding: 50 }",
-        "grid": "{ name: 'grid', rows: 5, padding: 50 }"
+        "organic": """{ 
+            name: 'cose', 
+            idealEdgeLength: 120, 
+            nodeOverlap: 50, 
+            refresh: 20, 
+            fit: true, 
+            padding: 50, 
+            nodeRepulsion: 1000000,
+            edgeElasticity: 100,
+            nestingFactor: 1.2,
+            numIter: 1500
+        }""",
+        "hierarchical": """{ 
+            name: 'breadthfirst', 
+            directed: true, 
+            padding: 50, 
+            circle: false, 
+            spacingFactor: 1.75,
+            maximal: true
+        }""",
+        "circular": """{ 
+            name: 'circle', 
+            padding: 50, 
+            radius: 400,
+            spacingFactor: 0.8
+        }""",
+        "concentric": """{ 
+            name: 'concentric', 
+            minNodeSpacing: 60, 
+            concentric: function(node){ return node.data('size'); },
+            levelWidth: function(nodes){ return 10; },
+            padding: 50
+        }""",
+        "grid": """{ 
+            name: 'grid', 
+            rows: 5, 
+            padding: 50, 
+            spacingFactor: 1.2 
+        }"""
     }
+
     selected_layout = layout_configs.get(layout_type, layout_configs["organic"])
 
     cyto_html = f"""
     <div style="position: relative; width: 100%;">
-        <button id="save_btn" style="position: absolute; top: 15px; right: 15px; z-index: 1000; padding: 10px 15px; background: #1d3557; color: white; border: none; border-radius: 8px; cursor: pointer; font-family: sans-serif; font-size: 12px; font-weight: 800;">💾 EXPORT PNG</button>
-        <div id="{container_id}" style="width: 100%; height: 850px; background: #ffffff; border-radius: 20px; border: 1px solid #e0e0e0;"></div>
+        <button id="save_btn" style="position: absolute; top: 15px; right: 15px; z-index: 1000; padding: 10px 15px; background: #1d3557; color: white; border: none; border-radius: 8px; cursor: pointer; font-family: sans-serif; font-size: 12px; font-weight: 800; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">💾 EXPORT {layout_type.upper()} PNG</button>
+        <div id="{container_id}" style="width: 100%; height: 850px; background: #ffffff; border-radius: 20px; border: 1px solid #e0e0e0; box-shadow: 0 10px 40px rgba(0,0,0,0.08);"></div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
     <script>
@@ -254,51 +295,95 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
                     {{
                         selector: 'node',
                         style: {{
-                            'label': 'data(label)', 'text-valign': 'center', 'text-halign': 'center',
-                            'color': '#1d3557', 'background-color': 'data(color)',
-                            'width': 'data(size)', 'height': 'data(size)', 'shape': 'data(shape)',
-                            'font-size': '12px', 'font-weight': 'bold', 'text-wrap': 'wrap', 'text-max-width': '80px',
-                            'border-width': 3, 'border-color': '#ffffff'
+                            'label': 'data(label)',
+                            'text-valign': 'center',
+                            'text-halign': 'center',
+                            'color': '#1d3557',
+                            'background-color': 'data(color)',
+                            'width': 'data(size)',
+                            'height': 'data(size)',
+                            'shape': 'data(shape)',
+                            'font-size': '12px',
+                            'font-weight': 'bold',
+                            'text-wrap': 'wrap',
+                            'text-max-width': '80px',
+                            'border-width': 3,
+                            'border-color': '#ffffff',
+                            'border-opacity': 0.8,
+                            'text-outline-color': '#ffffff',
+                            'text-outline-width': 2,
+                            'box-shadow': '0 4px 10px rgba(0,0,0,0.2)'
                         }}
                     }},
                     {{
                         selector: 'edge',
                         style: {{
-                            'width': 2, 'line-color': '#adb5bd', 'label': 'data(rel_type)',
-                            'font-size': '10px', 'font-weight': 'bold', 'color': '#2a9d8f',
-                            'curve-style': 'bezier', 'target-arrow-shape': 'vee',
-                            'text-background-opacity': 1, 'text-background-color': '#ffffff', 'text-background-padding': '3px'
+                            'width': 2,
+                            'line-color': 'data(color)',
+                            'label': 'data(rel_type)',
+                            'font-size': '9px',
+                            'font-weight': 'bold',
+                            'color': '#2a9d8f',
+                            'curve-style': 'unbundled-bezier',
+                            'control-point-step-size': 40,
+                            'target-arrow-color': 'data(color)',
+                            'target-arrow-shape': 'vee',
+                            'text-background-opacity': 1,
+                            'text-background-color': '#ffffff',
+                            'text-background-padding': '3px',
+                            'text-background-shape': 'roundrectangle',
+                            'edge-distances': 'node-position',
+                            'opacity': 0.8
                         }}
                     }},
-                    /* --- ISO 25964 THESAURUS (BOGATA DEDNOST & ASOCIACIJA) --- */
+                    
+                    /* --- 1. ISO 25964 THESAURUS LOGIC --- */
                     {{ selector: 'edge[rel_type="TT"]', style: {{ 'width': 8, 'line-color': '#1d3557', 'target-arrow-shape': 'triangle', 'target-arrow-scale': 1.6 }} }},
                     {{ selector: 'edge[rel_type="BT"]', style: {{ 'width': 5, 'line-color': '#1d3557', 'target-arrow-shape': 'triangle' }} }},
                     {{ selector: 'edge[rel_type="NT"]', style: {{ 'width': 4, 'line-color': '#1d3557', 'target-arrow-shape': 'vee' }} }},
                     {{ selector: 'edge[rel_type="IN"]', style: {{ 'width': 3, 'line-color': '#0077b6', 'line-style': 'dotted', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'filled' }} }},
                     {{ selector: 'edge[rel_type="RT"]', style: {{ 'width': 2, 'line-color': '#2a9d8f', 'line-style': 'dotted', 'target-arrow-shape': 'none' }} }},
                     {{ selector: 'edge[rel_type="AS"]', style: {{ 'width': 3, 'line-color': '#7b2cb1', 'line-style': 'dashed', 'target-arrow-shape': 'vee' }} }},
-                    {{ selector: 'edge[rel_type="EQ"]', style: {{ 'width': 5, 'line-color': '#f1c40f', 'line-style': 'double' }} }},
+                    {{ selector: 'edge[rel_type="EQ"]', style: {{ 'width': 6, 'line-color': '#f1c40f', 'line-style': 'double', 'target-arrow-shape': 'none' }} }},
 
-                    /* --- FULL UML 2.5 STRUCTURAL --- */
+                    /* --- 2. UML 2.5 STRUCTURAL LOGIC --- */
                     {{ selector: 'edge[rel_type="Generalization"]', style: {{ 'width': 4, 'line-color': '#1d3557', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' }} }},
-                    {{ selector: 'edge[rel_type="Specialization"]', style: {{ 'width': 3, 'line-style': 'dashed', 'line-color': '#000', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'filled' }} }},
-                    {{ selector: 'edge[rel_type="Dependency"]', style: {{ 'width': 2, 'line-style': 'dashed', 'line-color': '#457b9d', 'target-arrow-shape': 'vee' }} }},
-                    {{ selector: 'edge[rel_type="Composition"]', style: {{ 'width': 5, 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'filled' }} }},
-                    {{ selector: 'edge[rel_type="Aggregation"]', style: {{ 'width': 4, 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'hollow' }} }},
-                    {{ selector: 'edge[rel_type="Containment"]', style: {{ 'width': 5, 'line-color': '#1d3557', 'target-arrow-shape': 'circle', 'target-arrow-fill': 'hollow' }} }},
-                    {{ selector: 'edge[rel_type="Conflict"]', style: {{ 'width': 6, 'line-color': '#b91d1d', 'target-arrow-shape': 'triangle-cross', 'source-arrow-shape': 'triangle-cross' }} }},
+                    {{ selector: 'edge[rel_type="Specialization"]', style: {{ 'width': 4, 'line-style': 'dashed', 'line-color': '#000', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'filled' }} }},
+                    {{ selector: 'edge[rel_type="Realization"]', style: {{ 'width': 2, 'line-style': 'dashed', 'line-color': '#1d3557', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' }} }},
+                    {{ selector: 'edge[rel_type="Composition"]', style: {{ 'width': 6, 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'filled', 'source-arrow-color': '#1d3557', 'target-arrow-shape': 'none' }} }},
+                    {{ selector: 'edge[rel_type="Aggregation"]', style: {{ 'width': 4, 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'hollow', 'source-arrow-color': '#1d3557', 'target-arrow-shape': 'none' }} }},
+                    {{ selector: 'edge[rel_type="Dependency"]', style: {{ 'width': 3, 'line-style': 'dashed', 'line-color': '#457b9d', 'target-arrow-shape': 'vee' }} }},
+                    {{ selector: 'edge[rel_type="Conflict"]', style: {{ 'width': 8, 'line-color': '#b91d1d', 'line-style': 'solid', 'target-arrow-shape': 'triangle-cross', 'source-arrow-shape': 'triangle-cross', 'target-arrow-color': '#b91d1d', 'source-arrow-color': '#b91d1d' }} }},
+                    {{ selector: 'edge[rel_type="Containment"]', style: {{ 'width': 6, 'line-color': '#1d3557', 'target-arrow-shape': 'circle', 'target-arrow-fill': 'hollow', 'target-arrow-color': '#1d3557' }} }},
 
-                    /* --- HIERARCHICAL-ASSOCIATIVE & LOGIC --- */
-                    {{ selector: 'edge[rel_type="HA"]', style: {{ 'width': 6, 'line-color': '#7b2cb1', 'line-style': 'dashed', 'target-arrow-shape': 'triangle-tee', 'source-arrow-shape': 'circle' }} }},
-                    {{ selector: 'edge[rel_type="AND"]', style: {{ 'width': 5, 'line-color': '#00FF00' }} }},
-                    {{ selector: 'edge[rel_type="IF-THEN"]', style: {{ 'width': 4, 'line-color': '#FFD700', 'target-arrow-shape': 'triangle', 'arrow-scale': 1.4 }} }},
+                    /* --- 3. PETRIČ HIERARCHICAL-ASSOCIATIVE (HA) --- */
+                    {{ selector: 'edge[rel_type="HA"]', style: {{ 'width': 6, 'line-color': '#7b2cb1', 'line-style': 'dashed', 'target-arrow-shape': 'triangle-tee', 'source-arrow-shape': 'circle', 'source-arrow-fill': 'hollow', 'arrow-scale': 1.2 }} }},
+                    
+                    /* --- 4. LOGIC GATES (DECISION LOGIC) --- */
+                    {{ selector: 'edge[rel_type="AND"]', style: {{ 'width': 6, 'line-color': '#00FF00', 'target-arrow-color': '#00FF00', 'target-arrow-shape': 'triangle' }} }},
+                    {{ selector: 'edge[rel_type="OR"]', style: {{ 'width': 4, 'line-color': '#00BFFF', 'line-style': 'dashed', 'target-arrow-color': '#00BFFF', 'target-arrow-shape': 'vee' }} }},
+                    {{ selector: 'edge[rel_type="XOR"]', style: {{ 'width': 5, 'line-color': '#FF8C00', 'line-style': 'double', 'target-arrow-color': '#FF8C00', 'target-arrow-shape': 'diamond' }} }},
+                    {{ selector: 'edge[rel_type="NOT"]', style: {{ 'width': 5, 'line-color': '#FF0000', 'line-style': 'dashed', 'target-arrow-color': '#FF0000', 'target-arrow-shape': 'tee' }} }},
+                    {{ selector: 'edge[rel_type="IF-THEN"]', style: {{ 'width': 5, 'line-color': '#FFD700', 'target-arrow-color': '#FFD700', 'target-arrow-shape': 'triangle', 'arrow-scale': 1.5 }} }},
 
-                    /* --- EPIPLEXITY --- */
-                    {{ selector: 'edge[rel_type="EX"]', style: {{ 'width': 8, 'line-color': '#ff00ff', 'line-style': 'dashed', 'target-arrow-shape': 'star', 'arrow-scale': 1.8 }} }}
+                    /* --- 5. EPIPLEXITY (TRANS-CAGE FUSION) --- */
+                    {{ selector: 'edge[rel_type="EX"]', style: {{ 'width': 9, 'line-color': '#ff00ff', 'line-style': 'dashed', 'target-arrow-shape': 'star', 'target-arrow-color': '#ff00ff', 'arrow-scale': 2.0, 'opacity': 1 }} }},
+
+                    /* Node Highlighting for Goals & Innovations */
+                    {{ selector: 'node[shape="star"]', style: {{ 'font-size': '16px', 'width': 140, 'height': 140, 'border-width': 6, 'border-color': '#FFD700' }} }},
+                    {{ selector: 'node[shape="diamond"]', style: {{ 'border-width': 4, 'border-color': '#fd7e14', 'width': 110, 'height': 110 }} }}
                 ],
                 layout: {selected_layout}
             }});
-            /* ... save button logic ... */
+
+            document.getElementById('save_btn').addEventListener('click', function() {{
+                var png64 = cy.png({{full: true, bg: 'white', scale: 3}});
+                var link = document.createElement('a');
+                var timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+                link.href = png64; 
+                link.download = 'sis_universal_graph_' + timestamp + '.png';
+                link.click();
+            }});
         }});
     </script>
     """
@@ -1101,29 +1186,30 @@ Do NOT use 'EX' (Epiplexity Crossover) relations. Use standard 'BT', 'NT', or 'A
 You are the SIS Lead Strategic Innovation Architect and Hierarchographist. 
 You must synthesize the foundation using a RIGID TRI-LAYER LOGIC system.
 
-### MANDATORY RELATIONSHIP MATRIX (STRICT)
+### MANDATORY RELATIONSHIP LOGIC MATRIX (STRICT)
 
 1. ISO 25964 THESAURUS (Inheritance & Association):
-   - 'TT' (Top Term): System Root.
-   - 'BT' (Broader Term): Direct Hierarchical Parent.
-   - 'NT' (Narrower Term): Direct Hierarchical Child.
-   - 'IN' (Instance): A specific unique instance or individual entity of a class.
-   - 'RT' (Related Term): Peer-to-peer lateral association.
-   - 'AS' (Associative): Generic non-hierarchical connection.
-   - 'EQ' (Equivalence): Absolute synonym or identical concept.
+   - 'TT' (Top Term): Root.
+   - 'BT' (Broader Term): Parent.
+   - 'NT' (Narrower Term): Child.
+   - 'IN' (Instance): Unique entity example.
+   - 'RT' (Related Term): Peer association.
+   - 'AS' (Associative): Generic link.
+   - 'EQ' (Equivalence): Absolute synonym.
 
 2. UML 2.5 ARCHITECTURAL:
-   - 'Generalization': 'Is-a' inheritance (renders hollow triangle).
-   - 'Specialization': Deductive refinement (renders filled triangle, dashed).
-   - 'Dependency': Semantic or functional requirement (renders dashed vee).
-   - 'Composition': Strong life-cycle ownership (renders filled diamond).
-   - 'Aggregation': Weak collection association (renders hollow diamond).
-   - 'Containment': Elements trapped in a 'Scientific Cage'.
-   - 'Conflict': Systemic friction (renders red crosses).
+   - 'Generalization': 'Is-a' inheritance.
+   - 'Specialization': Deductive refinement (dashed line).
+   - 'Realization': Implementation of goal.
+   - 'Composition': Strong part-of (ownership).
+   - 'Aggregation': Weak part-of (collection).
+   - 'Dependency': Semantic requirement.
+   - 'Containment': Elements inside a 'Scientific Cage'.
+   - 'Conflict': Systemic friction (thick red cross).
 
-3. PETRIČ HYBRID & LOGIC:
+3. SIS / PETRIČ LOGIC:
    - 'HA' (Hierarchical-Associative): THE HYBRID CORE.
-   - 'AND', 'OR', 'XOR', 'IF-THEN'.
+   - 'AND', 'OR', 'XOR', 'NOT', 'IF-THEN'.
    - 'EX': (Only if Epiplexity is ON) Transdisciplinary fusion peaks.
 
 {protocol_snippet}
@@ -1199,26 +1285,30 @@ You must synthesize the foundation using a RIGID TRI-LAYER LOGIC system.
                         "data": {"id": nid, "label": lbl, "color": n_color, "shape": n_shape, "size": n_size, "description": n.get("description", "Detail breakdown in report.")}
                     })
 
-                # --- PROCESIRANJE POVEZAV (ULTRA-RICH MAPPING) ---
+                # --- PROCESIRANJE POVEZAV (POPOLNI SPEKTER) ---
                 for e in g_data.get("edges", []):
                     rel = e.get("rel_type", "Association")
                     
-                    if rel in ["TT", "BT", "NT", "Generalization", "Specialization", "Containment"]:
+                    if rel in ["TT", "BT", "NT", "Generalization", "Specialization", "Containment", "Realization"]:
                         e_color = "#1D3557" # Temno modra (Hierarhija)
                     elif rel in ["RT", "AS", "Dependency", "Aggregation"]:
-                        e_color = "#2A9D8F" # Zelena (Asociacija/Odvisnost)
+                        e_color = "#2A9D8F" # Zelena (Asociacija)
                     elif rel in ["IN", "Composition"]:
-                        e_color = "#0077B6" # Modra (Instanca/Struktura)
+                        e_color = "#0077B6" # Srednje modra (Struktura)
                     elif rel == "HA":
-                        e_color = "#7B2CB1" # Vijolična (Hibridna)
+                        e_color = "#7B2CB1" # Vijolična (Hibrid)
                     elif rel == "EQ":
                         e_color = "#F1C40F" # Rumena (Ekvivalenca)
                     elif rel == "Conflict":
-                        e_color = "#B91D1D" # Rdeča (Spor)
+                        e_color = "#B91D1D" # Temno rdeča (Konflikt)
                     elif rel == "EX":
-                        e_color = "#FF00FF" # Magenta (Epiplexity)
-                    elif rel in ["AND", "IF-THEN"]:
-                        e_color = "#00FF00" if rel == "AND" else "#FFD700"
+                        e_color = "#FF00FF" # Neon Magenta (Epiplexity)
+                    elif rel == "AND":
+                        e_color = "#00FF00"
+                    elif rel == "IF-THEN":
+                        e_color = "#FFD700"
+                    elif rel == "NOT":
+                        e_color = "#FF0000"
                     else:
                         e_color = "#ADB5BD"
 
