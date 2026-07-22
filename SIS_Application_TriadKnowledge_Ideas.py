@@ -231,11 +231,10 @@ SVG_3D_RELIEF = """
 
 def render_cytoscape_network(elements, layout_type="organic", container_id="cy_canvas"):
     """
-    Univerzalni Hierarhografski motor (Multi-Perspective Engine).
-    Vključuje polno UML notacijo, ISO Thesaurus, Logične konektorje in Epiplexity EX fuzijo.
+    ULTRA-SYNERGY Hierarhografski motor.
+    Vključuje: ISO 25964 Thesaurus, Full UML 2.5, Logic Gates in Epiplexity EX.
     """
     
-    # Mapiranje Python izbire v Cytoscape JS konfiguracije
     layout_configs = {
         "organic": "{ name: 'cose', idealEdgeLength: 150, nodeOverlap: 50, refresh: 20, fit: true, padding: 50, nodeRepulsion: 1000000 }",
         "hierarchical": "{ name: 'breadthfirst', directed: true, padding: 50, spacingFactor: 1.75 }",
@@ -286,6 +285,7 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
                             'target-arrow-color': '#adb5bd',
                             'label': 'data(rel_type)',
                             'font-size': '10px',
+                            'font-weight': 'bold',
                             'color': '#2a9d8f',
                             'text-background-opacity': 1,
                             'text-background-color': '#ffffff',
@@ -293,26 +293,37 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
                             'opacity': 0.8
                         }}
                     }},
-                    /* --- UML NOTACIJA (Bogati simboli) --- */
-                    {{ selector: 'edge[rel_type="Generalization"]', style: {{ 'width': 3, 'line-color': '#1d3557', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow', 'target-arrow-color': '#1d3557' }} }},
+                    
+                    /* --- ISO 25964 THESAURUS LOGIC --- */
+                    {{ selector: 'edge[rel_type="TT"]', style: {{ 'width': 7, 'line-color': '#1d3557', 'target-arrow-shape': 'triangle' }} }},
+                    {{ selector: 'edge[rel_type="BT"]', style: {{ 'width': 4, 'line-color': '#1d3557', 'target-arrow-shape': 'triangle' }} }},
+                    {{ selector: 'edge[rel_type="NT"]', style: {{ 'width': 4, 'line-color': '#1d3557', 'target-arrow-shape': 'vee' }} }},
+                    {{ selector: 'edge[rel_type="RT"]', style: {{ 'width': 2, 'line-color': '#2a9d8f', 'line-style': 'dotted', 'target-arrow-shape': 'none' }} }},
+                    {{ selector: 'edge[rel_type="EQ"]', style: {{ 'width': 5, 'line-color': '#f1c40f', 'line-style': 'double', 'target-arrow-shape': 'none' }} }},
+                    {{ selector: 'edge[rel_type="AS"]', style: {{ 'width': 3, 'line-color': '#7b2cb1', 'line-style': 'dashed', 'target-arrow-shape': 'vee' }} }},
+                    {{ selector: 'edge[rel_type="IN"]', style: {{ 'width': 3, 'line-color': '#0077b6', 'line-style': 'dotted', 'target-arrow-shape': 'triangle' }} }},
+
+                    /* --- UML 2.5 STRUCTURAL --- */
+                    {{ selector: 'edge[rel_type="Generalization"]', style: {{ 'width': 3, 'line-color': '#1d3557', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' }} }},
                     {{ selector: 'edge[rel_type="Realization"]', style: {{ 'width': 2, 'line-style': 'dashed', 'line-color': '#1d3557', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' }} }},
                     {{ selector: 'edge[rel_type="Composition"]', style: {{ 'width': 4, 'line-color': '#1d3557', 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'filled', 'source-arrow-color': '#1d3557', 'target-arrow-shape': 'none' }} }},
-                    {{ selector: 'edge[rel_type="Aggregation"]', style: {{ 'width': 3, 'line-color': '#457b9d', 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'hollow', 'source-arrow-color': '#457b9d' }} }},
-                    {{ selector: 'edge[rel_type="Dependency"]', style: {{ 'line-style': 'dashed', 'target-arrow-shape': 'vee' }} }},
-                    {{ selector: 'edge[rel_type="Conflict"]', style: {{ 'width': 6, 'line-color': '#b91d1d', 'line-style': 'solid', 'target-arrow-shape': 'triangle-cross', 'source-arrow-shape': 'triangle-cross', 'target-arrow-color': '#b91d1d', 'source-arrow-color': '#b91d1d' }} }},
-                    {{ selector: 'edge[rel_type="Specialization"]', style: {{ 'line-style': 'dashed', 'line-color': '#000000', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'filled', 'target-arrow-color': '#000000', 'width': 2 }} }},
+                    {{ selector: 'edge[rel_type="Aggregation"]', style: {{ 'width': 3, 'line-color': '#1d3557', 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'hollow', 'source-arrow-color': '#1d3557', 'target-arrow-shape': 'none' }} }},
+                    {{ selector: 'edge[rel_type="Conflict"]', style: {{ 'width': 6, 'line-color': '#b91d1d', 'target-arrow-shape': 'triangle-cross', 'source-arrow-shape': 'triangle-cross', 'target-arrow-color': '#b91d1d', 'source-arrow-color': '#b91d1d' }} }},
                     {{ selector: 'edge[rel_type="Containment"]', style: {{ 'width': 5, 'line-color': '#1d3557', 'target-arrow-shape': 'circle', 'target-arrow-fill': 'hollow', 'target-arrow-color': '#1d3557' }} }},
-                    
-                    /* --- LOGIČNI KONEKTORJI --- */
-                    {{ selector: 'edge[rel_type="AND"]', style: {{ 'width': 5, 'line-color': '#2ecc71', 'target-arrow-shape': 'triangle', 'target-arrow-color': '#2ecc71' }} }},
-                    {{ selector: 'edge[rel_type="IF-THEN"]', style: {{ 'width': 4, 'line-color': '#f1c40f', 'target-arrow-shape': 'triangle', 'arrow-scale': 1.5, 'target-arrow-color': '#f1c40f' }} }},
-                    {{ selector: 'edge[rel_type="XOR"]', style: {{ 'width': 4, 'line-color': '#e67e22', 'line-style': 'double', 'target-arrow-shape': 'diamond', 'target-arrow-color': '#e67e22' }} }},
-                    
-                    /* --- EPIPLEXITY (Neon fuzija) --- */
-                    {{ selector: 'edge[rel_type="EX"]', style: {{ 'width': 8, 'line-color': '#ff00ff', 'line-style': 'dashed', 'target-arrow-shape': 'star', 'target-arrow-color': '#ff00ff', 'arrow-scale': 1.6, 'opacity': 1 }} }},
+                    {{ selector: 'edge[rel_type="Specialization"]', style: {{ 'width': 3, 'line-style': 'dashed', 'line-color': '#000', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'filled' }} }},
 
-                    /* Poudarek na zvezdah (Macro cilji) */
-                    {{ selector: 'node[shape="star"]', style: {{ 'font-size': '16px', 'width': 130, 'height': 130, 'border-width': 5, 'border-color': '#FFD700' }} }}
+                    /* --- DECISION & FLOW LOGIC --- */
+                    {{ selector: 'edge[rel_type="AND"]', style: {{ 'width': 5, 'line-color': '#2ecc71', 'target-arrow-shape': 'triangle' }} }},
+                    {{ selector: 'edge[rel_type="OR"]', style: {{ 'width': 3, 'line-color': '#3498db', 'line-style': 'dashed', 'target-arrow-shape': 'vee' }} }},
+                    {{ selector: 'edge[rel_type="XOR"]', style: {{ 'width': 4, 'line-color': '#e67e22', 'line-style': 'double', 'target-arrow-shape': 'diamond' }} }},
+                    {{ selector: 'edge[rel_type="IF-THEN"]', style: {{ 'width': 4, 'line-color': '#f1c40f', 'target-arrow-shape': 'triangle', 'arrow-scale': 1.4 }} }},
+
+                    /* --- EPIPLEXITY (Neon Innovation) --- */
+                    {{ selector: 'edge[rel_type="EX"]', style: {{ 'width': 8, 'line-color': '#ff00ff', 'line-style': 'dashed', 'target-arrow-shape': 'star', 'target-arrow-color': '#ff00ff', 'arrow-scale': 1.8, 'opacity': 1 }} }},
+
+                    /* Node Specializations */
+                    {{ selector: 'node[shape="star"]', style: {{ 'font-size': '16px', 'width': 140, 'height': 140, 'border-width': 6, 'border-color': '#FFD700' }} }},
+                    {{ selector: 'node[shape="diamond"]', style: {{ 'border-width': 4, 'border-color': '#fd7e14' }} }}
                 ],
                 layout: {selected_layout}
             }});
@@ -330,9 +341,7 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
     """
     components.html(cyto_html, height=900)
 
-
 def fetch_author_bibliographies(author_input):
-    """Pridobi bibliografijo preko ORCID API-ja."""
     if not author_input: return ""
     author_list = [a.strip() for a in author_input.split(",")]
     comprehensive_biblio = ""
@@ -344,14 +353,14 @@ def fetch_author_bibliographies(author_input):
                 orcid_id = s_res['result'][0]['orcid-identifier']['path']
                 r_res = requests.get(f"https://pub.orcid.org/v3.0/{orcid_id}/record", headers=headers, timeout=6).json()
                 works = r_res.get('activities-summary', {}).get('works', {}).get('group', [])
-                comprehensive_biblio += f"#### 🆔 ORCID: {auth.upper()} ({orcid_id})\n"
+                comprehensive_biblio += f"#### 🆔 ORCID: {auth.upper()} ({orcid_id})\\n"
                 for work in works[:12]:
                     summary = work.get('work-summary', [{}])[0]
                     title = summary.get('title', {}).get('title', {}).get('value', 'Unknown Title')
                     pub_date = summary.get('publication-date')
                     year = pub_date.get('year', {}).get('value', 'n.d.') if pub_date else 'n.d.'
-                    comprehensive_biblio += f"- **{year}**: {title}\n"
-                comprehensive_biblio += "\n---\n"
+                    comprehensive_biblio += f"- **{year}**: {title}\\n"
+                comprehensive_biblio += "\\n---\\n"
         except: pass
     return comprehensive_biblio
 
