@@ -1015,15 +1015,41 @@ selected_techniques = st.multiselect(
     default=["Six Thinking Hats"],
     help="If you select multiple, the AI will synthesize them into a hybrid innovation strategy."
 )
-# --- NEW: EPIPLEXITY ENGINE CONTROL ---
+# --- NEW: EPIPLEXITY ENGINE CONTROL WITH SHUT DOWN ---
 st.divider()
 st.markdown("### 🌀 EPIPLEXITY ENGINE")
-epiplexity_intensity = st.select_slider(
-    "Set Epiplexity Fusion Depth:",
-    options=["Linear", "Integrated", "Synergetic"],
-    value="Integrated",
-    help="Determines how aggressively the AI should force disparate sciences to merge into a single innovative node."
+
+# 1. THE MASTER TOGGLE (Shut down button)
+epiplexity_active = st.toggle(
+    "Activate Epiplexity Protocol", 
+    value=True, 
+    help="Switch off to return to standard interdisciplinary mapping and shut down transdisciplinary fusion logic."
 )
+
+if epiplexity_active:
+    # 2. THE SLIDER (Only visible if engine is ON)
+    epiplexity_intensity = st.select_slider(
+        "Set Epiplexity Fusion Depth:",
+        options=["Linear", "Integrated", "Synergetic"],
+        value="Integrated",
+        help="Determines how aggressively the AI should force disparate sciences to merge into a single innovative node."
+    )
+else:
+    # 3. FALLBACK (Prevents code from crashing later)
+    st.info("🚫 Epiplexity Engine is SHUT DOWN. AI will use standard logic.")
+    epiplexity_intensity = "None"
+
+st.divider()
+
+# --- KEEP: ADVANCED MULTI-IDEATION UI ---
+st.markdown("### 🧬 INNOVATION STRATEGY")
+selected_techniques = st.multiselect(
+    "Select Strategic Ideation Frameworks (Pick one or more):", 
+    options=list(IDEATION_TECHNIQUES.keys()), 
+    default=["Six Thinking Hats"],
+    help="If you select multiple, the AI will synthesize them into a hybrid innovation strategy."
+)
+
 if not selected_techniques:
     st.warning("⚠️ Please select at least one technique for Phase 2.")
 else:
@@ -1110,52 +1136,69 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 st.session_state.groq_synthesis = groq_synthesis
 
             # --- 3. PHASE 2: CEREBRAS (Innovation - npr. GEMMA-4-31B) ---
-            with st.spinner(f'PHASE 2: Generating radical innovations with {p2_model}...'):
+            with st.spinner(f'PHASE 2: Generating innovations with {p2_model}...'):
+                
+                # --- PRIPRAVA POGOJNEGA PROTOKOLA ---
+                if epiplexity_active:
+                    # Aktiviran Epiplexity (Transdisciplinarna fuzija)
+                    epiplexity_logic_text = EPIPLEXITY_FRAMEWORK['logic_levels'].get(
+                        epiplexity_intensity + ' (Low)' if epiplexity_intensity == 'Linear' else 
+                        epiplexity_intensity + ' (Medium)' if epiplexity_intensity == 'Integrated' else 
+                        epiplexity_intensity + ' (High)', "Integrated Logic"
+                    )
+                    
+                    protocol_snippet = f"""
+### EPIPLEXITY PROTOCOL ACTIVATED ###
+Fusion Depth: {epiplexity_intensity}
+Logic: {epiplexity_logic_text}
+
+Mandatory Task: Identify 'Epiplexity Peaks'—points where at least three of the selected science fields ({', '.join(sel_sciences)}) intersect. 
+Use 'EX' (Epiplexity Crossover) relations for these high-energy fusion links.
+"""
+                    ex_logic_matrix = "D) EPIPLEXITY LOGIC: 'EX' (Epiplexity Crossover): Use for high-energy fusion."
+                    json_edge_example = "EX"
+                else:
+                    # Izklopljen Epiplexity (Standardna znanost)
+                    protocol_snippet = """
+### STANDARD SCIENTIFIC PROTOCOL ###
+Focus: Standard interdisciplinary mapping. 
+Constraint: Maintain clear boundaries between scientific disciplines. 
+Do NOT use 'EX' (Epiplexity Crossover) relations. Use standard 'BT', 'NT', or 'AS' relations only.
+"""
+                    ex_logic_matrix = ""
+                    json_edge_example = "AS"
+
+                # --- IZGRADNJA SISTEMSKEGA NAVODILA ---
                 samba_sys_prompt = f"""
 You are the SIS Lead Strategic Innovation Architect and Hierarchographist. 
 Your task is to transform the structural analysis from Phase 1 into a visionary Innovation Report and a perfectly mapped Hierarchographic Network.
 
-### EPIPLEXITY PROTOCOL ACTIVATED ###
-Fusion Depth: {epiplexity_intensity}
-Logic: {EPIPLEXITY_FRAMEWORK['logic_levels'].get(epiplexity_intensity + ' (Low)' if epiplexity_intensity == 'Linear' else epiplexity_intensity + ' (Medium)' if epiplexity_intensity == 'Integrated' else epiplexity_intensity + ' (High)')}
-
-Mandatory Task: Identify 'Epiplexity Peaks'—points where at least three of the selected science fields ({', '.join(sel_sciences)}) intersect. 
-For 'Synergetic' depth, you MUST create 'Epiplexic Core' nodes (diamond shape) that represent the successful escape from a 'Scientific Cage' through transdisciplinary fusion.
+{protocol_snippet}
 
 ### 1. REPORT REQUIREMENTS
 Write a "STRATEGIC INNOVATION REPORT". 
 - For each innovation, provide a technical title, a detailed 3-4 sentence strategic explanation, and its cross-disciplinary impact.
 - Use professional terminology.
-- IMPORTANT: Inside the JSON section, do NOT use double quotes (") within descriptions. Use single quotes (') instead to ensure the JSON structure remains valid.
+- IMPORTANT: Inside the JSON section, do NOT use double quotes (") within descriptions. Use single quotes (') instead.
 
 ### 2. RELATIONSHIP LOGIC MATRIX (MANDATORY FOR JSON)
-You must interconnect nodes using the following standards:
-
 A) THESAURUS LOGIC (ISO 25964): TT, BT, NT, RT, EQ, AS, IN.
 B) UML LOGIC: Generalization, Specialization, Containment, Realization, Composition, Aggregation, Dependency, Conflict.
 C) LOGICAL CONNECTORS: AND, OR, XOR, NOT, IF-THEN.
-D) EPIPLEXITY LOGIC: 
-- 'EX' (Epiplexity Crossover): Use this specifically for links that represent high-energy fusion or bridge-building between disparate sciences.
+{ex_logic_matrix}
 
 ### 3. MANDATORY GEOMETRY (SHAPES)
-- 'star': Ultimate Goals / Macro-Vision.
-- 'hexagon': Science Fields / Academic Domains.
-- 'diamond': Strategic Innovations / New Breakthroughs.
-- 'triangle': Active Processes / Methods / Vectors.
-- 'octagon': Constraints / Ethical Boundaries / Rules.
-- 'ellipse': Human Factors / Identities / Biological Entities.
-- 'rectangle': Facts / Data Points / Micro-components.
+- 'star': Ultimate Goals | 'hexagon': Science Fields | 'diamond': Innovations | 'triangle': Processes | 'octagon': Constraints | 'ellipse': Human Factors | 'rectangle': Facts.
 
 ### 4. OUTPUT FORMAT
 MANDATORY JSON STRUCTURE:
 ### SEMANTIC_GRAPH_JSON
 {{
   "nodes": [
-    {{"id": "n1", "label": "LABEL", "shape": "diamond", "color": "#fd7e14", "description": "Full detailed description for the deep-dive."}}
+    {{"id": "n1", "label": "LABEL", "shape": "diamond", "color": "#fd7e14", "description": "Full detailed description."}}
   ],
   "edges": [
-    {{"source": "n1", "target": "n2", "rel_type": "EX"}},
-    {{"source": "n3", "target": "n1", "rel_type": "BT"}}
+    {{"source": "n1", "target": "n2", "rel_type": "{json_edge_example}"}}
   ]
 }}
 """
@@ -1296,41 +1339,42 @@ MANDATORY JSON STRUCTURE:
                         
                         # Linkamo le PRVO pojavitev besede za čistočo
                         final_interactive_report = pattern.sub(link_html, final_interactive_report, count=1)
-# --- NOVO: EPIPLEXITY ANALYTICS DASHBOARD ---
-            st.divider()
-            
-            # Izračun metrik
-            ex_edges = [e for e in final_elements if e.get('data', {}).get('rel_type') == 'EX']
-            total_edges = [e for e in final_elements if 'source' in e.get('data', {})]
-            conflict_edges = [e for e in final_elements if e.get('data', {}).get('rel_type') == 'Conflict']
-            
-            ex_count = len(ex_edges)
-            total_count = len(total_edges)
-            epiplexity_score = (ex_count / total_count * 100) if total_count > 0 else 0
-            
-            # Prikaz nadzorne plošče
-            st.markdown("### 📊 EPIPLEXITY ANALYTICS")
-            m1, m2, m3 = st.columns(3)
-            
-            with m1:
-                st.metric("Epiplexity Score", f"{epiplexity_score:.1f}%", 
-                          help="Odstotek povezav, ki so transdisciplinarne (EX). Višji score pomeni močnejšo sintezo.")
-            with m2:
-                st.metric("Cage Breakers", ex_count, 
-                          help="Število prebojev, ki so presegli omejitve posameznih znanosti.")
-            with m3:
-                st.metric("Systemic Tension", len(conflict_edges), 
-                          help="Število identificiranih konfliktov (Conflict) med paradigmami.")
+# --- NOVO: EPIPLEXITY ANALYTICS DASHBOARD (Pogojni izpis) ---
+            if epiplexity_active:
+                st.divider()
+                
+                # Izračun metrik iz pripravljenih elementov grafa
+                ex_edges = [e for e in final_elements if e.get('data', {}).get('rel_type') == 'EX']
+                total_edges = [e for e in final_elements if 'source' in e.get('data', {})]
+                conflict_edges = [e for e in final_elements if e.get('data', {}).get('rel_type') == 'Conflict']
+                
+                ex_count = len(ex_edges)
+                total_count = len(total_edges)
+                epiplexity_score = (ex_count / total_count * 100) if total_count > 0 else 0
+                
+                # Prikaz nadzorne plošče z metrikami
+                st.markdown("### 📊 EPIPLEXITY ANALYTICS")
+                m1, m2, m3 = st.columns(3)
+                
+                with m1:
+                    st.metric("Epiplexity Score", f"{epiplexity_score:.1f}%", 
+                              help="Odstotek povezav, ki so transdisciplinarne (EX). Višji score pomeni močnejšo sintezo.")
+                with m2:
+                    st.metric("Cage Breakers", ex_count, 
+                              help="Število prebojev, ki so presegli omejitve posameznih znanosti preko EX povezav.")
+                with m3:
+                    st.metric("Systemic Tension", len(conflict_edges), 
+                              help="Število identificiranih konfliktov (Conflict) med paradigmami na grafu.")
 
-            # Vizualni indikator (Progress Bar)
-            progress_color = "green" if epiplexity_score > 20 else "orange" if epiplexity_score > 10 else "red"
-            st.markdown(f"""
-            <div style="width: 100%; background-color: #eee; border-radius: 10px; margin-bottom: 20px;">
-                <div style="width: {min(epiplexity_score * 2, 100)}%; background-color: {progress_color}; padding: 5px; border-radius: 10px; text-align: center; color: white; font-weight: bold; font-size: 0.8em;">
-                    SYNTHESIS DENSITY: {epiplexity_score:.1f}%
+                # Vizualni indikator (Progress Bar) za gostoto sinteze
+                progress_color = "green" if epiplexity_score > 20 else "orange" if epiplexity_score > 10 else "red"
+                st.markdown(f"""
+                <div style="width: 100%; background-color: #eee; border-radius: 10px; margin-bottom: 20px;">
+                    <div style="width: {min(epiplexity_score * 2, 100)}%; background-color: {progress_color}; padding: 5px; border-radius: 10px; text-align: center; color: white; font-weight: bold; font-size: 0.8em;">
+                        SYNTHESIS DENSITY: {epiplexity_score:.1f}%
+                    </div>
                 </div>
-            </div>
-            """, unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
             # 5b. RENDERING THE INTERACTIVE REPORT
             st.subheader("🧱 INTEGRATED HIERARCHOLOGICAL REPORT")
             if biblio_data:
