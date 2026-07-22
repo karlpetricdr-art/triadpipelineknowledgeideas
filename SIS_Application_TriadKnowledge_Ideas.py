@@ -1047,7 +1047,8 @@ selected_techniques = st.multiselect(
     "Select Strategic Ideation Frameworks (Pick one or more):", 
     options=list(IDEATION_TECHNIQUES.keys()), 
     default=["Six Thinking Hats"],
-    help="If you select multiple, the AI will synthesize them into a hybrid innovation strategy."
+    help="If you select multiple, the AI will synthesize them into a hybrid innovation strategy.",
+    key="ideation_tech_multiselect"  # <--- DODAJ TA KLJUČ
 )
 
 if not selected_techniques:
