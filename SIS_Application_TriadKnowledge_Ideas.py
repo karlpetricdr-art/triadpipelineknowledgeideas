@@ -1006,38 +1006,48 @@ with r2c1: sel_paradigms = st.multiselect("4. Scientific Paradigms:", list(KNOWL
 with r2c2: sel_models = st.multiselect("5. Structural Models:", list(KNOWLEDGE_BASE["Structural models"].keys()), default=["Concepts"])
 with r2c3: goal_context = st.selectbox("6. Strategic Project Goal:", ["Scientific Research", "Problem Solving", "Educational", "Policy Making"])
 
+# =============================================================================
+# 🧬 STRATEGIJA IN EPIPLEXITY FUZIJA (ZDRUŽEN IN POPRAVLJEN BLOK)
+# =============================================================================
 st.divider()
-# --- ADVANCED MULTI-IDEATION UI ---
+
+# 1. DEL: EPIPLEXITY ENGINE
+st.markdown("### 🌀 EPIPLEXITY ENGINE")
+epiplexity_active = st.toggle(
+    "Activate Epiplexity Protocol", 
+    value=True, 
+    help="Izklopi za standardno interdisciplinarno mapiranje.",
+    key="master_epiplexity_toggle_v1" # Unikaten ID
+)
+
+if epiplexity_active:
+    epiplexity_intensity = st.select_slider(
+        "Set Epiplexity Fusion Depth:",
+        options=["Linear", "Integrated", "Synergetic"],
+        value="Integrated",
+        key="epiplexity_slider_v1" # Unikaten ID
+    )
+else:
+    st.info("🚫 Epiplexity Engine is SHUT DOWN. AI will use standard logic.")
+    epiplexity_intensity = "None"
+
+st.divider()
+
+# 2. DEL: INNOVATION STRATEGY
 st.markdown("### 🧬 INNOVATION STRATEGY")
 selected_techniques = st.multiselect(
     "Select Strategic Ideation Frameworks (Pick one or more):", 
     options=list(IDEATION_TECHNIQUES.keys()), 
     default=["Six Thinking Hats"],
-    help="If you select multiple, the AI will synthesize them into a hybrid innovation strategy."
-)
-# --- NEW: EPIPLEXITY ENGINE CONTROL WITH SHUT DOWN ---
-st.divider()
-st.markdown("### 🌀 EPIPLEXITY ENGINE")
-
-# 1. THE MASTER TOGGLE (Shut down button)
-epiplexity_active = st.toggle(
-    "Activate Epiplexity Protocol", 
-    value=True, 
-    help="Switch off to return to standard interdisciplinary mapping and shut down transdisciplinary fusion logic."
+    help="AI bo te tehnike uporabil za generiranje rešitev v Phase 2.",
+    key="innovation_multiselect_v1" # Unikaten ID, ki prepreči rdečo napako
 )
 
-if epiplexity_active:
-    # 2. THE SLIDER (Only visible if engine is ON)
-    epiplexity_intensity = st.select_slider(
-        "Set Epiplexity Fusion Depth:",
-        options=["Linear", "Integrated", "Synergetic"],
-        value="Integrated",
-        help="Determines how aggressively the AI should force disparate sciences to merge into a single innovative node."
-    )
+if not selected_techniques:
+    st.warning("⚠️ Please select at least one technique for Phase 2.")
 else:
-    # 3. FALLBACK (Prevents code from crashing later)
-    st.info("🚫 Epiplexity Engine is SHUT DOWN. AI will use standard logic.")
-    epiplexity_intensity = "None"
+    combined_desc = " | ".join([f"**{t}**: {IDEATION_TECHNIQUES[t]}" for t in selected_techniques])
+    st.info(f"**Active Hybrid Strategy:** {combined_desc}")
 
 st.divider()
 
@@ -1139,7 +1149,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             # --- 3. PHASE 2: CEREBRAS (Innovation - npr. GEMMA-4-31B) ---
             with st.spinner(f'PHASE 2: Generating innovations with {p2_model}...'):
                 
-                # --- PRIPRAVA POGOJNEGA PROTOKOLA ---
+                # --- PRIPRAVA POGOJNEGA PROTOKOLA (Logika za Shut Down) ---
                 if epiplexity_active:
                     # Aktiviran Epiplexity (Transdisciplinarna fuzija)
                     epiplexity_logic_text = EPIPLEXITY_FRAMEWORK['logic_levels'].get(
@@ -1156,7 +1166,7 @@ Logic: {epiplexity_logic_text}
 Mandatory Task: Identify 'Epiplexity Peaks'—points where at least three of the selected science fields ({', '.join(sel_sciences)}) intersect. 
 Use 'EX' (Epiplexity Crossover) relations for these high-energy fusion links.
 """
-                    ex_logic_matrix = "D) EPIPLEXITY LOGIC: 'EX' (Epiplexity Crossover): Use for high-energy fusion."
+                    ex_logic_matrix = "D) EPIPLEXITY LOGIC: 'EX' (Epiplexity Crossover): Use specifically for links that represent high-energy fusion or bridge-building between disparate sciences."
                     json_edge_example = "EX"
                 else:
                     # Izklopljen Epiplexity (Standardna znanost)
@@ -1169,7 +1179,7 @@ Do NOT use 'EX' (Epiplexity Crossover) relations. Use standard 'BT', 'NT', or 'A
                     ex_logic_matrix = ""
                     json_edge_example = "AS"
 
-                # --- IZGRADNJA SISTEMSKEGA NAVODILA ---
+                # --- IZGRADNJA KONČNEGA SISTEMSKEGA NAVODILA ---
                 samba_sys_prompt = f"""
 You are the SIS Lead Strategic Innovation Architect and Hierarchographist. 
 Your task is to transform the structural analysis from Phase 1 into a visionary Innovation Report and a perfectly mapped Hierarchographic Network.
@@ -1203,6 +1213,7 @@ MANDATORY JSON STRUCTURE:
   ]
 }}
 """
+                # IZVEDBA KLICA NA CEREBRAS API
                 samba_response = cerebras_client.chat.completions.create(
                     model=p2_model, 
                     messages=[
