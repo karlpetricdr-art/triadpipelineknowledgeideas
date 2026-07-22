@@ -231,8 +231,8 @@ SVG_3D_RELIEF = """
 
 def render_cytoscape_network(elements, layout_type="organic", container_id="cy_canvas"):
     """
-    Posodobljen motor z več perspektivami (Multi-Perspective Layout Engine).
-    Vključuje UML, ISO Thesaurus in Logične konektorje (AND, OR, XOR, NOT, IF-THEN).
+    Univerzalni Hierarhografski motor (Multi-Perspective Engine).
+    Vključuje polno UML notacijo, ISO Thesaurus, Logične konektorje in Epiplexity EX fuzijo.
     """
     
     # Mapiranje Python izbire v Cytoscape JS konfiguracije
@@ -336,7 +336,7 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
                             'opacity': 0.8
                         }}
                     }},
-                    /* --- UML NOTACIJA --- */
+                    /* --- UML NOTACIJA (Bogati simboli) --- */
                     {{ selector: 'edge[rel_type="Generalization"]', style: {{ 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow', 'width': 3 }} }},
                     {{ selector: 'edge[rel_type="Realization"]', style: {{ 'line-style': 'dashed', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' }} }},
                     {{ selector: 'edge[rel_type="Composition"]', style: {{ 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'filled', 'width': 4 }} }},
@@ -360,9 +360,11 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
                     {{ selector: 'edge[rel_type="OR"]', style: {{ 'width': 3, 'line-color': '#00BFFF', 'line-style': 'dashed', 'target-arrow-color': '#00BFFF', 'target-arrow-shape': 'vee' }} }},
                     {{ selector: 'edge[rel_type="XOR"]', style: {{ 'width': 4, 'line-color': '#FF8C00', 'line-style': 'double', 'target-arrow-color': '#FF8C00', 'target-arrow-shape': 'diamond' }} }},
                     {{ selector: 'edge[rel_type="NOT"]', style: {{ 'width': 4, 'line-color': '#FF0000', 'line-style': 'dashed', 'target-arrow-color': '#FF0000', 'target-arrow-shape': 'tee' }} }},
-                    {{ selector: 'edge[rel_type="IF-THEN"]', style: {{ 'width': 4, 'line-color': '#FFD700', 'target-arrow-color': '#FFD700', 'target-arrow-shape': 'triangle', 'arrow-scale': 1.3 }} }},
-					/* --- EPIPLEXITY VISUALIZATION --- */
+                    {{ selector: 'edge[rel_type="IF-THEN"]', style: {{ 'width': 4, 'line-color': '#FFD700', 'target-arrow-color': '#FFD700', 'target-arrow-shape': 'triangle', 'arrow-scale': 1.4 }} }},
+
+					/* --- EPIPLEXITY VISUALIZATION (Neon fuzija) --- */
 					{{ selector: 'edge[rel_type="EX"]', style: {{ 'width': 6, 'line-color': '#ff00ff', 'line-style': 'dashed', 'target-arrow-color': '#ff00ff', 'target-arrow-shape': 'star', 'arrow-scale': 1.5, 'opacity': 0.9 }} }},
+
                     /* Poudarek na zvezdah (Macro cilji) */
                     {{ selector: 'node[shape="star"]', style: {{ 'font-size': '16px', 'width': 130, 'height': 130, 'border-width': 5, 'border-color': '#FFD700' }} }}
                 ],
@@ -383,6 +385,7 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
     components.html(cyto_html, height=900)
 
 def fetch_author_bibliographies(author_input):
+    """Pridobi bibliografijo preko ORCID API-ja."""
     if not author_input: return ""
     author_list = [a.strip() for a in author_input.split(",")]
     comprehensive_biblio = ""
@@ -398,7 +401,6 @@ def fetch_author_bibliographies(author_input):
                 for work in works[:12]:
                     summary = work.get('work-summary', [{}])[0]
                     title = summary.get('title', {}).get('title', {}).get('value', 'Unknown Title')
-                    # Boljše iskanje letnice
                     pub_date = summary.get('publication-date')
                     year = pub_date.get('year', {}).get('value', 'n.d.') if pub_date else 'n.d.'
                     comprehensive_biblio += f"- **{year}**: {title}\n"
