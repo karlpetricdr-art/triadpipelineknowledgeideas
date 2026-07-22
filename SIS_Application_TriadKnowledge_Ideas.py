@@ -229,13 +229,17 @@ SVG_3D_RELIEF = """
 # 1. CORE RENDERING ENGINES & DATA FETCHING
 # =============================================================================
 
+# =============================================================================
+# 1. CORE RENDERING ENGINES & DATA FETCHING
+# =============================================================================
+
 def render_cytoscape_network(elements, layout_type="organic", container_id="cy_canvas"):
     """
     ULTRA-SYNERGY Multi-Perspective Hierarhografski motor.
     Vključuje: ISO 25964 Thesaurus, UML 2.5 Standard, Petrič HA Logiko, Logic Gates in EX fuzijo.
+    GEOMETRIJSKA TAKSONOMIJA: Zvezde, Heksagoni, Diamanti, Oktogoni, Trikotniki, Elipse, Pravokotniki.
     """
     
-    # Mapiranje Python izbire v Cytoscape JS konfiguracije (POLNE KONFIGURACIJE)
     layout_configs = {
         "organic": """{ 
             name: 'cose', 
@@ -309,10 +313,8 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
                             'text-max-width': '80px',
                             'border-width': 3,
                             'border-color': '#ffffff',
-                            'border-opacity': 0.8,
                             'text-outline-color': '#ffffff',
-                            'text-outline-width': 2,
-                            'box-shadow': '0 4px 10px rgba(0,0,0,0.2)'
+                            'text-outline-width': 2
                         }}
                     }},
                     {{
@@ -369,9 +371,14 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
                     /* --- 5. EPIPLEXITY (TRANS-CAGE FUSION) --- */
                     {{ selector: 'edge[rel_type="EX"]', style: {{ 'width': 9, 'line-color': '#ff00ff', 'line-style': 'dashed', 'target-arrow-shape': 'star', 'target-arrow-color': '#ff00ff', 'arrow-scale': 2.0, 'opacity': 1 }} }},
 
-                    /* Node Highlighting for Goals & Innovations */
-                    {{ selector: 'node[shape="star"]', style: {{ 'font-size': '16px', 'width': 140, 'height': 140, 'border-width': 6, 'border-color': '#FFD700' }} }},
-                    {{ selector: 'node[shape="diamond"]', style: {{ 'border-width': 4, 'border-color': '#fd7e14', 'width': 110, 'height': 110 }} }}
+                    /* --- GEOMETRIC TAXONOMY (Shapes & Specialized Sizes) --- */
+                    {{ selector: 'node[shape="star"]', style: {{ 'width': 140, 'height': 140, 'border-width': 6, 'border-color': '#FFD700', 'font-size': '16px' }} }},
+                    {{ selector: 'node[shape="hexagon"]', style: {{ 'width': 100, 'height': 100, 'border-width': 4, 'border-color': '#1d3557' }} }},
+                    {{ selector: 'node[shape="diamond"]', style: {{ 'width': 115, 'height': 115, 'border-width': 5, 'border-color': '#fd7e14' }} }},
+                    {{ selector: 'node[shape="octagon"]', style: {{ 'width': 105, 'height': 105, 'border-width': 4, 'border-color': '#dc3545' }} }},
+                    {{ selector: 'node[shape="triangle"]', style: {{ 'width': 90, 'height': 90, 'border-width': 3, 'border-color': '#28a745' }} }},
+                    {{ selector: 'node[shape="ellipse"]', style: {{ 'width': 95, 'height': 95, 'border-width': 3, 'border-color': '#17a2b8' }} }},
+                    {{ selector: 'node[shape="rectangle"]', style: {{ 'width': 85, 'height': 85, 'border-width': 2, 'border-color': '#6c757d' }} }}
                 ],
                 layout: {selected_layout}
             }});
@@ -1181,45 +1188,27 @@ Do NOT use 'EX' (Epiplexity Crossover) relations. Use standard 'BT', 'NT', or 'A
                     ex_logic_matrix = ""
                     json_edge_example = "AS"
 
-                # --- IZGRADNJA KONČNEGA SISTEMSKEGA NAVODILA ---
+                # --- IZGRADNJA SISTEMSKEGA NAVODILA ---
                 samba_sys_prompt = f"""
-You are the SIS Lead Strategic Innovation Architect and Hierarchographist. 
-You must synthesize the foundation using a RIGID TRI-LAYER LOGIC system.
+You are the SIS Lead Strategic Innovation Architect.
 
-### MANDATORY RELATIONSHIP LOGIC MATRIX (STRICT)
+### OPERATIONAL RULES
+1. Provide a professional, human-readable STRATEGIC INNOVATION REPORT.
+2. DO NOT include JSON code or any semantic-graph-data inside the report text.
+3. MANDATORY: After your report is completely finished, provide the graph data as a single block starting EXACTLY with the header: ### SEMANTIC_GRAPH_JSON
 
-1. ISO 25964 THESAURUS (Inheritance & Association):
-   - 'TT' (Top Term): Root.
-   - 'BT' (Broader Term): Parent.
-   - 'NT' (Narrower Term): Child.
-   - 'IN' (Instance): Unique entity example.
-   - 'RT' (Related Term): Peer association.
-   - 'AS' (Associative): Generic link.
-   - 'EQ' (Equivalence): Absolute synonym.
+### GEOMETRIC TAXONOMY (Strict Shapes)
+Assign shapes based on logical level:
+- 'star': Ultimate Goals
+- 'hexagon': Science Domains
+- 'diamond': Innovations
+- 'triangle': Active Processes
+- 'octagon': Ethical Constraints
+- 'ellipse': Human Factors
+- 'rectangle': Specific Facts
 
-2. UML 2.5 ARCHITECTURAL:
-   - 'Generalization': 'Is-a' inheritance.
-   - 'Specialization': Deductive refinement (dashed line).
-   - 'Realization': Implementation of goal.
-   - 'Composition': Strong part-of (ownership).
-   - 'Aggregation': Weak part-of (collection).
-   - 'Dependency': Semantic requirement.
-   - 'Containment': Elements inside a 'Scientific Cage'.
-   - 'Conflict': Systemic friction (thick red cross).
-
-3. SIS / PETRIČ LOGIC:
-   - 'HA' (Hierarchical-Associative): THE HYBRID CORE.
-   - 'AND', 'OR', 'XOR', 'NOT', 'IF-THEN'.
-   - 'EX': (Only if Epiplexity is ON) Transdisciplinary fusion peaks.
-
-{protocol_snippet}
-
-### OUTPUT FORMAT
-### SEMANTIC_GRAPH_JSON
-{{
-  "nodes": [ {{"id": "n1", "label": "LABEL", "shape": "diamond", "color": "#fd7e14", "description": "Analysis."}} ],
-  "edges": [ {{"source": "n1", "target": "n2", "rel_type": "{json_edge_example}"}} ]
-}}
+### RELATIONSHIP MATRIX
+Use ALL available logic: TT, BT, NT, IN, RT, AS, EQ, Generalization, Specialization, Realization, Composition, Aggregation, Dependency, Conflict, Containment, HA, AND, OR, XOR, NOT, IF-THEN, and EX.
 """
                 # IZVEDBA KLICA NA CEREBRAS API
                 samba_response = cerebras_client.chat.completions.create(
@@ -1233,9 +1222,12 @@ You must synthesize the foundation using a RIGID TRI-LAYER LOGIC system.
                 )
                 cerebras_innovation = samba_response.choices[0].message.content
 
-            # --- 4. PROCESIRANJE REZULTATOV (Z GEOMETRIJSKO LOGIKO) ---
+            # =============================================================================
+            # 4. PROCESIRANJE REZULTATOV (ULTRA-RICH GEOMETRY & CLEAN REPORT)
+            # =============================================================================
             g_data = {"nodes": [], "edges": []}
             
+            # Ločevanje človeškega poročila od JSON podatkov (da koda ne smeti poročila)
             if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
                 parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
                 innovation_text = parts[0]
@@ -1244,76 +1236,116 @@ You must synthesize the foundation using a RIGID TRI-LAYER LOGIC system.
                 innovation_text = cerebras_innovation
                 json_raw = ""
 
+            # Sestavljanje končnega poročila (P1 + P2) brez JSON kode
             full_report = f"## 📚 Phase 1: Structural Foundation (Cerebras {p1_model})\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations (Cerebras {p2_model})\n\n{innovation_text}"
             
             nodes_to_link = []
             final_elements = []
 
-            # Izboljšano iskanje in varnostno čiščenje JSON-a
+            # Napredno iskanje in varnostno čiščenje JSON-a znotraj surovega izhoda
             json_match = re.search(r'(\{.*"nodes".*\})', json_raw if json_raw else cerebras_innovation, re.DOTALL | re.IGNORECASE)
             
             if json_match:
                 try:
                     # 1. Izvlečemo surovi JSON tekst
                     raw_json_str = json_match.group(1)
-                    # 2. Očistimo nove vrstice in nevarne znake, ki lomijo format
-                    clean_json = raw_json_str.replace('\n', ' ').replace('\r', '')
-                    # 3. Poskusimo prebrati JSON podatke
+                    # 2. Očistimo kontrolne znake, ki bi lahko zlomili parser
+                    clean_json = raw_json_str.replace('\n', ' ').replace('\r', '').replace('\t', ' ')
+                    # 3. Parsiranje JSON podatkov
                     g_data = json.loads(clean_json)
                 except Exception as json_err:
-                    st.warning(f"Note: Graph structure issue: {json_err}")
+                    st.warning(f"Note: Graph structure parsing issue: {json_err}")
 
-            # --- PROCESIRANJE VOZLIŠČ Z DINAMIČNO VELIKOSTJO ---
+            # --- PROCESIRANJE VOZLIŠČ Z IZRAZITO GEOMETRIJSKO TAKSONOMIJO ---
             if g_data.get("nodes"):
                 for n in g_data.get("nodes", []):
                     lbl = n.get("label", "Node")
                     nid = n.get("id", f"n{lbl}")
                     n_color = n.get("color", "#DDEBF7")
-                    n_shape = n.get("shape", "rectangle")
+                    n_shape = n.get("shape", "rectangle").lower() # Prisilimo v male črke za Cytoscape
                     
-                    # Velikostna hierarhija glede na obliko
-                    if n_shape == 'star': n_size = 125
-                    elif n_shape == 'diamond': n_size = 110
-                    elif n_shape == 'octagon': n_size = 105
-                    elif n_shape == 'hexagon': n_size = 100
-                    elif n_shape == 'triangle': n_size = 95
-                    elif n_shape == 'ellipse': n_size = 90
-                    else: n_size = 85
+                    # STROGA VELIKOSTNA HIERARHIJA (Preprečuje redukcijo na kroge)
+                    if n_shape == 'star': 
+                        n_size = 145 # Makro-vizija (Cilji)
+                    elif n_shape == 'diamond': 
+                        n_size = 125 # Inovacije (Epiplexic Cores)
+                    elif n_shape == 'hexagon': 
+                        n_size = 115 # Znanstvene domene
+                    elif n_shape == 'octagon': 
+                        n_size = 110 # Etične meje in pravila
+                    elif n_shape == 'ellipse': 
+                        n_size = 100 # Človeški faktorji
+                    elif n_shape == 'triangle': 
+                        n_size = 95  # Procesi in metode
+                    elif n_shape == 'rectangle': 
+                        n_size = 90  # Dejstva in podatki
+                    else: 
+                        n_size = 85  # Privzeta velikost
                     
                     nodes_to_link.append({"id": nid, "label": lbl})
                     final_elements.append({
-                        "data": {"id": nid, "label": lbl, "color": n_color, "shape": n_shape, "size": n_size, "description": n.get("description", "Detail breakdown in report.")}
+                        "data": {
+                            "id": nid, 
+                            "label": lbl, 
+                            "color": n_color, 
+                            "shape": n_shape, 
+                            "size": n_size, 
+                            "description": n.get("description", "Podroben razčlen v poročilu.")
+                        }
                     })
 
-                # --- PROCESIRANJE POVEZAV (POPOLNI SPEKTER) ---
+                # --- PROCESIRANJE POVEZAV (CELOTEN SPEKTER LOGIKE) ---
                 for e in g_data.get("edges", []):
                     rel = e.get("rel_type", "Association")
                     
+                    # 1. RIGIDNA HIERARHIJA IN DEDNOST (Temno modra)
                     if rel in ["TT", "BT", "NT", "Generalization", "Specialization", "Containment", "Realization"]:
-                        e_color = "#1D3557" # Temno modra (Hierarhija)
-                    elif rel in ["RT", "AS", "Dependency", "Aggregation"]:
-                        e_color = "#2A9D8F" # Zelena (Asociacija)
+                        e_color = "#1D3557"
+                    
+                    # 2. STRUKTURNA INTEGRACIJA (Srednje modra)
                     elif rel in ["IN", "Composition"]:
-                        e_color = "#0077B6" # Srednje modra (Struktura)
+                        e_color = "#0077B6"
+                        
+                    # 3. ASOCIATIVNA IN LATERALNA MREŽA (Zelena)
+                    elif rel in ["RT", "AS", "Dependency", "Aggregation"]:
+                        e_color = "#2A9D8F"
+                        
+                    # 4. HIBRIDNA LOGIKA (Petrič HA - Vijolična)
                     elif rel == "HA":
-                        e_color = "#7B2CB1" # Vijolična (Hibrid)
+                        e_color = "#7B2CB1"
+                        
+                    # 5. SEMANTIČNA EKVIVALENCA (Rumena)
                     elif rel == "EQ":
-                        e_color = "#F1C40F" # Rumena (Ekvivalenca)
+                        e_color = "#F1C40F"
+                        
+                    # 6. SISTEMSKA NAPETOST IN KONFLIKT (Rdeča)
                     elif rel == "Conflict":
-                        e_color = "#B91D1D" # Temno rdeča (Konflikt)
+                        e_color = "#B91D1D"
+                        
+                    # 7. EPIPLEXITY RADIKALNA FUZIJA (Neon Magenta)
                     elif rel == "EX":
-                        e_color = "#FF00FF" # Neon Magenta (Epiplexity)
+                        e_color = "#FF00FF"
+                        
+                    # 8. LOGIČNA VRATA (Neon barve)
                     elif rel == "AND":
                         e_color = "#00FF00"
                     elif rel == "IF-THEN":
                         e_color = "#FFD700"
+                    elif rel in ["OR", "XOR"]:
+                        e_color = "#00BFFF"
                     elif rel == "NOT":
-                        e_color = "#FF0000"
+                        e_color = "#FF4500"
+                        
                     else:
-                        e_color = "#ADB5BD"
+                        e_color = "#ADB5BD" # Nevtralna siva za neznane tipe
 
                     final_elements.append({
-                        "data": { "source": e.get("source"), "target": e.get("target"), "rel_type": rel, "color": e_color }
+                        "data": { 
+                            "source": e.get("source"), 
+                            "target": e.get("target"), 
+                            "rel_type": rel, 
+                            "color": e_color 
+                        }
                     })
 
             # --- 5. FINAL DISPLAY: SEQUENTIAL INTERACTIVE SYNERGY REPORT ---
