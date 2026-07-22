@@ -1223,11 +1223,11 @@ Use ALL available logic: TT, BT, NT, IN, RT, AS, EQ, Generalization, Specializat
                 cerebras_innovation = samba_response.choices[0].message.content
 
             # =============================================================================
-            # 4. PROCESIRANJE REZULTATOV (ULTRA-RICH GEOMETRY & CLEAN REPORT)
+            # 4. PROCESIRANJE REZULTATOV (ULTRA-RIGID TAXONOMY & AUTO-CORRECTION)
             # =============================================================================
             g_data = {"nodes": [], "edges": []}
             
-            # Ločevanje človeškega poročila od JSON podatkov (da koda ne smeti poročila)
+            # 1. Ločevanje poročila od podatkov (Skrivanje kode pred uporabnikom)
             if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
                 parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
                 innovation_text = parts[0]
@@ -1236,114 +1236,94 @@ Use ALL available logic: TT, BT, NT, IN, RT, AS, EQ, Generalization, Specializat
                 innovation_text = cerebras_innovation
                 json_raw = ""
 
-            # Sestavljanje končnega poročila (P1 + P2) brez JSON kode
             full_report = f"## 📚 Phase 1: Structural Foundation (Cerebras {p1_model})\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations (Cerebras {p2_model})\n\n{innovation_text}"
             
             nodes_to_link = []
             final_elements = []
 
-            # Napredno iskanje in varnostno čiščenje JSON-a znotraj surovega izhoda
+            # 2. Varnostno iskanje JSON-a
             json_match = re.search(r'(\{.*"nodes".*\})', json_raw if json_raw else cerebras_innovation, re.DOTALL | re.IGNORECASE)
             
             if json_match:
                 try:
-                    # 1. Izvlečemo surovi JSON tekst
                     raw_json_str = json_match.group(1)
-                    # 2. Očistimo kontrolne znake, ki bi lahko zlomili parser
                     clean_json = raw_json_str.replace('\n', ' ').replace('\r', '').replace('\t', ' ')
-                    # 3. Parsiranje JSON podatkov
                     g_data = json.loads(clean_json)
                 except Exception as json_err:
                     st.warning(f"Note: Graph structure parsing issue: {json_err}")
 
-            # --- PROCESIRANJE VOZLIŠČ Z IZRAZITO GEOMETRIJSKO TAKSONOMIJO ---
+            # 3. PROCESIRANJE VOZLIŠČ (Geometrijska fiksacija)
             if g_data.get("nodes"):
                 for n in g_data.get("nodes", []):
                     lbl = n.get("label", "Node")
                     nid = n.get("id", f"n{lbl}")
                     n_color = n.get("color", "#DDEBF7")
-                    n_shape = n.get("shape", "rectangle").lower() # Prisilimo v male črke za Cytoscape
+                    n_shape = n.get("shape", "rectangle").lower()
                     
                     # STROGA VELIKOSTNA HIERARHIJA (Preprečuje redukcijo na kroge)
-                    if n_shape == 'star': 
-                        n_size = 145 # Makro-vizija (Cilji)
-                    elif n_shape == 'diamond': 
-                        n_size = 125 # Inovacije (Epiplexic Cores)
-                    elif n_shape == 'hexagon': 
-                        n_size = 115 # Znanstvene domene
-                    elif n_shape == 'octagon': 
-                        n_size = 110 # Etične meje in pravila
-                    elif n_shape == 'ellipse': 
-                        n_size = 100 # Človeški faktorji
-                    elif n_shape == 'triangle': 
-                        n_size = 95  # Procesi in metode
-                    elif n_shape == 'rectangle': 
-                        n_size = 90  # Dejstva in podatki
-                    else: 
-                        n_size = 85  # Privzeta velikost
+                    if n_shape == 'star': n_size = 145
+                    elif n_shape == 'diamond': n_size = 125
+                    elif n_shape == 'hexagon': n_size = 115
+                    elif n_shape == 'octagon': n_size = 110
+                    elif n_shape == 'ellipse': n_size = 100
+                    elif n_shape == 'triangle': n_size = 95
+                    elif n_shape == 'rectangle': n_size = 90
+                    else: n_size = 85
                     
                     nodes_to_link.append({"id": nid, "label": lbl})
                     final_elements.append({
                         "data": {
-                            "id": nid, 
-                            "label": lbl, 
-                            "color": n_color, 
-                            "shape": n_shape, 
-                            "size": n_size, 
-                            "description": n.get("description", "Podroben razčlen v poročilu.")
+                            "id": nid, "label": lbl, "color": n_color, 
+                            "shape": n_shape, "size": n_size, 
+                            "description": n.get("description", "Analiza v poročilu.")
                         }
                     })
 
-                # --- PROCESIRANJE POVEZAV (CELOTEN SPEKTER LOGIKE) ---
+                # 4. PROCESIRANJE POVEZAV (Z AVTOMATSKIM PREVAJALNIKOM KOD)
+                # Ta del popravi AI napake: npr. "Association" -> "AS"
+                rel_map = {
+                    "association": "AS", "associative": "AS",
+                    "broader term": "BT", "broader": "BT",
+                    "narrower term": "NT", "narrower": "NT",
+                    "top term": "TT", "root": "TT",
+                    "related term": "RT", "related": "RT",
+                    "equivalence": "EQ", "synonym": "EQ",
+                    "instance": "IN", "example": "IN",
+                    "hierarchical-associative": "HA", "hybrid": "HA"
+                }
+
                 for e in g_data.get("edges", []):
-                    rel = e.get("rel_type", "Association")
+                    # Pridobimo surovo relacijo in jo očistimo
+                    raw_rel = str(e.get("rel_type", "AS")).strip().lower()
                     
-                    # 1. RIGIDNA HIERARHIJA IN DEDNOST (Temno modra)
+                    # Če je AI uporabil polno besedo, jo skrajšamo v kodo
+                    rel = rel_map.get(raw_rel, e.get("rel_type", "AS"))
+
+                    # BARVNA MATRICA (Povezana z render_cytoscape_network stili)
                     if rel in ["TT", "BT", "NT", "Generalization", "Specialization", "Containment", "Realization"]:
-                        e_color = "#1D3557"
-                    
-                    # 2. STRUKTURNA INTEGRACIJA (Srednje modra)
-                    elif rel in ["IN", "Composition"]:
-                        e_color = "#0077B6"
-                        
-                    # 3. ASOCIATIVNA IN LATERALNA MREŽA (Zelena)
+                        e_color = "#1D3557" # Hierarhija
                     elif rel in ["RT", "AS", "Dependency", "Aggregation"]:
-                        e_color = "#2A9D8F"
-                        
-                    # 4. HIBRIDNA LOGIKA (Petrič HA - Vijolična)
+                        e_color = "#2A9D8F" # Asociacija
+                    elif rel in ["IN", "Composition"]:
+                        e_color = "#0077B6" # Struktura
                     elif rel == "HA":
-                        e_color = "#7B2CB1"
-                        
-                    # 5. SEMANTIČNA EKVIVALENCA (Rumena)
+                        e_color = "#7B2CB1" # Hibrid
                     elif rel == "EQ":
-                        e_color = "#F1C40F"
-                        
-                    # 6. SISTEMSKA NAPETOST IN KONFLIKT (Rdeča)
+                        e_color = "#F1C40F" # Ekvivalenca
                     elif rel == "Conflict":
-                        e_color = "#B91D1D"
-                        
-                    # 7. EPIPLEXITY RADIKALNA FUZIJA (Neon Magenta)
+                        e_color = "#B91D1D" # Konflikt
                     elif rel == "EX":
-                        e_color = "#FF00FF"
-                        
-                    # 8. LOGIČNA VRATA (Neon barve)
-                    elif rel == "AND":
-                        e_color = "#00FF00"
-                    elif rel == "IF-THEN":
-                        e_color = "#FFD700"
-                    elif rel in ["OR", "XOR"]:
-                        e_color = "#00BFFF"
-                    elif rel == "NOT":
-                        e_color = "#FF4500"
-                        
+                        e_color = "#FF00FF" # Epiplexity
+                    elif rel in ["AND", "IF-THEN"]:
+                        e_color = "#00FF00" if rel == "AND" else "#FFD700"
                     else:
-                        e_color = "#ADB5BD" # Nevtralna siva za neznane tipe
+                        e_color = "#ADB5BD"
 
                     final_elements.append({
                         "data": { 
                             "source": e.get("source"), 
                             "target": e.get("target"), 
-                            "rel_type": rel, 
+                            "rel_type": rel, # TUKAJ JE ZDAJ KRATICA (npr. AS)
                             "color": e_color 
                         }
                     })
