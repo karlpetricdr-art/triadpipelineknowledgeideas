@@ -361,7 +361,8 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
                     {{ selector: 'edge[rel_type="XOR"]', style: {{ 'width': 4, 'line-color': '#FF8C00', 'line-style': 'double', 'target-arrow-color': '#FF8C00', 'target-arrow-shape': 'diamond' }} }},
                     {{ selector: 'edge[rel_type="NOT"]', style: {{ 'width': 4, 'line-color': '#FF0000', 'line-style': 'dashed', 'target-arrow-color': '#FF0000', 'target-arrow-shape': 'tee' }} }},
                     {{ selector: 'edge[rel_type="IF-THEN"]', style: {{ 'width': 4, 'line-color': '#FFD700', 'target-arrow-color': '#FFD700', 'target-arrow-shape': 'triangle', 'arrow-scale': 1.3 }} }},
-
+					/* --- EPIPLEXITY VISUALIZATION --- */
+					{{ selector: 'edge[rel_type="EX"]', style: {{ 'width': 6, 'line-color': '#ff00ff', 'line-style': 'dashed', 'target-arrow-color': '#ff00ff', 'target-arrow-shape': 'star', 'arrow-scale': 1.5, 'opacity': 0.9 }} }},
                     /* Poudarek na zvezdah (Macro cilji) */
                     {{ selector: 'node[shape="star"]', style: {{ 'font-size': '16px', 'width': 130, 'height': 130, 'border-width': 5, 'border-color': '#FFD700' }} }}
                 ],
@@ -843,6 +844,20 @@ IDEATION_TECHNIQUES = {
     "Synectics": "Use direct, personal, and symbolic analogies to make the strange familiar and the familiar strange."
 }
 # =============================================================================
+# 3.2 EPIPLEXITY KNOWLEDGE FRAMEWORK
+# =============================================================================
+EPIPLEXITY_FRAMEWORK = {
+    "definition": "The measure of interdisciplinary structural density. It quantifies the 'depth' of fusion between disparate scientific fields to break through 'Scientific Cages'.",
+    "logic_levels": {
+        "Linear (Low)": "Multidisciplinary: Fields exist side-by-side with minimal interaction (simple borrowing).",
+        "Integrated (Medium)": "Interdisciplinary: Fields share methods and terminology, creating a bridge.",
+        "Synergetic (High)": "Transdisciplinary: Fields merge to create a new, hybrid 'Scientific Cage' with emergent properties and radical innovation."
+    },
+    "epiplexic_connectors": [
+        "Semantic Overlap", "Methodological Transfer", "Hierarchical Fusion", "Paradigm Collision"
+    ]
+}
+# =============================================================================
 # 4. KONČNI POPRAVLJEN SIDEBAR (Z SAMBANOVO IN UNIKATNIMI KLJUČI)
 # =============================================================================
 with st.sidebar:
@@ -1000,7 +1015,15 @@ selected_techniques = st.multiselect(
     default=["Six Thinking Hats"],
     help="If you select multiple, the AI will synthesize them into a hybrid innovation strategy."
 )
-
+# --- NEW: EPIPLEXITY ENGINE CONTROL ---
+st.divider()
+st.markdown("### 🌀 EPIPLEXITY ENGINE")
+epiplexity_intensity = st.select_slider(
+    "Set Epiplexity Fusion Depth:",
+    options=["Linear", "Integrated", "Synergetic"],
+    value="Integrated",
+    help="Determines how aggressively the AI should force disparate sciences to merge into a single innovative node."
+)
 if not selected_techniques:
     st.warning("⚠️ Please select at least one technique for Phase 2.")
 else:
@@ -1092,6 +1115,13 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
 You are the SIS Lead Strategic Innovation Architect and Hierarchographist. 
 Your task is to transform the structural analysis from Phase 1 into a visionary Innovation Report and a perfectly mapped Hierarchographic Network.
 
+### EPIPLEXITY PROTOCOL ACTIVATED ###
+Fusion Depth: {epiplexity_intensity}
+Logic: {EPIPLEXITY_FRAMEWORK['logic_levels'].get(epiplexity_intensity + ' (Low)' if epiplexity_intensity == 'Linear' else epiplexity_intensity + ' (Medium)' if epiplexity_intensity == 'Integrated' else epiplexity_intensity + ' (High)')}
+
+Mandatory Task: Identify 'Epiplexity Peaks'—points where at least three of the selected science fields ({', '.join(sel_sciences)}) intersect. 
+For 'Synergetic' depth, you MUST create 'Epiplexic Core' nodes (diamond shape) that represent the successful escape from a 'Scientific Cage' through transdisciplinary fusion.
+
 ### 1. REPORT REQUIREMENTS
 Write a "STRATEGIC INNOVATION REPORT". 
 - For each innovation, provide a technical title, a detailed 3-4 sentence strategic explanation, and its cross-disciplinary impact.
@@ -1099,33 +1129,13 @@ Write a "STRATEGIC INNOVATION REPORT".
 - IMPORTANT: Inside the JSON section, do NOT use double quotes (") within descriptions. Use single quotes (') instead to ensure the JSON structure remains valid.
 
 ### 2. RELATIONSHIP LOGIC MATRIX (MANDATORY FOR JSON)
-You must interconnect nodes using the following two standards:
+You must interconnect nodes using the following standards:
 
-A) THESAURUS LOGIC (ISO 25964 / Conceptual Taxonomy):
-- 'TT' (Top Term): Absolute root of a knowledge domain.
-- 'BT' (Broader Term): Higher-level class/concept (Genus).
-- 'NT' (Narrower Term): Lower-level sub-concept (Species).
-- 'RT' (Related Term): Symmetrical lateral association between concepts.
-- 'EQ' (Equivalence): Synonyms or identical concepts in different fields.
-- 'AS' (Associative): Functional connection (e.g., Process AS Result, Tool AS Action).
-- 'IN' (Instance): Category to a specific unique entity/example (e.g., Physics IN Theory of Relativity).
-
-B) UML LOGIC (OMG Standard / Structural Architecture):
-- 'Generalization': 'Is-a' Inheritance (e.g., Quantum Physics is a Generalization of Physics).
-- 'Specialization': The deductive opposite of Generalization. A downward move from a general law to a specific refined case.
-- 'Containment': A strong structural inclusion where a node is trapped or housed inside another. Mandatory for mapping concepts within a 'Scientific Cage'.
-- 'Realization': An Innovation/Tool implementing a Goal/Vision.
-- 'Composition': Strong 'Part-of' (Life-cycle dependent).
-- 'Aggregation': Weak 'Part-of' (Independent existence).
-- 'Dependency': Node A requires Node B to function.
-- 'Conflict': A Systemic tension, incompatibility, or direct conflict between two elements.
-
-C) LOGICAL CONNECTORS (Decision Logic):
-- 'AND': Močna sinteza, kjer morata oba pogoja obstajati hkrati (Veznik IN).
-- 'OR': Alternativna pot ali izbira med koncepti (Veznik ALI).
-- 'XOR': Izključujoči ALI (Koncepta sta nezdružljiva ali paradoksalna).
-- 'NOT': Negacija ali prepovedana povezava (Meja znanstvene kletke).
-- 'IF-THEN': Vzročna posledica ali pogojni prehod.
+A) THESAURUS LOGIC (ISO 25964): TT, BT, NT, RT, EQ, AS, IN.
+B) UML LOGIC: Generalization, Specialization, Containment, Realization, Composition, Aggregation, Dependency, Conflict.
+C) LOGICAL CONNECTORS: AND, OR, XOR, NOT, IF-THEN.
+D) EPIPLEXITY LOGIC: 
+- 'EX' (Epiplexity Crossover): Use this specifically for links that represent high-energy fusion or bridge-building between disparate sciences.
 
 ### 3. MANDATORY GEOMETRY (SHAPES)
 - 'star': Ultimate Goals / Macro-Vision.
@@ -1144,8 +1154,8 @@ MANDATORY JSON STRUCTURE:
     {{"id": "n1", "label": "LABEL", "shape": "diamond", "color": "#fd7e14", "description": "Full detailed description for the deep-dive."}}
   ],
   "edges": [
-    {{"source": "n1", "target": "n2", "rel_type": "AS"}},
-    {{"source": "n3", "target": "n1", "rel_type": "Composition"}}
+    {{"source": "n1", "target": "n2", "rel_type": "EX"}},
+    {{"source": "n3", "target": "n1", "rel_type": "BT"}}
   ]
 }}
 """
@@ -1212,7 +1222,7 @@ MANDATORY JSON STRUCTURE:
                         "data": {"id": nid, "label": lbl, "color": n_color, "shape": n_shape, "size": n_size, "description": n.get("description", "Detail breakdown in report.")}
                     })
 
-                # --- PROCESIRANJE POVEZAV (UML + THESAURUS + LOGIC) ---
+                # --- PROCESIRANJE POVEZAV (UML + THESAURUS + LOGIC + EPIPLEXITY) ---
                 for e in g_data.get("edges", []):
                     rel = e.get("rel_type", "Association")
                     
@@ -1224,12 +1234,8 @@ MANDATORY JSON STRUCTURE:
                             e_color = "#000000"  # Črna za dedukcijo
                         elif rel == "Containment":
                             e_color = "#1D3557"  # Temno modra za "Scientific Cage"
-                        elif rel == "Generalization":
-                            e_color = "#E63946"  # UML rdeča
-                        elif rel == "Realization":
-                            e_color = "#E63946"  # UML rdeča
                         else:
-                            e_color = "#E63946"  # Privzeta UML rdeča (Dependency, Aggregation...)
+                            e_color = "#E63946"  # Privzeta UML rdeča
                             
                     # B) ISO THESAURUS (Hierarhologija - Modra/Vijolična skala)
                     elif rel in ["BT", "NT", "TT"]:
@@ -1243,7 +1249,11 @@ MANDATORY JSON STRUCTURE:
                     elif rel == "RT":
                         e_color = "#2A9D8F"  # Zelena (Povezano)
 
-                    # C) LOGIČNI KONEKTORJI (Decision Logic - Neon skala)
+                    # C) EPIPLEXITY LOGIC (Novo: Transdisciplinarni preboji)
+                    elif rel == "EX":
+                        e_color = "#ff00ff"  # Neon Magenta za Epiplexity Crossover
+                        
+                    # D) LOGIČNI KONEKTORJI (Decision Logic - Neon skala)
                     elif rel == "AND":
                         e_color = "#00FF00"  # Neon zelena
                     elif rel == "OR":
@@ -1256,7 +1266,7 @@ MANDATORY JSON STRUCTURE:
                         e_color = "#FFD700"  # Zlata
                         
                     else:
-                        e_color = "#ADB5BD"  # Če tipa ne pozna = Siva
+                        e_color = "#ADB5BD"  # Če tipa ne pozna = Privzeta siva
 
                     final_elements.append({
                         "data": {
@@ -1286,7 +1296,41 @@ MANDATORY JSON STRUCTURE:
                         
                         # Linkamo le PRVO pojavitev besede za čistočo
                         final_interactive_report = pattern.sub(link_html, final_interactive_report, count=1)
+# --- NOVO: EPIPLEXITY ANALYTICS DASHBOARD ---
+            st.divider()
+            
+            # Izračun metrik
+            ex_edges = [e for e in final_elements if e.get('data', {}).get('rel_type') == 'EX']
+            total_edges = [e for e in final_elements if 'source' in e.get('data', {})]
+            conflict_edges = [e for e in final_elements if e.get('data', {}).get('rel_type') == 'Conflict']
+            
+            ex_count = len(ex_edges)
+            total_count = len(total_edges)
+            epiplexity_score = (ex_count / total_count * 100) if total_count > 0 else 0
+            
+            # Prikaz nadzorne plošče
+            st.markdown("### 📊 EPIPLEXITY ANALYTICS")
+            m1, m2, m3 = st.columns(3)
+            
+            with m1:
+                st.metric("Epiplexity Score", f"{epiplexity_score:.1f}%", 
+                          help="Odstotek povezav, ki so transdisciplinarne (EX). Višji score pomeni močnejšo sintezo.")
+            with m2:
+                st.metric("Cage Breakers", ex_count, 
+                          help="Število prebojev, ki so presegli omejitve posameznih znanosti.")
+            with m3:
+                st.metric("Systemic Tension", len(conflict_edges), 
+                          help="Število identificiranih konfliktov (Conflict) med paradigmami.")
 
+            # Vizualni indikator (Progress Bar)
+            progress_color = "green" if epiplexity_score > 20 else "orange" if epiplexity_score > 10 else "red"
+            st.markdown(f"""
+            <div style="width: 100%; background-color: #eee; border-radius: 10px; margin-bottom: 20px;">
+                <div style="width: {min(epiplexity_score * 2, 100)}%; background-color: {progress_color}; padding: 5px; border-radius: 10px; text-align: center; color: white; font-weight: bold; font-size: 0.8em;">
+                    SYNTHESIS DENSITY: {epiplexity_score:.1f}%
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
             # 5b. RENDERING THE INTERACTIVE REPORT
             st.subheader("🧱 INTEGRATED HIERARCHOLOGICAL REPORT")
             if biblio_data:
