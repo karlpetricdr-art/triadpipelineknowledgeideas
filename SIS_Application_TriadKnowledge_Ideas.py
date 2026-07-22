@@ -230,6 +230,12 @@ SVG_3D_RELIEF = """
 # =============================================================================
 
 def render_cytoscape_network(elements, layout_type="organic", container_id="cy_canvas"):
+    """
+    Univerzalni Hierarhografski motor (Multi-Perspective Engine).
+    Vključuje polno UML notacijo, ISO Thesaurus, Logične konektorje in Epiplexity EX fuzijo.
+    """
+    
+    # Mapiranje Python izbire v Cytoscape JS konfiguracije
     layout_configs = {
         "organic": "{ name: 'cose', idealEdgeLength: 150, nodeOverlap: 50, refresh: 20, fit: true, padding: 50, nodeRepulsion: 1000000 }",
         "hierarchical": "{ name: 'breadthfirst', directed: true, padding: 50, spacingFactor: 1.75 }",
@@ -241,8 +247,8 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
 
     cyto_html = f"""
     <div style="position: relative; width: 100%;">
-        <button id="save_btn" style="position: absolute; top: 15px; right: 15px; z-index: 1000; padding: 10px 15px; background: #1d3557; color: white; border: none; border-radius: 8px; cursor: pointer; font-family: sans-serif; font-size: 12px; font-weight: 800;">💾 EXPORT PNG</button>
-        <div id="{container_id}" style="width: 100%; height: 850px; background: #ffffff; border-radius: 20px; border: 1px solid #e0e0e0;"></div>
+        <button id="save_btn" style="position: absolute; top: 15px; right: 15px; z-index: 1000; padding: 10px 15px; background: #1d3557; color: white; border: none; border-radius: 8px; cursor: pointer; font-family: sans-serif; font-size: 12px; font-weight: 800; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">💾 EXPORT {layout_type.upper()} PNG</button>
+        <div id="{container_id}" style="width: 100%; height: 850px; background: #ffffff; border-radius: 20px; border: 1px solid #e0e0e0; box-shadow: 0 10px 40px rgba(0,0,0,0.08);"></div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
     <script>
@@ -283,33 +289,47 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
                             'color': '#2a9d8f',
                             'text-background-opacity': 1,
                             'text-background-color': '#ffffff',
-                            'text-background-padding': '3px'
+                            'text-background-padding': '3px',
+                            'opacity': 0.8
                         }}
                     }},
-                    /* --- UML & ADVANCED RELATIONS --- */
-                    {{ selector: 'edge[rel_type="Composition"]', style: {{ 'width': 4, 'line-color': '#1d3557', 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'filled', 'source-arrow-color': '#1d3557', 'target-arrow-shape': 'none' }} }},
-                    {{ selector: 'edge[rel_type="Aggregation"]', style: {{ 'width': 3, 'line-color': '#457b9d', 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'hollow', 'source-arrow-color': '#457b9d' }} }},
-                    {{ selector: 'edge[rel_type="Containment"]', style: {{ 'width': 5, 'line-color': '#1d3557', 'target-arrow-shape': 'circle', 'target-arrow-fill': 'hollow', 'target-arrow-color': '#1d3557' }} }},
-                    {{ selector: 'edge[rel_type="Conflict"]', style: {{ 'width': 6, 'line-color': '#b91d1d', 'line-style': 'solid', 'target-arrow-shape': 'triangle-cross', 'source-arrow-shape': 'triangle-cross', 'target-arrow-color': '#b91d1d', 'source-arrow-color': '#b91d1d' }} }},
+                    /* --- UML NOTACIJA (Bogati simboli) --- */
                     {{ selector: 'edge[rel_type="Generalization"]', style: {{ 'width': 3, 'line-color': '#1d3557', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow', 'target-arrow-color': '#1d3557' }} }},
                     {{ selector: 'edge[rel_type="Realization"]', style: {{ 'width': 2, 'line-style': 'dashed', 'line-color': '#1d3557', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' }} }},
+                    {{ selector: 'edge[rel_type="Composition"]', style: {{ 'width': 4, 'line-color': '#1d3557', 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'filled', 'source-arrow-color': '#1d3557', 'target-arrow-shape': 'none' }} }},
+                    {{ selector: 'edge[rel_type="Aggregation"]', style: {{ 'width': 3, 'line-color': '#457b9d', 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'hollow', 'source-arrow-color': '#457b9d' }} }},
+                    {{ selector: 'edge[rel_type="Dependency"]', style: {{ 'line-style': 'dashed', 'target-arrow-shape': 'vee' }} }},
+                    {{ selector: 'edge[rel_type="Conflict"]', style: {{ 'width': 6, 'line-color': '#b91d1d', 'line-style': 'solid', 'target-arrow-shape': 'triangle-cross', 'source-arrow-shape': 'triangle-cross', 'target-arrow-color': '#b91d1d', 'source-arrow-color': '#b91d1d' }} }},
+                    {{ selector: 'edge[rel_type="Specialization"]', style: {{ 'line-style': 'dashed', 'line-color': '#000000', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'filled', 'target-arrow-color': '#000000', 'width': 2 }} }},
+                    {{ selector: 'edge[rel_type="Containment"]', style: {{ 'width': 5, 'line-color': '#1d3557', 'target-arrow-shape': 'circle', 'target-arrow-fill': 'hollow', 'target-arrow-color': '#1d3557' }} }},
                     
-                    /* --- LOGIC OPERATORS --- */
+                    /* --- LOGIČNI KONEKTORJI --- */
                     {{ selector: 'edge[rel_type="AND"]', style: {{ 'width': 5, 'line-color': '#2ecc71', 'target-arrow-shape': 'triangle', 'target-arrow-color': '#2ecc71' }} }},
                     {{ selector: 'edge[rel_type="IF-THEN"]', style: {{ 'width': 4, 'line-color': '#f1c40f', 'target-arrow-shape': 'triangle', 'arrow-scale': 1.5, 'target-arrow-color': '#f1c40f' }} }},
                     {{ selector: 'edge[rel_type="XOR"]', style: {{ 'width': 4, 'line-color': '#e67e22', 'line-style': 'double', 'target-arrow-shape': 'diamond', 'target-arrow-color': '#e67e22' }} }},
                     
-                    /* --- EPIPLEXITY (Neon) --- */
-                    {{ selector: 'edge[rel_type="EX"]', style: {{ 'width': 8, 'line-color': '#ff00ff', 'line-style': 'dashed', 'target-arrow-shape': 'star', 'target-arrow-color': '#ff00ff', 'arrow-scale': 1.6, 'opacity': 1 }} }}
+                    /* --- EPIPLEXITY (Neon fuzija) --- */
+                    {{ selector: 'edge[rel_type="EX"]', style: {{ 'width': 8, 'line-color': '#ff00ff', 'line-style': 'dashed', 'target-arrow-shape': 'star', 'target-arrow-color': '#ff00ff', 'arrow-scale': 1.6, 'opacity': 1 }} }},
+
+                    /* Poudarek na zvezdah (Macro cilji) */
+                    {{ selector: 'node[shape="star"]', style: {{ 'font-size': '16px', 'width': 130, 'height': 130, 'border-width': 5, 'border-color': '#FFD700' }} }}
                 ],
                 layout: {selected_layout}
             }});
-            /* ... (save button logic remains same) ... */
+
+            document.getElementById('save_btn').addEventListener('click', function() {{
+                var png64 = cy.png({{full: true, bg: 'white', scale: 2}});
+                var link = document.createElement('a');
+                var timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+                link.href = png64; 
+                link.download = 'hierarchograph_' + timestamp + '.png';
+                link.click();
+            }});
         }});
     </script>
     """
-    import json
     components.html(cyto_html, height=900)
+
 
 def fetch_author_bibliographies(author_input):
     """Pridobi bibliografijo preko ORCID API-ja."""
