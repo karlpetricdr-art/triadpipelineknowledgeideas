@@ -968,15 +968,15 @@ st.markdown("### 🛠️ PIPELINE CONFIGURATION")
 
 # Entry Rows
 r1c1, r1c2, r1c3 = st.columns([1.5, 2, 1])
-with r1c1: 
-    target_authors = st.text_input("👤 Target Authors (ORCID):", placeholder="e.g., Karl Petrič", key="auth_in")
-with r1c2: 
-    sel_sciences = st.multiselect("2. Science Fields:", sorted(list(KNOWLEDGE_BASE["Science fields"].keys())), default=["Physics", "Sociology"], key="sci_in")
-with r1c3: 
-    expertise = st.select_slider("3. Expertise:", ["Novice", "Intermediate", "Expert"], value="Expert", key="exp_in")
-	goal_context = st.selectbox("6. Strategic Project Goal:", ["Scientific Research", "Problem Solving", "Educational", "Policy Making"], key="goal_ctx_v2026")
-# --- NOVA VRSTICA ZA PARADIGME IN MODELE ---
-r2c1, r2c2 = st.columns(2)
+with r1c1:
+    target_authors = st.text_input("👤 Target Authors (ORCID):", placeholder="e.g., Karl Petrič", key="auth_in_v2026")
+with r1c2:
+    sel_sciences = st.multiselect("2. Science Fields:", sorted(list(KNOWLEDGE_BASE["Science fields"].keys())), default=["Physics", "Psychology", "Sociology"], key="sci_in_v2026")
+with r1c3:
+    expertise = st.select_slider("3. Expertise Level:", ["Novice", "Intermediate", "Expert"], value="Expert", key="exp_in_v2026")
+
+# --- VRSTICA 2: PARADIGME, MODELI IN STRATEŠKI CILJ ---
+r2c1, r2c2, r2c3 = st.columns([1, 1, 1])
 with r2c1:
     sel_paradigms = st.multiselect(
         "4. Scientific Paradigms:", 
@@ -991,6 +991,14 @@ with r2c2:
         default=["Concepts", "Principles & Relations"],
         key="models_in_v2026"
     )
+with r2c3:
+    goal_context = st.selectbox(
+        "6. Strategic Project Goal:", 
+        ["Scientific Research", "Problem Solving", "Educational", "Policy Making"], 
+        key="goal_ctx_v2026"
+    )
+
+st.divider()
 
 # =============================================================================
 # 🧬 DYNAMIC ENGINES: EPIPLEXITY & STRATEGY
