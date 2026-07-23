@@ -915,13 +915,19 @@ with st.sidebar:
 
     with st.expander("📐 Semantic Pillars (ISO & UML)", expanded=False):
         st.markdown("""
-        **1. TT (Top Term)**: Koren področja (Navy).
-        **2. BT (Broader)**: Hierarhična nadpomenka.
-        **3. NT (Narrower)**: Specifična podpomenka.
-        **4. RT (Related)**: Sorodnost (Brez puščic).
-        **5. EQ (Equivalence)**: Sinonimi (Dvojna črta).
-        **6. AS (Associative)**: Semantični skok (Violet).
-        **7. IN (Inheritance)**: Dedovanje (Prazna puščica).
+        **1. TT (Top Term)**: The absolute root or primary category of a domain (Thick Navy line).
+        
+        **2. BT (Broader Term)**: A more general concept/category; moves up the hierarchy (Navy line).
+        
+        **3. NT (Narrower Term)**: A more specific concept/subcategory; moves down the hierarchy (Vee arrow).
+        
+        **4. RT (Related Term)**: Symmetrical association without hierarchy; horizontal context (Dotted Teal, no arrow).
+        
+        **5. EQ (Equivalence)**: Identity relationship, synonyms, or "the same as" (Double Gold line, no arrow).
+        
+        **6. AS (Associative)**: Lateral semantic jumps or non-linear neural connections (Dashed Purple).
+        
+        **7. IN (Inheritance)**: Object-oriented class hierarchy; A inherits properties from B (Blue line, hollow triangle).
         """)
 
     with st.expander("🏛️ Metamodel (IMA) Structures", expanded=False):
