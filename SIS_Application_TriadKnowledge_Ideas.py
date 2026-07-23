@@ -865,7 +865,7 @@ EPIPLEXITY_FRAMEWORK = {
     ]
 }
 # =============================================================================
-# 4. KONČNI POPRAVLJEN SIDEBAR (Z SAMBANOVO IN UNIKATNIMI KLJUČI)
+# 4. KONČNI POPRAVLJEN SIDEBAR (METODOLOŠKO USKLAJEN)
 # =============================================================================
 with st.sidebar:
     # 1. Original 3D Relief Logo
@@ -876,219 +876,132 @@ with st.sidebar:
     
     st.header("⚙️ SYSTEM CONTROL")
     
-    # 3. CEREBRAS SYSTEM CONTROL (JULIJ 2026 - SIS OPTIMIZED)
-    st.header("⚙️ CEREBRAS SYSTEM CONTROL")
-    cerebras_api_key = st.text_input("Cerebras API Key:", type="password", key="side_cerebras_v2026")
+    # 3. CEREBRAS SYSTEM CONTROL
+    cerebras_api_key = st.text_input("Cerebras API Key:", type="password", key="side_cerebras_v2026_final")
     
-    st.subheader("🤖 Sequential Model Selection")
-    
-    # Izbira za Phase 1 (Foundation)
-    p1_model = st.selectbox(
-        "Phase 1 Model (Structure):", 
-        ["gpt-oss-120b", "gemma-4-31b"], 
-        index=0, 
-        help="Priporočeno: gpt-oss-120b za kompleksno IMA sintezo."
-    )
-    
-    # Izbira za Phase 2 (Innovation)
-    p2_model = st.selectbox(
-        "Phase 2 Model (Innovation):", 
-        ["gemma-4-31b", "gpt-oss-120b"], 
-        index=0, 
-        help="Priporočeno: gemma-4-31b za MA inovativne preboje."
-    )
+    st.subheader("🤖 Model Selection")
+    p1_model = st.selectbox("Phase 1 (Structure):", ["gpt-oss-120b", "gemma-4-31b"], index=0, key="p1_select")
+    p2_model = st.selectbox("Phase 2 (Innovation):", ["gemma-4-31b", "gpt-oss-120b"], index=0, key="p2_select")
     
     st.divider()
 
-    # --- NOVO: IZBIRA PERSPEKTIVE GRAFA ---
+    # 4. GRAPH PERSPECTIVE
     st.subheader("🎨 GRAPH PERSPECTIVE")
     graph_perspective = st.selectbox(
         "Select Visual Layout Engine:",
         options=["organic", "hierarchical", "circular", "concentric", "grid"],
         index=0,
         format_func=lambda x: x.capitalize() + " View",
-        help="Organic: Naravno grupiranje | Hierarchical: Drevesna struktura | Circular: Relacije | Concentric: Centralnost",
-        key="side_graph_layout_v2026"
+        key="side_graph_layout_v2026_final"
     )
     
     st.divider()
     
-    # 5. Reset in Guide Gumbi (Dodani unikatni ključi)
+    # 5. CONTROL BUTTONS
     col_res, col_gui = st.columns(2)
     with col_res:
-        if st.button("♻️ RESET", key="sidebar_reset_btn_unique"):
-            for key in list(st.session_state.keys()):
-                del st.session_state[key]
+        if st.button("♻️ RESET", key="sidebar_reset_final"):
+            for key in list(st.session_state.keys()): del st.session_state[key]
             st.rerun()
     with col_gui:
-        if st.button("📖 GUIDE", key="sidebar_guide_btn_unique"):
+        if st.button("📖 GUIDE", key="sidebar_guide_final"):
             st.session_state.show_user_guide = not st.session_state.show_user_guide
             st.rerun()
             
     st.divider()
-    st.subheader("🌐 EXTERNAL CONNECTORS")
-    st.link_button("📂 GitHub Repository", "https://github.com/", use_container_width=True, key="side_git_link")
-    st.link_button("🆔 ORCID Registry", "https://orcid.org/", use_container_width=True, key="side_orcid_link")
-    st.link_button("🎓 Google Scholar", "https://scholar.google.com/", use_container_width=True, key="side_scholar_link")
-    
-    # 6. KNOWLEDGE EXPLORER (POSODOBLJENA RAZŠIRJENA RAZLIČICA)
-    st.divider()
+
+    # 6. KNOWLEDGE EXPLORER (USKLAJEN Z 6 STEBRI)
     st.subheader("📚 KNOWLEDGE EXPLORER")
 
-    with st.expander("👤 User Profile Ontologies", expanded=False):
-        for p, d in KNOWLEDGE_BASE["User profiles"].items(): 
-            st.markdown(f"**{p}**: {d['description']}")
-
-    with st.expander("🧠 Mental Approach (MA) Map", expanded=False):
-        for m, d in MENTAL_APPROACHES_ONTOLOGY["nodes"].items(): 
-            st.markdown(f"• **{m}**: {d['desc']}")
+    with st.expander("📐 Semantic Pillars (ISO & UML)", expanded=False):
+        st.markdown("""
+        **1. TT (Top Term)**: Koren področja (Navy).
+        **2. BT (Broader)**: Hierarhična nadpomenka.
+        **3. NT (Narrower)**: Specifična podpomenka.
+        **4. RT (Related)**: Sorodnost (Brez puščic).
+        **5. EQ (Equivalence)**: Sinonimi (Dvojna črta).
+        **6. AS (Associative)**: Semantični skok (Violet).
+        **7. IN (Inheritance)**: Dedovanje (Prazna puščica).
+        """)
 
     with st.expander("🏛️ Metamodel (IMA) Structures", expanded=False):
         for n, d in HUMAN_THINKING_METAMODEL["nodes"].items(): 
             st.markdown(f"• **{n}**: {d['desc']}")
 
-    with st.expander("📐 Hierarchology & Hierarchography", expanded=False):
-        st.markdown("**Core Concepts:**")
-        for key, val in HIERARCHOLOGY_ONTOLOGY["core_definitions"].items():
-            st.markdown(f"• **{key}**: {val}")
-        
-        st.markdown("---")
-        st.markdown("**Advanced Mapping Connectors:**")
-        st.markdown("• ⬛ ┄ ➤ **Specialization**: Deduktivna izpeljava iz splošnega zakona v specifičen primer (nasprotje generalizacije).")
-        st.markdown("• 🟦 — ◯ **Containment**: Močna strukturna vsebovanost; označuje elemente, ujetne znotraj 'znanstvene kletke'.")
+    with st.expander("🧠 Mental Approach (MA) Map", expanded=False):
+        for m, d in MENTAL_APPROACHES_ONTOLOGY["nodes"].items(): 
+            st.markdown(f"• **{m}**: {d['desc']}")
 
-    with st.expander("🔬 Science Taxonomy & Levels", expanded=False):
-        st.markdown("**Field Domains:**")
-        for s in sorted(KNOWLEDGE_BASE["Science fields"].keys()): 
-            st.markdown(f"• **{s}**")
-        
-        st.markdown("---")
-        st.markdown("**Hierarchical Levels:**")
+    with st.expander("🔬 Science Taxonomy", expanded=False):
+        st.markdown("**Levels:**")
         for level, desc in HIERARCHOLOGY_ONTOLOGY["hierarchical_levels"].items():
             st.markdown(f"• **{level}**: {desc}")
-            
-        st.markdown("---")
-        st.markdown("**Logic Flows:**")
-        st.markdown(f"• *Internal (Inductive):* {HIERARCHOLOGY_ONTOLOGY['operational_logic']['Internal Processes']}")
-        st.markdown(f"• *External (Deductive):* {HIERARCHOLOGY_ONTOLOGY['operational_logic']['External Functioning']}")
-        
-        st.markdown("---")
-        st.markdown("**Hierarchography Methods:**")
-        st.write(", ".join(HIERARCHOLOGY_ONTOLOGY["hierarchography_tools"]))
 
-    with st.expander("🏗️ Structural Model Context", expanded=False):
-        for m, d in KNOWLEDGE_BASE["Structural models"].items(): 
-            st.markdown(f"**{m}**: {d}")
+    st.divider()
+    st.subheader("🌐 CONNECTORS")
+    st.link_button("🆔 ORCID Registry", "https://orcid.org/", use_container_width=True)
+    st.link_button("🎓 Google Scholar", "https://scholar.google.com/", use_container_width=True)
 
 # --- MAIN PAGE CONTENT ---
 st.markdown('<h1 class="main-header-gradient">🧱 SIS Universal Knowledge Synthesizer</h1>', unsafe_allow_html=True)
-st.markdown(f"**Sequential Multi-Engine Pipeline** | Current Operating Date: **{SYSTEM_DATE}**")
+st.markdown(f"**Sequential Multi-Engine Pipeline** | Version: **{VERSION_CODE}**")
 
-if st.session_state.show_user_guide:
-    st.info(f"""
-    **Sequential Synergy Pipeline Workflow (Updated Feb 24, 2026):**
-    1. **Key Input**: Enter your Cerebras (Phase 1) and Cerebras (Phase 2) API keys in the sidebar.
-    2. **Research Foundation (Step 1)**: Cerebras performs structural synthesis foundation using Integrated Metamodel Architecture (IMA).
-    3. **Innovation Prompt (Step 2)**: Cerebras takes Cerebras's work and generates radical 'Useful Innovative Ideas' using Mental Approaches (MA) logic.
-    4. **Visualization**: The interactive 18D graph maps structural facts against generative ideas.
+if st.session_state.get('show_user_guide'):
+    st.info("""
+    **Synergy Workflow:**
+    1. Enter **Cerebras Key**.
+    2. Define **Foundation (Step 1)**: Factual IMA structure.
+    3. Define **Innovation (Step 2)**: Generative MA ideas.
+    4. **Execute**: Map breakthroughs against scientific cages.
     """)
 
-# REFERENCE ARCHITECTURE BOXES
+# ARCHITECTURE BOXES
 col_ref1, col_ref2 = st.columns(2)
 with col_ref1:
-    st.markdown("""<div class="metamodel-box"><b>🏛️ Phase 1: Cerebras (IMA Architecture)</b><br>Structural reasoning building the factual foundation. Focus: Identity, Mission, Problem. </div>""", unsafe_allow_html=True)
+    st.markdown('<div class="metamodel-box"><b>🏛️ Phase 1: Structure</b><br>Fact-based IMA Reasoning foundation.</div>', unsafe_allow_html=True)
 with col_ref2:
-    st.markdown("""<div class="mental-approach-box"><b>🧠 Phase 2: Cerebras (MA Architecture)</b><br>Cognitive transformation generating innovative solutions. Focus: Dialectics, Perspective, Induction.</div>""", unsafe_allow_html=True)
+    st.markdown('<div class="mental-approach-box"><b>🧠 Phase 2: Innovation</b><br>Generative MA Breakthroughs.</div>', unsafe_allow_html=True)
 
-st.markdown("### 🛠️ CONFIGURE SYNERGY PIPELINE")
+st.markdown("### 🛠️ PIPELINE CONFIGURATION")
 
 # Entry Rows
 r1c1, r1c2, r1c3 = st.columns([1.5, 2, 1])
-with r1c1: target_authors = st.text_input("👤 Authors for ORCID Analysis:", placeholder="Karl Petrič, Samo Kralj, Teodor Petrič")
-with r1c2: sel_sciences = st.multiselect("2. Select Science Fields:", sorted(list(KNOWLEDGE_BASE["Science fields"].keys())), default=["Physics", "Psychology", "Sociology"])
-with r1c3: expertise = st.select_slider("3. Expertise Level:", ["Novice", "Intermediate", "Expert"], value="Expert")
-
-r2c1, r2c2, r2c3 = st.columns(3)
-with r2c1: sel_paradigms = st.multiselect("4. Scientific Paradigms:", list(KNOWLEDGE_BASE["Scientific paradigms"].keys()), default=["Rationalism"])
-with r2c2: sel_models = st.multiselect("5. Structural Models:", list(KNOWLEDGE_BASE["Structural models"].keys()), default=["Concepts"])
-with r2c3: goal_context = st.selectbox("6. Strategic Project Goal:", ["Scientific Research", "Problem Solving", "Educational", "Policy Making"])
+with r1c1: target_authors = st.text_input("👤 Target Authors (ORCID):", placeholder="e.g., Karl Petrič", key="auth_in")
+with r1c2: sel_sciences = st.multiselect("2. Science Fields:", sorted(list(KNOWLEDGE_BASE["Science fields"].keys())), default=["Physics", "Sociology"], key="sci_in")
+with r1c3: expertise = st.select_slider("3. Expertise:", ["Novice", "Intermediate", "Expert"], value="Expert", key="exp_in")
 
 # =============================================================================
-# 🧬 INTEGRIRAN NADZOR: EPIPLEXITY & STRATEGIJA (OČIŠČENA VERZIJA)
+# 🧬 DYNAMIC ENGINES: EPIPLEXITY & STRATEGY
 # =============================================================================
-st.divider()
+col_eng1, col_eng2 = st.columns(2)
 
-# --- 1. DEL: EPIPLEXITY ENGINE (Nadzor fuzije znanosti) ---
-st.markdown("### 🌀 EPIPLEXITY ENGINE")
-epiplexity_active = st.toggle(
-    "Activate Epiplexity Protocol", 
-    value=True, 
-    help="Izklopi za standardno interdisciplinarno mapiranje brez transdisciplinarne fuzije.",
-    key="unique_master_toggle_final"
-)
+with col_eng1:
+    st.markdown("#### 🌀 EPIPLEXITY ENGINE")
+    epiplexity_active = st.toggle("Activate Epiplexity Protocol", value=True, key="epi_active_final")
+    epiplexity_intensity = st.select_slider("Fusion Depth:", options=["Linear", "Integrated", "Synergetic"], value="Integrated", key="epi_depth_final")
 
-if epiplexity_active:
-    epiplexity_intensity = st.select_slider(
-        "Set Epiplexity Fusion Depth:",
-        options=["Linear", "Integrated", "Synergetic"],
-        value="Integrated",
-        key="unique_fusion_slider_final"
-    )
-else:
-    st.info("🚫 Epiplexity Engine is SHUT DOWN. AI will use standard logic.")
-    epiplexity_intensity = "None"
-
-st.divider()
-
-# --- 2. DEL: INNOVATION STRATEGY (Kreativni miselni okvirji) ---
-st.markdown("### 🧬 INNOVATION STRATEGY")
-selected_techniques = st.multiselect(
-    "Select Strategic Ideation Frameworks (Pick one or more):", 
-    options=list(IDEATION_TECHNIQUES.keys()), 
-    default=["Six Thinking Hats"],
-    help="Izbrani okvirji bodo usmerjali generiranje idej v Phase 2.",
-    key="unique_strategy_multiselect_final"
-)
-
-if not selected_techniques:
-    st.warning("⚠️ Please select at least one technique for Phase 2.")
-else:
-    # Prikaz opisa aktivnih tehnik
-    combined_desc = " | ".join([f"**{t}**: {IDEATION_TECHNIQUES[t]}" for t in selected_techniques])
-    st.info(f"**Active Hybrid Strategy:** {combined_desc}")
+with col_eng2:
+    st.markdown("#### 🧬 INNOVATION STRATEGY")
+    selected_techniques = st.multiselect("Ideation Frameworks:", options=list(IDEATION_TECHNIQUES.keys()), default=["Six Thinking Hats"], key="strat_in_final")
 
 st.divider()
 
 # =============================================================================
-# ❓ DUAL INQUIRY INTERFACE (Vnosna polja in podatki)
+# ❓ DUAL INQUIRY INTERFACE
 # =============================================================================
-col_inq1, col_inq2, col_inq3 = st.columns([2, 2, 1])
+col_inq1, col_inq2 = st.columns(2)
 
 with col_inq1:
-    user_query = st.text_area(
-        "❓ STEP 1: Research Inquiry (for CEREBRAS):", 
-        placeholder="Fact-based Foundational Inquiry...", 
-        height=200
-    )
+    user_query = st.text_area("❓ PHASE 1: Research Inquiry (Structural Foundation):", placeholder="Describe the factual core...", height=200, key="query_p1")
 
 with col_inq2:
-    idea_query = st.text_area(
-        "💡 STEP 2: Innovation Prompt (for CEREBRAS):", 
-        placeholder="Targets for innovative idea production...", 
-        height=200
-    )
+    idea_query = st.text_area("💡 PHASE 2: Innovation Prompt (Generative Targets):", placeholder="Describe the desired breakthroughs...", height=200, key="query_p2")
 
-with col_inq3:
-    uploaded_file = st.file_uploader("📂 ATTACH DATA (.txt only):", type=['txt'], key="final_file_uploader_v2")
-    file_content = "" 
-    if uploaded_file is not None:
-        try:
-            file_content = uploaded_file.read().decode("utf-8")
-            st.success(f"📎 {uploaded_file.name} uploaded!")
-            with st.expander("File Preview"):
-                st.text(file_content[:300] + "...")
-        except Exception as e:
-            st.error(f"Error reading file: {e}")
+uploaded_file = st.file_uploader("📂 ATTACH DATA (.txt):", type=['txt'], key="file_up_final")
+file_content = ""
+if uploaded_file:
+    file_content = uploaded_file.read().decode("utf-8")
+    st.success(f"📎 {uploaded_file.name} Loaded")
 
 # =============================================================================
 # 5. SYNERGY EXECUTION ENGINE (PURE CEREBRAS SEQUENTIAL PIPELINE - UNABRIDGED)
