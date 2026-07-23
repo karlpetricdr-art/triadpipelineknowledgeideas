@@ -1155,7 +1155,6 @@ MANDATORY JSON STRUCTURE:
                         {"role": "system", "content": samba_sys_prompt}, 
                         {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER GOAL: {idea_query}{file_context_str}"}
                     ],
-                    temperature=0.7,
                     temperature=0.85,
                     top_p=0.9
                 )
