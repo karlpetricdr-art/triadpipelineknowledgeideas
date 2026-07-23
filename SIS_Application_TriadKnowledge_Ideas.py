@@ -229,57 +229,24 @@ SVG_3D_RELIEF = """
 # 1. CORE RENDERING ENGINES & DATA FETCHING
 # =============================================================================
 
-# =============================================================================
-# 1. CORE RENDERING ENGINES & DATA FETCHING
-# =============================================================================
-
 def render_cytoscape_network(elements, layout_type="organic", container_id="cy_canvas"):
     """
-    ULTRA-SYNERGY Multi-Perspective Hierarhografski motor.
-    Vključuje: ISO 25964 Thesaurus, UML 2.5 Standard, Petrič HA Logiko, Logic Gates in EX fuzijo.
-    GEOMETRIJSKA TAKSONOMIJA: Zvezde, Heksagoni, Diamanti, Oktogoni, Trikotniki, Elipse, Pravokotniki.
+    ULTRA-SYNERGY Multi-Perspective Hierarchographical Engine.
+    
+    EXHAUSTIVE RELATIONSHIP TAXONOMY:
+    - ISO 25964 Thesaurus: TT, BT, NT, RT (non-dir), EQ (non-dir), AS, IN (hollow)
+    - UML 2.5 Structural: Composition, Aggregation, Generalization, Specialization, 
+                         Realization, Dependency, Containment, Conflict (bi-dir)
+    - Logic Operators: AND, OR, XOR, NOT, IF-THEN (chevron flow)
+    - Innovation Logic: EX (Epiplexity), HA (Hierarchical-Associative)
     """
     
     layout_configs = {
-        "organic": """{ 
-            name: 'cose', 
-            idealEdgeLength: 120, 
-            nodeOverlap: 50, 
-            refresh: 20, 
-            fit: true, 
-            padding: 50, 
-            nodeRepulsion: 1000000,
-            edgeElasticity: 100,
-            nestingFactor: 1.2,
-            numIter: 1500
-        }""",
-        "hierarchical": """{ 
-            name: 'breadthfirst', 
-            directed: true, 
-            padding: 50, 
-            circle: false, 
-            spacingFactor: 1.75,
-            maximal: true
-        }""",
-        "circular": """{ 
-            name: 'circle', 
-            padding: 50, 
-            radius: 400,
-            spacingFactor: 0.8
-        }""",
-        "concentric": """{ 
-            name: 'concentric', 
-            minNodeSpacing: 60, 
-            concentric: function(node){ return node.data('size'); },
-            levelWidth: function(nodes){ return 10; },
-            padding: 50
-        }""",
-        "grid": """{ 
-            name: 'grid', 
-            rows: 5, 
-            padding: 50, 
-            spacingFactor: 1.2 
-        }"""
+        "organic": "{ name: 'cose', idealEdgeLength: 120, nodeOverlap: 50, refresh: 20, fit: true, padding: 50, nodeRepulsion: 1000000, edgeElasticity: 100, nestingFactor: 1.2, numIter: 1500 }",
+        "hierarchical": "{ name: 'breadthfirst', directed: true, padding: 50, circle: false, spacingFactor: 1.75, maximal: true }",
+        "circular": "{ name: 'circle', padding: 50, radius: 400, spacingFactor: 0.8 }",
+        "concentric": "{ name: 'concentric', minNodeSpacing: 60, concentric: function(node){ return node.data('size'); }, levelWidth: function(nodes){ return 10; }, padding: 50 }",
+        "grid": "{ name: 'grid', rows: 5, padding: 50, spacingFactor: 1.2 }"
     }
 
     selected_layout = layout_configs.get(layout_type, layout_configs["organic"])
@@ -325,7 +292,7 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
                             'label': 'data(rel_type)',
                             'font-size': '9px',
                             'font-weight': 'bold',
-                            'color': '#2a9d8f',
+                            'color': '#1d3557',
                             'curve-style': 'unbundled-bezier',
                             'control-point-step-size': 40,
                             'target-arrow-color': 'data(color)',
@@ -335,50 +302,49 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
                             'text-background-padding': '3px',
                             'text-background-shape': 'roundrectangle',
                             'edge-distances': 'node-position',
-                            'opacity': 0.8
+                            'opacity': 0.85
                         }}
                     }},
                     
-                    /* --- 1. ISO 25964 THESAURUS LOGIC --- */
-                    {{ selector: 'edge[rel_type="TT"]', style: {{ 'width': 8, 'line-color': '#1d3557', 'target-arrow-shape': 'triangle', 'target-arrow-scale': 1.6 }} }},
-                    {{ selector: 'edge[rel_type="BT"]', style: {{ 'width': 5, 'line-color': '#1d3557', 'target-arrow-shape': 'triangle' }} }},
+                    /* --- I. ISO 25964 THESAURUS STANDARDS --- */
+                    // TT & BT: Strong Hierarchical Direction
+                    {{ selector: 'edge[rel_type="TT"], edge[rel_type="BT"]', style: {{ 'width': 7, 'line-color': '#1d3557', 'target-arrow-shape': 'triangle', 'target-arrow-scale': 1.6 }} }},
+                    // NT: Downward Hierarchy
                     {{ selector: 'edge[rel_type="NT"]', style: {{ 'width': 4, 'line-color': '#1d3557', 'target-arrow-shape': 'vee' }} }},
-                    {{ selector: 'edge[rel_type="IN"]', style: {{ 'width': 3, 'line-color': '#0077b6', 'line-style': 'dotted', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'filled' }} }},
-                    {{ selector: 'edge[rel_type="RT"]', style: {{ 'width': 2, 'line-color': '#2a9d8f', 'line-style': 'dotted', 'target-arrow-shape': 'none' }} }},
-                    {{ selector: 'edge[rel_type="AS"]', style: {{ 'width': 3, 'line-color': '#7b2cb1', 'line-style': 'dashed', 'target-arrow-shape': 'vee' }} }},
+                    // RT & EQ: NON-DIRECTIONAL (Symmetric relationships)
+                    {{ selector: 'edge[rel_type="RT"]', style: {{ 'width': 3, 'line-color': '#2a9d8f', 'line-style': 'dotted', 'target-arrow-shape': 'none' }} }},
                     {{ selector: 'edge[rel_type="EQ"]', style: {{ 'width': 6, 'line-color': '#f1c40f', 'line-style': 'double', 'target-arrow-shape': 'none' }} }},
+                    // AS: Associative Leap
+                    {{ selector: 'edge[rel_type="AS"]', style: {{ 'width': 4, 'line-color': '#7b2cb1', 'line-style': 'dashed', 'target-arrow-shape': 'vee' }} }},
+                    // IN: Inheritance (UML Standard: Hollow Triangle)
+                    {{ selector: 'edge[rel_type="IN"]', style: {{ 'width': 5, 'line-color': '#0077b6', 'line-style': 'solid', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' }} }},
 
-                    /* --- 2. UML 2.5 STRUCTURAL LOGIC --- */
-                    {{ selector: 'edge[rel_type="Generalization"]', style: {{ 'width': 4, 'line-color': '#1d3557', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' }} }},
-                    {{ selector: 'edge[rel_type="Specialization"]', style: {{ 'width': 4, 'line-style': 'dashed', 'line-color': '#000', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'filled' }} }},
-                    {{ selector: 'edge[rel_type="Realization"]', style: {{ 'width': 2, 'line-style': 'dashed', 'line-color': '#1d3557', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' }} }},
-                    {{ selector: 'edge[rel_type="Composition"]', style: {{ 'width': 6, 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'filled', 'source-arrow-color': '#1d3557', 'target-arrow-shape': 'none' }} }},
-                    {{ selector: 'edge[rel_type="Aggregation"]', style: {{ 'width': 4, 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'hollow', 'source-arrow-color': '#1d3557', 'target-arrow-shape': 'none' }} }},
-                    {{ selector: 'edge[rel_type="Dependency"]', style: {{ 'width': 3, 'line-style': 'dashed', 'line-color': '#457b9d', 'target-arrow-shape': 'vee' }} }},
-                    {{ selector: 'edge[rel_type="Conflict"]', style: {{ 'width': 8, 'line-color': '#b91d1d', 'line-style': 'solid', 'target-arrow-shape': 'triangle-cross', 'source-arrow-shape': 'triangle-cross', 'target-arrow-color': '#b91d1d', 'source-arrow-color': '#b91d1d' }} }},
-                    {{ selector: 'edge[rel_type="Containment"]', style: {{ 'width': 6, 'line-color': '#1d3557', 'target-arrow-shape': 'circle', 'target-arrow-fill': 'hollow', 'target-arrow-color': '#1d3557' }} }},
+                    /* --- II. UML 2.5 STRUCTURAL STANDARDS --- */
+                    {{ selector: 'edge[rel_type="Composition"]', style: {{ 'width': 6, 'line-color': '#1d3557', 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'filled' }} }},
+                    {{ selector: 'edge[rel_type="Aggregation"]', style: {{ 'width': 5, 'line-color': '#1d3557', 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'hollow' }} }},
+                    {{ selector: 'edge[rel_type="Generalization"]', style: {{ 'width': 5, 'line-color': '#1d3557', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' }} }},
+                    {{ selector: 'edge[rel_type="Specialization"]', style: {{ 'width': 4, 'line-color': '#000000', 'line-style': 'dashed', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'filled' }} }},
+                    {{ selector: 'edge[rel_type="Realization"]', style: {{ 'width': 3, 'line-color': '#1d3557', 'line-style': 'dashed', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' }} }},
+                    {{ selector: 'edge[rel_type="Dependency"]', style: {{ 'width': 3, 'line-color': '#457b9d', 'line-style': 'dashed', 'target-arrow-shape': 'vee' }} }},
+                    {{ selector: 'edge[rel_type="Containment"]', style: {{ 'width': 6, 'line-color': '#1d3557', 'target-arrow-shape': 'circle', 'target-arrow-fill': 'hollow' }} }},
+                    // Conflict: Bidirectional Blocking
+                    {{ selector: 'edge[rel_type="Conflict"]', style: {{ 'width': 8, 'line-color': '#b91d1d', 'line-style': 'solid', 'target-arrow-shape': 'triangle-cross', 'source-arrow-shape': 'triangle-cross' }} }},
 
-                    /* --- 3. PETRIČ HIERARCHICAL-ASSOCIATIVE (HA) --- */
-                    {{ selector: 'edge[rel_type="HA"]', style: {{ 'width': 6, 'line-color': '#7b2cb1', 'line-style': 'dashed', 'target-arrow-shape': 'triangle-tee', 'source-arrow-shape': 'circle', 'source-arrow-fill': 'hollow', 'arrow-scale': 1.2 }} }},
-                    
-                    /* --- 4. LOGIC GATES (DECISION LOGIC) --- */
-                    {{ selector: 'edge[rel_type="AND"]', style: {{ 'width': 6, 'line-color': '#00FF00', 'target-arrow-color': '#00FF00', 'target-arrow-shape': 'triangle' }} }},
-                    {{ selector: 'edge[rel_type="OR"]', style: {{ 'width': 4, 'line-color': '#00BFFF', 'line-style': 'dashed', 'target-arrow-color': '#00BFFF', 'target-arrow-shape': 'vee' }} }},
-                    {{ selector: 'edge[rel_type="XOR"]', style: {{ 'width': 5, 'line-color': '#FF8C00', 'line-style': 'double', 'target-arrow-color': '#FF8C00', 'target-arrow-shape': 'diamond' }} }},
-                    {{ selector: 'edge[rel_type="NOT"]', style: {{ 'width': 5, 'line-color': '#FF0000', 'line-style': 'dashed', 'target-arrow-color': '#FF0000', 'target-arrow-shape': 'tee' }} }},
-                    {{ selector: 'edge[rel_type="IF-THEN"]', style: {{ 'width': 5, 'line-color': '#FFD700', 'target-arrow-color': '#FFD700', 'target-arrow-shape': 'triangle', 'arrow-scale': 1.5 }} }},
+                    /* --- III. LOGIC OPERATORS & INNOVATION --- */
+                    // Logic Gates: Chevron Flow
+                    {{ selector: 'edge[rel_type="AND"], edge[rel_type="OR"], edge[rel_type="XOR"], edge[rel_type="NOT"]', style: {{ 'width': 6, 'target-arrow-shape': 'chevron', 'line-style': 'dashed' }} }},
+                    {{ selector: 'edge[rel_type="IF-THEN"]', style: {{ 'width': 5, 'line-color': '#FFD700', 'target-arrow-shape': 'triangle', 'arrow-scale': 1.6 }} }},
+                    {{ selector: 'edge[rel_type="EX"]', style: {{ 'width': 9, 'line-color': '#ff00ff', 'line-style': 'dashed', 'target-arrow-shape': 'star', 'arrow-scale': 2.0 }} }},
+                    {{ selector: 'edge[rel_type="HA"]', style: {{ 'width': 6, 'line-color': '#7b2cb1', 'line-style': 'dashed', 'target-arrow-shape': 'triangle-tee', 'source-arrow-shape': 'circle', 'source-arrow-fill': 'hollow' }} }},
 
-                    /* --- 5. EPIPLEXITY (TRANS-CAGE FUSION) --- */
-                    {{ selector: 'edge[rel_type="EX"]', style: {{ 'width': 9, 'line-color': '#ff00ff', 'line-style': 'dashed', 'target-arrow-shape': 'star', 'target-arrow-color': '#ff00ff', 'arrow-scale': 2.0, 'opacity': 1 }} }},
-
-                    /* --- GEOMETRIC TAXONOMY (Shapes & Specialized Sizes) --- */
-                    {{ selector: 'node[shape="star"]', style: {{ 'width': 140, 'height': 140, 'border-width': 6, 'border-color': '#FFD700', 'font-size': '16px' }} }},
-                    {{ selector: 'node[shape="hexagon"]', style: {{ 'width': 100, 'height': 100, 'border-width': 4, 'border-color': '#1d3557' }} }},
+                    /* --- IV. GEOMETRIC TAXONOMY --- */
+                    {{ selector: 'node[shape="star"]', style: {{ 'width': 140, 'height': 140, 'border-width': 6, 'border-color': '#FFD700', 'font-size': '14px' }} }},
+                    {{ selector: 'node[shape="hexagon"]', style: {{ 'width': 110, 'height': 110, 'border-width': 4, 'border-color': '#1d3557' }} }},
                     {{ selector: 'node[shape="diamond"]', style: {{ 'width': 115, 'height': 115, 'border-width': 5, 'border-color': '#fd7e14' }} }},
                     {{ selector: 'node[shape="octagon"]', style: {{ 'width': 105, 'height': 105, 'border-width': 4, 'border-color': '#dc3545' }} }},
-                    {{ selector: 'node[shape="triangle"]', style: {{ 'width': 90, 'height': 90, 'border-width': 3, 'border-color': '#28a745' }} }},
-                    {{ selector: 'node[shape="ellipse"]', style: {{ 'width': 95, 'height': 95, 'border-width': 3, 'border-color': '#17a2b8' }} }},
-                    {{ selector: 'node[shape="rectangle"]', style: {{ 'width': 85, 'height': 85, 'border-width': 2, 'border-color': '#6c757d' }} }}
+                    {{ selector: 'node[shape="triangle"]', style: {{ 'width': 95, 'height': 95, 'border-width': 3, 'border-color': '#28a745' }} }},
+                    {{ selector: 'node[shape="ellipse"]', style: {{ 'width': 100, 'height': 100, 'border-width': 3, 'border-color': '#17a2b8' }} }},
+                    {{ selector: 'node[shape="rectangle"]', style: {{ 'width': 90, 'height': 90, 'border-width': 2, 'border-color': '#6c757d' }} }}
                 ],
                 layout: {selected_layout}
             }});
@@ -398,17 +364,42 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
 
 
 def fetch_author_bibliographies(author_input):
-    """Pridobi bibliografijo preko ORCID API-ja."""
+    """Retrieves bibliography via ORCID API search and record lookup."""
     if not author_input: return ""
     author_list = [a.strip() for a in author_input.split(",")]
     comprehensive_biblio = ""
     headers = {"Accept": "application/json"}
     for auth in author_list:
         try:
-            s_res = requests.get(f"https://pub.orcid.org/v3.0/search/?q={auth}", headers=headers, timeout=6).json()
+            s_res = requests.get(f"https://pub.orcid.org/v3.0/search/?q={auth}", headers=headers, timeout=8).json()
             if s_res.get('result'):
                 orcid_id = s_res['result'][0]['orcid-identifier']['path']
-                r_res = requests.get(f"https://pub.orcid.org/v3.0/{orcid_id}/record", headers=headers, timeout=6).json()
+                r_res = requests.get(f"https://pub.orcid.org/v3.0/{orcid_id}/record", headers=headers, timeout=8).json()
+                works = r_res.get('activities-summary', {}).get('works', {}).get('group', [])
+                comprehensive_biblio += f"#### 🆔 ORCID: {auth.upper()} ({orcid_id})\\n"
+                for work in works[:12]:
+                    summary = work.get('work-summary', [{}])[0]
+                    title = summary.get('title', {}).get('title', {}).get('value', 'Unknown Title')
+                    pub_date = summary.get('publication-date')
+                    year = pub_date.get('year', {}).get('value', 'n.d.') if pub_date else 'n.d.'
+                    comprehensive_biblio += f"- **{year}**: {title}\\n"
+                comprehensive_biblio += "\\n---\\n"
+        except Exception:
+            pass
+    return comprehensive_biblio
+
+def fetch_author_bibliographies(author_input):
+    """Retrieves bibliography via ORCID API search and record lookup."""
+    if not author_input: return ""
+    author_list = [a.strip() for a in author_input.split(",")]
+    comprehensive_biblio = ""
+    headers = {"Accept": "application/json"}
+    for auth in author_list:
+        try:
+            s_res = requests.get(f"https://pub.orcid.org/v3.0/search/?q={auth}", headers=headers, timeout=8).json()
+            if s_res.get('result'):
+                orcid_id = s_res['result'][0]['orcid-identifier']['path']
+                r_res = requests.get(f"https://pub.orcid.org/v3.0/{orcid_id}/record", headers=headers, timeout=8).json()
                 works = r_res.get('activities-summary', {}).get('works', {}).get('group', [])
                 comprehensive_biblio += f"#### 🆔 ORCID: {auth.upper()} ({orcid_id})\\n"
                 for work in works[:12]:
@@ -1188,28 +1179,38 @@ Do NOT use 'EX' (Epiplexity Crossover) relations. Use standard 'BT', 'NT', or 'A
                     ex_logic_matrix = ""
                     json_edge_example = "AS"
 
-                # --- IZGRADNJA SISTEMSKEGA NAVODILA ---
+                # --- IZGRADNJA SISTEMSKEGA NAVODILA Z ARHITEKTURNIMI PRAVILI ---
                 samba_sys_prompt = f"""
 You are the SIS Lead Strategic Innovation Architect.
 
 ### OPERATIONAL RULES
-1. Provide a professional, human-readable STRATEGIC INNOVATION REPORT.
-2. DO NOT include JSON code or any semantic-graph-data inside the report text.
-3. MANDATORY: After your report is completely finished, provide the graph data as a single block starting EXACTLY with the header: ### SEMANTIC_GRAPH_JSON
+1. Provide a professional STRATEGIC INNOVATION REPORT (Markdown).
+2. DO NOT include JSON inside the report text.
+3. MANDATORY: After the report, provide JSON starting with: ### SEMANTIC_GRAPH_JSON
 
-### GEOMETRIC TAXONOMY (Strict Shapes)
-Assign shapes based on logical level:
+### ARCHITECTURAL COUPLING RULES (Strict Connection Logic)
+When building the graph edges, follow these ontological constraints:
+- **TT (Top Term)**: Use ONLY to link a 'hexagon' (Science Domain) to the central 'star' (Ultimate Goal).
+- **BT/NT (Hierarchy)**: Use to organize 'hexagons' (Domains) or 'rectangles' (Facts).
+- **IN (Inheritance)**: Use to link 'rectangles' (Specific Data) to their parent classes.
+- **AND/OR/IF-THEN (Logic)**: Use ONLY to link 'triangles' (Processes) to 'diamonds' (Innovations).
+- **EX (Epiplexity)**: Use ONLY if high-energy fusion is detected between two disparate 'hexagons' (Sciences) to create a new 'diamond'.
+- **Conflict**: Use to mark collisions between 'octagons' (Constraints) and 'diamonds' (Innovations).
+- **HA (Hierarchical-Associative)**: Use for non-linear jumps between any nodes that defy standard hierarchy.
+
+### GEOMETRIC TAXONOMY
 - 'star': Ultimate Goals
 - 'hexagon': Science Domains
-- 'diamond': Innovations
+- 'diamond': Innovations/Solutions
 - 'triangle': Active Processes
-- 'octagon': Ethical Constraints
-- 'ellipse': Human Factors
-- 'rectangle': Specific Facts
+- 'octagon': Ethical Constraints/Risks
+- 'ellipse': Human Factors (Psychology/Sociology)
+- 'rectangle': Specific Facts/Evidence
 
 ### RELATIONSHIP MATRIX
-Use ALL available logic: TT, BT, NT, IN, RT, AS, EQ, Generalization, Specialization, Realization, Composition, Aggregation, Dependency, Conflict, Containment, HA, AND, OR, XOR, NOT, IF-THEN, and EX.
+Codes: TT, BT, NT, IN, RT, AS, EQ, Generalization, Specialization, Realization, Composition, Aggregation, Dependency, Conflict, Containment, HA, AND, OR, XOR, NOT, IF-THEN, EX.
 """
+
                 # IZVEDBA KLICA NA CEREBRAS API
                 samba_response = cerebras_client.chat.completions.create(
                     model=p2_model, 
@@ -1227,7 +1228,7 @@ Use ALL available logic: TT, BT, NT, IN, RT, AS, EQ, Generalization, Specializat
             # =============================================================================
             g_data = {"nodes": [], "edges": []}
             
-            # 1. Ločevanje poročila od podatkov (Skrivanje kode pred uporabnikom)
+            # 1. Ločevanje poročila od podatkov
             if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
                 parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
                 innovation_text = parts[0]
@@ -1252,7 +1253,7 @@ Use ALL available logic: TT, BT, NT, IN, RT, AS, EQ, Generalization, Specializat
                 except Exception as json_err:
                     st.warning(f"Note: Graph structure parsing issue: {json_err}")
 
-            # 3. PROCESIRANJE VOZLIŠČ (Geometrijska fiksacija)
+            # 3. PROCESIRANJE VOZLIŠČ (Geometrijska fiksacija s skaliranjem)
             if g_data.get("nodes"):
                 for n in g_data.get("nodes", []):
                     lbl = n.get("label", "Node")
@@ -1260,11 +1261,11 @@ Use ALL available logic: TT, BT, NT, IN, RT, AS, EQ, Generalization, Specializat
                     n_color = n.get("color", "#DDEBF7")
                     n_shape = n.get("shape", "rectangle").lower()
                     
-                    # STROGA VELIKOSTNA HIERARHIJA (Preprečuje redukcijo na kroge)
-                    if n_shape == 'star': n_size = 145
-                    elif n_shape == 'diamond': n_size = 125
-                    elif n_shape == 'hexagon': n_size = 115
-                    elif n_shape == 'octagon': n_size = 110
+                    # STROGA VELIKOSTNA HIERARHIJA (Skladno s selektorji v Chapter 1)
+                    if n_shape == 'star': n_size = 140
+                    elif n_shape == 'diamond': n_size = 115
+                    elif n_shape == 'hexagon': n_size = 110
+                    elif n_shape == 'octagon': n_size = 105
                     elif n_shape == 'ellipse': n_size = 100
                     elif n_shape == 'triangle': n_size = 95
                     elif n_shape == 'rectangle': n_size = 90
@@ -1275,47 +1276,72 @@ Use ALL available logic: TT, BT, NT, IN, RT, AS, EQ, Generalization, Specializat
                         "data": {
                             "id": nid, "label": lbl, "color": n_color, 
                             "shape": n_shape, "size": n_size, 
-                            "description": n.get("description", "Analiza v poročilu.")
+                            "description": n.get("description", "Analysis in report.")
                         }
                     })
 
-                # 4. PROCESIRANJE POVEZAV (Z AVTOMATSKIM PREVAJALNIKOM KOD)
-                # Ta del popravi AI napake: npr. "Association" -> "AS"
+                # 4. PROCESIRANJE POVEZAV (AVTOMATSKA TAKSONOMSKA SINHRONIZACIJA & VAROVALKE)
                 rel_map = {
-                    "association": "AS", "associative": "AS",
+                    # ISO 25964 Mappings
+                    "top term": "TT", "root": "TT",
                     "broader term": "BT", "broader": "BT",
                     "narrower term": "NT", "narrower": "NT",
-                    "top term": "TT", "root": "TT",
                     "related term": "RT", "related": "RT",
                     "equivalence": "EQ", "synonym": "EQ",
-                    "instance": "IN", "example": "IN",
-                    "hierarchical-associative": "HA", "hybrid": "HA"
+                    "associative term": "AS", "associative": "AS",
+                    "instance": "IN", "inheritance": "IN", "example": "IN",
+                    # Logic & UML Norms
+                    "hierarchical-associative": "HA",
+                    "epiplexity": "EX", "fusion": "EX",
+                    "generalization": "Generalization",
+                    "specialization": "Specialization",
+                    "composition": "Composition",
+                    "aggregation": "Aggregation",
+                    "dependency": "Dependency",
+                    "realization": "Realization",
+                    "containment": "Containment",
+                    "conflict": "Conflict"
                 }
 
                 for e in g_data.get("edges", []):
-                    # Pridobimo surovo relacijo in jo očistimo
-                    raw_rel = str(e.get("rel_type", "AS")).strip().lower()
-                    
-                    # Če je AI uporabil polno besedo, jo skrajšamo v kodo
-                    rel = rel_map.get(raw_rel, e.get("rel_type", "AS"))
+                    raw_rel = str(e.get("rel_type", "AS")).strip()
+                    # Normalizacija za prevajalnik (male črke), nato preslikava v URADNO KODO
+                    rel = rel_map.get(raw_rel.lower(), raw_rel)
 
-                    # BARVNA MATRICA (Povezana z render_cytoscape_network stili)
-                    if rel in ["TT", "BT", "NT", "Generalization", "Specialization", "Containment", "Realization"]:
-                        e_color = "#1D3557" # Hierarhija
-                    elif rel in ["RT", "AS", "Dependency", "Aggregation"]:
-                        e_color = "#2A9D8F" # Asociacija
-                    elif rel in ["IN", "Composition"]:
-                        e_color = "#0077B6" # Struktura
-                    elif rel == "HA":
-                        e_color = "#7B2CB1" # Hibrid
+                    # --- KRITIČNA VAROVALKA: EPIPLEXITY ENGINE SHUTDOWN LOGIC ---
+                    # Če Epiplexity motor ni aktiviran, AI pa vseeno generira EX, jo degradiramo v AS.
+                    if rel == "EX" and not epiplexity_active:
+                        rel = "AS"
+
+                    # --- BARVNA MATRICA (Sinhronizirana s Cytoscape CSS v Chapter 1) ---
+                    # 1. Hierarchical & Structural Navy (Standardna hierarhija)
+                    if rel in ["TT", "BT", "NT", "Generalization", "Realization", "Containment", "Composition"]:
+                        e_color = "#1D3557"
+                    # 2. Thesaurus Related & Structural Dependencies (Sorodnost/Odvisnost)
+                    elif rel in ["RT", "Dependency", "Aggregation"]:
+                        e_color = "#2A9D8F"
+                    # 3. Inheritance / Instance Blue (Dedovanje)
+                    elif rel == "IN":
+                        e_color = "#0077B6"
+                    # 4. Associative & Systems Logic Purple (Asociativna sinteza)
+                    elif rel in ["AS", "HA"]:
+                        e_color = "#7B2CB1"
+                    # 5. Equivalence Yellow (Identiteta pojmov)
                     elif rel == "EQ":
-                        e_color = "#F1C40F" # Ekvivalenca
+                        e_color = "#F1C40F"
+                    # 6. Conflict Red (Blokade in spori)
                     elif rel == "Conflict":
-                        e_color = "#B91D1D" # Konflikt
+                        e_color = "#B91D1D"
+                    # 7. Innovation Magenta (Samo ob vklopljenem Epiplexity Engine)
                     elif rel == "EX":
-                        e_color = "#FF00FF" # Epiplexity
-                    elif rel in ["AND", "IF-THEN"]:
-                        e_color = "#00FF00" if rel == "AND" else "#FFD700"
+                        e_color = "#FF00FF"
+                    # 8. Logic Operators (Procesni tok)
+                    elif rel == "AND": e_color = "#00FF00"
+                    elif rel == "OR": e_color = "#00BFFF"
+                    elif rel == "XOR": e_color = "#FF8C00"
+                    elif rel == "NOT": e_color = "#FF0000"
+                    elif rel == "IF-THEN": e_color = "#FFD700"
+                    # Fallback (Neznane relacije)
                     else:
                         e_color = "#ADB5BD"
 
@@ -1323,10 +1349,9 @@ Use ALL available logic: TT, BT, NT, IN, RT, AS, EQ, Generalization, Specializat
                         "data": { 
                             "source": e.get("source"), 
                             "target": e.get("target"), 
-                            "rel_type": rel, # TUKAJ JE ZDAJ KRATICA (npr. AS)
+                            "rel_type": rel,
                             "color": e_color 
                         }
-                    })
 
             # --- 5. FINAL DISPLAY: SEQUENTIAL INTERACTIVE SYNERGY REPORT ---
             
