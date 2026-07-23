@@ -974,7 +974,7 @@ with r1c2:
     sel_sciences = st.multiselect("2. Science Fields:", sorted(list(KNOWLEDGE_BASE["Science fields"].keys())), default=["Physics", "Sociology"], key="sci_in")
 with r1c3: 
     expertise = st.select_slider("3. Expertise:", ["Novice", "Intermediate", "Expert"], value="Expert", key="exp_in")
-
+	goal_context = st.selectbox("6. Strategic Project Goal:", ["Scientific Research", "Problem Solving", "Educational", "Policy Making"], key="goal_ctx_v2026")
 # --- NOVA VRSTICA ZA PARADIGME IN MODELE ---
 r2c1, r2c2 = st.columns(2)
 with r2c1:
@@ -1037,18 +1037,21 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
         st.warning("⚠️ Phase 1 Research Inquiry is required.")
     else:
         try:
-            # --- 1. KONFIGURACIJA AKTIVNEGA 18D KONTEKSTA (MANDATORY) ---
-            # Sistem združi izbrane paradigme, modele in znanosti v strogo navodilo.
-            # To je "Backbone" sistema, ki prisili AI v uporabo izbranih metodoloških očal.
+            # --- 1. IZGRADNJA RAZŠIRJENEGA STRATEŠKEGA KONTEKSTA ---
+            # Tukaj AI-ju pošljemo definicije izbranih tehnik in vse parametre vmesnika
+            strategy_descriptions = "\n".join([f"- {t}: {IDEATION_TECHNIQUES[t]}" for t in selected_techniques])
+            
             active_context = f"""
-            \n### MANDATORY SYSTEM INSTRUCTION: APPLY 18D INTERFACE PARAMETERS ###
-            The user has explicitly defined the following analytical constraints:
+            \n### MANDATORY SYSTEM INSTRUCTION: APPLY 18D ANALYTICAL BACKBONE ###
+            The user has explicitly defined the following methodology for this run:
             - TARGET SCIENCE FIELDS: {', '.join(sel_sciences)}
             - APPLIED SCIENTIFIC PARADIGMS: {', '.join(sel_paradigms)}
             - APPLIED STRUCTURAL MODELS: {', '.join(sel_models)}
-            - INNOVATION FRAMEWORKS: {', '.join(selected_techniques)}
             - EXPERTISE LEVEL: {expertise}
             - PROJECT STRATEGIC GOAL: {goal_context}
+            
+            ### ACTIVE INNOVATION FRAMEWORKS (USE THESE FOR PHASE 2):
+            {strategy_descriptions}
             \n###########################################################\n
             """
 
@@ -1058,10 +1061,10 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             file_context_str = f"\n\n[FILE CONTEXT]:\n{file_content}" if file_content else ""
             biblio_context = f"\n\n[AUTHOR RESEARCH BACKGROUND]:\n{biblio_data}" if biblio_data else ""
             
-            # Združevanje vseh parametrov za Fazo 1
+            # Združevanje konteksta z vprašanjem
             full_ai_input = f"{active_context}{user_query}{file_context_str}{biblio_context}"
 
-            # Inicializacija skupnega Cerebras klienta
+            # Inicializacija Cerebras klienta
             cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
             
             # --- PHASE 1: CEREBRAS (Foundation - Building Architecture) ---
@@ -1069,7 +1072,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 p1_response = cerebras_client.chat.completions.create(
                     model=p1_model,
                     messages=[
-                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. Use the provided Scientific Paradigms and Structural Models to build a rigid factual foundation. Prioritize ontological structural truth."}, 
+                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. Use the provided Scientific Paradigms and Structural Models to build a rigid factual foundation. Prioritize structural truth over creativity."}, 
                         {"role": "user", "content": full_ai_input}
                     ],
                     temperature=0.4
@@ -1080,22 +1083,17 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             # --- PHASE 2: CEREBRAS (Innovation & Full Matrix Graph Generation) ---
             with st.spinner(f'PHASE 2: Generating innovations with {p2_model}...'):
                 
-                # --- PRIPRAVA POGOJNEGA PROTOKOLA ZA EPIPLEXITY ---
+                # Epiplexity Protokol (Logika fuzije)
                 if epiplexity_active:
                     epiplexity_logic_text = EPIPLEXITY_FRAMEWORK['logic_levels'].get(
                         epiplexity_intensity + ' (Low)' if epiplexity_intensity == 'Linear' else 
                         epiplexity_intensity + ' (Medium)' if epiplexity_intensity == 'Integrated' else 
                         epiplexity_intensity + ' (High)', "Integrated Logic"
                     )
-                    protocol_snippet = f"""
-### EPIPLEXITY PROTOCOL ACTIVATED ###
-Fusion Depth: {epiplexity_intensity} | Logic: {epiplexity_logic_text}
-Identify 'Epiplexity Peaks' (intersections of 3+ science fields) and use 'EX' relations for these links.
-"""
+                    protocol_snippet = f"### EPIPLEXITY PROTOCOL ACTIVATED ###\nDepth: {epiplexity_intensity}. Logic: {epiplexity_logic_text}. Mandatory: Identify 'Epiplexity Peaks' and use 'EX' relations for fusion links."
                 else:
-                    protocol_snippet = "### STANDARD SCIENTIFIC PROTOCOL ###\nDo NOT use 'EX' relations. Maintain boundaries."
+                    protocol_snippet = "### STANDARD SCIENTIFIC PROTOCOL ###\nMaintain scientific boundaries. Do NOT use 'EX' relations."
 
-                # --- IZGRADNJA STROGEGA SISTEMSKEGA NAVODILA ZA GRAF ---
                 samba_sys_prompt = f"""
 You are the SIS Lead Strategic Innovation Architect.
 
@@ -1110,25 +1108,25 @@ You are the SIS Lead Strategic Innovation Architect.
 Follow these ontological constraints when building graph edges:
 - **TT (Top Term)**: Link a 'hexagon' (Science Domain) to the central 'star' (Goal).
 - **BT/NT (Hierarchy)**: Organize 'hexagons' or 'rectangles'.
-- **IN (Inheritance)**: Link 'rectangles' (Specific Data) to parent classes or domains.
-- **AND/OR/XOR/IF-THEN (Logic)**: Link 'triangles' (Processes) to 'diamonds' (Innovations).
+- **IN (Inheritance)**: Link 'rectangles' (Specific Data) to their parent classes or domains.
+- **AND/OR/XOR/NOT/IF-THEN (Logic)**: Link 'triangles' (Processes) to 'diamonds' (Innovations).
 - **EX (Epiplexity)**: Use ONLY for high-energy fusion between disparate 'hexagons'.
 - **Conflict**: Mark collisions between 'octagons' (Constraints) and 'diamonds'.
+- **HA (Hierarchical-Associative)**: Use for non-linear jumps that defy standard hierarchy.
 
-### GEOMETRIC TAXONOMY (Shapes)
-Assign shapes strictly: 'star' (Goal), 'hexagon' (Domain), 'diamond' (Innovation), 'triangle' (Process), 'octagon' (Risk), 'ellipse' (Human), 'rectangle' (Fact).
+### GEOMETRIC TAXONOMY (Strict Shapes)
+Assign: 'star' (Goals), 'hexagon' (Domains), 'diamond' (Innovations), 'triangle' (Processes), 'octagon' (Risks), 'ellipse' (Human), 'rectangle' (Facts).
 
 ### RELATIONSHIP MATRIX (Required Codes)
 Thesaurus: TT, BT, NT, RT, EQ, AS, IN.
 UML: Generalization, Specialization, Realization, Composition, Aggregation, Dependency, Conflict, Containment.
 Logic: AND, OR, XOR, NOT, IF-THEN, EX.
 """
-
                 samba_response = cerebras_client.chat.completions.create(
                     model=p2_model, 
                     messages=[
                         {"role": "system", "content": samba_sys_prompt}, 
-                        {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER GOAL: {idea_query}{file_context_str}"}
+                        {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER INNOVATION GOAL: {idea_query}\nAPPLY INNOVATION FRAMEWORKS: {', '.join(selected_techniques)}"}
                     ],
                     temperature=0.85,
                     top_p=0.9
@@ -1140,7 +1138,7 @@ Logic: AND, OR, XOR, NOT, IF-THEN, EX.
             # =============================================================================
             g_data = {"nodes": [], "edges": []}
             
-            # Ločevanje poročila od podatkov
+            # Ločevanje poročila od JSON podatkov
             if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
                 parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
                 innovation_text, json_raw = parts[0], parts[1]
@@ -1152,22 +1150,18 @@ Logic: AND, OR, XOR, NOT, IF-THEN, EX.
             nodes_to_link = []
             final_elements = []
 
-            # Varnostno iskanje JSON-a
+            # Varnostno iskanje JSON bloka
             json_match = re.search(r'(\{.*"nodes".*\})', json_raw if json_raw else cerebras_innovation, re.DOTALL | re.IGNORECASE)
-            
             if json_match:
                 try:
-                    raw_json_str = json_match.group(1)
-                    clean_json = raw_json_str.replace('\n', ' ').replace('\r', '').replace('\t', ' ')
+                    clean_json = json_match.group(1).replace('\n', ' ').replace('\r', '')
                     g_data = json.loads(clean_json)
                 except Exception: pass
 
-            # A) PROCESIRANJE VOZLIŠČ
+            # A) PROCESIRANJE VOZLIŠČ (Geometrija)
             if g_data.get("nodes"):
                 for n in g_data.get("nodes", []):
-                    lbl = n.get("label", "Node")
-                    nid = n.get("id", f"n{lbl}")
-                    n_color = n.get("color", "#DDEBF7")
+                    lbl, nid = n.get("label", "Node"), n.get("id", f"n{n.get('label')}")
                     n_shape = n.get("shape", "rectangle").lower()
                     
                     if n_shape == 'star': n_size = 145
@@ -1176,19 +1170,18 @@ Logic: AND, OR, XOR, NOT, IF-THEN, EX.
                     elif n_shape == 'octagon': n_size = 110
                     elif n_shape == 'ellipse': n_size = 100
                     elif n_shape == 'triangle': n_size = 95
-                    elif n_shape == 'rectangle': n_size = 90
-                    else: n_size = 85
+                    else: n_size = 90
                     
                     final_elements.append({
                         "data": {
-                            "id": nid, "label": lbl, "color": n_color, 
+                            "id": nid, "label": lbl, "color": n.get("color", "#DDEBF7"), 
                             "shape": n_shape, "size": n_size, 
-                            "description": n.get("description", "Analysis provided in the report.")
+                            "description": n.get("description", "Analysis provided in the integrated report.")
                         }
                     })
                     nodes_to_link.append({"id": nid, "label": lbl})
 
-                # B) PROCESIRANJE POVEZAV (S POLNO LOGIČNO MATRICO)
+                # B) PROCESIRANJE POVEZAV (Full Matrix & Safety)
                 rel_map = {
                     "top term": "TT", "root": "TT", "broader term": "BT", "narrower term": "NT",
                     "related term": "RT", "equivalence": "EQ", "associative term": "AS", 
@@ -1203,62 +1196,47 @@ Logic: AND, OR, XOR, NOT, IF-THEN, EX.
                     for e in g_data.get("edges", []):
                         raw_rel = str(e.get("rel_type", "AS")).strip().lower()
                         rel = rel_map.get(raw_rel, raw_rel.upper() if len(raw_rel) < 5 else "AS")
+                        
+                        # Varovalka za Epiplexity
+                        if rel == "EX" and not epiplexity_active: rel = "AS"
 
-                        if rel == "EX" and not epiplexity_active:
-                            rel = "AS"
-
-                        # Barvna matrika
+                        # Barvna matrika za graf
                         if rel in ["TT", "BT", "NT", "Generalization", "Realization", "Containment", "Composition"]:
-                            e_color = "#1D3557"
+                            e_color = "#1D3557" # Navy
                         elif rel in ["RT", "Dependency", "Aggregation"]:
-                            e_color = "#2A9D8F"
+                            e_color = "#2A9D8F" # Teal
                         elif rel == "IN":
-                            e_color = "#0077B6"
+                            e_color = "#0077B6" # Blue
                         elif rel in ["AS", "HA"]:
-                            e_color = "#7B2CB1"
+                            e_color = "#7B2CB1" # Purple
                         elif rel == "EQ":
-                            e_color = "#F1C40F"
+                            e_color = "#F1C40F" # Gold
                         elif rel == "Conflict":
-                            e_color = "#B91D1D"
+                            e_color = "#B91D1D" # Red
                         elif rel == "EX":
-                            e_color = "#FF00FF"
+                            e_color = "#FF00FF" # Magenta
                         elif rel in ["AND", "OR", "XOR", "NOT", "IF-THEN"]:
-                            e_color = "#28a745"
+                            e_color = "#28a745" # Green
                         else:
                             e_color = "#ADB5BD"
 
                         final_elements.append({
-                            "data": { 
-                                "source": e.get("source"), 
-                                "target": e.get("target"), 
-                                "rel_type": rel,
-                                "color": e_color 
-                            }
+                            "data": { "source": e.get("source"), "target": e.get("target"), "rel_type": rel, "color": e_color }
                         })
 
-            # --- 5. PRIKAZ REZULTATOV IN ANALITIKE ---
+            # --- 5. PRIKAZ REZULTATOV ---
             if epiplexity_active:
                 st.divider()
                 ex_edges = [e for e in final_elements if e.get('data', {}).get('rel_type') == 'EX']
                 total_edges = [e for e in final_elements if 'source' in e.get('data', {})]
-                ex_count = len(ex_edges)
-                epiplexity_score = (ex_count / len(total_edges) * 100) if total_edges else 0
-                
+                ep_score = (len(ex_edges) / len(total_edges) * 100) if total_edges else 0
                 st.markdown("### 📊 EPIPLEXITY ANALYTICS")
                 m1, m2, m3 = st.columns(3)
-                with m1: st.metric("Epiplexity Score", f"{epiplexity_score:.1f}%")
-                with m2: st.metric("Cage Breakers (EX)", ex_count)
+                with m1: st.metric("Epiplexity Score", f"{ep_score:.1f}%")
+                with m2: st.metric("Cage Breakers (EX)", len(ex_edges))
                 with m3: st.metric("Synthesis Flow", len(total_edges))
 
-                progress_color = "green" if epiplexity_score > 20 else "orange" if epiplexity_score > 10 else "red"
-                st.markdown(f'<div style="width: 100%; background-color: #eee; border-radius: 10px; margin-bottom: 20px;"><div style="width: {min(epiplexity_score * 2, 100)}%; background-color: {progress_color}; padding: 5px; border-radius: 10px; text-align: center; color: white; font-weight: bold;">SYNTHESIS DENSITY</div></div>', unsafe_allow_html=True)
-
             st.subheader("🧱 INTEGRATED HIERARCHOLOGICAL REPORT")
-            if biblio_data:
-                with st.expander("📚 EXTRACTED AUTHOR BACKGROUND", expanded=False):
-                    st.markdown(biblio_data)
-            
-            # Semantični označevalnik pojmov
             final_interactive_report = full_report
             if nodes_to_link:
                 sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
@@ -1270,31 +1248,21 @@ Logic: AND, OR, XOR, NOT, IF-THEN, EX.
                         pattern = re.compile(rf'(?<!\w){re.escape(lbl)}(?!\w)', re.IGNORECASE | re.UNICODE)
                         final_interactive_report = pattern.sub(link_html, final_interactive_report, count=1)
             
+            if biblio_data:
+                with st.expander("📚 AUTHOR BACKGROUND", expanded=False): st.markdown(biblio_data)
             st.markdown(final_interactive_report, unsafe_allow_html=True)
 
-            # Katalog strateških prebojev
             if final_elements:
+                # Katalog diamantov
                 innovations = [n['data'] for n in final_elements if n['data'].get('shape') == 'diamond']
                 if innovations:
                     st.divider()
                     st.markdown("### 🚀 STRATEGIC INNOVATION DEEP-DIVE")
                     for inv in innovations:
-                        g_url = urllib.parse.quote(inv['label'])
-                        detailed_desc = inv.get('description', "Detailed strategic analysis available in the integrated report.")
-                        st.markdown(f"""
-                        <div style="background-color: #ffffff; border-left: 6px solid #fd7e14; padding: 25px; border-radius: 15px; box-shadow: 0 6px 15px rgba(0,0,0,0.1); margin-bottom: 25px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                                <span style="background-color: #fff4ed; color: #fd7e14; padding: 5px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 800; text-transform: uppercase; border: 1px solid #fd7e14;">Strategic Breakthrough</span>
-                                <a href="https://www.google.com/search?q={g_url}" target="_blank" style="text-decoration: none; color: #457b9d; font-size: 0.85em; font-weight: 600;">Technical Search ↗</a>
-                            </div>
-                            <h2 style="margin: 0 0 15px 0; color: #1d3557;">{inv['label']}</h2>
-                            <div style="color: #333; font-size: 1.05em; line-height: 1.7; border-top: 1px solid #f0f0f0; padding-top: 15px;">{detailed_desc}</div>
-                        </div>
-                        """, unsafe_allow_html=True)
+                        st.markdown(f"""<div style="background-color: #ffffff; border-left: 6px solid #fd7e14; padding: 25px; border-radius: 15px; box-shadow: 0 6px 15px rgba(0,0,0,0.1); margin-bottom: 25px;"><h2 style="margin: 0 0 15px 0; color: #1d3557;">{inv['label']}</h2><div style="color: #333; font-size: 1.05em; line-height: 1.7; border-top: 1px solid #f0f0f0; padding-top: 15px;">{inv.get('description', 'Breakthrough analyzed in report.')}</div></div>""", unsafe_allow_html=True)
 
                 st.subheader(f"🕸️ HYBRID SEMANTIC SYSTEM MAP ({graph_perspective.upper()} VIEW)")
                 render_cytoscape_network(final_elements, layout_type=graph_perspective, container_id=f"cy_{int(time.time())}")
-                
                 st.session_state.final_graph_elements = final_elements
                 st.session_state.report_ready = True
 
