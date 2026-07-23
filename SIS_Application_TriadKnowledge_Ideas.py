@@ -1216,80 +1216,65 @@ Codes: TT, BT, NT, IN, RT, AS, EQ, Generalization, Specialization, Realization, 
                     "conflict": "Conflict"
                 }
 
-                for e in g_data.get("edges", []):
-                    raw_rel = str(e.get("rel_type", "AS")).strip()
-                    # Normalizacija za prevajalnik (male črke), nato preslikava v URADNO KODO
-                    rel = rel_map.get(raw_rel.lower(), raw_rel)
+                if g_data.get("edges"):
+                    for e in g_data.get("edges", []):
+                        raw_rel = str(e.get("rel_type", "AS")).strip()
+                        # Normalizacija za prevajalnik (male črke), nato preslikava v URADNO KODO
+                        rel = rel_map.get(raw_rel.lower(), raw_rel)
 
-                    # --- KRITIČNA VAROVALKA: EPIPLEXITY ENGINE SHUTDOWN LOGIC ---
-                    # Če Epiplexity motor ni aktiviran, AI pa vseeno generira EX, jo degradiramo v AS.
-                    if rel == "EX" and not epiplexity_active:
-                        rel = "AS"
+                        # --- KRITIČNA VAROVALKA: EPIPLEXITY ENGINE SHUTDOWN LOGIC ---
+                        if rel == "EX" and not epiplexity_active:
+                            rel = "AS"
 
-                    # --- BARVNA MATRICA (Sinhronizirana s Cytoscape CSS v Chapter 1) ---
-                    # 1. Hierarchical & Structural Navy (Standardna hierarhija)
-                    if rel in ["TT", "BT", "NT", "Generalization", "Realization", "Containment", "Composition"]:
-                        e_color = "#1D3557"
-                    # 2. Thesaurus Related & Structural Dependencies (Sorodnost/Odvisnost)
-                    elif rel in ["RT", "Dependency", "Aggregation"]:
-                        e_color = "#2A9D8F"
-                    # 3. Inheritance / Instance Blue (Dedovanje)
-                    elif rel == "IN":
-                        e_color = "#0077B6"
-                    # 4. Associative & Systems Logic Purple (Asociativna sinteza)
-                    elif rel in ["AS", "HA"]:
-                        e_color = "#7B2CB1"
-                    # 5. Equivalence Yellow (Identiteta pojmov)
-                    elif rel == "EQ":
-                        e_color = "#F1C40F"
-                    # 6. Conflict Red (Blokade in spori)
-                    elif rel == "Conflict":
-                        e_color = "#B91D1D"
-                    # 7. Innovation Magenta (Samo ob vklopljenem Epiplexity Engine)
-                    elif rel == "EX":
-                        e_color = "#FF00FF"
-                    # 8. Logic Operators (Procesni tok)
-                    elif rel == "AND": e_color = "#00FF00"
-                    elif rel == "OR": e_color = "#00BFFF"
-                    elif rel == "XOR": e_color = "#FF8C00"
-                    elif rel == "NOT": e_color = "#FF0000"
-                    elif rel == "IF-THEN": e_color = "#FFD700"
-                    # Fallback (Neznane relacije)
-                    else:
-                        e_color = "#ADB5BD"
+                        # --- BARVNA MATRICA (Sinhronizirana s Cytoscape CSS v Chapter 1) ---
+                        if rel in ["TT", "BT", "NT", "Generalization", "Realization", "Containment", "Composition"]:
+                            e_color = "#1D3557"
+                        elif rel in ["RT", "Dependency", "Aggregation"]:
+                            e_color = "#2A9D8F"
+                        elif rel == "IN":
+                            e_color = "#0077B6"
+                        elif rel in ["AS", "HA"]:
+                            e_color = "#7B2CB1"
+                        elif rel == "EQ":
+                            e_color = "#F1C40F"
+                        elif rel == "Conflict":
+                            e_color = "#B91D1D"
+                        elif rel == "EX":
+                            e_color = "#FF00FF"
+                        elif rel == "AND": e_color = "#00FF00"
+                        elif rel == "OR": e_color = "#00BFFF"
+                        elif rel == "XOR": e_color = "#FF8C00"
+                        elif rel == "NOT": e_color = "#FF0000"
+                        elif rel == "IF-THEN": e_color = "#FFD700"
+                        else:
+                            e_color = "#ADB5BD"
 
-                    final_elements.append({
-                        "data": { 
-                            "source": e.get("source"), 
-                            "target": e.get("target"), 
-                            "rel_type": rel,
-                            "color": e_color 
-                        }
+                        final_elements.append({
+                            "data": { 
+                                "source": e.get("source"), 
+                                "target": e.get("target"), 
+                                "rel_type": rel,
+                                "color": e_color 
+                            }
+                        })
 
             # --- 5. FINAL DISPLAY: SEQUENTIAL INTERACTIVE SYNERGY REPORT ---
             
             # 5a. GLOBAL SEMANTIC HIGHLIGHTER (Regex Highlighter)
             final_interactive_report = full_report
             if nodes_to_link:
-                # Razvrstimo ključne besede po dolžini (daljše prej), da se krajše ne vmešavajo
                 sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
                 for item in sorted_keywords:
                     lbl = item['label']
                     if len(lbl) > 2:
                         g_url = urllib.parse.quote(lbl)
-                        # The link style ensures high visibility
                         link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
-                        
-                        # Unicode-safe regex to catch terms in report
                         pattern = re.compile(rf'(?<!\w){re.escape(lbl)}(?!\w)', re.IGNORECASE | re.UNICODE)
-                        
-                        # Linkamo le PRVO pojavitev besede za čistočo
                         final_interactive_report = pattern.sub(link_html, final_interactive_report, count=1)
-# --- NOVO: EPIPLEXITY ANALYTICS DASHBOARD (Pogojni izpis) ---
+
+            # --- NOVO: EPIPLEXITY ANALYTICS DASHBOARD (Pogojni izpis) ---
             if epiplexity_active:
                 st.divider()
-                
-                # Izračun metrik iz pripravljenih elementov grafa
                 ex_edges = [e for e in final_elements if e.get('data', {}).get('rel_type') == 'EX']
                 total_edges = [e for e in final_elements if 'source' in e.get('data', {})]
                 conflict_edges = [e for e in final_elements if e.get('data', {}).get('rel_type') == 'Conflict']
@@ -1298,21 +1283,15 @@ Codes: TT, BT, NT, IN, RT, AS, EQ, Generalization, Specialization, Realization, 
                 total_count = len(total_edges)
                 epiplexity_score = (ex_count / total_count * 100) if total_count > 0 else 0
                 
-                # Prikaz nadzorne plošče z metrikami
                 st.markdown("### 📊 EPIPLEXITY ANALYTICS")
                 m1, m2, m3 = st.columns(3)
-                
                 with m1:
-                    st.metric("Epiplexity Score", f"{epiplexity_score:.1f}%", 
-                              help="Odstotek povezav, ki so transdisciplinarne (EX). Višji score pomeni močnejšo sintezo.")
+                    st.metric("Epiplexity Score", f"{epiplexity_score:.1f}%")
                 with m2:
-                    st.metric("Cage Breakers", ex_count, 
-                              help="Število prebojev, ki so presegli omejitve posameznih znanosti preko EX povezav.")
+                    st.metric("Cage Breakers", ex_count)
                 with m3:
-                    st.metric("Systemic Tension", len(conflict_edges), 
-                              help="Število identificiranih konfliktov (Conflict) med paradigmami na grafu.")
+                    st.metric("Systemic Tension", len(conflict_edges))
 
-                # Vizualni indikator (Progress Bar) za gostoto sinteze
                 progress_color = "green" if epiplexity_score > 20 else "orange" if epiplexity_score > 10 else "red"
                 st.markdown(f"""
                 <div style="width: 100%; background-color: #eee; border-radius: 10px; margin-bottom: 20px;">
@@ -1321,31 +1300,24 @@ Codes: TT, BT, NT, IN, RT, AS, EQ, Generalization, Specialization, Realization, 
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
+
             # 5b. RENDERING THE INTERACTIVE REPORT
             st.subheader("🧱 INTEGRATED HIERARCHOLOGICAL REPORT")
             if biblio_data:
                 with st.expander("📚 EXTRACTED AUTHOR BACKGROUND", expanded=False):
                     st.markdown(biblio_data)
             
-            # Display the full linked report (P1 + P2)
             st.markdown(final_interactive_report, unsafe_allow_html=True)
 
             # 5c. INNOVATION DEEP-DIVE: DETAILED BREAKTHROUGH CATALOG
             if final_elements:
-                st.divider()
-                st.markdown("### 🚀 STRATEGIC INNOVATION DEEP-DIVE")
-                st.info("The following strategic breakthroughs have been synthesized from the multi-dimensional analysis above.")
-                
-                # Extract innovations (diamonds) for detailed report-style display
                 innovations = [n['data'] for n in final_elements if n['data'].get('shape') == 'diamond']
-                
                 if innovations:
+                    st.divider()
+                    st.markdown("### 🚀 STRATEGIC INNOVATION DEEP-DIVE")
                     for inv in innovations:
                         g_url = urllib.parse.quote(inv['label'])
-                        # Fetch the precise description generated by the model
-                        detailed_desc = inv.get('description', "Detailed strategic analysis is available in the integrated report above.")
-                        
-                        # High-End Report Style Card
+                        detailed_desc = inv.get('description', "Detailed strategic analysis available in the integrated report.")
                         st.markdown(f"""
                         <div style="background-color: #ffffff; border-left: 6px solid #fd7e14; padding: 25px; border-radius: 15px; box-shadow: 0 6px 15px rgba(0,0,0,0.1); border: 1px solid #eee; margin-bottom: 25px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -1358,30 +1330,22 @@ Codes: TT, BT, NT, IN, RT, AS, EQ, Generalization, Specialization, Realization, 
                             </div>
                         </div>
                         """, unsafe_allow_html=True)
-                else:
-                    st.warning("No specific 'Diamond' innovations were found. Review the structural graph for implicit breakthroughs.")
 
-                # 5d. MINIMALIST SYSTEM LEGEND (FINAL ARCHITECTURE)
+                # 5d. MINIMALIST SYSTEM LEGEND
                 st.markdown("""
                 <div style="font-size: 0.78em; color: #444; background: #ffffff; padding: 15px 25px; border-radius: 15px; border: 1px solid #e9ecef; margin-top: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
                         <div>
-                            <b style="color: #1d3557; text-transform: uppercase; letter-spacing: 1px;">Nodes (Geometry):</b><br>
-                            ⭐ Goal | ⬢ Domain | 💠 Innovation | △ Process | ▭ Data | ⬣ Rule | ⭔ Bio
+                            <b style="color: #1d3557; text-transform: uppercase; letter-spacing: 1px;">Nodes:</b> ⭐ Goal | ⬢ Domain | 💠 Innovation | △ Process | ▭ Data
                         </div>
-                        <div style="height: 30px; width: 1px; background: #dee2e6; display: block;"></div>
                         <div>
-                            <b style="color: #1d3557; text-transform: uppercase; letter-spacing: 1px;">Semantic Layers:</b><br>
-                            <span style="color:#1d3557;">⬤ Hierarchical (ISO)</span> | 
-                            <span style="color:#7b2cb1;">⬤ Associative</span> | 
-                            <span style="color:#2a9d8f;">⬤ Related</span> | 
-                            <span style="color:#f1c40f;">⬤ Equivalence</span>
+                            <b style="color: #1d3557; text-transform: uppercase; letter-spacing: 1px;">Layers:</b> <span style="color:#1d3557;">Hierarchical</span> | <span style="color:#7b2cb1;">Associative</span> | <span style="color:#2a9d8f;">Related</span>
                         </div>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
 
-                # 5e. FINAL GRAPH RENDERING (Z DINAMIČNO PERSPEKTIVO)
+                # 5e. FINAL GRAPH RENDERING
                 st.subheader(f"🕸️ HYBRID SEMANTIC SYSTEM MAP ({graph_perspective.upper()} VIEW)")
                 render_cytoscape_network(
                     final_elements, 
@@ -1389,7 +1353,6 @@ Codes: TT, BT, NT, IN, RT, AS, EQ, Generalization, Specialization, Realization, 
                     container_id=f"cy_{int(time.time())}"
                 )
 
-                # --- NOVO: SHRANJEVANJE ZA GALERIJO (DODANO NA KONEC POROČILA) ---
                 st.session_state.final_graph_elements = final_elements
                 st.session_state.report_ready = True
 
@@ -1403,31 +1366,15 @@ Codes: TT, BT, NT, IN, RT, AS, EQ, Generalization, Specialization, Realization, 
 if st.session_state.get('report_ready') and 'final_graph_elements' in st.session_state:
     st.divider()
     st.markdown('<h2 style="color: #1d3557; text-align: center;">🖼️ MULTI-PERSPECTIVE GRAPH GALLERY</h2>', unsafe_allow_html=True)
-    st.info("💡 **NAVODILO ZA ZAPOREDNO SHRANJEVANJE:** Spodaj so zavihki z različnimi vizualnimi perspektivami istega znanja. Odprite posamezen zavihek in kliknite gumb **EXPORT PNG**, da shranite vseh 5 verzij na svoj disk.")
+    st.info("💡 **NAVODILO ZA ZAPOREDNO SHRANJEVANJE:** Odprite zavihek in kliknite EXPORT PNG.")
 
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
-        "🌿 ORGANIC", "🌲 HIERARCHICAL", "⭕ CIRCULAR", "🎯 CONCENTRIC", "🔲 GRID"
-    ])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["🌿 ORGANIC", "🌲 HIERARCHICAL", "⭕ CIRCULAR", "🎯 CONCENTRIC", "🔲 GRID"])
 
-    with tab1:
-        st.markdown("**Organic View:** Najboljše za odkrivanje naravnih tematskih sklopov.")
-        render_cytoscape_network(st.session_state.final_graph_elements, layout_type="organic", container_id="gal_organic")
-    
-    with tab2:
-        st.markdown("**Hierarchical View:** Logično drevo od splošnega k specifičnemu.")
-        render_cytoscape_network(st.session_state.final_graph_elements, layout_type="hierarchical", container_id="gal_hierarchical")
-        
-    with tab3:
-        st.markdown("**Circular View:** Fokus na relacijah in krožni soodvisnosti.")
-        render_cytoscape_network(st.session_state.final_graph_elements, layout_type="circular", container_id="gal_circular")
-        
-    with tab4:
-        st.markdown("**Concentric View:** Razporeditev po sistemski pomembnosti (Jedro).")
-        render_cytoscape_network(st.session_state.final_graph_elements, layout_type="concentric", container_id="gal_concentric")
-
-    with tab5:
-        st.markdown("**Grid View:** Pregledna poravnava vseh prvin.")
-        render_cytoscape_network(st.session_state.final_graph_elements, layout_type="grid", container_id="gal_grid")
+    with tab1: render_cytoscape_network(st.session_state.final_graph_elements, layout_type="organic", container_id="gal_organic")
+    with tab2: render_cytoscape_network(st.session_state.final_graph_elements, layout_type="hierarchical", container_id="gal_hierarchical")
+    with tab3: render_cytoscape_network(st.session_state.final_graph_elements, layout_type="circular", container_id="gal_circular")
+    with tab4: render_cytoscape_network(st.session_state.final_graph_elements, layout_type="concentric", container_id="gal_concentric")
+    with tab5: render_cytoscape_network(st.session_state.final_graph_elements, layout_type="grid", container_id="gal_grid")
 
 # =============================================================================
 # 7. FOOTER
