@@ -966,9 +966,29 @@ st.markdown("### 🛠️ PIPELINE CONFIGURATION")
 
 # Entry Rows
 r1c1, r1c2, r1c3 = st.columns([1.5, 2, 1])
-with r1c1: target_authors = st.text_input("👤 Target Authors (ORCID):", placeholder="e.g., Karl Petrič", key="auth_in")
-with r1c2: sel_sciences = st.multiselect("2. Science Fields:", sorted(list(KNOWLEDGE_BASE["Science fields"].keys())), default=["Physics", "Sociology"], key="sci_in")
-with r1c3: expertise = st.select_slider("3. Expertise:", ["Novice", "Intermediate", "Expert"], value="Expert", key="exp_in")
+with r1c1: 
+    target_authors = st.text_input("👤 Target Authors (ORCID):", placeholder="e.g., Karl Petrič", key="auth_in")
+with r1c2: 
+    sel_sciences = st.multiselect("2. Science Fields:", sorted(list(KNOWLEDGE_BASE["Science fields"].keys())), default=["Physics", "Sociology"], key="sci_in")
+with r1c3: 
+    expertise = st.select_slider("3. Expertise:", ["Novice", "Intermediate", "Expert"], value="Expert", key="exp_in")
+
+# --- NOVA VRSTICA ZA PARADIGME IN MODELE ---
+r2c1, r2c2 = st.columns(2)
+with r2c1:
+    sel_paradigms = st.multiselect(
+        "4. Scientific Paradigms:", 
+        options=list(KNOWLEDGE_BASE["Scientific paradigms"].keys()), 
+        default=["Systems Theory", "Holism"],
+        key="paradigms_in_v2026"
+    )
+with r2c2:
+    sel_models = st.multiselect(
+        "5. Structural Models:", 
+        options=list(KNOWLEDGE_BASE["Structural models"].keys()), 
+        default=["Concepts", "Principles & Relations"],
+        key="models_in_v2026"
+    )
 
 # =============================================================================
 # 🧬 DYNAMIC ENGINES: EPIPLEXITY & STRATEGY
@@ -1020,16 +1040,16 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             trigger_keyword = "[ACTIVATE]"
             active_context = ""
             
+            # Če je v poizvedbi [ACTIVATE] ali če so polja izbrana, prisilimo AI v uporabo teh dimenzij
             if trigger_keyword in user_query or (idea_query and trigger_keyword in idea_query):
                 active_context = f"""
-                \n### MANDATORY SYSTEM INSTRUCTION: APPLY INTERFACE PARAMETERS ###
-                The user has explicitly activated the following constraints for this specific run:
-                - Target Science Fields: {', '.join(sel_sciences)}
-                - Applied Scientific Paradigms: {', '.join(sel_paradigms)}
-                - Structural Model Focus: {', '.join(sel_models)}
-                - Innovation Frameworks: {', '.join(selected_techniques)}
-                - Expertise Level: {expertise}
-                - Project Strategic Goal: {goal_context}
+                \n### MANDATORY SYSTEM INSTRUCTION: APPLY 18D PARAMETERS ###
+                The researcher requires synthesis through these specific lenses:
+                - TARGET SCIENCE FIELDS: {', '.join(sel_sciences)}
+                - APPLIED SCIENTIFIC PARADIGMS: {', '.join(sel_paradigms)}
+                - APPLIED STRUCTURAL MODELS: {', '.join(sel_models)}
+                - INNOVATION FRAMEWORKS: {', '.join(selected_techniques)}
+                - EXPERTISE LEVEL: {expertise}
                 \n###########################################################\n
                 """
 
