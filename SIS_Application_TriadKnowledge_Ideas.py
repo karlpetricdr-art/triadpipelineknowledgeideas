@@ -1199,7 +1199,8 @@ Every node and edge must be accounted for. In the 'description' field of each 'd
 
             # --- 2. ČIŠČENJE REDUNDANTNIH NASLOVOV PRED PRIKAZOM ---
             redundant_patterns = [
-                r"(?i)semantic graph\s*[–-]\s*json representation:?", 
+                r"(?i)Each innovation synthesises.*JSON descriptions below\.?:?",
+				r"(?i)semantic graph\s*[–-]\s*json representation:?", 
                 r"(?i)semantic graph \(json\):?", 
                 r"(?i)below is the json structure:?", 
                 r"(?i)here is the semantic graph:?",
