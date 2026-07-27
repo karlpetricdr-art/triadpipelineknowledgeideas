@@ -231,8 +231,10 @@ SVG_3D_RELIEF = """
 
 def render_cytoscape_network(elements, layout_type="organic", container_id="cy_canvas"):
     """
-    ULTRA-SYNERGY MOTOR: Vključuje UML, ISO (vključno z AS), Logične konektorje in Export PNG.
+    Posodobljen motor z več perspektivami (Multi-Perspective Layout Engine).
+    Vključuje UML, ISO Thesaurus in Logične konektorje (AND, OR, XOR, NOT, IF-THEN).
     """
+
     # Mapiranje Python izbire v Cytoscape JS konfiguracije
     layout_configs = {
         "organic": """{ 
@@ -307,8 +309,10 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
                             'text-max-width': '80px',
                             'border-width': 3,
                             'border-color': '#ffffff',
+                            'border-opacity': 0.8,
                             'text-outline-color': '#ffffff',
-                            'text-outline-width': 2
+                            'text-outline-width': 2,
+                            'box-shadow': '0 4px 10px rgba(0,0,0,0.2)'
                         }}
                     }},
                     {{
@@ -327,6 +331,8 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
                             'text-background-opacity': 1,
                             'text-background-color': '#ffffff',
                             'text-background-padding': '3px',
+                            'text-background-shape': 'roundrectangle',
+                            'edge-distances': 'node-position',
                             'opacity': 0.8
                         }}
                     }},
@@ -336,29 +342,27 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
                     {{ selector: 'edge[rel_type="Composition"]', style: {{ 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'filled', 'width': 4 }} }},
                     {{ selector: 'edge[rel_type="Aggregation"]', style: {{ 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'hollow', 'width': 3 }} }},
                     {{ selector: 'edge[rel_type="Dependency"]', style: {{ 'line-style': 'dashed', 'target-arrow-shape': 'vee' }} }},
-                    {{ selector: 'edge[rel_type="Conflict"]', style: {{ 'width': 6, 'line-color': '#b91d1d', 'target-arrow-shape': 'triangle-cross' }} }},
-                    {{ selector: 'edge[rel_type="Specialization"]', style: {{ 'line-style': 'dashed', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'filled' }} }},
-                    {{ selector: 'edge[rel_type="Containment"]', style: {{ 'line-color': '#1d3557', 'target-arrow-shape': 'circle', 'target-arrow-fill': 'hollow', 'width': 4 }} }},
+                    {{ selector: 'edge[rel_type="Conflict"]', style: {{ 'width': 6, 'line-color': '#b91d1d', 'line-style': 'solid', 'target-arrow-color': '#b91d1d', 'target-arrow-shape': 'triangle-cross', 'source-arrow-shape': 'triangle-cross', 'source-arrow-color': '#b91d1d' }} }},
+                    {{ selector: 'edge[rel_type="Specialization"]', style: {{ 'line-style': 'dashed', 'line-color': '#000000', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'filled', 'target-arrow-color': '#000000', 'width': 2 }} }},
+                    {{ selector: 'edge[rel_type="Containment"]', style: {{ 'line-color': '#1d3557', 'target-arrow-shape': 'circle', 'target-arrow-color': '#1d3557', 'target-arrow-fill': 'hollow', 'width': 4 }} }},
                     
-                    /* --- ISO THESAURUS & ONTOLOGY --- */
+                    /* --- ISO THESAURUS --- */
                     {{ selector: 'edge[rel_type="TT"]', style: {{ 'width': 6, 'line-color': '#1d3557' }} }},
                     {{ selector: 'edge[rel_type="BT"]', style: {{ 'width': 4, 'line-color': '#1d3557' }} }},
                     {{ selector: 'edge[rel_type="NT"]', style: {{ 'width': 4, 'line-color': '#1d3557' }} }},
                     {{ selector: 'edge[rel_type="EQ"]', style: {{ 'line-style': 'double', 'width': 5, 'line-color': '#f1c40f' }} }},
-                    {{ selector: 'edge[rel_type="RT"]', style: {{ 'line-style': 'dotted', 'width': 2, 'line-color': '#2a9d8f' }} }},
-                    {{ selector: 'edge[rel_type="IN"]', style: {{ 'line-style': 'dashed', 'width': 3, 'line-color': '#0077b6' }} }},
+                    {{ selector: 'edge[rel_type="RT"]', style: {{ 'line-style': 'dotted', 'width': 2, 'line-color': '#2a9d8f', 'target-arrow-shape': 'none' }} }},
+                    {{ selector: 'edge[rel_type="AS"]', style: {{ 'line-style': 'dashed', 'width': 2, 'line-color': '#7b2cb1' }} }},
+                    {{ selector: 'edge[rel_type="IN"]', style: {{ 'line-style': 'dotted', 'width': 3, 'line-color': '#0077b6', 'target-arrow-shape': 'triangle' }} }},
                     
-                    /* --- AKTIVACIJA AS (ASOCIATIVNA) POVEZAVE --- */
-                    {{ selector: 'edge[rel_type="AS"]', style: {{ 'line-style': 'dashed', 'width': 3, 'line-color': '#7b2cb1', 'target-arrow-color': '#7b2cb1', 'target-arrow-shape': 'triangle' }} }},
-                    
-                    /* --- LOGIČNI KONEKTORJI --- */
+                    /* --- LOGIČNI KONEKTORJI (Decision Logic) --- */
                     {{ selector: 'edge[rel_type="AND"]', style: {{ 'width': 5, 'line-color': '#00FF00', 'target-arrow-color': '#00FF00', 'target-arrow-shape': 'triangle' }} }},
-                    {{ selector: 'edge[rel_type="OR"]', style: {{ 'width': 3, 'line-color': '#00BFFF', 'line-style': 'dashed', 'target-arrow-shape': 'vee' }} }},
-                    {{ selector: 'edge[rel_type="XOR"]', style: {{ 'width': 4, 'line-color': '#FF8C00', 'line-style': 'double' }} }},
-                    {{ selector: 'edge[rel_type="NOT"]', style: {{ 'width': 4, 'line-color': '#FF0000', 'line-style': 'dashed', 'target-arrow-shape': 'tee' }} }},
-                    {{ selector: 'edge[rel_type="IF-THEN"]', style: {{ 'width': 4, 'line-color': '#FFD700', 'target-arrow-shape': 'chevron' }} }},
+                    {{ selector: 'edge[rel_type="OR"]', style: {{ 'width': 3, 'line-color': '#00BFFF', 'line-style': 'dashed', 'target-arrow-color': '#00BFFF', 'target-arrow-shape': 'vee' }} }},
+                    {{ selector: 'edge[rel_type="XOR"]', style: {{ 'width': 4, 'line-color': '#FF8C00', 'line-style': 'double', 'target-arrow-color': '#FF8C00', 'target-arrow-shape': 'diamond' }} }},
+                    {{ selector: 'edge[rel_type="NOT"]', style: {{ 'width': 4, 'line-color': '#FF0000', 'line-style': 'dashed', 'target-arrow-color': '#FF0000', 'target-arrow-shape': 'tee' }} }},
+                    {{ selector: 'edge[rel_type="IF-THEN"]', style: {{ 'width': 4, 'line-color': '#FFD700', 'target-arrow-color': '#FFD700', 'target-arrow-shape': 'triangle', 'arrow-scale': 1.3 }} }},
 
-                    /* Posebna oblika za Macro cilje */
+                    /* Poudarek na zvezdah (Macro cilji) */
                     {{ selector: 'node[shape="star"]', style: {{ 'font-size': '16px', 'width': 130, 'height': 130, 'border-width': 5, 'border-color': '#FFD700' }} }}
                 ],
                 layout: {selected_layout}
@@ -369,7 +373,7 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
                 var link = document.createElement('a');
                 var timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
                 link.href = png64; 
-                link.download = 'hierarchograph_export_' + timestamp + '.png';
+                link.download = 'hierarchograph_{layout_type}_' + timestamp + '.png';
                 link.click();
             }});
         }});
@@ -1068,43 +1072,48 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             # Inicializacija skupnega Cerebras klienta
             cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
 
-            # --- PHASE 1: CEREBRAS (Foundation - npr. GPT-OSS-120B) ---
+            # --- PHASE 1: CEREBRAS (Foundation) ---
             with st.spinner(f'PHASE 1: Building Architecture with {p1_model}...'):
                 p1_response = cerebras_client.chat.completions.create(
                     model=p1_model,
                     messages=[
-                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. If the user provides specific Paradigms or Models in the 'MANDATORY SYSTEM INSTRUCTION', you MUST prioritize them in your structural analysis."}, 
+                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. Priority: Paradigms/Models from mandatory instruction."}, 
                         {"role": "user", "content": full_ai_input}
                     ],
                     temperature=0.4
                 )
-                # Rezultat shranimo v isto spremenljivko
                 groq_synthesis = p1_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
 
-                # --- DINAMIČNA AKTIVACIJA VSEH 20 MENTALNIH PRISTOPOV ---
-                ma_list_for_ai = ", ".join(MENTAL_APPROACHES_ONTOLOGY["nodes"].keys())
-
-                # --- 3. PHASE 2: CEREBRAS (Innovation - FULL 20-MA Engine + UML Priority) ---
-                with st.spinner(f'PHASE 2: Activating 20-MA Engine with {p2_model}...'):
-                    samba_sys_prompt = f"""
+            # --- PHASE 2 PROMPT PREPARATION ---
+            samba_sys_prompt = f"""
+You are the SIS Lead Strategic Innovation Architect. Transform Phase 1 into a Strategic Innovation Report and Hierarchographic Network.
 You are the SIS Lead Strategic Innovation Architect and Hierarchographist. 
 Your task is to transform the structural analysis from Phase 1 into a visionary Innovation Report and a perfectly mapped Hierarchographic Network.
 
-Your mandate is to reach a 9.9+ score.
-
-### MANDATORY COGNITIVE ENGINE: ALL 20 MENTAL APPROACHES (MA)
-You MUST process the foundation through ALL 20 lenses to ensure maximum breakthrough depth:
-{ma_list_for_ai}
+### MANDATORY EVALUATION CRITERIA (Target Score: 9.9+)
+Formula: [Score = 0.25*PB + 0.25*SA + 0.20*CN + 0.15*II + 0.10*P + 0.05*C]
+Target: 9.9/10
 
 ### 1. REPORT REQUIREMENTS
+- Professional terminology.
+- JSON: Use single quotes (') only inside descriptions.
+
+### 2. RELATIONSHIP LOGIC MATRIX
+A) THESAURUS: TT, BT, NT, RT, EQ, AS.
+- IN (Inheritance): 'Is-a' property transfer.
+B) UML: Generalization, Specialization, Containment, Realization, Composition, Aggregation, Dependency, Conflict.
+C) LOGIC: AND, OR, XOR, NOT, IF-THEN.
+
+### 3. MANDATORY GEOMETRY
+- star: Goals, hexagon: Domains, diamond: Innovations, triangle: Processes, octagon: Constraints, ellipse: Humans, rectangle: Facts.
 Write a "STRATEGIC INNOVATION REPORT". 
 - For each innovation, provide a technical title, a detailed 3-4 sentence strategic explanation, and its cross-disciplinary impact.
 - Use professional terminology.
-- IMPORTANT: Inside the JSON section, do NOT use double quotes (") within descriptions. Use single quotes (') instead to ensure the JSON structure remains valid.
+- IMPORTANT: Inside the JSON section, do NOT use double quotes within descriptions. Use single quotes instead.
 
-### 2. RELATIONSHIP LOGIC MATRIX (PRIORITY FOR ARCHITECTURAL STABILITY)
-You must interconnect nodes using the following two standards. Do not just use 'Association'.
+### 2. RELATIONSHIP LOGIC MATRIX (MANDATORY FOR JSON)
+You must interconnect nodes using the following two standards:
 
 A) THESAURUS LOGIC (ISO 25964 / Conceptual Taxonomy):
 - 'TT' (Top Term): Absolute root of a knowledge domain.
@@ -1113,17 +1122,17 @@ A) THESAURUS LOGIC (ISO 25964 / Conceptual Taxonomy):
 - 'RT' (Related Term): Symmetrical lateral association between concepts.
 - 'EQ' (Equivalence): Synonyms or identical concepts in different fields.
 - 'AS' (Associative): Functional connection (e.g., Process AS Result, Tool AS Action).
-- 'IN' (Instance): Category to a specific unique entity/example (e.g., Physics IN Theory of Relativity).
+- 'IN' (Inheritance): 'Is-a' property transfer where child inherits parent traits.
 
-B) UML LOGIC (OMG Standard - MANDATORY for Innovation Nodes):
+B) UML LOGIC (OMG Standard / Structural Architecture):
 - 'Generalization': 'Is-a' Inheritance (e.g., Quantum Physics is a Generalization of Physics).
-- 'Specialization': The deductive opposite of Generalization. Move from general law to specific case.
-- 'Containment': Strong structural inclusion. Mandatory for concepts within a 'Scientific Cage'.
+- 'Specialization': The deductive opposite of Generalization. A downward move from a general law to a specific refined case.
+- 'Containment': A strong structural inclusion where a node is trapped or housed inside another. Mandatory for mapping concepts within a 'Scientific Cage'.
 - 'Realization': An Innovation/Tool implementing a Goal/Vision.
 - 'Composition': Strong 'Part-of' (Life-cycle dependent).
 - 'Aggregation': Weak 'Part-of' (Independent existence).
 - 'Dependency': Node A requires Node B to function.
-- 'Conflict': A Systemic tension, incompatibility, or direct conflict.
+- 'Conflict': A Systemic tension, incompatibility, or direct conflict between two elements.
 
 C) LOGICAL CONNECTORS (Decision Logic):
 - 'AND': Močna sinteza, kjer morata oba pogoja obstajati hkrati (Veznik IN).
@@ -1143,114 +1152,111 @@ C) LOGICAL CONNECTORS (Decision Logic):
 
 ### 4. OUTPUT FORMAT
 MANDATORY JSON STRUCTURE:
-In the 'description' field of each 'diamond' (Innovation) node, you MUST explicitly state which 3 Mental Approaches were synthesized to create it.
-Everything after the tag '### SEMANTIC_GRAPH_JSON' must be ONLY the JSON object.
-
 ### SEMANTIC_GRAPH_JSON
 {{
   "nodes": [
-    {{
-      "id": "n1", 
-      "label": "LABEL", 
-      "shape": "diamond", 
-      "color": "#fd7e14", 
-      "description": "Synthesized via [MA1, MA2, MA3]. Detailed strategic breakdown using single quotes only..."
-    }}
+    {{"id": "n1", "label": "LABEL", "shape": "diamond", "color": "#fd7e14", "description": "Single quotes only."}}
+    {{"id": "n1", "label": "LABEL", "shape": "diamond", "color": "#fd7e14", "description": "Full detailed description for the deep-dive using single quotes only."}}
   ],
   "edges": [
-    {{"source": "n1", "target": "n2", "rel_type": "Realization"}}
+    {{"source": "n1", "target": "n2", "rel_type": "IN"}}
+    {{"source": "n1", "target": "n2", "rel_type": "IN"}},
+    {{"source": "n3", "target": "n1", "rel_type": "Composition"}}
   ]
 }}
 """
-                    samba_response = cerebras_client.chat.completions.create(
-                        model=p2_model, 
-                        messages=[
-                            {"role": "system", "content": samba_sys_prompt}, 
-                            {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER GOAL: {idea_query}{file_context_str}"}
-                        ],
-                        temperature=0.85,
-                        top_p=0.9,
-                        max_completion_tokens=6000
-                    )
-                    cerebras_innovation = samba_response.choices[0].message.content
 
-            # =============================================================================
-            # REDUNDANCY FIX & DATA PROCESSING (CLEAN & UNABRIDGED)
-            # =============================================================================
-            
-            # 1. Razcepimo odgovor na besedilo in surovi JSON
-            if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
-                report_parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
-                innovation_text = report_parts[0]  # Poročilo za prikaz
-                json_raw = report_parts[1]         # Tehnični podatki za graf
-            else:
-                # Fallback: če AI pozabi oznako, poiščemo prvo pojavitev JSON oklepaja
-                json_start_idx = cerebras_innovation.find('{')
-                if json_start_idx != -1 and '"nodes"' in cerebras_innovation:
-                    innovation_text = cerebras_innovation[:json_start_idx]
-                    json_raw = cerebras_innovation[json_start_idx:]
-                else:
-                    innovation_text = cerebras_innovation
-                    json_raw = ""
+            # --- PHASE 2 EXECUTION (Pazi na poravnavo te vrstice!) ---
+            # --- PHASE 2 EXECUTION ---
+            with st.spinner(f'PHASE 2: Generating radical innovations with {p2_model}...'):
+                samba_response = cerebras_client.chat.completions.create(
+                    model=p2_model, 
+                    messages=[
+                        {"role": "system", "content": samba_sys_prompt}, 
+                        {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER GOAL: {idea_query}{file_context_str}"}
+                    ],
+                    temperature=0.85,
+                    top_p=0.9
+                )
+                cerebras_innovation = samba_response.choices[0].message.content
+				# --- PHASE 3: QUALITY ASSURANCE & SCORING ---
+with st.spinner('⚖️ Phase 3: Evaluating Quality Score...'):
+    qa_prompt = f"""
+    Evaluate the following report based on the SIS Quality Formula:
+    [Score = 0.25PB + 0.25SA + 0.20CN + 0.15II + 0.10P + 0.05C]
+    
+    REPORT TO EVALUATE:
+    {cerebras_innovation}
+    
+    Output ONLY a JSON object with the scores for each category (0-10) and the final weighted total.
+    Format: {{"PB": 0, "SA": 0, "CN": 0, "II": 0, "P": 0, "C": 0, "TOTAL": 0}}
+    """
+    qa_res = cerebras_client.chat.completions.create(
+        model=p2_model,
+        messages=[{"role": "system", "content": "You are a strict SIS Quality Auditor."},
+                  {"role": "user", "content": qa_prompt}],
+        response_format={ "type": "json_object" } # Če model podpira JSON mode
+    )
+    quality_scores = json.loads(qa_res.choices[0].message.content)
 
-            # --- 2. ČIŠČENJE REDUNDANTNIH NASLOVOV PRED PRIKAZOM ---
-            redundant_patterns = [
-                r"(?i)Each innovation synthesises.*JSON descriptions below\.?:?",
-                r"(?i)semantic graph\s*[–-]\s*json representation:?", 
-                r"(?i)semantic graph \(json\):?", 
-                r"(?i)below is the json structure:?", 
-                r"(?i)here is the semantic graph:?",
-                r"(?i)json data:?",
-                r"###\s*Semantic Graph",
-                r"```json",
-                r"```"
-            ]
-            
-            for pattern in redundant_patterns:
-                innovation_text = re.sub(pattern, "", innovation_text)
-            
-            # STISKANJE PRAZNEGA PROSTORA (To bo odstranilo "luknjo")
-            innovation_text = re.sub(r'\n{3,}', '\n\n', innovation_text)
-            innovation_text = innovation_text.strip()
-            
-            # --- 3. PROCESIRANJE PODATKOV ZA GRAF (ULTRA-ROBUSTNA VERZIJA) ---
-            g_data = {"nodes": [], "edges": []}
-            try:
-                # Očistimo Markdown šum
-                json_clean = re.sub(r'```json|```', '', json_raw).strip()
-                # Najdemo dejanski začetek in konec
-                start_idx = json_clean.find('{')
-                end_idx = json_clean.rfind('}')
+            # --- PHASE 3: QUALITY ASSURANCE & SCORING ---
+            with st.spinner('⚖️ Phase 3: Evaluating Quality Score...'):
+                qa_prompt = f"""
+                Evaluate the following report based on the SIS Quality Formula:
+                [Score = 0.25PB + 0.25SA + 0.20CN + 0.15II + 0.10P + 0.05C]
                 
-                if start_idx != -1:
-                    # Če manjka zadnji zaklepaj (zaradi omejitve dolžine), ga umetno dodamo
-                    if end_idx == -1 or end_idx < start_idx:
-                        json_str = json_clean[start_idx:] + ']}' 
+                REPORT TO EVALUATE:
+                {cerebras_innovation[:3000]}
+                
+                Output ONLY a JSON object with the scores for each category (0-10) and the final weighted total.
+                Format: {{"PB": 0, "SA": 0, "CN": 0, "II": 0, "P": 0, "C": 0, "TOTAL": 0}}
+                """
+                try:
+                    qa_res = cerebras_client.chat.completions.create(
+                        model=p2_model,
+                        messages=[{"role": "system", "content": "You are a strict SIS Quality Auditor."},
+                                  {"role": "user", "content": qa_prompt}],
+                        temperature=0.1
+                    )
+                    qa_match = re.search(r'(\{.*\})', qa_res.choices[0].message.content, re.DOTALL)
+                    if qa_match:
+                        st.session_state.quality_scores = json.loads(qa_match.group(1))
                     else:
-                        json_str = json_clean[start_idx:end_idx+1]
-                    
-                    # Popravek pogostih napak (narekovaji, vejice, nove vrstice)
-                    json_str = json_str.replace('“', '"').replace('”', '"').replace('‘', "'").replace('’', "'")
-                    json_str = re.sub(r',\s*([\]}])', r'\1', json_str)
-                    json_str = json_str.replace('\n', ' ').replace('\r', ' ')
-                    
-                    g_data = json.loads(json_str)
-            except Exception as json_err:
-                # Fallback: če zgoraj ne uspe, poiščemo nodes z regexom
-                json_match = re.search(r'(\{.*"nodes".*?\]\s*.*?\})', json_raw, re.DOTALL | re.IGNORECASE)
-                if json_match:
-                    try:
-                        g_data = json.loads(re.sub(r'\n', ' ', json_match.group(1)))
-                    except:
-                        st.warning(f"Note: Graph structure issue: {json_err}")
+                        st.session_state.quality_scores = {"TOTAL": 0}
+                except:
+                    st.session_state.quality_scores = {"TOTAL": 0}
 
-            # 4. SESTAVA KONČNEGA POROČILA (Uporabimo OČIŠČENO besedilo)
-            full_report = f"## 📚 Phase 1: Structural Foundation\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations\n\n{innovation_text}"
+            # --- 4. PROCESIRANJE REZULTATOV (Z GEOMETRIJSKO LOGIKO) ---
+            g_data = {"nodes": [], "edges": []}
+
+            if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
+                parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
+                innovation_text = parts[0]
+                json_raw = parts[1]
+            else:
+                innovation_text = cerebras_innovation
+                json_raw = ""
+
+            full_report = f"## 📚 Phase 1: Structural Foundation (Cerebras {p1_model})\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations (Cerebras {p2_model})\n\n{innovation_text}"
 
             nodes_to_link = []
             final_elements = []
 
-            # --- PROCESIRANJE VOZLIŠČ Z DINAMIČNO VELIKOSTJO (UNABRIDGED) ---
+            # Izboljšano iskanje in varnostno čiščenje JSON-a
+            json_match = re.search(r'(\{.*"nodes".*\})', json_raw if json_raw else cerebras_innovation, re.DOTALL | re.IGNORECASE)
+
+            if json_match:
+                try:
+                    # 1. Izvlečemo surovi JSON tekst
+                    raw_json_str = json_match.group(1)
+                    # 2. Očistimo nove vrstice in nevarne znake, ki lomijo format
+                    clean_json = raw_json_str.replace('\n', ' ').replace('\r', '')
+                    # 3. Poskusimo prebrati JSON podatke
+                    g_data = json.loads(clean_json)
+                except Exception as json_err:
+                    st.warning(f"Note: Graph structure issue: {json_err}")
+
+            # --- PROCESIRANJE VOZLIŠČ Z DINAMIČNO VELIKOSTJO ---
             if g_data.get("nodes"):
                 for n in g_data.get("nodes", []):
                     lbl = n.get("label", "Node")
@@ -1258,7 +1264,7 @@ Everything after the tag '### SEMANTIC_GRAPH_JSON' must be ONLY the JSON object.
                     n_color = n.get("color", "#DDEBF7")
                     n_shape = n.get("shape", "rectangle")
 
-                    # Velikostna hierarhija (Star=125, Diamond=110)
+                    # Velikostna hierarhija glede na obliko
                     if n_shape == 'star': n_size = 125
                     elif n_shape == 'diamond': n_size = 110
                     elif n_shape == 'octagon': n_size = 105
@@ -1272,28 +1278,52 @@ Everything after the tag '### SEMANTIC_GRAPH_JSON' must be ONLY the JSON object.
                         "data": {"id": nid, "label": lbl, "color": n_color, "shape": n_shape, "size": n_size, "description": n.get("description", "Detail breakdown in report.")}
                     })
 
-                # --- PROCESIRANJE POVEZAV (UML + THESAURUS + LOGIC - UNABRIDGED) ---
+                # --- PROCESIRANJE POVEZAV (UML + THESAURUS + LOGIC) ---
                 for e in g_data.get("edges", []):
                     rel = e.get("rel_type", "Association")
 
-                    # A) UML IN STRUKTURNA LOGIKA (UML RDEČA / ČRNA / TEMNO MODRA)
+                    # A) UML IN STRUKTURNA LOGIKA (Rdeča/Črna/Modra skala)
                     if rel in ["Generalization", "Realization", "Composition", "Aggregation", "Dependency", "Specialization", "Containment", "Conflict"]:
-                        if rel == "Conflict": e_color = "#b91d1d" 
-                        elif rel == "Specialization": e_color = "#000000"
-                        elif rel in ["Containment", "IN", "BT", "NT", "TT"]: e_color = "#1D3557"
-                        else: e_color = "#E63946"
-                    
-                    # B) ISO THESAURUS & ASOCIACIJE
-                    elif rel == "AS": e_color = "#7b2cb1" # Vijolična
-                    elif rel in ["EQ", "RT"]: e_color = "#2a9d8f"
+                        if rel == "Conflict":
+                            e_color = "#b91d1d"  # Temno rdeča za trčenje/spor
+                        elif rel == "Specialization":
+                            e_color = "#000000"  # Črna za dedukcijo
+                        elif rel == "Containment":
+                            e_color = "#1D3557"  # Temno modra za "Scientific Cage"
+                        elif rel == "Generalization":
+                            e_color = "#E63946"  # UML rdeča
+                        elif rel == "Realization":
+                            e_color = "#E63946"  # UML rdeča
+                        else:
+                            e_color = "#E63946"  # Privzeta UML rdeča (Dependency, Aggregation...)
 
-                    # C) LOGIČNI KONEKTORJI (NEON)
-                    elif rel == "AND": e_color = "#00FF00"
-                    elif rel == "OR": e_color = "#00BFFF"
-                    elif rel == "XOR": e_color = "#FF8C00"
-                    elif rel == "NOT": e_color = "#FF0000"
-                    elif rel == "IF-THEN": e_color = "#FFD700"
-                    else: e_color = "#ADB5BD"
+                    # B) ISO THESAURUS (Hierarhologija - Modra/Vijolična skala)
+                    elif rel in ["BT", "NT", "TT"]:
+                        e_color = "#1D3557"  # Temno modra (Nivoji)
+                    elif rel == "IN":
+                        e_color = "#0077B6"  # Svetlo modra (Instanca)
+                        e_color = "#0077B6"  # Svetlo modra (Inheritance/Instance)
+                    elif rel == "AS":
+                        e_color = "#7B2CB1"  # Vijolična (Asociativna)
+                    elif rel == "EQ":
+                        e_color = "#F1C40F"  # Rumena (Ekvivalenca)
+                    elif rel == "RT":
+                        e_color = "#2A9D8F"  # Zelena (Povezano)
+
+                    # C) LOGIČNI KONEKTORJI (Decision Logic - Neon skala)
+                    elif rel == "AND":
+                        e_color = "#00FF00"  # Neon zelena
+                    elif rel == "OR":
+                        e_color = "#00BFFF"  # Svetlo modra
+                    elif rel == "XOR":
+                        e_color = "#FF8C00"  # Oranžna
+                    elif rel == "NOT":
+                        e_color = "#FF0000"  # Rdeča
+                    elif rel == "IF-THEN":
+                        e_color = "#FFD700"  # Zlata
+
+                    else:
+                        e_color = "#ADB5BD"  # Če tipa ne pozna = Siva
 
                     final_elements.append({
                         "data": {
@@ -1306,9 +1336,10 @@ Everything after the tag '### SEMANTIC_GRAPH_JSON' must be ONLY the JSON object.
 
             # --- 5. FINAL DISPLAY: SEQUENTIAL INTERACTIVE SYNERGY REPORT ---
 
-            # 5a. GLOBAL SEMANTIC HIGHLIGHTER (Regex Highlighter na OČIŠČENEM besedilu)
+            # 5a. GLOBAL SEMANTIC HIGHLIGHTER (Regex Highlighter)
             final_interactive_report = full_report
             if nodes_to_link:
+                # Razvrstimo ključne besede po dolžini (daljše prej), da se krajše ne vmešavajo
                 sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
                 for item in sorted_keywords:
                     lbl = item['label']
@@ -1316,29 +1347,172 @@ Everything after the tag '### SEMANTIC_GRAPH_JSON' must be ONLY the JSON object.
                         g_url = urllib.parse.quote(lbl)
                         # The link style ensures high visibility
                         link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
+
+                        # Unicode-safe regex to catch terms in report
                         pattern = re.compile(rf'(?<!\w){re.escape(lbl)}(?!\w)', re.IGNORECASE | re.UNICODE)
+
                         # Linkamo le PRVO pojavitev besede za čistočo
                         final_interactive_report = pattern.sub(link_html, final_interactive_report, count=1)
 
-            # 5b. RENDERING THE INTERACTIVE REPORT
+            # =============================================================================
+            # PHASE 3: QUALITY AUDIT (The 9.9+ Filter)
+            # =============================================================================
+            with st.spinner('⚖️ Evaluating Quality to 9.9+ Standard...'):
+                # Prompt za evalvacijo
+                qa_prompt = f"Evaluate this report by the formula [0.25PB + 0.25SA + 0.20CN + 0.15II + 0.10P + 0.05C]. Return ONLY JSON: {{\"PB\":x,\"SA\":x,\"CN\":x,\"II\":x,\"P\":x,\"C\":x,\"TOTAL\":x}}. Report: {cerebras_innovation[:2000]}"
+                
+                try:
+                    qa_res = cerebras_client.chat.completions.create(
+                        model=p2_model,
+                        messages=[{"role": "user", "content": qa_prompt}],
+                        temperature=0.1
+                    )
+                    # Iskanje JSON-a v odgovoru revizorja
+                    qa_match = re.search(r'(\{.*\})', qa_res.choices[0].message.content, re.DOTALL)
+                    if qa_match:
+                        st.session_state.quality_scores = json.loads(qa_match.group(1))
+                    else:
+                        st.session_state.quality_scores = {"TOTAL": 0}
+                except:
+                    # Varnostni mehanizem, če API za evalvacijo odpove
+                    st.session_state.quality_scores = {"TOTAL": 0}
+
+            # =============================================================================
+            # DATA PROCESSING (Graph Building - UNABRIDGED LOGIC)
+            # =============================================================================
+            g_data = {"nodes": [], "edges": []}
+            
+            # Iskanje JSON bloka znotraj AI odgovora
+            json_match = re.search(r'### SEMANTIC_GRAPH_JSON\s*(\{.*\})', cerebras_innovation, re.DOTALL)
+            if not json_match:
+                json_match = re.search(r'(\{.*"nodes".*\})', cerebras_innovation, re.DOTALL)
+            
+            if json_match:
+                try:
+                    # Čiščenje znakov za novo vrstico znotraj JSON niza
+                    g_data = json.loads(json_match.group(1).replace('\n', ' '))
+                except Exception:
+                    pass
+
+            # Priprava besedila poročila (odstranitev JSON dela za lepši prikaz)
+            report_clean = cerebras_innovation.split('### SEMANTIC_GRAPH_JSON')[0]
+            full_report = f"## 📚 Phase 1 Foundation\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2 Innovations\n\n{report_clean}"
+            
+            nodes_to_link = []
+            final_elements = []
+            
+            # Procesiranje vozlišč (Nodes)
+            if g_data.get("nodes"):
+                for n in g_data.get("nodes"):
+                    lbl = n.get("label", "Node")
+                    nid = n.get("id", "n")
+                    shape = n.get("shape", "rectangle")
+                    
+                    # Hierarhija velikosti vozlišč glede na njihovo geometrijsko vlogo
+                    if shape == 'star':
+                        n_size = 125
+                    elif shape == 'diamond':
+                        n_size = 110
+                    else:
+                        n_size = 90
+                        
+                    nodes_to_link.append({"id": nid, "label": lbl})
+                    final_elements.append({
+                        "data": {
+                            "id": nid, 
+                            "label": lbl, 
+                            "color": n.get("color", "#DDEBF7"), 
+                            "shape": shape, 
+                            "size": n_size, 
+                            "description": n.get("description", "No additional details.")
+                        }
+                    })
+                
+                # Procesiranje povezav (Edges) z upoštevanjem tvoje barvne in relacijske logike
+                for e in g_data.get("edges", []):
+                    rel = e.get("rel_type", "Association")
+                    
+                    # Barvno kodiranje relacij: Konflikt=Rdeča, Struktura/Inheritance=Temno modra, Ostalo=UML Rdeča
+                    if rel == "Conflict":
+                        e_color = "#b91d1d"
+                    elif rel in ["BT", "NT", "TT", "IN", "Containment", "Specialization"]:
+                        e_color = "#1D3557"
+                    else:
+                        e_color = "#E63946"
+                        
+                    final_elements.append({
+                        "data": {
+                            "source": e.get("source"), 
+                            "target": e.get("target"), 
+                            "rel_type": rel, 
+                            "color": e_color
+                        }
+                    })
+
+            # =============================================================================
+            # SEMANTIC HIGHLIGHTING ENGINE (Link Generation)
+            # =============================================================================
+            final_interactive_report = full_report
+            # Razvrstimo po dolžini, da se daljši termini ne pokvarijo s krajšimi pod-termini
+            for item in sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True):
+                lbl = item['label']
+                if len(lbl) > 3:
+                    # Ustvarjanje HTML povezave za Google Search
+                    g_url = urllib.parse.quote(lbl)
+                    link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}</a>'
+                    # Zamenjamo le prvo pojavitev za boljšo čitljivost
+                    final_interactive_report = re.sub(rf'(?<!\w){re.escape(lbl)}(?!\w)', link_html, final_interactive_report, count=1, flags=re.IGNORECASE)
+
+            # =============================================================================
+            # FINAL UI RENDERING (Metrics, Report, Deep-Dive, Map)
+            # =============================================================================
+            
+            # Prikaz Quality Audit rezultatov
+            # --- FINAL UI RENDERING (Quality Metrics & Report) ---
+            if st.session_state.get('quality_scores'):
+                qs = st.session_state.quality_scores
+                total = qs.get("TOTAL", 0)
+                
+                if total >= 9.9:
+                    st.balloons()
+                    st.success(f"### 🏆 SIS QUALITY RATING: {total}/10 (ULTRA-SYNERGY ACHIEVED)")
+                    st.success(f"### 🏆 SIS QUALITY RATING: {total}/10.0 (ULTRA-SYNERGY ACHIEVED)")
+                else:
+                    st.info(f"### 📊 SIS QUALITY RATING: {total}/10")
+                    st.info(f"### 📊 SIS QUALITY RATING: {total}/10.0")
+
+                m_cols = st.columns(6)
+                labels = {"PB":"Paradigm", "SA":"Arch.", "CN":"Novelty", "II":"Interdisc.", "P":"Practical", "C":"Clarity"}
+                for i, (k, v) in enumerate(labels.items()):
+                    m_cols[i].metric(v, f"{qs.get(k, 0)}")
+                    m_cols[i].metric(v, f"{qs.get(k, 0)}/10")
+                st.divider()
+
+            # Izpis glavnega integriranega poročila
             st.subheader("🧱 INTEGRATED HIERARCHOLOGICAL REPORT")
             if biblio_data:
                 with st.expander("📚 EXTRACTED AUTHOR BACKGROUND", expanded=False):
                     st.markdown(biblio_data)
 
-            # Display the full linked report (P1 + P2) - BREZ redundantnega JSON-a
             st.markdown(final_interactive_report, unsafe_allow_html=True)
 
-            # 5c. INNOVATION DEEP-DIVE: DETAILED BREAKTHROUGH CATALOG
+            # Deep-Dive katalog za inovacije (Diamond nodes)
+            # 5c. INNOVATION DEEP-DIVE
             if final_elements:
                 st.divider()
                 st.markdown("### 🚀 STRATEGIC INNOVATION DEEP-DIVE")
+                st.info("Technical breakdown of identified strategic breakthroughs.")
+                
+                for inv in [n['data'] for n in final_elements if n['data'].get('shape') == 'diamond']:
+                    st.markdown(f"""
+                        <div style="background-color:#ffffff; border-left:6px solid #fd7e14; padding:20px; border-radius:15px; box-shadow:0 4px 10px rgba(0,0,0,0.05); margin-bottom:20px; border: 1px solid #eee;">
+                            <h4 style="color:#1d3557; margin:0;">{inv['label']}</h4>
+                            <p style="color:#333; margin-top:10px; line-height:1.6;">{inv['description']}</p>
                 innovations = [n['data'] for n in final_elements if n['data'].get('shape') == 'diamond']
-
                 if innovations:
                     for inv in innovations:
                         g_url = urllib.parse.quote(inv['label'])
-                        detailed_desc = inv.get('description', "Detailed strategic analysis available in the report above.")
+                        detailed_desc = inv.get('description', "Detailed technical analysis is available in the report above.")
                         st.markdown(f"""
                         <div style="background-color: #ffffff; border-left: 6px solid #fd7e14; padding: 25px; border-radius: 15px; box-shadow: 0 6px 15px rgba(0,0,0,0.1); border: 1px solid #eee; margin-bottom: 25px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -1346,49 +1520,28 @@ Everything after the tag '### SEMANTIC_GRAPH_JSON' must be ONLY the JSON object.
                                 <a href="https://www.google.com/search?q={g_url}" target="_blank" style="text-decoration: none; color: #457b9d; font-size: 0.85em; font-weight: 600;">Technical Search ↗</a>
                             </div>
                             <h2 style="margin: 0 0 15px 0; color: #1d3557;">{inv['label']}</h2>
-                            <div style="color: #333; font-size: 1.05em; line-height: 1.7; border-top: 1px solid #f0f0f0; padding-top: 15px;">
-                                {detailed_desc}
-                            </div>
+                            <div style="color: #333; font-size: 1.05em; line-height: 1.7; border-top: 1px solid #f0f0f0; padding-top: 15px;">{detailed_desc}</div>
                         </div>
-                        """, unsafe_allow_html=True)
+                    """, unsafe_allow_html=True)
 
-                # --- 5d. UNABRIDGED SYSTEM LEGEND WITH ALL HTML DIVS ---
-                st.markdown(f"""
-                <div style="font-size: 0.78em; color: #444; background: #ffffff; padding: 20px 25px; border-radius: 15px; border: 1px solid #e9ecef; margin-top: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
-                        <div>
-                            <b style="color: #1d3557; text-transform: uppercase; letter-spacing: 1px;">Nodes (Geometry):</b><br>
-                            ⭐ Goal | ⬢ Domain | 💠 Innovation | △ Process | ▭ Data | ⬣ Rule | ⭔ Bio
-                        </div>
-                        <div style="height: 35px; width: 1px; background: #dee2e6; display: block;"></div>
-                        <div>
-                            <b style="color: #1d3557; text-transform: uppercase; letter-spacing: 1px;">Semantic Layers:</b><br>
-                            <span style="color:#1d3557;">⬤ Hierarchical (ISO)</span> | 
-                            <span style="color:#7b2cb1;">⬤ Associative (AS)</span> | 
-                            <span style="color:#2a9d8f;">⬤ Related</span> | 
-                            <span style="color:#f1c40f;">⬤ Equivalence</span>
-                        </div>
-                        <div style="height: 35px; width: 1px; background: #dee2e6; display: block;"></div>
-                        <div>
-                            <b style="color: #1d3557; text-transform: uppercase; letter-spacing: 1px;">Logic Connectors:</b><br>
-                            <span style="color:#00FF00;">⬤ AND</span> | <span style="color:#00BFFF;">⬤ OR</span> | <span style="color:#FF8C00;">⬤ XOR</span> | <span style="color:#FF0000;">⬤ NOT</span> | <span style="color:#FFD700;">⬤ IF-THEN</span>
-                        </div>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-
-                # 5e. FINAL GRAPH RENDERING
-                st.subheader(f"🕸️ HYBRID SEMANTIC SYSTEM MAP ({graph_perspective.upper()} VIEW)")
+                # Izris Hierarhografskega zemljevida
+                st.subheader(f"🕸️ HYBRID SEMANTIC MAP ({graph_perspective.upper()} VIEW)")
                 render_cytoscape_network(
                     final_elements, 
                     layout_type=graph_perspective, 
                     container_id=f"cy_{int(time.time())}"
                 )
+                        """, unsafe_allow_html=True)
 
-                # --- NOVO: SHRANJEVANJE ZA GALERIJO (DODANO NA KONEC POROČILA) ---
+                # 5e. FINAL GRAPH RENDERING
+                st.subheader(f"🕸️ HYBRID SEMANTIC SYSTEM MAP ({graph_perspective.upper()} VIEW)")
+                render_cytoscape_network(final_elements, layout_type=graph_perspective, container_id=f"cy_{int(time.time())}")
+
+                # Shranjevanje stanja za galerijo perspektiv
                 st.session_state.final_graph_elements = final_elements
                 st.session_state.report_ready = True
 
+        # --- TUKAJ SE KONČA GLAVNI TRY BLOK IN SE ZAPRE Z EXCEPT ---
         except Exception as e:
             st.error(f"❌ Pipeline Failure: {str(e)}")
 
