@@ -1091,7 +1091,18 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 samba_sys_prompt = f"""
 You are the SIS Lead Strategic Innovation Architect and Hierarchographist. 
 Your task is to transform the structural analysis from Phase 1 into a visionary Innovation Report and a perfectly mapped Hierarchographic Network.
+"""
+### EVALUATION CRITERIA (Target Score: 9.9+)
+Your output will be evaluated using the formula: [Score = 0.25PB + 0.25SA + 0.20CN + 0.15II + 0.10P + 0.05C]
+- Paradigm Breach (PB): Radical departure from 'Scientific Cages'.
+- Systemic Architecture (SA): Structural integrity and logical hierarchy (IMA).
+- Conceptual Novelty (CN): Originality of the proposed synthesis.
+- Interdisciplinary Integration (II): Strength of links between disparate science fields.
+- Practical Applicability (P): Real-world utility.
+- Clarity of Presentation (C): Precision of the hierarchographic map.
 
+You MUST internally simulate this scoring and only output results that exceed a self-evaluated score of 9.9.
+"""
 ### 1. REPORT REQUIREMENTS
 Write a "STRATEGIC INNOVATION REPORT". 
 - For each innovation, provide a technical title, a detailed 3-4 sentence strategic explanation, and its cross-disciplinary impact.
@@ -1159,6 +1170,25 @@ MANDATORY JSON STRUCTURE:
                     top_p=0.9
                 )
                 cerebras_innovation = samba_response.choices[0].message.content
+				# --- PHASE 3: QUALITY ASSURANCE & SCORING ---
+with st.spinner('⚖️ Phase 3: Evaluating Quality Score...'):
+    qa_prompt = f"""
+    Evaluate the following report based on the SIS Quality Formula:
+    [Score = 0.25PB + 0.25SA + 0.20CN + 0.15II + 0.10P + 0.05C]
+    
+    REPORT TO EVALUATE:
+    {cerebras_innovation}
+    
+    Output ONLY a JSON object with the scores for each category (0-10) and the final weighted total.
+    Format: {{"PB": 0, "SA": 0, "CN": 0, "II": 0, "P": 0, "C": 0, "TOTAL": 0}}
+    """
+    qa_res = cerebras_client.chat.completions.create(
+        model=p2_model,
+        messages=[{"role": "system", "content": "You are a strict SIS Quality Auditor."},
+                  {"role": "user", "content": qa_prompt}],
+        response_format={ "type": "json_object" } # Če model podpira JSON mode
+    )
+    quality_scores = json.loads(qa_res.choices[0].message.content)
 
             # --- 4. PROCESIRANJE REZULTATOV (Z GEOMETRIJSKO LOGIKO) ---
             g_data = {"nodes": [], "edges": []}
@@ -1286,8 +1316,70 @@ MANDATORY JSON STRUCTURE:
 
                         # Linkamo le PRVO pojavitev besede za čistočo
                         final_interactive_report = pattern.sub(link_html, final_interactive_report, count=1)
+Razumem. Želiš enoten, povezan blok kode, ki ga lahko neposredno prilepiš v svoj
+projekt.
 
-            # 5b. RENDERING THE INTERACTIVE REPORT
+Tukaj je združen in optimiziran blok. Ta koda najprej izvede izračun (v ozadju)
+in nato takoj izriše vizualne metrike (UI) pred naslovom poročila.
+
+Vstavi točno namesto vrstic, kjer se v tvoji kodi pripravlja izpis poročila
+(okoli 5b):
+
+            # =============================================================================
+            # PHASE 3 & 5b: QUALITY EVALUATION & RENDERING (JOINT BLOCK)
+            # =============================================================================
+            
+            # 1. IZRAČUN OCENE (Logika v ozadju)
+            with st.spinner('⚖️ Evaluating Quality to 9.9+ Standard...'):
+                # Razširjen prompt za boljšo natančnost analize
+                qa_prompt = (
+                    f"Evaluate this report by the formula [Score = 0.25*PB + 0.25*SA + 0.20*CN + 0.15*II + 0.10*P + 0.05*C]. "
+                    f"PB: Paradigm Breach, SA: Systemic Architecture, CN: Conceptual Novelty, II: Interdisciplinary Integration, "
+                    f"P: Practicality, C: Clarity. Return ONLY JSON. "
+                    f"Report: {cerebras_innovation[:2000]}"
+                )
+                try:
+                    qa_res = cerebras_client.chat.completions.create(
+                        model=p2_model,
+                        messages=[{"role": "user", "content": qa_prompt}],
+                        temperature=0.1
+                    )
+                    # Iskanje JSON strukture v odgovoru
+                    qa_json_str = re.search(r'(\{.*\})', qa_res.choices[0].message.content, re.DOTALL).group(1)
+                    st.session_state.quality_scores = json.loads(qa_json_str)
+                except Exception:
+                    st.session_state.quality_scores = {"PB":0, "SA":0, "CN":0, "II":0, "P":0, "C":0, "TOTAL":0}
+
+            # 2. PRIKAZ OCENE (Vizualni del nad poročilom)
+            if st.session_state.get('quality_scores'):
+                qs = st.session_state.quality_scores
+                total = qs.get("TOTAL", 0)
+                
+                # Glavni indikator uspeha
+                if total >= 9.9:
+                    st.balloons()
+                    st.success(f"### 🏆 SIS QUALITY RATING: {total}/10 (ULTRA-SYNERGY ACHIEVED)")
+                elif total >= 9.0:
+                    st.success(f"### ✅ SIS QUALITY RATING: {total}/10 (HIGH-END ARCHITECTURE)")
+                else:
+                    st.info(f"### 📊 SIS QUALITY RATING: {total}/10 (STANDARD ANALYSIS)")
+                
+                # Izris šesterice metrik (6 stolpcev)
+                m_cols = st.columns(6)
+                labels = {
+                    "PB": "Paradigm", 
+                    "SA": "Arch.", 
+                    "CN": "Novelty", 
+                    "II": "Interdisc.", 
+                    "P": "Practical", 
+                    "C": "Clarity"
+                }
+                for i, (key, label) in enumerate(labels.items()):
+                    m_cols[i].metric(label, f"{qs.get(key, 0)}/10")
+                
+                st.divider()
+
+            # 3. NADALJEVANJE Z INTEGRIRANIM POROČILOM
             st.subheader("🧱 INTEGRATED HIERARCHOLOGICAL REPORT")
             if biblio_data:
                 with st.expander("📚 EXTRACTED AUTHOR BACKGROUND", expanded=False):
