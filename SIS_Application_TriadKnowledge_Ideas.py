@@ -1086,9 +1086,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 groq_synthesis = p1_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
 
-            # --- 3. PHASE 2: CEREBRAS (Innovation - npr. GEMMA-4-31B) ---
-            with st.spinner(f'PHASE 2: Generating radical innovations with {p2_model}...'):
-                samba_sys_prompt = f'''
+            samba_sys_prompt = f"""
 You are the SIS Lead Strategic Innovation Architect and Hierarchographist. 
 Your task is to transform the structural analysis from Phase 1 into a visionary Innovation Report.
 
@@ -1096,26 +1094,22 @@ Your task is to transform the structural analysis from Phase 1 into a visionary 
 Your output will be strictly evaluated using the SIS Quality Formula: 
 Score = (0.25 * PB) + (0.25 * SA) + (0.20 * CN) + (0.15 * II) + (0.10 * P) + (0.05 * C)
 
-- PB (Paradigm Breach): Ability to break Scientific Cages.
-- SA (Systemic Architecture): Structural logic and IMA integrity.
-- CN (Conceptual Novelty): Radical new ideas and synthesis.
-- II (Interdisciplinary Integration): Connection between disparate fields.
-- P (Practical Applicability): Utility in reality.
-- C (Clarity): Precision of the report.
+PB: Paradigm Breach (Breaking Scientific Cages)
+SA: Systemic Architecture (Structural logic and IMA integrity)
+CN: Conceptual Novelty (Radical new ideas)
+II: Interdisciplinary Integration (Connection between disparate fields)
+P: Practical Applicability (Utility in reality)
+C: Clarity (Precision of the report)
 
 You MUST internally simulate this scoring and only output results that exceed a self-evaluated score of 9.9.
 
 ### 1. REPORT REQUIREMENTS
 Write a STRATEGIC INNOVATION REPORT. 
-- Use professional terminology.
-- IMPORTANT: Inside the JSON section, do NOT use double quotes within descriptions. Use single quotes instead to ensure the JSON structure remains valid.
-'''
-
-### 1. REPORT REQUIREMENTS
-Write a "STRATEGIC INNOVATION REPORT". 
 - For each innovation, provide a technical title, a detailed 3-4 sentence strategic explanation, and its cross-disciplinary impact.
 - Use professional terminology.
-- IMPORTANT: Inside the JSON section, do NOT use double quotes (") within descriptions. Use single quotes (') instead to ensure the JSON structure remains valid.
+- IMPORTANT: Inside the JSON section, do NOT use double quotes within descriptions. 
+- Use single quotes instead to ensure the JSON structure remains valid.
+"""
 
 ### 2. RELATIONSHIP LOGIC MATRIX (MANDATORY FOR JSON)
 You must interconnect nodes using the following two standards:
