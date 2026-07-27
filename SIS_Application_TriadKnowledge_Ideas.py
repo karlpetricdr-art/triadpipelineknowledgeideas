@@ -1179,8 +1179,9 @@ Every node and edge must be accounted for. In the 'description' field of each 'd
                 )
                 cerebras_innovation = samba_response.choices[0].message.content
 # =============================================================================
-            # REDUNDANCY FIX & DATA PROCESSING (UNIFIED LOGIC)
+            # REDUNDANCY FIX & DATA PROCESSING (CLEAN & UNABRIDGED)
             # =============================================================================
+            
             # 1. Razcepimo odgovor na besedilo in surovi JSON
             if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
                 report_parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
@@ -1196,24 +1197,39 @@ Every node and edge must be accounted for. In the 'description' field of each 'd
                     innovation_text = cerebras_innovation
                     json_raw = ""
 
-            # 2. Čiščenje Markdown znakov (```json) iz JSON niza
-            json_raw = re.sub(r'```json|```', '', json_raw).strip()
+            # 2. ČIŠČENJE REDUNDANTNIH NASLOVOV PRED PRIKAZOM
+            # To odstrani fraze, ki jih AI uporabi kot uvod v kodo (npr. Semantic Graph (JSON):)
+            redundant_patterns = [
+                r"(?i)semantic graph \(json\):?", 
+                r"(?i)below is the json structure:?", 
+                r"(?i)here is the semantic graph:?",
+                r"(?i)json data:?",
+                r"###\s*Semantic Graph",
+                r"```json",
+                r"```"
+            ]
+            for pattern in redundant_patterns:
+                innovation_text = re.sub(pattern, "", innovation_text)
             
-            # 3. Inicializacija podatkov za graf
+            # 3. PROCESIRANJE PODATKOV ZA GRAF
+            # Čiščenje Markdown znakov iz JSON niza
+            json_raw = re.sub(r'```json|```', '', json_raw).strip()
             g_data = {"nodes": [], "edges": []}
             
-            # Robustno iskanje JSON strukture (uporabimo poenoteno ime json_raw)
+            # Robustno iskanje JSON strukture znotraj json_raw
             json_match = re.search(r'(\{.*"nodes".*\})', json_raw if json_raw else cerebras_innovation, re.DOTALL | re.IGNORECASE)
 
             if json_match:
                 try:
                     raw_json_str = json_match.group(1)
+                    # Očistimo kontrolne znake, ki bi lahko zlomili json.loads
                     clean_json = raw_json_str.replace('\n', ' ').replace('\r', '')
                     g_data = json.loads(clean_json)
                 except Exception as json_err:
                     st.warning(f"Note: Graph structure issue: {json_err}")
 
-            # 4. Sestava končnega poročila (Uporabimo OČIŠČENO besedilo innovation_text)
+            # 4. SESTAVA KONČNEGA POROČILA (Uporabimo OČIŠČENO besedilo)
+            # innovation_text.strip() odstrani morebitne odvečne prazne vrstice na koncu
             full_report = f"## 📚 Phase 1: Structural Foundation\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations\n\n{innovation_text.strip()}"
 
             nodes_to_link = []
