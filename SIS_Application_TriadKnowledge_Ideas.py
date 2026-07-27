@@ -1088,15 +1088,6 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
 
             # --- 3. PHASE 2: CEREBRAS (Innovation - npr. GEMMA-4-31B) ---
             with st.spinner(f'PHASE 2: Generating radical innovations with {p2_model}...'):
-                Ta napaka se je zgodila, ker ste besedilo formule verjetno prilepili neposredno
-v kodo zunaj niza (stringa) ali pa ste uporabili napačne narekovaje. Python
-misli, da je 0.25PB neveljavna številka, ker vsebuje črke.
-
-Tukaj je popravljena koda za Fazo 2, kjer je ta formula pravilno vključena v
-sistemski prompt kot besedilo (pod narekovaji), kar bo odpravilo SyntaxError.
-
-Zamenjajte svoj celoten blok samba_sys_prompt (okoli vrstice 600-650) s tem:
-
                 samba_sys_prompt = f"""
 You are the SIS Lead Strategic Innovation Architect and Hierarchographist. 
 Your task is to transform the structural analysis from Phase 1 into a visionary Innovation Report.
