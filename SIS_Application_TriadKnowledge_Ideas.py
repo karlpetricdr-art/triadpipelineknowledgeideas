@@ -1085,7 +1085,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 # --- DINAMIČNA AKTIVACIJA VSEH 20 MENTALNIH PRISTOPOV ---
                 ma_list_for_ai = ", ".join(MENTAL_APPROACHES_ONTOLOGY["nodes"].keys())
 
-                # --- 3. PHASE 2: CEREBRAS (Innovation - FULL 20-MA Engine) ---
+                # --- 3. PHASE 2: CEREBRAS (Innovation - FULL 20-MA Engine + UML Priority) ---
                 with st.spinner(f'PHASE 2: Activating 20-MA Engine with {p2_model}...'):
                     samba_sys_prompt = f"""
 You are the SIS Lead Strategic Innovation Architect and Hierarchographist. 
@@ -1103,48 +1103,32 @@ Write a "STRATEGIC INNOVATION REPORT".
 - Use professional terminology.
 - IMPORTANT: Inside the JSON section, do NOT use double quotes (") within descriptions. Use single quotes (') instead to ensure the JSON structure remains valid.
 
-### 2. RELATIONSHIP LOGIC MATRIX (MANDATORY FOR JSON)
-You must interconnect nodes using the following standards:
+### 2. RELATIONSHIP LOGIC MATRIX (PRIORITY FOR ARCHITECTURAL STABILITY)
+You must interconnect nodes using the following two standards. Do not just use 'Association'.
 
-A) THESAURUS LOGIC (ISO 25964 / Conceptual Taxonomy):
-- 'TT' (Top Term): Absolute root of a knowledge domain.
-- 'BT' (Broader Term): Higher-level class/concept (Genus).
-- 'NT' (Narrower Term): Lower-level sub-concept (Species).
-- 'RT' (Related Term): Symmetrical lateral association between concepts.
-- 'EQ' (Equivalence): Synonyms or identical concepts in different fields.
-- 'AS' (Associative): Functional connection (e.g., Process AS Result, Tool AS Action).
-- 'IN' (Inheritance): Property transfer where child inherits parent traits.
+A) THESAURUS LOGIC (ISO 25964):
+- 'TT' (Top Term), 'BT' (Broader), 'NT' (Narrower), 'RT' (Related), 'EQ' (Equivalence), 'AS' (Associative), 'IN' (Inheritance).
 
-B) UML LOGIC (OMG Standard / Structural Architecture):
+B) UML LOGIC (OMG Standard - MANDATORY for Innovation Nodes):
 - 'Generalization': 'Is-a' Inheritance (e.g., Quantum Physics is a Generalization of Physics).
-- 'Specialization': The deductive opposite of Generalization. A downward move from a general law to a specific refined case.
-- 'Containment': A strong structural inclusion where a node is trapped or housed inside another. Mandatory for mapping concepts within a 'Scientific Cage'.
+- 'Specialization': The deductive opposite of Generalization. Move from general law to specific case.
+- 'Containment': Strong structural inclusion. Mandatory for concepts within a 'Scientific Cage'.
 - 'Realization': An Innovation/Tool implementing a Goal/Vision.
 - 'Composition': Strong 'Part-of' (Life-cycle dependent).
 - 'Aggregation': Weak 'Part-of' (Independent existence).
 - 'Dependency': Node A requires Node B to function.
-- 'Conflict': A Systemic tension, incompatibility, or direct conflict between two elements.
+- 'Conflict': A Systemic tension, incompatibility, or direct conflict.
 
 C) LOGICAL CONNECTORS (Decision Logic):
-- 'AND': Močna sinteza, kjer morata oba pogoja obstajati hkrati (Veznik IN).
-- 'OR': Alternativna pot ali izbira med koncepti (Veznik ALI).
-- 'XOR': Izključujoči ALI (Koncepta sta nezdružljiva ali paradoksalna).
-- 'NOT': Negacija ali prepovedana povezava (Meja znanstvene kletke).
-- 'IF-THEN': Vzročna posledica ali pogojni prehod.
+- 'AND', 'OR', 'XOR', 'NOT', 'IF-THEN'.
 
 ### 3. MANDATORY GEOMETRY (SHAPES)
-- 'star': Ultimate Goals / Macro-Vision.
-- 'hexagon': Science Fields / Academic Domains.
-- 'diamond': Strategic Innovations / New Breakthroughs.
-- 'triangle': Active Processes / Methods / Vectors.
-- 'octagon': Constraints / Ethical Boundaries / Rules.
-- 'ellipse': Human Factors / Identities / Biological Entities.
-- 'rectangle': Facts / Data Points / Micro-components.
+- 'star': Ultimate Goals, 'hexagon': Science Fields, 'diamond': Innovations, 'triangle': Processes, 'octagon': Constraints, 'ellipse': Human Factors, 'rectangle': Facts.
 
 ### 4. OUTPUT FORMAT
 MANDATORY JSON STRUCTURE:
-Every node and edge must be accounted for. In the 'description' field of each 'diamond' (Innovation) node, you MUST explicitly state which 3 Mental Approaches were synthesized to create it.
-Everything after the tag '### SEMANTIC_GRAPH_JSON' must be ONLY the raw JSON object.
+In the 'description' field of each 'diamond' (Innovation) node, you MUST explicitly state which 3 Mental Approaches were synthesized to create it.
+Everything after the tag '### SEMANTIC_GRAPH_JSON' must be ONLY the JSON object.
 
 ### SEMANTIC_GRAPH_JSON
 {{
@@ -1154,27 +1138,25 @@ Everything after the tag '### SEMANTIC_GRAPH_JSON' must be ONLY the raw JSON obj
       "label": "LABEL", 
       "shape": "diamond", 
       "color": "#fd7e14", 
-      "description": "Detailed strategic analysis. Synthesized via [MA1], [MA2], and [MA3]. Impact: Detailed explanation of cross-disciplinary effect using single quotes only."
+      "description": "Synthesized via [MA1, MA2, MA3]. Detailed strategic breakdown using single quotes only..."
     }}
   ],
   "edges": [
-    {{"source": "n1", "target": "n2", "rel_type": "AND"}}
+    {{"source": "n1", "target": "n2", "rel_type": "Realization"}}
   ]
 }}
-""" # Končan samba_sys_prompt
-
-                # --- PHASE 2 EXECUTION ---
-                samba_response = cerebras_client.chat.completions.create(
-                    model=p2_model, 
-                    messages=[
-                        {"role": "system", "content": samba_sys_prompt}, 
-                        {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER GOAL: {idea_query}{file_context_str}"}
-                    ],
-                    temperature=0.85,
-                    top_p=0.9,
-                    max_completion_tokens=6000 # Zagotavlja, da JSON ne bo odrezan
-                )
-                cerebras_innovation = samba_response.choices[0].message.content
+"""
+                    samba_response = cerebras_client.chat.completions.create(
+                        model=p2_model, 
+                        messages=[
+                            {"role": "system", "content": samba_sys_prompt}, 
+                            {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER GOAL: {idea_query}{file_context_str}"}
+                        ],
+                        temperature=0.85,
+                        top_p=0.9,
+                        max_completion_tokens=6000
+                    )
+                    cerebras_innovation = samba_response.choices[0].message.content
 
             # =============================================================================
             # REDUNDANCY FIX & DATA PROCESSING (CLEAN & UNABRIDGED)
