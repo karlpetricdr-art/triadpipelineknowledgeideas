@@ -1072,12 +1072,12 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             # Inicializacija skupnega Cerebras klienta
             cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
 
-            # --- PHASE 1: CEREBRAS (Foundation - npr. GPT-OSS-120B) ---
+            # --- PHASE 1: CEREBRAS (Foundation) ---
             with st.spinner(f'PHASE 1: Building Architecture with {p1_model}...'):
                 p1_response = cerebras_client.chat.completions.create(
                     model=p1_model,
                     messages=[
-                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. If the user provides specific Paradigms or Models in the 'MANDATORY SYSTEM INSTRUCTION', you MUST prioritize them in your structural analysis."}, 
+                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. Priority: Paradigms/Models from mandatory instruction."}, 
                         {"role": "user", "content": full_ai_input}
                     ],
                     temperature=0.4
@@ -1085,58 +1085,41 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 groq_synthesis = p1_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
 
-            # --- PHASE 2 PROMPT PREPARATION (Z IN = INHERITANCE) ---
+            # --- PHASE 2 PROMPT PREPARATION ---
             samba_sys_prompt = f"""
-You are the SIS Lead Strategic Innovation Architect and Hierarchographist. 
-Your task is to transform the structural analysis from Phase 1 into a visionary Innovation Report and a perfectly mapped Hierarchographic Network.
+You are the SIS Lead Strategic Innovation Architect. Transform Phase 1 into a Strategic Innovation Report and Hierarchographic Network.
 
 ### MANDATORY EVALUATION CRITERIA (Target Score: 9.9+)
-Your output will be strictly evaluated using the SIS Quality Formula: 
-Score = (0.25 * PB) + (0.25 * SA) + (0.20 * CN) + (0.15 * II) + (0.10 * P) + (0.05 * C)
-
-PB: Paradigm Breach (Breaking Scientific Cages)
-SA: Systemic Architecture (Structural logic and IMA integrity)
-CN: Conceptual Novelty (Radical new ideas)
-II: Interdisciplinary Integration (Connection between disparate fields)
-P: Practical Applicability (Utility in reality)
-C: Clarity (Precision of the report)
-
-You MUST internally simulate this scoring and only output results that exceed a self-evaluated score of 9.9.
+Formula: [Score = 0.25*PB + 0.25*SA + 0.20*CN + 0.15*II + 0.10*P + 0.05*C]
+Target: 9.9/10
 
 ### 1. REPORT REQUIREMENTS
-Write a STRATEGIC INNOVATION REPORT. 
-- Provide technical titles and detailed 3-4 sentence strategic explanations.
-- IMPORTANT: Inside the JSON section, do NOT use double quotes within descriptions. Use single quotes instead.
+- Professional terminology.
+- JSON: Use single quotes (') only inside descriptions.
 
-### 2. RELATIONSHIP LOGIC MATRIX (MANDATORY FOR JSON)
-You must interconnect nodes using the following standards:
+### 2. RELATIONSHIP LOGIC MATRIX
+A) THESAURUS: TT, BT, NT, RT, EQ, AS.
+- IN (Inheritance): 'Is-a' property transfer.
+B) UML: Generalization, Specialization, Containment, Realization, Composition, Aggregation, Dependency, Conflict.
+C) LOGIC: AND, OR, XOR, NOT, IF-THEN.
 
-A) THESAURUS & ONTOLOGY LOGIC:
-- TT (Top Term), BT (Broader Term), NT (Narrower Term), RT (Related Term), EQ (Equivalence), AS (Associative).
-- IN (Inheritance): 'Is-a' relation where properties are passed down to child nodes.
-
-B) UML LOGIC:
-- Generalization, Specialization, Containment, Realization, Composition, Aggregation, Dependency, Conflict.
-
-C) LOGICAL CONNECTORS:
-- AND, OR, XOR, NOT, IF-THEN.
-
-### 3. MANDATORY GEOMETRY (SHAPES)
+### 3. MANDATORY GEOMETRY
 - star: Goals, hexagon: Domains, diamond: Innovations, triangle: Processes, octagon: Constraints, ellipse: Humans, rectangle: Facts.
 
 ### 4. OUTPUT FORMAT
-MANDATORY JSON STRUCTURE:
 ### SEMANTIC_GRAPH_JSON
 {{
   "nodes": [
-    {{"id": "n1", "label": "LABEL", "shape": "diamond", "color": "#fd7e14", "description": "Description using single quotes."}}
+    {{"id": "n1", "label": "LABEL", "shape": "diamond", "color": "#fd7e14", "description": "Single quotes only."}}
   ],
   "edges": [
-    {{"source": "n1", "target": "n2", "rel_type": "IN"}},
-    {{"source": "n3", "target": "n1", "rel_type": "Composition"}}
+    {{"source": "n1", "target": "n2", "rel_type": "IN"}}
   ]
 }}
 """
+
+            # --- PHASE 2 EXECUTION (Pazi na poravnavo te vrstice!) ---
+            with st.spinner(f'PHASE 2: Generating radical innovations with {p2_model}...'):
                 samba_response = cerebras_client.chat.completions.create(
                     model=p2_model, 
                     messages=[
