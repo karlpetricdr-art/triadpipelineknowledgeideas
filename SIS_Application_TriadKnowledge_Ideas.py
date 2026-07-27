@@ -1197,9 +1197,9 @@ Every node and edge must be accounted for. In the 'description' field of each 'd
                     innovation_text = cerebras_innovation
                     json_raw = ""
 
-            # 2. ČIŠČENJE REDUNDANTNIH NASLOVOV PRED PRIKAZOM
-            # To odstrani fraze, ki jih AI uporabi kot uvod v kodo (npr. Semantic Graph (JSON):)
+            # --- 2. ČIŠČENJE REDUNDANTNIH NASLOVOV PRED PRIKAZOM ---
             redundant_patterns = [
+                r"(?i)semantic graph\s*[–-]\s*json representation:?", 
                 r"(?i)semantic graph \(json\):?", 
                 r"(?i)below is the json structure:?", 
                 r"(?i)here is the semantic graph:?",
@@ -1208,8 +1208,13 @@ Every node and edge must be accounted for. In the 'description' field of each 'd
                 r"```json",
                 r"```"
             ]
+            
+            # To je ključni del, ki dejansko opravi brisanje:
             for pattern in redundant_patterns:
                 innovation_text = re.sub(pattern, "", innovation_text)
+            
+            # Odstranimo odvečne presledke na začetku in koncu
+            innovation_text = innovation_text.strip()
             
             # 3. PROCESIRANJE PODATKOV ZA GRAF
             # Čiščenje Markdown znakov iz JSON niza
