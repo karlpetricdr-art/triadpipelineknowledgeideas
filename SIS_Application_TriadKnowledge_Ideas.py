@@ -1276,14 +1276,6 @@ with st.spinner('⚖️ Phase 3: Evaluating Quality Score...'):
 
                         # Linkamo le PRVO pojavitev besede za čistočo
                         final_interactive_report = pattern.sub(link_html, final_interactive_report, count=1)
-Razumem. Želiš enoten, povezan blok kode, ki ga lahko neposredno prilepiš v svoj
-projekt.
-
-Tukaj je združen in optimiziran blok. Ta koda najprej izvede izračun (v ozadju)
-in nato takoj izriše vizualne metrike (UI) pred naslovom poročila.
-
-Vstavi točno namesto vrstic, kjer se v tvoji kodi pripravlja izpis poročila
-(okoli 5b):
 
             # =============================================================================
             # PHASE 3 & 5b: QUALITY EVALUATION & RENDERING (JOINT BLOCK)
