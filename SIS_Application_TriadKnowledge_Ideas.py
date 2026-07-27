@@ -1082,16 +1082,10 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                     ],
                     temperature=0.4
                 )
-                # Rezultat shranimo v isto spremenljivko, da ostala koda deluje brez sprememb
                 # Rezultat shranimo v isto spremenljivko
                 groq_synthesis = p1_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
 
-            # --- 3. PHASE 2: CEREBRAS (Innovation - npr. GEMMA-4-31B) ---
-            with st.spinner(f'PHASE 2: Generating radical innovations with {p2_model}...'):
-                samba_sys_prompt = f"""
-You are the SIS Lead Strategic Innovation Architect and Hierarchographist. 
-Your task is to transform the structural analysis from Phase 1 into a visionary Innovation Report and a perfectly mapped Hierarchographic Network.
                 # --- DINAMIČNA AKTIVACIJA VSEH 20 MENTALNIH PRISTOPOV ---
                 # Ta vrstica mora biti poravnana z zgornjo!
                 ma_list_for_ai = ", ".join(MENTAL_APPROACHES_ONTOLOGY["nodes"].keys())
@@ -1101,6 +1095,9 @@ Your task is to transform the structural analysis from Phase 1 into a visionary 
                 with st.spinner(f'PHASE 2: Activating 20-MA Engine with {p2_model}...'):
                     samba_sys_prompt = f"""
 You are the SIS Lead Strategic Innovation Architect. 
+You are the SIS Lead Strategic Innovation Architect and Hierarchographist. 
+Your task is to transform the structural analysis from Phase 1 into a visionary Innovation Report and a perfectly mapped Hierarchographic Network.
+
 Your mandate is to reach a 9.9+ score.
 
 ### MANDATORY COGNITIVE ENGINE: ALL 20 MENTAL APPROACHES (MA)
@@ -1154,11 +1151,11 @@ C) LOGICAL CONNECTORS (Decision Logic):
 ### 4. OUTPUT FORMAT
 MANDATORY JSON STRUCTURE:
 Every node and edge must be accounted for. In the 'description' field of each 'diamond' (Innovation) node, you MUST explicitly state which 3 Mental Approaches were synthesized to create it.
+IMPORTANT: Place the JSON block strictly after the header '### SEMANTIC_GRAPH_JSON'. Do not include any text after the JSON block.
 
 ### SEMANTIC_GRAPH_JSON
 {{
   "nodes": [
-    {{"id": "n1", "label": "LABEL", "shape": "diamond", "color": "#fd7e14", "description": "Full detailed description for the deep-dive."}}
     {{
       "id": "n1", 
       "label": "INNOVATION TITLE", 
@@ -1168,12 +1165,10 @@ Every node and edge must be accounted for. In the 'description' field of each 'd
     }}
   ],
   "edges": [
-    {{"source": "n1", "target": "n2", "rel_type": "AS"}},
     {{"source": "n1", "target": "n2", "rel_type": "IN"}},
     {{"source": "n3", "target": "n1", "rel_type": "Composition"}}
   ]
 }}
-"""
 """ # Tukaj se konča samba_sys_prompt
 
                 # --- PHASE 2 EXECUTION ---
@@ -1191,6 +1186,7 @@ Every node and edge must be accounted for. In the 'description' field of each 'd
             # --- 4. PROCESIRANJE REZULTATOV (Z GEOMETRIJSKO LOGIKO) ---
             g_data = {"nodes": [], "edges": []}
 
+            # POPRAVEK: Ločevanje besedila od JSON-a za preprečevanje redundantnega izpisa
             if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
                 parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
                 innovation_text = parts[0]
@@ -1198,6 +1194,9 @@ Every node and edge must be accounted for. In the 'description' field of each 'd
             else:
                 innovation_text = cerebras_innovation
                 json_raw = ""
+
+            # Odstranimo morebitne ostanke backtick-ov (```) iz besedila poročila
+            innovation_text = re.sub(r'```json|```', '', innovation_text)
 
             full_report = f"## 📚 Phase 1: Structural Foundation (Cerebras {p1_model})\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations (Cerebras {p2_model})\n\n{innovation_text}"
 
@@ -1322,6 +1321,7 @@ Every node and edge must be accounted for. In the 'description' field of each 'd
                     st.markdown(biblio_data)
 
             # Display the full linked report (P1 + P2)
+            # Display the full linked report (P1 + P2) - Sedaj brez surovega JSON kosa
             st.markdown(final_interactive_report, unsafe_allow_html=True)
 
             # 5c. INNOVATION DEEP-DIVE: DETAILED BREAKTHROUGH CATALOG
