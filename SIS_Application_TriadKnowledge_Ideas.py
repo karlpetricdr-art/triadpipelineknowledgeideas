@@ -1088,6 +1088,20 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
 
             # --- 3. PHASE 2: CEREBRAS (Innovation - npr. GEMMA-4-31B) ---
             with st.spinner(f'PHASE 2: Generating radical innovations with {p2_model}...'):
+                Napaka "unterminated string literal" pomeni, da ste nekje začeli niz besedila (z
+narekovaji), niste pa ga pravilno zaključili, ali pa ste uporabili napačno vrsto
+narekovajev za večvrstično besedilo.
+
+V vrstici 1118 imate besedilo double quotes ("). Če ste celoten blok začeli le z
+enim narekovajem (f"), Python misli, da se besedilo konča pri tistem narekovaju
+sredi stavka, preostanek vrstice pa zanj postane neveljavna koda.
+
+Rešitev: Za večvrstične prompte (kot je vaš samba_sys_prompt) morate obvezno
+uporabiti trojne dvojne narekovaje f""" na začetku in """ na koncu.
+
+Tukaj je popravljen in varen blok kode. Prekopirajte ga v celoti, da nadomestite
+problematični del:
+
                 samba_sys_prompt = f"""
 You are the SIS Lead Strategic Innovation Architect and Hierarchographist. 
 Your task is to transform the structural analysis from Phase 1 into a visionary Innovation Report.
@@ -1096,11 +1110,11 @@ Your task is to transform the structural analysis from Phase 1 into a visionary 
 Your output will be strictly evaluated using the SIS Quality Formula: 
 Score = (0.25 * PB) + (0.25 * SA) + (0.20 * CN) + (0.15 * II) + (0.10 * P) + (0.05 * C)
 
-- PB (Paradigm Breach): Breaking 'Scientific Cages'.
+- PB (Paradigm Breach): Ability to break 'Scientific Cages'.
 - SA (Systemic Architecture): Structural logic and IMA integrity.
-- CN (Conceptual Novelty): Radical new ideas.
+- CN (Conceptual Novelty): Radical new ideas and synthesis.
 - II (Interdisciplinary Integration): Connection between disparate fields.
-- P (Practical Applicability): Utility in reality.
+- P (Practical Applicability): Real-world utility.
 - C (Clarity): Precision of the report.
 
 You MUST internally simulate this scoring and only output results that exceed a self-evaluated score of 9.9.
@@ -1108,7 +1122,7 @@ You MUST internally simulate this scoring and only output results that exceed a 
 ### 1. REPORT REQUIREMENTS
 Write a "STRATEGIC INNOVATION REPORT". 
 - Use professional terminology.
-- IMPORTANT: Inside the JSON section, do NOT use double quotes (") within descriptions. Use single quotes (') instead.
+- IMPORTANT: Inside the JSON section, do NOT use double quotes (") within descriptions. Use single quotes (') instead to ensure the JSON structure remains valid.
 """
 
 ### 1. REPORT REQUIREMENTS
