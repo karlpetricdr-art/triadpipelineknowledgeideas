@@ -1200,7 +1200,7 @@ Every node and edge must be accounted for. In the 'description' field of each 'd
             # --- 2. ČIŠČENJE REDUNDANTNIH NASLOVOV PRED PRIKAZOM ---
             redundant_patterns = [
                 r"(?i)Each innovation synthesises.*JSON descriptions below\.?:?",
-				r"(?i)semantic graph\s*[–-]\s*json representation:?", 
+                r"(?i)semantic graph\s*[–-]\s*json representation:?", 
                 r"(?i)semantic graph \(json\):?", 
                 r"(?i)below is the json structure:?", 
                 r"(?i)here is the semantic graph:?",
@@ -1210,11 +1210,12 @@ Every node and edge must be accounted for. In the 'description' field of each 'd
                 r"```"
             ]
             
-            # To je ključni del, ki dejansko opravi brisanje:
             for pattern in redundant_patterns:
                 innovation_text = re.sub(pattern, "", innovation_text)
             
-            # Odstranimo odvečne presledke na začetku in koncu
+            # STISKANJE PRAZNEGA PROSTORA (To bo odstranilo "luknjo")
+            innovation_text = re.sub(r'\n{3,}', '\n\n', innovation_text)
+            
             innovation_text = innovation_text.strip()
             
             # --- 3. PROCESIRANJE PODATKOV ZA GRAF (ROBUSTNA VERZIJA) ---
