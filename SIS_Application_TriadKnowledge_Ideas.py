@@ -1178,7 +1178,28 @@ Every node and edge must be accounted for. In the 'description' field of each 'd
                     top_p=0.9
                 )
                 cerebras_innovation = samba_response.choices[0].message.content
+# =============================================================================
+            # REDUNDANCY FIX: SPLITTING TEXT FROM JSON DATA (DO NOT SHORTEN)
+            # =============================================================================
+            if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
+                report_parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
+                clean_innovation_text = report_parts[0]
+                json_raw_source = report_parts[1]
+            else:
+                clean_innovation_text = cerebras_innovation
+                json_raw_source = ""
 
+            # --- 4. DATA PROCESSING (GRAPH BUILDING - UNABRIDGED) ---
+            g_data = {"nodes": [], "edges": []}
+            json_match = re.search(r'(\{.*"nodes".*\})', json_raw_source if json_raw_source else cerebras_innovation, re.DOTALL | re.IGNORECASE)
+
+            if json_match:
+                try:
+                    raw_json_str = json_match.group(1)
+                    clean_json = raw_json_str.replace('\n', ' ').replace('\r', '')
+                    g_data = json.loads(clean_json)
+                except Exception as json_err:
+                    st.warning(f"Note: Graph structure issue: {json_err}")
             # --- 4. PROCESIRANJE REZULTATOV (Z GEOMETRIJSKO LOGIKO) ---
             g_data = {"nodes": [], "edges": []}
 
@@ -1190,7 +1211,7 @@ Every node and edge must be accounted for. In the 'description' field of each 'd
                 innovation_text = cerebras_innovation
                 json_raw = ""
 
-            full_report = f"## 📚 Phase 1: Structural Foundation (Cerebras {p1_model})\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations (Cerebras {p2_model})\n\n{innovation_text}"
+            full_report = f"## 📚 Phase 1: Structural Foundation\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations\n\n{clean_innovation_text}"
 
             nodes_to_link = []
             final_elements = []
