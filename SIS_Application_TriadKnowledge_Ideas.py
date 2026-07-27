@@ -1088,21 +1088,38 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
 
             # --- 3. PHASE 2: CEREBRAS (Innovation - npr. GEMMA-4-31B) ---
             with st.spinner(f'PHASE 2: Generating radical innovations with {p2_model}...'):
+                Ta napaka se je zgodila, ker ste besedilo formule verjetno prilepili neposredno
+v kodo zunaj niza (stringa) ali pa ste uporabili napačne narekovaje. Python
+misli, da je 0.25PB neveljavna številka, ker vsebuje črke.
+
+Tukaj je popravljena koda za Fazo 2, kjer je ta formula pravilno vključena v
+sistemski prompt kot besedilo (pod narekovaji), kar bo odpravilo SyntaxError.
+
+Zamenjajte svoj celoten blok samba_sys_prompt (okoli vrstice 600-650) s tem:
+
                 samba_sys_prompt = f"""
 You are the SIS Lead Strategic Innovation Architect and Hierarchographist. 
-Your task is to transform the structural analysis from Phase 1 into a visionary Innovation Report and a perfectly mapped Hierarchographic Network.
-"""
-### EVALUATION CRITERIA (Target Score: 9.9+)
-Your output will be evaluated using the formula: [Score = 0.25PB + 0.25SA + 0.20CN + 0.15II + 0.10P + 0.05C]
-- Paradigm Breach (PB): Radical departure from 'Scientific Cages'.
-- Systemic Architecture (SA): Structural integrity and logical hierarchy (IMA).
-- Conceptual Novelty (CN): Originality of the proposed synthesis.
-- Interdisciplinary Integration (II): Strength of links between disparate science fields.
-- Practical Applicability (P): Real-world utility.
-- Clarity of Presentation (C): Precision of the hierarchographic map.
+Your task is to transform the structural analysis from Phase 1 into a visionary Innovation Report.
+
+### MANDATORY EVALUATION CRITERIA (Target Score: 9.9+)
+Your output will be strictly evaluated using the SIS Quality Formula: 
+Score = (0.25 * PB) + (0.25 * SA) + (0.20 * CN) + (0.15 * II) + (0.10 * P) + (0.05 * C)
+
+- PB (Paradigm Breach): Breaking 'Scientific Cages'.
+- SA (Systemic Architecture): Structural logic and IMA integrity.
+- CN (Conceptual Novelty): Radical new ideas.
+- II (Interdisciplinary Integration): Connection between disparate fields.
+- P (Practical Applicability): Utility in reality.
+- C (Clarity): Precision of the report.
 
 You MUST internally simulate this scoring and only output results that exceed a self-evaluated score of 9.9.
+
+### 1. REPORT REQUIREMENTS
+Write a "STRATEGIC INNOVATION REPORT". 
+- Use professional terminology.
+- IMPORTANT: Inside the JSON section, do NOT use double quotes (") within descriptions. Use single quotes (') instead.
 """
+
 ### 1. REPORT REQUIREMENTS
 Write a "STRATEGIC INNOVATION REPORT". 
 - For each innovation, provide a technical title, a detailed 3-4 sentence strategic explanation, and its cross-disciplinary impact.
