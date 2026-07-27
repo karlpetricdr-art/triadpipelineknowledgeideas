@@ -1082,15 +1082,24 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                     ],
                     temperature=0.4
                 )
-                # Rezultat shranimo v isto spremenljivko, da ostala koda deluje brez sprememb
+                # Rezultat shranimo v isto spremenljivko
                 groq_synthesis = p1_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
 
-            # --- 3. PHASE 2: CEREBRAS (Innovation - npr. GEMMA-4-31B) ---
-            with st.spinner(f'PHASE 2: Generating radical innovations with {p2_model}...'):
-                samba_sys_prompt = f"""
-You are the SIS Lead Strategic Innovation Architect and Hierarchographist. 
-Your task is to transform the structural analysis from Phase 1 into a visionary Innovation Report and a perfectly mapped Hierarchographic Network.
+                # --- DINAMIČNA AKTIVACIJA VSEH 20 MENTALNIH PRISTOPOV ---
+                # Ta vrstica mora biti poravnana z zgornjo!
+                ma_list_for_ai = ", ".join(MENTAL_APPROACHES_ONTOLOGY["nodes"].keys())
+
+                # --- 3. PHASE 2: CEREBRAS (Innovation) ---
+                # Tudi ta vrstica mora biti poravnana z zgornjo!
+                with st.spinner(f'PHASE 2: Activating 20-MA Engine with {p2_model}...'):
+                    samba_sys_prompt = f"""
+You are the SIS Lead Strategic Innovation Architect. 
+Your mandate is to reach a 9.9+ score.
+
+### MANDATORY COGNITIVE ENGINE: ALL 20 MENTAL APPROACHES (MA)
+You MUST process the foundation through ALL 20 lenses:
+{ma_list_for_ai}
 
 ### 1. REPORT REQUIREMENTS
 Write a "STRATEGIC INNOVATION REPORT". 
@@ -1138,17 +1147,27 @@ C) LOGICAL CONNECTORS (Decision Logic):
 
 ### 4. OUTPUT FORMAT
 MANDATORY JSON STRUCTURE:
+Every node and edge must be accounted for. In the 'description' field of each 'diamond' (Innovation) node, you MUST explicitly state which 3 Mental Approaches were synthesized to create it.
+
 ### SEMANTIC_GRAPH_JSON
 {{
   "nodes": [
-    {{"id": "n1", "label": "LABEL", "shape": "diamond", "color": "#fd7e14", "description": "Full detailed description for the deep-dive."}}
+    {{
+      "id": "n1", 
+      "label": "INNOVATION TITLE", 
+      "shape": "diamond", 
+      "color": "#fd7e14", 
+      "description": "Detailed strategic analysis. Synthesized via [MA1], [MA2], and [MA3]. Impact: Detailed explanation of cross-disciplinary effect."
+    }}
   ],
   "edges": [
-    {{"source": "n1", "target": "n2", "rel_type": "AS"}},
+    {{"source": "n1", "target": "n2", "rel_type": "IN"}},
     {{"source": "n3", "target": "n1", "rel_type": "Composition"}}
   ]
 }}
-"""
+""" # Tukaj se konča samba_sys_prompt
+
+                # --- PHASE 2 EXECUTION ---
                 samba_response = cerebras_client.chat.completions.create(
                     model=p2_model, 
                     messages=[
