@@ -1278,12 +1278,13 @@ with st.spinner('⚖️ Phase 3: Evaluating Quality Score...'):
                         final_interactive_report = pattern.sub(link_html, final_interactive_report, count=1)
 
             # =============================================================================
+            # =============================================================================
             # PHASE 3 & 5b: QUALITY EVALUATION & RENDERING (JOINT BLOCK)
             # =============================================================================
             
-            # 1. IZRAČUN OCENE (Logika v ozadju)
+            # 1. QUALITY EVALUATION LOGIC
             with st.spinner('⚖️ Evaluating Quality to 9.9+ Standard...'):
-                # Razširjen prompt za boljšo natančnost analize
+                # Priprava prompta za analizo po formuli
                 qa_prompt = (
                     f"Evaluate this report by the formula [Score = 0.25*PB + 0.25*SA + 0.20*CN + 0.15*II + 0.10*P + 0.05*C]. "
                     f"PB: Paradigm Breach, SA: Systemic Architecture, CN: Conceptual Novelty, II: Interdisciplinary Integration, "
@@ -1296,29 +1297,32 @@ with st.spinner('⚖️ Phase 3: Evaluating Quality Score...'):
                         messages=[{"role": "user", "content": qa_prompt}],
                         temperature=0.1
                     )
-                    # Iskanje JSON strukture v odgovoru
-                    qa_json_str = re.search(r'(\{.*\})', qa_res.choices[0].message.content, re.DOTALL).group(1)
-                    st.session_state.quality_scores = json.loads(qa_json_str)
+                    # Iskanje JSON strukture v odgovoru modela
+                    qa_match = re.search(r'(\{.*\})', qa_res.choices[0].message.content, re.DOTALL)
+                    if qa_match:
+                        st.session_state.quality_scores = json.loads(qa_match.group(1))
+                    else:
+                        st.session_state.quality_scores = {"PB":0, "SA":0, "CN":0, "II":0, "P":0, "C":0, "TOTAL":0}
                 except Exception:
                     st.session_state.quality_scores = {"PB":0, "SA":0, "CN":0, "II":0, "P":0, "C":0, "TOTAL":0}
 
-            # 2. PRIKAZ OCENE (Vizualni del nad poročilom)
+            # 2. QUALITY DISPLAY (UI)
             if st.session_state.get('quality_scores'):
                 qs = st.session_state.quality_scores
-                total = qs.get("TOTAL", 0)
+                total_val = qs.get("TOTAL", 0)
                 
-                # Glavni indikator uspeha
-                if total >= 9.9:
+                # Vizualni indikator glede na rezultat
+                if total_val >= 9.9:
                     st.balloons()
-                    st.success(f"### 🏆 SIS QUALITY RATING: {total}/10 (ULTRA-SYNERGY ACHIEVED)")
-                elif total >= 9.0:
-                    st.success(f"### ✅ SIS QUALITY RATING: {total}/10 (HIGH-END ARCHITECTURE)")
+                    st.success(f"### 🏆 SIS QUALITY RATING: {total_val}/10 (ULTRA-SYNERGY ACHIEVED)")
+                elif total_val >= 9.0:
+                    st.success(f"### ✅ SIS QUALITY RATING: {total_val}/10 (HIGH-END ARCHITECTURE)")
                 else:
-                    st.info(f"### 📊 SIS QUALITY RATING: {total}/10 (STANDARD ANALYSIS)")
+                    st.info(f"### 📊 SIS QUALITY RATING: {total_val}/10 (STANDARD ANALYSIS)")
                 
-                # Izris šesterice metrik (6 stolpcev)
+                # Izris 6 stolpcev z metrikami
                 m_cols = st.columns(6)
-                labels = {
+                m_labels = {
                     "PB": "Paradigm", 
                     "SA": "Arch.", 
                     "CN": "Novelty", 
@@ -1326,12 +1330,12 @@ with st.spinner('⚖️ Phase 3: Evaluating Quality Score...'):
                     "P": "Practical", 
                     "C": "Clarity"
                 }
-                for i, (key, label) in enumerate(labels.items()):
+                for i, (key, label) in enumerate(m_labels.items()):
                     m_cols[i].metric(label, f"{qs.get(key, 0)}/10")
                 
                 st.divider()
 
-            # 3. NADALJEVANJE Z INTEGRIRANIM POROČILOM
+            # 3. PROCEED TO REPORT
             st.subheader("🧱 INTEGRATED HIERARCHOLOGICAL REPORT")
             if biblio_data:
                 with st.expander("📚 EXTRACTED AUTHOR BACKGROUND", expanded=False):
