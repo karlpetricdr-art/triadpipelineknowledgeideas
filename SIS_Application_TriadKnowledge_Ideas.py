@@ -1100,15 +1100,15 @@ Score = (0.25 * PB) + (0.25 * SA) + (0.20 * CN) + (0.15 * II) + (0.10 * P) + (0.
 - SA (Systemic Architecture): Structural logic and IMA integrity.
 - CN (Conceptual Novelty): Radical new ideas and synthesis.
 - II (Interdisciplinary Integration): Connection between disparate fields.
-- P (Practical Applicability): Real-world utility.
+- P (Practical Applicability): Utility in reality.
 - C (Clarity): Precision of the report.
 
 You MUST internally simulate this scoring and only output results that exceed a self-evaluated score of 9.9.
 
 ### 1. REPORT REQUIREMENTS
-Write a "STRATEGIC INNOVATION REPORT". 
+Write a STRATEGIC INNOVATION REPORT. 
 - Use professional terminology.
-- IMPORTANT: Inside the JSON section, do NOT use double quotes (") within descriptions. Use single quotes (') instead to ensure the JSON structure remains valid.
+- IMPORTANT: Inside the JSON section, do NOT use double quotes within descriptions. Use single quotes instead to ensure the JSON structure remains valid.
 """
 
 ### 1. REPORT REQUIREMENTS
