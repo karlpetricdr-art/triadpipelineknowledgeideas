@@ -1106,8 +1106,14 @@ Write a "STRATEGIC INNOVATION REPORT".
 ### 2. RELATIONSHIP LOGIC MATRIX (PRIORITY FOR ARCHITECTURAL STABILITY)
 You must interconnect nodes using the following two standards. Do not just use 'Association'.
 
-A) THESAURUS LOGIC (ISO 25964):
-- 'TT' (Top Term), 'BT' (Broader), 'NT' (Narrower), 'RT' (Related), 'EQ' (Equivalence), 'AS' (Associative), 'IN' (Inheritance).
+A) THESAURUS LOGIC (ISO 25964 / Conceptual Taxonomy):
+- 'TT' (Top Term): Absolute root of a knowledge domain.
+- 'BT' (Broader Term): Higher-level class/concept (Genus).
+- 'NT' (Narrower Term): Lower-level sub-concept (Species).
+- 'RT' (Related Term): Symmetrical lateral association between concepts.
+- 'EQ' (Equivalence): Synonyms or identical concepts in different fields.
+- 'AS' (Associative): Functional connection (e.g., Process AS Result, Tool AS Action).
+- 'IN' (Instance): Category to a specific unique entity/example (e.g., Physics IN Theory of Relativity).
 
 B) UML LOGIC (OMG Standard - MANDATORY for Innovation Nodes):
 - 'Generalization': 'Is-a' Inheritance (e.g., Quantum Physics is a Generalization of Physics).
@@ -1120,10 +1126,20 @@ B) UML LOGIC (OMG Standard - MANDATORY for Innovation Nodes):
 - 'Conflict': A Systemic tension, incompatibility, or direct conflict.
 
 C) LOGICAL CONNECTORS (Decision Logic):
-- 'AND', 'OR', 'XOR', 'NOT', 'IF-THEN'.
+- 'AND': Močna sinteza, kjer morata oba pogoja obstajati hkrati (Veznik IN).
+- 'OR': Alternativna pot ali izbira med koncepti (Veznik ALI).
+- 'XOR': Izključujoči ALI (Koncepta sta nezdružljiva ali paradoksalna).
+- 'NOT': Negacija ali prepovedana povezava (Meja znanstvene kletke).
+- 'IF-THEN': Vzročna posledica ali pogojni prehod.
 
 ### 3. MANDATORY GEOMETRY (SHAPES)
-- 'star': Ultimate Goals, 'hexagon': Science Fields, 'diamond': Innovations, 'triangle': Processes, 'octagon': Constraints, 'ellipse': Human Factors, 'rectangle': Facts.
+- 'star': Ultimate Goals / Macro-Vision.
+- 'hexagon': Science Fields / Academic Domains.
+- 'diamond': Strategic Innovations / New Breakthroughs.
+- 'triangle': Active Processes / Methods / Vectors.
+- 'octagon': Constraints / Ethical Boundaries / Rules.
+- 'ellipse': Human Factors / Identities / Biological Entities.
+- 'rectangle': Facts / Data Points / Micro-components.
 
 ### 4. OUTPUT FORMAT
 MANDATORY JSON STRUCTURE:
