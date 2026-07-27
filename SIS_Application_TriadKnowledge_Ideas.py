@@ -1216,22 +1216,30 @@ Every node and edge must be accounted for. In the 'description' field of each 'd
             # Odstranimo odvečne presledke na začetku in koncu
             innovation_text = innovation_text.strip()
             
-            # 3. PROCESIRANJE PODATKOV ZA GRAF
-            # Čiščenje Markdown znakov iz JSON niza
-            json_raw = re.sub(r'```json|```', '', json_raw).strip()
+            # --- 3. PROCESIRANJE PODATKOV ZA GRAF (ROBUSTNA VERZIJA) ---
             g_data = {"nodes": [], "edges": []}
             
-            # Robustno iskanje JSON strukture znotraj json_raw
-            json_match = re.search(r'(\{.*"nodes".*\})', json_raw if json_raw else cerebras_innovation, re.DOTALL | re.IGNORECASE)
-
-            if json_match:
+            # Najprej očistimo json_raw vseh Markdown oznak in uvodnega besedila
+            json_raw = re.sub(r'```json|```', '', json_raw).strip()
+            
+            # Najdemo dejanski začetek in konec JSON-a (vse med prvo { in zadnjo })
+            start_index = json_raw.find('{')
+            end_index = json_raw.rfind('}')
+            
+            if start_index != -1 and end_index != -1:
+                json_to_parse = json_raw[start_index:end_index+1]
                 try:
-                    raw_json_str = json_match.group(1)
-                    # Očistimo kontrolne znake, ki bi lahko zlomili json.loads
-                    clean_json = raw_json_str.replace('\n', ' ').replace('\r', '')
-                    g_data = json.loads(clean_json)
+                    # Očistimo nevarne skrite znake in nove vrstice sredi nizov
+                    json_to_parse = json_to_parse.replace('\n', ' ').replace('\r', '')
+                    g_data = json.loads(json_to_parse)
                 except Exception as json_err:
-                    st.warning(f"Note: Graph structure issue: {json_err}")
+                    # Če standardno branje ne uspe, poskusimo še z iskanjem preko regexa
+                    json_match = re.search(r'(\{.*"nodes".*?\]\s*.*?\})', json_raw, re.DOTALL | re.IGNORECASE)
+                    if json_match:
+                        try:
+                            g_data = json.loads(json_match.group(1).replace('\n', ' '))
+                        except:
+                            st.warning(f"Note: Graph structure issue: {json_err}")
 
             # 4. SESTAVA KONČNEGA POROČILA (Uporabimo OČIŠČENO besedilo)
             # innovation_text.strip() odstrani morebitne odvečne prazne vrstice na koncu
