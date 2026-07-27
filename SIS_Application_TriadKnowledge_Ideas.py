@@ -1088,20 +1088,6 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
 
             # --- 3. PHASE 2: CEREBRAS (Innovation - npr. GEMMA-4-31B) ---
             with st.spinner(f'PHASE 2: Generating radical innovations with {p2_model}...'):
-                Napaka "unterminated string literal" pomeni, da ste nekje začeli niz besedila (z
-narekovaji), niste pa ga pravilno zaključili, ali pa ste uporabili napačno vrsto
-narekovajev za večvrstično besedilo.
-
-V vrstici 1118 imate besedilo double quotes ("). Če ste celoten blok začeli le z
-enim narekovajem (f"), Python misli, da se besedilo konča pri tistem narekovaju
-sredi stavka, preostanek vrstice pa zanj postane neveljavna koda.
-
-Rešitev: Za večvrstične prompte (kot je vaš samba_sys_prompt) morate obvezno
-uporabiti trojne dvojne narekovaje f""" na začetku in """ na koncu.
-
-Tukaj je popravljen in varen blok kode. Prekopirajte ga v celoti, da nadomestite
-problematični del:
-
                 samba_sys_prompt = f"""
 You are the SIS Lead Strategic Innovation Architect and Hierarchographist. 
 Your task is to transform the structural analysis from Phase 1 into a visionary Innovation Report.
