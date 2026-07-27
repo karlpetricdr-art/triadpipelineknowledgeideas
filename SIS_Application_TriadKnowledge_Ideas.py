@@ -1072,33 +1072,31 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             # Inicializacija skupnega Cerebras klienta
             cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
 
-            # --- PHASE 1: CEREBRAS (Foundation) ---
+            # --- PHASE 1: CEREBRAS (Foundation - npr. GPT-OSS-120B) ---
             with st.spinner(f'PHASE 1: Building Architecture with {p1_model}...'):
                 p1_response = cerebras_client.chat.completions.create(
                     model=p1_model,
                     messages=[
-                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. Priority: Paradigms/Models from mandatory instruction."}, 
+                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. If the user provides specific Paradigms or Models in the 'MANDATORY SYSTEM INSTRUCTION', you MUST prioritize them in your structural analysis."}, 
                         {"role": "user", "content": full_ai_input}
                     ],
                     temperature=0.4
                 )
+                # Rezultat shranimo v isto spremenljivko, da ostala koda deluje brez sprememb
                 groq_synthesis = p1_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
 
-            # --- PHASE 2 PROMPT PREPARATION ---
-            samba_sys_prompt = f"""
+            # --- 3. PHASE 2: CEREBRAS (Innovation - npr. GEMMA-4-31B) ---
+            with st.spinner(f'PHASE 2: Generating radical innovations with {p2_model}...'):
+                samba_sys_prompt = f"""
 You are the SIS Lead Strategic Innovation Architect and Hierarchographist. 
 Your task is to transform the structural analysis from Phase 1 into a visionary Innovation Report and a perfectly mapped Hierarchographic Network.
-
-### MANDATORY EVALUATION CRITERIA (Target Score: 9.9+)
-Formula: [Score = 0.25*PB + 0.25*SA + 0.20*CN + 0.15*II + 0.10*P + 0.05*C]
-Target: 9.9/10
 
 ### 1. REPORT REQUIREMENTS
 Write a "STRATEGIC INNOVATION REPORT". 
 - For each innovation, provide a technical title, a detailed 3-4 sentence strategic explanation, and its cross-disciplinary impact.
 - Use professional terminology.
-- IMPORTANT: Inside the JSON section, do NOT use double quotes within descriptions. Use single quotes instead.
+- IMPORTANT: Inside the JSON section, do NOT use double quotes (") within descriptions. Use single quotes (') instead to ensure the JSON structure remains valid.
 
 ### 2. RELATIONSHIP LOGIC MATRIX (MANDATORY FOR JSON)
 You must interconnect nodes using the following two standards:
@@ -1110,7 +1108,7 @@ A) THESAURUS LOGIC (ISO 25964 / Conceptual Taxonomy):
 - 'RT' (Related Term): Symmetrical lateral association between concepts.
 - 'EQ' (Equivalence): Synonyms or identical concepts in different fields.
 - 'AS' (Associative): Functional connection (e.g., Process AS Result, Tool AS Action).
-- 'IN' (Inheritance): 'Is-a' property transfer where child inherits parent traits.
+- 'IN' (Instance): Category to a specific unique entity/example (e.g., Physics IN Theory of Relativity).
 
 B) UML LOGIC (OMG Standard / Structural Architecture):
 - 'Generalization': 'Is-a' Inheritance (e.g., Quantum Physics is a Generalization of Physics).
@@ -1143,54 +1141,25 @@ MANDATORY JSON STRUCTURE:
 ### SEMANTIC_GRAPH_JSON
 {{
   "nodes": [
-    {{"id": "n1", "label": "LABEL", "shape": "diamond", "color": "#fd7e14", "description": "Full detailed description for the deep-dive using single quotes only."}}
+    {{"id": "n1", "label": "LABEL", "shape": "diamond", "color": "#fd7e14", "description": "Full detailed description for the deep-dive."}}
   ],
   "edges": [
-    {{"source": "n1", "target": "n2", "rel_type": "IN"}},
+    {{"source": "n1", "target": "n2", "rel_type": "AS"}},
     {{"source": "n3", "target": "n1", "rel_type": "Composition"}}
   ]
 }}
 """
-
-            # --- PHASE 2 EXECUTION ---
-            with st.spinner(f'PHASE 2: Generating radical innovations with {p2_model}...'):
                 samba_response = cerebras_client.chat.completions.create(
                     model=p2_model, 
                     messages=[
                         {"role": "system", "content": samba_sys_prompt}, 
                         {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER GOAL: {idea_query}{file_context_str}"}
                     ],
+                    temperature=0.7,
                     temperature=0.85,
                     top_p=0.9
                 )
                 cerebras_innovation = samba_response.choices[0].message.content
-
-            # --- PHASE 3: QUALITY ASSURANCE & SCORING ---
-            with st.spinner('⚖️ Phase 3: Evaluating Quality Score...'):
-                qa_prompt = f"""
-                Evaluate the following report based on the SIS Quality Formula:
-                [Score = 0.25PB + 0.25SA + 0.20CN + 0.15II + 0.10P + 0.05C]
-                
-                REPORT TO EVALUATE:
-                {cerebras_innovation[:3000]}
-                
-                Output ONLY a JSON object with the scores for each category (0-10) and the final weighted total.
-                Format: {{"PB": 0, "SA": 0, "CN": 0, "II": 0, "P": 0, "C": 0, "TOTAL": 0}}
-                """
-                try:
-                    qa_res = cerebras_client.chat.completions.create(
-                        model=p2_model,
-                        messages=[{"role": "system", "content": "You are a strict SIS Quality Auditor."},
-                                  {"role": "user", "content": qa_prompt}],
-                        temperature=0.1
-                    )
-                    qa_match = re.search(r'(\{.*\})', qa_res.choices[0].message.content, re.DOTALL)
-                    if qa_match:
-                        st.session_state.quality_scores = json.loads(qa_match.group(1))
-                    else:
-                        st.session_state.quality_scores = {"TOTAL": 0}
-                except:
-                    st.session_state.quality_scores = {"TOTAL": 0}
 
             # --- 4. PROCESIRANJE REZULTATOV (Z GEOMETRIJSKO LOGIKO) ---
             g_data = {"nodes": [], "edges": []}
@@ -1267,7 +1236,7 @@ MANDATORY JSON STRUCTURE:
                     elif rel in ["BT", "NT", "TT"]:
                         e_color = "#1D3557"  # Temno modra (Nivoji)
                     elif rel == "IN":
-                        e_color = "#0077B6"  # Svetlo modra (Inheritance/Instance)
+                        e_color = "#0077B6"  # Svetlo modra (Instanca)
                     elif rel == "AS":
                         e_color = "#7B2CB1"  # Vijolična (Asociativna)
                     elif rel == "EQ":
@@ -1319,53 +1288,75 @@ MANDATORY JSON STRUCTURE:
                         # Linkamo le PRVO pojavitev besede za čistočo
                         final_interactive_report = pattern.sub(link_html, final_interactive_report, count=1)
 
-            # --- FINAL UI RENDERING (Quality Metrics & Report) ---
-            if st.session_state.get('quality_scores'):
-                qs = st.session_state.quality_scores
-                total = qs.get("TOTAL", 0)
-                if total >= 9.9:
-                    st.balloons()
-                    st.success(f"### 🏆 SIS QUALITY RATING: {total}/10.0 (ULTRA-SYNERGY ACHIEVED)")
-                else:
-                    st.info(f"### 📊 SIS QUALITY RATING: {total}/10.0")
-                
-                m_cols = st.columns(6)
-                labels = {"PB":"Paradigm", "SA":"Arch.", "CN":"Novelty", "II":"Interdisc.", "P":"Practical", "C":"Clarity"}
-                for i, (k, v) in enumerate(labels.items()):
-                    m_cols[i].metric(v, f"{qs.get(k, 0)}/10")
-                st.divider()
-
+            # 5b. RENDERING THE INTERACTIVE REPORT
             st.subheader("🧱 INTEGRATED HIERARCHOLOGICAL REPORT")
             if biblio_data:
                 with st.expander("📚 EXTRACTED AUTHOR BACKGROUND", expanded=False):
                     st.markdown(biblio_data)
 
+            # Display the full linked report (P1 + P2)
             st.markdown(final_interactive_report, unsafe_allow_html=True)
 
-            # 5c. INNOVATION DEEP-DIVE
+            # 5c. INNOVATION DEEP-DIVE: DETAILED BREAKTHROUGH CATALOG
             if final_elements:
                 st.divider()
                 st.markdown("### 🚀 STRATEGIC INNOVATION DEEP-DIVE")
+                st.info("The following strategic breakthroughs have been synthesized from the multi-dimensional analysis above.")
+
+                # Extract innovations (diamonds) for detailed report-style display
                 innovations = [n['data'] for n in final_elements if n['data'].get('shape') == 'diamond']
+
                 if innovations:
                     for inv in innovations:
                         g_url = urllib.parse.quote(inv['label'])
-                        detailed_desc = inv.get('description', "Detailed technical analysis is available in the report above.")
+                        # Fetch the precise description generated by the model
+                        detailed_desc = inv.get('description', "Detailed strategic analysis is available in the integrated report above.")
+
+                        # High-End Report Style Card
                         st.markdown(f"""
                         <div style="background-color: #ffffff; border-left: 6px solid #fd7e14; padding: 25px; border-radius: 15px; box-shadow: 0 6px 15px rgba(0,0,0,0.1); border: 1px solid #eee; margin-bottom: 25px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                                 <span style="background-color: #fff4ed; color: #fd7e14; padding: 5px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; border: 1px solid #fd7e14;">Strategic Breakthrough</span>
                                 <a href="https://www.google.com/search?q={g_url}" target="_blank" style="text-decoration: none; color: #457b9d; font-size: 0.85em; font-weight: 600;">Technical Search ↗</a>
                             </div>
-                            <h2 style="margin: 0 0 15px 0; color: #1d3557;">{inv['label']}</h2>
-                            <div style="color: #333; font-size: 1.05em; line-height: 1.7; border-top: 1px solid #f0f0f0; padding-top: 15px;">{detailed_desc}</div>
+                            <h2 style="margin: 0 0 15px 0; color: #1d3557; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">{inv['label']}</h2>
+                            <div style="color: #333; font-size: 1.05em; line-height: 1.7; border-top: 1px solid #f0f0f0; padding-top: 15px;">
+                                {detailed_desc}
+                            </div>
                         </div>
                         """, unsafe_allow_html=True)
+                else:
+                    st.warning("No specific 'Diamond' innovations were found. Review the structural graph for implicit breakthroughs.")
 
-                # 5e. FINAL GRAPH RENDERING
+                # 5d. MINIMALIST SYSTEM LEGEND (FINAL ARCHITECTURE)
+                st.markdown("""
+                <div style="font-size: 0.78em; color: #444; background: #ffffff; padding: 15px 25px; border-radius: 15px; border: 1px solid #e9ecef; margin-top: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                        <div>
+                            <b style="color: #1d3557; text-transform: uppercase; letter-spacing: 1px;">Nodes (Geometry):</b><br>
+                            ⭐ Goal | ⬢ Domain | 💠 Innovation | △ Process | ▭ Data | ⬣ Rule | ⭔ Bio
+                        </div>
+                        <div style="height: 30px; width: 1px; background: #dee2e6; display: block;"></div>
+                        <div>
+                            <b style="color: #1d3557; text-transform: uppercase; letter-spacing: 1px;">Semantic Layers:</b><br>
+                            <span style="color:#1d3557;">⬤ Hierarchical (ISO)</span> | 
+                            <span style="color:#7b2cb1;">⬤ Associative</span> | 
+                            <span style="color:#2a9d8f;">⬤ Related</span> | 
+                            <span style="color:#f1c40f;">⬤ Equivalence</span>
+                        </div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+                # 5e. FINAL GRAPH RENDERING (Z DINAMIČNO PERSPEKTIVO)
                 st.subheader(f"🕸️ HYBRID SEMANTIC SYSTEM MAP ({graph_perspective.upper()} VIEW)")
-                render_cytoscape_network(final_elements, layout_type=graph_perspective, container_id=f"cy_{int(time.time())}")
-                
+                render_cytoscape_network(
+                    final_elements, 
+                    layout_type=graph_perspective, 
+                    container_id=f"cy_{int(time.time())}"
+                )
+
+                # --- NOVO: SHRANJEVANJE ZA GALERIJO (DODANO NA KONEC POROČILA) ---
                 st.session_state.final_graph_elements = final_elements
                 st.session_state.report_ready = True
 
