@@ -1175,7 +1175,8 @@ Every node and edge must be accounted for. In the 'description' field of each 'd
                         {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER GOAL: {idea_query}{file_context_str}"}
                     ],
                     temperature=0.85,
-                    top_p=0.9
+                    top_p=0.9,
+                    max_completion_tokens=6000 # Zagotavlja, da JSON ne bo odrezan
                 )
                 cerebras_innovation = samba_response.choices[0].message.content
 # =============================================================================
@@ -1218,30 +1219,40 @@ Every node and edge must be accounted for. In the 'description' field of each 'd
             
             innovation_text = innovation_text.strip()
             
-            # --- 3. PROCESIRANJE PODATKOV ZA GRAF (ROBUSTNA VERZIJA) ---
+            # --- 3. PROCESIRANJE PODATKOV ZA GRAF (ULTRA-ROBUSTNA VERZIJA) ---
             g_data = {"nodes": [], "edges": []}
-            
-            # Najprej očistimo json_raw vseh Markdown oznak in uvodnega besedila
-            json_raw = re.sub(r'```json|```', '', json_raw).strip()
-            
-            # Najdemo dejanski začetek in konec JSON-a (vse med prvo { in zadnjo })
-            start_index = json_raw.find('{')
-            end_index = json_raw.rfind('}')
-            
-            if start_index != -1 and end_index != -1:
-                json_to_parse = json_raw[start_index:end_index+1]
-                try:
-                    # Očistimo nevarne skrite znake in nove vrstice sredi nizov
-                    json_to_parse = json_to_parse.replace('\n', ' ').replace('\r', '')
-                    g_data = json.loads(json_to_parse)
-                except Exception as json_err:
-                    # Če standardno branje ne uspe, poskusimo še z iskanjem preko regexa
-                    json_match = re.search(r'(\{.*"nodes".*?\]\s*.*?\})', json_raw, re.DOTALL | re.IGNORECASE)
-                    if json_match:
-                        try:
-                            g_data = json.loads(json_match.group(1).replace('\n', ' '))
-                        except:
-                            st.warning(f"Note: Graph structure issue: {json_err}")
+            try:
+                # 1. Odstranimo Markdown šum in uvodno besedilo
+                json_clean = re.sub(r'```json|```', '', json_raw).strip()
+                
+                # 2. Poiščemo dejanski začetek in konec JSON strukture
+                start_idx = json_clean.find('{')
+                end_idx = json_clean.rfind('}')
+                
+                if start_idx != -1:
+                    # Če manjka zadnji zaklepaj (odrezan odgovor), ga umetno dodamo
+                    if end_idx == -1 or end_idx < start_idx:
+                        json_str = json_clean[start_idx:] + ']}' # Poskus zaprtja
+                    else:
+                        json_str = json_clean[start_idx:end_idx+1]
+                    
+                    # 3. POPRAVEK: AI pogosto uporabi napačne narekovaje ali vejice
+                    json_str = json_str.replace('“', '"').replace('”', '"').replace('‘', "'").replace('’', "'")
+                    # Odstranimo vejice pred zaklepaji: ,] -> ]  in ,} -> }
+                    json_str = re.sub(r',\s*([\]}])', r'\1', json_str)
+                    
+                    # 4. Odstranimo skoke v vrstico sredi opisov
+                    json_str = json_str.replace('\n', ' ').replace('\r', ' ')
+                    
+                    g_data = json.loads(json_str)
+            except Exception as json_err:
+                # Fallback: če zgoraj ne uspe, poiščemo nodes z regexom
+                json_match = re.search(r'(\{.*"nodes".*?\]\s*.*?\})', json_raw, re.DOTALL | re.IGNORECASE)
+                if json_match:
+                    try:
+                        g_data = json.loads(re.sub(r'\n', ' ', json_match.group(1)))
+                    except:
+                        st.warning(f"Note: Graph structure issue (truncated output): {json_err}")
 
             # 4. SESTAVA KONČNEGA POROČILA (Uporabimo OČIŠČENO besedilo)
             # innovation_text.strip() odstrani morebitne odvečne prazne vrstice na koncu
