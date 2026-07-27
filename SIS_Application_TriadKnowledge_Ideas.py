@@ -1082,13 +1082,13 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                     ],
                     temperature=0.4
                 )
-                # Rezultat shranimo v isto spremenljivko, da ostala koda deluje brez sprememb
                 groq_synthesis = p1_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
 
+            # --- PHASE 2 PROMPT PREPARATION (Z IN = INHERITANCE) ---
             samba_sys_prompt = f"""
 You are the SIS Lead Strategic Innovation Architect and Hierarchographist. 
-Your task is to transform the structural analysis from Phase 1 into a visionary Innovation Report.
+Your task is to transform the structural analysis from Phase 1 into a visionary Innovation Report and a perfectly mapped Hierarchographic Network.
 
 ### MANDATORY EVALUATION CRITERIA (Target Score: 9.9+)
 Your output will be strictly evaluated using the SIS Quality Formula: 
@@ -1105,59 +1105,34 @@ You MUST internally simulate this scoring and only output results that exceed a 
 
 ### 1. REPORT REQUIREMENTS
 Write a STRATEGIC INNOVATION REPORT. 
-- For each innovation, provide a technical title, a detailed 3-4 sentence strategic explanation, and its cross-disciplinary impact.
-- Use professional terminology.
-- IMPORTANT: Inside the JSON section, do NOT use double quotes within descriptions. 
-- Use single quotes instead to ensure the JSON structure remains valid.
-"""
+- Provide technical titles and detailed 3-4 sentence strategic explanations.
+- IMPORTANT: Inside the JSON section, do NOT use double quotes within descriptions. Use single quotes instead.
 
 ### 2. RELATIONSHIP LOGIC MATRIX (MANDATORY FOR JSON)
-You must interconnect nodes using the following two standards:
+You must interconnect nodes using the following standards:
 
-A) THESAURUS LOGIC (ISO 25964 / Conceptual Taxonomy):
-- 'TT' (Top Term): Absolute root of a knowledge domain.
-- 'BT' (Broader Term): Higher-level class/concept (Genus).
-- 'NT' (Narrower Term): Lower-level sub-concept (Species).
-- 'RT' (Related Term): Symmetrical lateral association between concepts.
-- 'EQ' (Equivalence): Synonyms or identical concepts in different fields.
-- 'AS' (Associative): Functional connection (e.g., Process AS Result, Tool AS Action).
-- 'IN' (Instance): Category to a specific unique entity/example (e.g., Physics IN Theory of Relativity).
+A) THESAURUS & ONTOLOGY LOGIC:
+- TT (Top Term), BT (Broader Term), NT (Narrower Term), RT (Related Term), EQ (Equivalence), AS (Associative).
+- IN (Inheritance): 'Is-a' relation where properties are passed down to child nodes.
 
-B) UML LOGIC (OMG Standard / Structural Architecture):
-- 'Generalization': 'Is-a' Inheritance (e.g., Quantum Physics is a Generalization of Physics).
-- 'Specialization': The deductive opposite of Generalization. A downward move from a general law to a specific refined case.
-- 'Containment': A strong structural inclusion where a node is trapped or housed inside another. Mandatory for mapping concepts within a 'Scientific Cage'.
-- 'Realization': An Innovation/Tool implementing a Goal/Vision.
-- 'Composition': Strong 'Part-of' (Life-cycle dependent).
-- 'Aggregation': Weak 'Part-of' (Independent existence).
-- 'Dependency': Node A requires Node B to function.
-- 'Conflict': A Systemic tension, incompatibility, or direct conflict between two elements.
+B) UML LOGIC:
+- Generalization, Specialization, Containment, Realization, Composition, Aggregation, Dependency, Conflict.
 
-C) LOGICAL CONNECTORS (Decision Logic):
-- 'AND': Močna sinteza, kjer morata oba pogoja obstajati hkrati (Veznik IN).
-- 'OR': Alternativna pot ali izbira med koncepti (Veznik ALI).
-- 'XOR': Izključujoči ALI (Koncepta sta nezdružljiva ali paradoksalna).
-- 'NOT': Negacija ali prepovedana povezava (Meja znanstvene kletke).
-- 'IF-THEN': Vzročna posledica ali pogojni prehod.
+C) LOGICAL CONNECTORS:
+- AND, OR, XOR, NOT, IF-THEN.
 
 ### 3. MANDATORY GEOMETRY (SHAPES)
-- 'star': Ultimate Goals / Macro-Vision.
-- 'hexagon': Science Fields / Academic Domains.
-- 'diamond': Strategic Innovations / New Breakthroughs.
-- 'triangle': Active Processes / Methods / Vectors.
-- 'octagon': Constraints / Ethical Boundaries / Rules.
-- 'ellipse': Human Factors / Identities / Biological Entities.
-- 'rectangle': Facts / Data Points / Micro-components.
+- star: Goals, hexagon: Domains, diamond: Innovations, triangle: Processes, octagon: Constraints, ellipse: Humans, rectangle: Facts.
 
 ### 4. OUTPUT FORMAT
 MANDATORY JSON STRUCTURE:
 ### SEMANTIC_GRAPH_JSON
 {{
   "nodes": [
-    {{"id": "n1", "label": "LABEL", "shape": "diamond", "color": "#fd7e14", "description": "Full detailed description for the deep-dive."}}
+    {{"id": "n1", "label": "LABEL", "shape": "diamond", "color": "#fd7e14", "description": "Description using single quotes."}}
   ],
   "edges": [
-    {{"source": "n1", "target": "n2", "rel_type": "AS"}},
+    {{"source": "n1", "target": "n2", "rel_type": "IN"}},
     {{"source": "n3", "target": "n1", "rel_type": "Composition"}}
   ]
 }}
