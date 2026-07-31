@@ -1184,9 +1184,11 @@ C) LOGICAL CONNECTORS (Decision Logic):
 
 ### 4. OUTPUT FORMAT
 MANDATORY JSON STRUCTURE:
-Every node and edge must be accounted for. In the 'description' field of each 'diamond' (Innovation) node, you MUST explicitly state which 3 Mental Approaches were synthesized to create it.
-IMPORTANT: Place the JSON block strictly after the header '### SEMANTIC_GRAPH_JSON'. Do not include any text after the JSON block.
-JSON STRICTNESS: Ensure the JSON is structurally valid. Use backslashes to escape any unavoidable technical symbols. Use ONLY single quotes (') for text inside the JSON descriptions.
+- Every node and edge must be accounted for. In the 'description' field of each 'diamond' (Innovation) node, you MUST explicitly state which 3 Mental Approaches were synthesized to create it.
+- IMPORTANT: Place the JSON block strictly after the header '### SEMANTIC_GRAPH_JSON'. Do not include any text after the JSON block.
+- JSON STRICTNESS: Ensure the JSON is structurally valid. Use backslashes to escape any unavoidable technical symbols. Use ONLY single quotes (') for text inside the JSON descriptions.
+- CRITICAL: Every description must be a single string without ANY newlines or double quotes inside. 
+- Use the format: "description": "Text with 'single quotes' only."
 
 ### SEMANTIC_GRAPH_JSON
 {{
@@ -1243,15 +1245,34 @@ JSON STRICTNESS: Ensure the JSON is structurally valid. Use backslashes to escap
 
             if json_match:
                 try:
-                    # 1. Izvlečemo surovi JSON tekst
                     raw_json_str = json_match.group(1)
                     
-                    # 2. ČIŠČENJE: Odstranimo skrite znake, ki lomijo JSON
-                    clean_json = raw_json_str.replace('\n', ' ').replace('\r', '').strip()
+                    # 1. Agresivno čiščenje: odstranimo vse, kar ni osnovni nabor znakov za JSON
+                    # Odstranimo vse skrite kontrolne znake (npr. nove vrstice sredi nizov)
+                    clean_json = raw_json_str.replace('\n', ' ').replace('\r', ' ')
                     
-                    # 3. POPRAVEK: Če je AI slučajno uporabil dvojne narekovaje znotraj opisa
-                    # Ta regex poskuša najti narekovaje, ki niso del ključev ali vrednosti
-                    clean_json = re.sub(r'":\s*"([^"]*)"([^"]*)"', r'": "\1\'\2"', clean_json)
+                    # 2. Rešitev za "char 40" napako: AI včasih pozabi ubežiti narekovaje v opisih
+                    # Ta funkcija najde vse narekovaje znotraj vrednosti in jih spremeni v enojne
+                    def fix_internal_quotes(m):
+                        content = m.group(2)
+                        fixed_content = content.replace('"', "'")
+                        return f'"{m.group(1)}": "{fixed_content}"'
+                    
+                    clean_json = re.sub(r'"(\w+)":\s*"(.*?)"(?=\s*[,}])', fix_internal_quotes, clean_json, flags=re.DOTALL)
+                    
+                    # 3. Poskusimo prebrati
+                    g_data = json.loads(clean_json)
+                    
+                except Exception as e:
+                    # ZADNJI POSKUS: Če še vedno ne gre, uporabimo preprosto zamenjavo vseh dvojnih narekovajev, 
+                    # ki niso nujni za strukturo JSON-a.
+                    try:
+                        # Ta trik "razbije" vse dvojne narekovaje in jih popravi le tam, kjer so ključi
+                        raw_json_str = re.sub(r'(?<![:{,])"(?![:,}])', "'", raw_json_str)
+                        g_data = json.loads(raw_json_str)
+                    except:
+                        st.warning("⚠️ High-Density Graph Overload: Simplified mapping applied.")
+                        g_data = {"nodes": [], "edges": []}
                     
                     # 4. PARSIRANJE
                     g_data = json.loads(clean_json)
