@@ -1186,6 +1186,7 @@ C) LOGICAL CONNECTORS (Decision Logic):
 MANDATORY JSON STRUCTURE:
 Every node and edge must be accounted for. In the 'description' field of each 'diamond' (Innovation) node, you MUST explicitly state which 3 Mental Approaches were synthesized to create it.
 IMPORTANT: Place the JSON block strictly after the header '### SEMANTIC_GRAPH_JSON'. Do not include any text after the JSON block.
+JSON STRICTNESS: Ensure the JSON is structurally valid. Use backslashes to escape any unavoidable technical symbols. Use ONLY single quotes (') for text inside the JSON descriptions.
 
 ### SEMANTIC_GRAPH_JSON
 {{
@@ -1244,12 +1245,26 @@ IMPORTANT: Place the JSON block strictly after the header '### SEMANTIC_GRAPH_JS
                 try:
                     # 1. Izvlečemo surovi JSON tekst
                     raw_json_str = json_match.group(1)
-                    # 2. Očistimo nove vrstice in nevarne znake, ki lomijo format
-                    clean_json = raw_json_str.replace('\n', ' ').replace('\r', '')
-                    # 3. Poskusimo prebrati JSON podatke
+                    
+                    # 2. ČIŠČENJE: Odstranimo skrite znake, ki lomijo JSON
+                    clean_json = raw_json_str.replace('\n', ' ').replace('\r', '').strip()
+                    
+                    # 3. POPRAVEK: Če je AI slučajno uporabil dvojne narekovaje znotraj opisa
+                    # Ta regex poskuša najti narekovaje, ki niso del ključev ali vrednosti
+                    clean_json = re.sub(r'":\s*"([^"]*)"([^"]*)"', r'": "\1\'\2"', clean_json)
+                    
+                    # 4. PARSIRANJE
                     g_data = json.loads(clean_json)
-                except Exception as json_err:
-                    st.warning(f"Note: Graph structure issue: {json_err}")
+                    
+                except json.JSONDecodeError as e:
+                    st.warning(f"⚠️ JSON Parsing Retry: Attempting to fix char {e.pos}")
+                    try:
+                        # Zadnji poskus: Odstranimo vse sumljive znake (non-ASCII)
+                        sanitized = "".join(i for i in raw_json_str if ord(i) < 128)
+                        g_data = json.loads(sanitized)
+                    except:
+                        st.error("❌ Critical Graph Error: AI generated invalid JSON structure.")
+                        g_data = {"nodes": [], "edges": []}
 
             # --- PROCESIRANJE VOZLIŠČ Z DINAMIČNO VELIKOSTJO ---
             if g_data.get("nodes"):
