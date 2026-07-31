@@ -1467,30 +1467,30 @@ MANDATORY JSON STRUCTURE:
 if st.session_state.get('report_ready') and 'final_graph_elements' in st.session_state:
     st.divider()
     st.markdown('<h2 style="color: #1d3557; text-align: center;">🖼️ MULTI-PERSPECTIVE GRAPH GALLERY</h2>', unsafe_allow_html=True)
-    st.info("💡 **NAVODILO ZA ZAPOREDNO SHRANJEVANJE:** Spodaj so zavihki z različnimi vizualnimi perspektivami istega znanja. Odprite posamezen zavihek in kliknite gumb **EXPORT PNG**, da shranite vseh 5 verzij na svoj disk.")
+    st.info("💡 **SEQUENTIAL SAVING INSTRUCTIONS:** Below are tabs featuring different visual perspectives of the same knowledge synthesis. Please open each tab individually and click the **EXPORT PNG** button to save all 5 architectural versions to your local drive.")
 
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "🌿 ORGANIC", "🌲 HIERARCHICAL", "⭕ CIRCULAR", "🎯 CONCENTRIC", "🔲 GRID"
     ])
 
     with tab1:
-        st.markdown("**Organic View:** Najboljše za odkrivanje naravnih tematskih sklopov.")
+        st.markdown("**Organic View:** Best for discovering natural thematic clusters and emergent semantic patterns.")
         render_cytoscape_network(st.session_state.final_graph_elements, layout_type="organic", container_id="gal_organic")
 
     with tab2:
-        st.markdown("**Hierarchical View:** Logično drevo od splošnega k specifičnemu.")
+        st.markdown("**Hierarchical View:** A logical tree structure mapping knowledge from general axioms down to specific innovations.")
         render_cytoscape_network(st.session_state.final_graph_elements, layout_type="hierarchical", container_id="gal_hierarchical")
 
     with tab3:
-        st.markdown("**Circular View:** Fokus na relacijah in krožni soodvisnosti.")
+        st.markdown("**Circular View:** Focused on relational density and the circular interdependence of system nodes.")
         render_cytoscape_network(st.session_state.final_graph_elements, layout_type="circular", container_id="gal_circular")
 
     with tab4:
-        st.markdown("**Concentric View:** Razporeditev po sistemski pomembnosti (Jedro).")
+        st.markdown("**Concentric View:** Arranges elements by systemic priority, placing core strategic goals at the center.")
         render_cytoscape_network(st.session_state.final_graph_elements, layout_type="concentric", container_id="gal_concentric")
 
     with tab5:
-        st.markdown("**Grid View:** Pregledna poravnava vseh prvin.")
+        st.markdown("**Grid View:** A clean, orthogonal alignment of all elements for structured data review.")
         render_cytoscape_network(st.session_state.final_graph_elements, layout_type="grid", container_id="gal_grid")
 
 # =============================================================================
