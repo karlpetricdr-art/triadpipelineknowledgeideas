@@ -1125,27 +1125,24 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
 You are the SIS Lead Strategic Innovation Architect and Hierarchographist. 
 Your task is to transform the structural analysis from Phase 1 into a visionary Innovation Report and a perfectly mapped Hierarchographic Network.
 
-Your mandate is to reach a 9.9+ score by breaking the 'Scientific Cage' using ALL 20 MENTAL APPROACHES (MA):
+Your mandate is to reach a 9.9+ score by breaking the Scientific Cage using ALL 20 MENTAL APPROACHES (MA):
 {ma_definitions}
 
 ### MANDATORY COGNITIVE ENGINE
 You MUST process the foundation through ALL 20 lenses:
 {ma_list_for_ai}
 
-### OUTPUT REQUIREMENTS:
+### OUTPUT REQUIREMENTS SUMMARY:
 1. STRATEGIC INNOVATION REPORT: Detail 3-4 breakthroughs, specifying which 3 MAs were used for each.
 2. SEMANTIC_GRAPH_JSON: Map the structure using UML (Composition, Specialization, Conflict), ISO (BT, NT, RT), and Logical Connectors (XOR, IF-THEN).
 3. SHAPES: 'star'=Goals, 'diamond'=Innovations, 'hexagon'=Fields, 'octagon'=Rules.
-4. JSON RULES: Use ONLY single quotes for descriptions inside the JSON block to ensure validity.
-
-### SEMANTIC_GRAPH_JSON
-"""
+4. JSON RULES: Use ONLY single quotes for descriptions inside the JSON block.
 
 ### 1. REPORT REQUIREMENTS
 Write a "STRATEGIC INNOVATION REPORT". 
 - For each innovation, provide a technical title, a detailed 3-4 sentence strategic explanation, and its cross-disciplinary impact.
 - Use professional terminology.
-- IMPORTANT: Inside the JSON section, do NOT use double quotes (") within descriptions. Use single quotes (') instead to ensure the JSON structure remains valid.
+- IMPORTANT: Inside the JSON section, do NOT use double quotes within descriptions. Use single quotes instead to ensure the JSON structure remains valid.
 
 ### 2. RELATIONSHIP LOGIC MATRIX (MANDATORY FOR JSON)
 You must interconnect nodes using the following two standards:
@@ -1170,11 +1167,11 @@ B) UML LOGIC (OMG Standard / Structural Architecture):
 - 'Conflict': A Systemic tension, incompatibility, or direct conflict between two elements.
 
 C) LOGICAL CONNECTORS (Decision Logic):
-- 'AND': Močna sinteza, kjer morata oba pogoja obstajati hkrati (Veznik IN).
+- 'AND': Mocna sinteza, kjer morata oba pogoja obstajati hkrati (Veznik IN).
 - 'OR': Alternativna pot ali izbira med koncepti (Veznik ALI).
-- 'XOR': Izključujoči ALI (Koncepta sta nezdružljiva ali paradoksalna).
+- 'XOR': Izkljucujoci ALI (Koncepta sta nezdruzljiva ali paradoksalna).
 - 'NOT': Negacija ali prepovedana povezava (Meja znanstvene kletke).
-- 'IF-THEN': Vzročna posledica ali pogojni prehod.
+- 'IF-THEN': Vzrocna posledica ali pogojni prehod.
 
 ### 3. MANDATORY GEOMETRY (SHAPES)
 - 'star': Ultimate Goals / Macro-Vision.
@@ -1206,7 +1203,7 @@ IMPORTANT: Place the JSON block strictly after the header '### SEMANTIC_GRAPH_JS
     {{"source": "n3", "target": "n1", "rel_type": "Composition"}}
   ]
 }}
-""" # Tukaj se konča samba_sys_prompt
+""" # Konec samba_sys_prompt
 
                 # --- PHASE 2 EXECUTION ---
                 samba_response = cerebras_client.chat.completions.create(
