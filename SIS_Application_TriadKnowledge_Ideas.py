@@ -1042,15 +1042,36 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
         st.warning("⚠️ Phase 1 Research Inquiry is required.")
     else:
         try:
-            # --- CONDITIONAL DIMENSION ACTIVATION ---
-            # The system only injects sidebar selections if [ACTIVATE] is present in the prompt.
+            # --- 1. KORAK: SINTEZA CELOTNE ONTOLOŠKE STRUKTURE (IMA + MA + HIER) ---
+            ima_nodes_list = "\n".join([f"   • {node.upper()}: {data['desc']}" for node, data in HUMAN_THINKING_METAMODEL["nodes"].items()])
+            hier_core = "\n".join([f"   • {k}: {v}" for k, v in HIERARCHOLOGY_ONTOLOGY["core_definitions"].items()])
+            hier_levels = "\n".join([f"   • {level}: {desc}" for level, desc in HIERARCHOLOGY_ONTOLOGY["hierarchical_levels"].items()])
+            hier_logic = f"   • Internal (Inductive): {HIERARCHOLOGY_ONTOLOGY['operational_logic']['Internal Processes']}\n   • External (Deductive): {HIERARCHOLOGY_ONTOLOGY['operational_logic']['External Functioning']}"
+            ma_definitions = "\n".join([f"   • {ma}: {d['desc']}" for ma, d in MENTAL_APPROACHES_ONTOLOGY["nodes"].items()])
+
+            # --- 2. KORAK: POGOJNA AKTIVACIJA DIMENZIJ ---
             trigger_keyword = "[ACTIVATE]"
             active_context = ""
 
             if trigger_keyword in user_query or (idea_query and trigger_keyword in idea_query):
                 active_context = f"""
-                \n### MANDATORY SYSTEM INSTRUCTION: APPLY INTERFACE PARAMETERS ###
-                The user has explicitly activated the following constraints for this specific run:
+                \n### ⚡ MANDATORY SYSTEM INSTRUCTION: FULL ONTOLOGICAL ACTIVATION ###
+                The user has activated the SIS High-Level Metamodel. You MUST analyze all data through these filters:
+
+                1. INTEGRATED METAMODEL ARCHITECTURE (IMA) NODES:
+                {ima_nodes_list}
+
+                2. HIERARCHOLOGY CORE CONCEPTS:
+                {hier_core}
+
+                3. HIERARCHICAL LEVELS & OPERATIONAL LOGIC:
+                {hier_levels}
+                {hier_logic}
+
+                4. MENTAL APPROACHES (MA) FOR INNOVATION:
+                {ma_definitions}
+
+                5. INTERFACE PARAMETERS & CONSTRAINTS:
                 - Target Science Fields: {', '.join(sel_sciences)}
                 - Applied Scientific Paradigms: {', '.join(sel_paradigms)}
                 - Structural Model Focus: {', '.join(sel_models)}
@@ -1072,17 +1093,25 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             # Inicializacija skupnega Cerebras klienta
             cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
 
-            # --- PHASE 1: CEREBRAS (Foundation - npr. GPT-OSS-120B) ---
+            # --- PHASE 1: CEREBRAS (Foundation - IMA Architecture Building) ---
             with st.spinner(f'PHASE 1: Building Architecture with {p1_model}...'):
                 p1_response = cerebras_client.chat.completions.create(
                     model=p1_model,
                     messages=[
-                        {"role": "system", "content": "You are the SIS Lead Hierarchologist. If the user provides specific Paradigms or Models in the 'MANDATORY SYSTEM INSTRUCTION', you MUST prioritize them in your structural analysis."}, 
+                        {
+                            "role": "system", 
+                            "content": (
+                                "You are the SIS Lead Hierarchologist and Knowledge Architect. Your mission is to perform "
+                                "a deep structural analysis of the user's inquiry using the Integrated Metamodel Architecture (IMA). "
+                                "If the [ACTIVATE] instruction is present, you MUST strictly map the inquiry onto the provided "
+                                "IMA Nodes (Identity, Mission, Scientific Cage, etc.) and analyze the hierarchy levels (Micro/Meso/Macro). "
+                                "Your output must be a rigid, factual, and logically sound foundation for further innovation."
+                            )
+                        }, 
                         {"role": "user", "content": full_ai_input}
                     ],
-                    temperature=0.4
+                    temperature=0.4 # Nizka temperatura za maksimalno logično natančnost
                 )
-                # Rezultat shranimo v isto spremenljivko
                 groq_synthesis = p1_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
 
@@ -1091,18 +1120,25 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 ma_list_for_ai = ", ".join(MENTAL_APPROACHES_ONTOLOGY["nodes"].keys())
 
                 # --- 3. PHASE 2: CEREBRAS (Innovation) ---
-                # Tudi ta vrstica mora biti poravnana z zgornjo!
                 with st.spinner(f'PHASE 2: Activating 20-MA Engine with {p2_model}...'):
                     samba_sys_prompt = f"""
-You are the SIS Lead Strategic Innovation Architect. 
 You are the SIS Lead Strategic Innovation Architect and Hierarchographist. 
 Your task is to transform the structural analysis from Phase 1 into a visionary Innovation Report and a perfectly mapped Hierarchographic Network.
 
-Your mandate is to reach a 9.9+ score.
+Your mandate is to reach a 9.9+ score by breaking the 'Scientific Cage' using ALL 20 MENTAL APPROACHES (MA):
+{ma_definitions}
 
-### MANDATORY COGNITIVE ENGINE: ALL 20 MENTAL APPROACHES (MA)
+### MANDATORY COGNITIVE ENGINE
 You MUST process the foundation through ALL 20 lenses:
 {ma_list_for_ai}
+
+### OUTPUT REQUIREMENTS:
+1. STRATEGIC INNOVATION REPORT: Detail 3-4 breakthroughs, specifying which 3 MAs were used for each.
+2. SEMANTIC_GRAPH_JSON: Map the structure using UML (Composition, Specialization, Conflict), ISO (BT, NT, RT), and Logical Connectors (XOR, IF-THEN).
+3. SHAPES: 'star'=Goals, 'diamond'=Innovations, 'hexagon'=Fields, 'octagon'=Rules.
+
+### SEMANTIC_GRAPH_JSON
+"""
 
 ### 1. REPORT REQUIREMENTS
 Write a "STRATEGIC INNOVATION REPORT". 
