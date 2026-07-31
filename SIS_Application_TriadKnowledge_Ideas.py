@@ -1121,6 +1121,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
 
                 # --- 3. PHASE 2: CEREBRAS (Innovation) ---
                 with st.spinner(f'PHASE 2: Activating 20-MA Engine with {p2_model}...'):
+                    # Uporabimo f-string z trojnimi narekovaji in pazimo na vsebino
                     samba_sys_prompt = f"""
 You are the SIS Lead Strategic Innovation Architect and Hierarchographist. 
 Your task is to transform the structural analysis from Phase 1 into a visionary Innovation Report and a perfectly mapped Hierarchographic Network.
@@ -1136,6 +1137,7 @@ You MUST process the foundation through ALL 20 lenses:
 1. STRATEGIC INNOVATION REPORT: Detail 3-4 breakthroughs, specifying which 3 MAs were used for each.
 2. SEMANTIC_GRAPH_JSON: Map the structure using UML (Composition, Specialization, Conflict), ISO (BT, NT, RT), and Logical Connectors (XOR, IF-THEN).
 3. SHAPES: 'star'=Goals, 'diamond'=Innovations, 'hexagon'=Fields, 'octagon'=Rules.
+4. IMPORTANT: Inside the JSON section, do NOT use double quotes within descriptions. Use single quotes instead.
 
 ### SEMANTIC_GRAPH_JSON
 """
