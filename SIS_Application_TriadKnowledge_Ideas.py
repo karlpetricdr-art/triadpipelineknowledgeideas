@@ -974,47 +974,27 @@ with st.sidebar:
         st.markdown("**Core Concepts:**")
         for key, val in HIERARCHOLOGY_ONTOLOGY["core_definitions"].items():
             st.markdown(f"• **{key}**: {val}")
-
         st.markdown("---")
         st.markdown("**Advanced Mapping Connectors:**")
-        st.markdown("• ⬛ ┄ ➤ **Specialization**: Deduktivna izpeljava iz splošnega zakona v specifičen primer (nasprotje generalizacije).")
-        st.markdown("• 🟦 — ◯ **Containment**: Močna strukturna vsebovanost; označuje elemente, ujetne znotraj 'znanstvene kletke'.")
+        st.markdown("• ⬛ ┄ ➤ **Specialization**: Deductive derivation.")
+        st.markdown("• 🟦 — ◯ **Containment**: Structural housing (Scientific Cage).")
 
-    with st.expander("🔬 Science Taxonomy & Levels", expanded=False):
-        st.markdown("**Field Domains:**")
-        for s in sorted(KNOWLEDGE_BASE["Science fields"].keys()): 
-            st.markdown(f"• **{s}**")
-
-        st.markdown("---")
-        st.markdown("**Hierarchical Levels:**")
-        for level, desc in HIERARCHOLOGY_ONTOLOGY["hierarchical_levels"].items():
-            st.markdown(f"• **{level}**: {desc}")
-
-        st.markdown("---")
-        st.markdown("**Logic Flows:**")
-        st.markdown(f"• *Internal (Inductive):* {HIERARCHOLOGY_ONTOLOGY['operational_logic']['Internal Processes']}")
-        st.markdown(f"• *External (Deductive):* {HIERARCHOLOGY_ONTOLOGY['operational_logic']['External Functioning']}")
-
-        st.markdown("---")
-        st.markdown("**Hierarchography Methods:**")
-        st.write(", ".join(HIERARCHOLOGY_ONTOLOGY["hierarchography_tools"]))
-
-    with st.expander("🏗️ Structural Model Context", expanded=False):
-        for m, d in KNOWLEDGE_BASE["Structural models"].items(): 
-            st.markdown(f"**{m}**: {d}")
-	with st.expander("🧬 Body Intelligence (BIA) Nests", expanded=False):
+    with st.expander("🧬 Body Intelligence (BIA) Nests", expanded=False):
         st.markdown("**Biological Platform (Hardware Logic):**")
         st.info("Insight into the biological hardware platform as defined by the Hierarchology model.")
-        
         for nest_name, nest_data in BODY_INTELLIGENCE_ONTOLOGY["nests"].items():
             st.markdown(f"**{nest_name}:**")
             st.markdown(f"• *Superior Nodes:* {', '.join(nest_data['Superior'])}")
             st.markdown(f"• *Logic:* {nest_data['Logic']}")
             st.divider()
-            
         st.markdown("**System Dynamics:**")
-        st.markdown("• **Biological Egoism:** The brain prioritizes its own glucose/energy consumption during resource scarcity at the expense of other organs.")
-        st.markdown("• **Automation vs. Complexity:** Internal communication is highly automated and predictable, while external communication (interaction with the 'vast cosmos') is unpredictable and complex.")		
+        st.markdown("• **Biological Egoism:** The brain prioritizes its own consumption during scarcity.")
+        st.markdown("• **Automation:** Internal signaling is automated; external is complex.")
+
+    with st.expander("🔬 Science Taxonomy & Levels", expanded=False):
+        st.markdown("**Field Domains:**")
+        for s in sorted(KNOWLEDGE_BASE["Science fields"].keys()): 
+            st.markdown(f"• **{s}**")		
 
 # --- MAIN PAGE CONTENT ---
 st.markdown('<h1 class="main-header-gradient">🧱 SIS Universal Knowledge Synthesizer</h1>', unsafe_allow_html=True)
