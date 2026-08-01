@@ -604,57 +604,12 @@ HIERARCHOLOGY_ONTOLOGY = {
     ]
 }
 
-# =============================================================================
-# 2.2 BODY INTELLIGENCE ARCHITECTURE (BIA) - HIERARCHICAL NESTS (PDF INTEGRATION)
-# =============================================================================
-
-BODY_INTELLIGENCE_ONTOLOGY = {
-    "systems": {
-        "Nervous system": "The primary recorder of external stimuli and highest energy consumer; functions egoistically during scarcity.",
-        "Endocrine system": "Maintains the internal environment and the 'will to live' through hormonal regulation.",
-        "Cardiovascular system": "The motor or fuel-transport system; critical for oxygen distribution to the brain.",
-        "Respiratory system": "Facilitates gas exchange; provides oxygen as the vital gas for brain function.",
-        "Digestive system": "Primary acquisition of raw materials and energy conversion from the external environment.",
-        "Urogenital system": "System for elimination of excess and species reproduction; a major energy consumer.",
-        "Support and movement system": "The skeleton and muscles providing stability and generating energy through movement.",
-        "Skin": "The largest protective boundary; absorbs vitamin D and detects external environment changes.",
-        "Immune system": "Protects against pathogens; critical for genetic transmission through mate selection."
-    },
-    "nests": {
-        "Energy Source Nest": {
-            "Superior": ["Digestive system"],
-            "Equal": ["Skin", "Respiratory system"],
-            "Subordinate": ["Cardiovascular", "Support and movement", "Hormonal system"],
-            "Logic": "Focus on acquisition and transformation of raw energy/nutrients."
-        },
-        "Energy Consumption Nest": {
-            "Superior": ["Nervous system"],
-            "Secondary_Superior": ["Immune system", "Urogenital system"],
-            "Logic": "Prioritizes resource allocation, often favoring the nervous system over others."
-        },
-        "Internal Communication Nest": {
-            "Superior": ["Cardiovascular", "Hormonal", "Urogenital"],
-            "Subordinate": ["Digestive", "Respiratory", "Skin"],
-            "Logic": "Automated, predictable signaling maintaining homeostasis within the organism."
-        },
-        "External Communication Nest": {
-            "Superior": ["Nervous system (Sensory)"],
-            "Equal": ["Skin", "Immune system"],
-            "Logic": "Intensive, less predictable processing of vast variables from the external cosmos."
-        }
-    }
-}
-
-# Add Hierarchology and Body Intelligence nodes to your existing Metamodel
+# Add Hierarchology-specific nodes to your existing Metamodel
 HUMAN_THINKING_METAMODEL["nodes"].update({
     "Hierarchical Associative System": {"color": "#fd7e14", "shape": "ellipse", "desc": "The primary cognitive framework defined by hierarchology."},
     "Scientific Cage": {"color": "#6c757d", "shape": "rectangle", "desc": "The boundary of human mental perspective."},
-    "Hierarchography": {"color": "#e63946", "shape": "diamond", "desc": "The visual description of hierarchical structures."},
-    "Biological Platform": {"color": "#FFCC00", "shape": "octagon", "desc": "The solid hardware foundation of the individual (hardware vs software)."},
-    "Hierarchical Nest": {"color": "#FF9900", "shape": "circle", "desc": "A cluster of bodily systems organized by specific functional priority (Energy/Communication)."},
-    "Biological Egoism": {"color": "#CC0000", "shape": "triangle", "desc": "The brain's tendency to consume majority glucose/energy during scarcity."}
+    "Hierarchography": {"color": "#e63946", "shape": "diamond", "desc": "The visual description of hierarchical structures."}
 })
-
 # =============================================================================
 # 3. KNOWLEDGE BASE (EXHAUSTIVE 18D SCIENCE FIELDS & ONTOLOGIES)
 # =============================================================================
@@ -974,27 +929,34 @@ with st.sidebar:
         st.markdown("**Core Concepts:**")
         for key, val in HIERARCHOLOGY_ONTOLOGY["core_definitions"].items():
             st.markdown(f"• **{key}**: {val}")
+
         st.markdown("---")
         st.markdown("**Advanced Mapping Connectors:**")
-        st.markdown("• ⬛ ┄ ➤ **Specialization**: Deductive derivation.")
-        st.markdown("• 🟦 — ◯ **Containment**: Structural housing (Scientific Cage).")
-
-    with st.expander("🧬 Body Intelligence (BIA) Nests", expanded=False):
-        st.markdown("**Biological Platform (Hardware Logic):**")
-        st.info("Insight into the biological hardware platform as defined by the Hierarchology model.")
-        for nest_name, nest_data in BODY_INTELLIGENCE_ONTOLOGY["nests"].items():
-            st.markdown(f"**{nest_name}:**")
-            st.markdown(f"• *Superior Nodes:* {', '.join(nest_data['Superior'])}")
-            st.markdown(f"• *Logic:* {nest_data['Logic']}")
-            st.divider()
-        st.markdown("**System Dynamics:**")
-        st.markdown("• **Biological Egoism:** The brain prioritizes its own consumption during scarcity.")
-        st.markdown("• **Automation:** Internal signaling is automated; external is complex.")
+        st.markdown("• ⬛ ┄ ➤ **Specialization**: Deduktivna izpeljava iz splošnega zakona v specifičen primer (nasprotje generalizacije).")
+        st.markdown("• 🟦 — ◯ **Containment**: Močna strukturna vsebovanost; označuje elemente, ujetne znotraj 'znanstvene kletke'.")
 
     with st.expander("🔬 Science Taxonomy & Levels", expanded=False):
         st.markdown("**Field Domains:**")
         for s in sorted(KNOWLEDGE_BASE["Science fields"].keys()): 
-            st.markdown(f"• **{s}**")		
+            st.markdown(f"• **{s}**")
+
+        st.markdown("---")
+        st.markdown("**Hierarchical Levels:**")
+        for level, desc in HIERARCHOLOGY_ONTOLOGY["hierarchical_levels"].items():
+            st.markdown(f"• **{level}**: {desc}")
+
+        st.markdown("---")
+        st.markdown("**Logic Flows:**")
+        st.markdown(f"• *Internal (Inductive):* {HIERARCHOLOGY_ONTOLOGY['operational_logic']['Internal Processes']}")
+        st.markdown(f"• *External (Deductive):* {HIERARCHOLOGY_ONTOLOGY['operational_logic']['External Functioning']}")
+
+        st.markdown("---")
+        st.markdown("**Hierarchography Methods:**")
+        st.write(", ".join(HIERARCHOLOGY_ONTOLOGY["hierarchography_tools"]))
+
+    with st.expander("🏗️ Structural Model Context", expanded=False):
+        for m, d in KNOWLEDGE_BASE["Structural models"].items(): 
+            st.markdown(f"**{m}**: {d}")
 
 # --- MAIN PAGE CONTENT ---
 st.markdown('<h1 class="main-header-gradient">🧱 SIS Universal Knowledge Synthesizer</h1>', unsafe_allow_html=True)
@@ -1089,7 +1051,6 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
 
             # --- 2. KORAK: POGOJNA AKTIVACIJA DIMENZIJ ---
             trigger_keyword = "[ACTIVATE]"
-            body_trigger = "[ACTIVATE BODY]"
             active_context = ""
 
             if trigger_keyword in user_query or (idea_query and trigger_keyword in idea_query):
@@ -1117,28 +1078,6 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 - Innovation Frameworks: {', '.join(selected_techniques)}
                 - Expertise Level: {expertise}
                 - Project Strategic Goal: {goal_context}
-                \n###########################################################\n
-                """
-
-            if body_trigger in user_query or (idea_query and body_trigger in idea_query):
-                bia_systems = "\n".join([f"   • {s}: {desc}" for s, desc in BODY_INTELLIGENCE_ONTOLOGY["systems"].items()])
-                bia_nests = "\n".join([f"   • {n}: {d['Logic']} (Superior: {d['Superior']})" for n, d in BODY_INTELLIGENCE_ONTOLOGY["nests"].items()])
-                
-                active_context += f"""
-                \n### 🧬 MANDATORY BIOLOGICAL PLATFORM ACTIVATION (BIA) ###
-                The user has activated the Body Intelligence Architecture. You must analyze the inquiry as if it were a biological organism:
-                
-                HARDWARE SYSTEMS:
-                {bia_systems}
-                
-                HIERARCHICAL NEST LOGIC:
-                {bia_nests}
-                
-                ANALYTICAL GUIDELINES:
-                1. Map the core problem to the 'Energy Consumption Nest' (Identify which entity acts as the 'Egoistic' brain consuming majority resources).
-                2. Use the 'External Communication Nest' to analyze unpredictable environmental data/threats.
-                3. Define the 'Scientific Cage' as a biological sensory limitation that prevents the 'organism' from perceiving higher-level realities.
-                4. Contrast 'Automated Internal Homeostasis' with 'Unpredictable External Cosmos' in your strategic suggestions.
                 \n###########################################################\n
                 """
 
@@ -1233,14 +1172,6 @@ C) LOGICAL CONNECTORS (Decision Logic):
 - 'XOR': Izkljucujoci ALI (Koncepta sta nezdruzljiva ali paradoksalna).
 - 'NOT': Negacija ali prepovedana povezava (Meja znanstvene kletke).
 - 'IF-THEN': Vzrocna posledica ali pogojni prehod.
-
-D) BIOLOGICAL HIERARCHY (BIA):
-- 'Nest_Superior': Primary controlling system within a biological nest.
-- 'Hardware_Support': Relationship where a bodily system supports a mental function.
-
-# V samba_sys_prompt pod 3. MANDATORY GEOMETRY (SHAPES) dodaj:
-- 'octagon': Biological Hardware Systems (Nervous, Digestive, etc.).
-- 'circle': Biological Nests (Clusters of systems).
 
 ### 3. MANDATORY GEOMETRY (SHAPES)
 - 'star': Ultimate Goals / Macro-Vision.
@@ -1366,9 +1297,8 @@ MANDATORY JSON STRUCTURE:
 
                     # Velikostna hierarhija glede na obliko
                     if n_shape == 'star': n_size = 125
-                    elif n_shape == 'circle': n_size = 120  # Biološka gnezda (BIA)
                     elif n_shape == 'diamond': n_size = 110
-                    elif n_shape == 'octagon': n_size = 105  # Biološki sistemi (BIA)
+                    elif n_shape == 'octagon': n_size = 105
                     elif n_shape == 'hexagon': n_size = 100
                     elif n_shape == 'triangle': n_size = 95
                     elif n_shape == 'ellipse': n_size = 90
@@ -1421,12 +1351,6 @@ MANDATORY JSON STRUCTURE:
                         e_color = "#FF0000"  # Rdeča
                     elif rel == "IF-THEN":
                         e_color = "#FFD700"  # Zlata
-
-                    # D) BIOLOŠKA HIERARHIJA (BIA)
-                    elif rel == "Nest_Superior":
-                        e_color = "#FF9900"  # Oranžna za biološko nadrejenost
-                    elif rel == "Hardware_Support":
-                        e_color = "#808000"  # Olivna za podporo strojne opreme
 
                     else:
                         e_color = "#ADB5BD"  # Če tipa ne pozna = Siva
