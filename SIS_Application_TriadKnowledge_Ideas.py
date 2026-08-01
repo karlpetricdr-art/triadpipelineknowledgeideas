@@ -604,12 +604,57 @@ HIERARCHOLOGY_ONTOLOGY = {
     ]
 }
 
-# Add Hierarchology-specific nodes to your existing Metamodel
+# =============================================================================
+# 2.2 BODY INTELLIGENCE ARCHITECTURE (BIA) - HIERARCHICAL NESTS (PDF INTEGRATION)
+# =============================================================================
+
+BODY_INTELLIGENCE_ONTOLOGY = {
+    "systems": {
+        "Nervous system": "The primary recorder of external stimuli and highest energy consumer; functions egoistically during scarcity.",
+        "Endocrine system": "Maintains the internal environment and the 'will to live' through hormonal regulation.",
+        "Cardiovascular system": "The motor or fuel-transport system; critical for oxygen distribution to the brain.",
+        "Respiratory system": "Facilitates gas exchange; provides oxygen as the vital gas for brain function.",
+        "Digestive system": "Primary acquisition of raw materials and energy conversion from the external environment.",
+        "Urogenital system": "System for elimination of excess and species reproduction; a major energy consumer.",
+        "Support and movement system": "The skeleton and muscles providing stability and generating energy through movement.",
+        "Skin": "The largest protective boundary; absorbs vitamin D and detects external environment changes.",
+        "Immune system": "Protects against pathogens; critical for genetic transmission through mate selection."
+    },
+    "nests": {
+        "Energy Source Nest": {
+            "Superior": ["Digestive system"],
+            "Equal": ["Skin", "Respiratory system"],
+            "Subordinate": ["Cardiovascular", "Support and movement", "Hormonal system"],
+            "Logic": "Focus on acquisition and transformation of raw energy/nutrients."
+        },
+        "Energy Consumption Nest": {
+            "Superior": ["Nervous system"],
+            "Secondary_Superior": ["Immune system", "Urogenital system"],
+            "Logic": "Prioritizes resource allocation, often favoring the nervous system over others."
+        },
+        "Internal Communication Nest": {
+            "Superior": ["Cardiovascular", "Hormonal", "Urogenital"],
+            "Subordinate": ["Digestive", "Respiratory", "Skin"],
+            "Logic": "Automated, predictable signaling maintaining homeostasis within the organism."
+        },
+        "External Communication Nest": {
+            "Superior": ["Nervous system (Sensory)"],
+            "Equal": ["Skin", "Immune system"],
+            "Logic": "Intensive, less predictable processing of vast variables from the external cosmos."
+        }
+    }
+}
+
+# Add Hierarchology and Body Intelligence nodes to your existing Metamodel
 HUMAN_THINKING_METAMODEL["nodes"].update({
     "Hierarchical Associative System": {"color": "#fd7e14", "shape": "ellipse", "desc": "The primary cognitive framework defined by hierarchology."},
     "Scientific Cage": {"color": "#6c757d", "shape": "rectangle", "desc": "The boundary of human mental perspective."},
-    "Hierarchography": {"color": "#e63946", "shape": "diamond", "desc": "The visual description of hierarchical structures."}
+    "Hierarchography": {"color": "#e63946", "shape": "diamond", "desc": "The visual description of hierarchical structures."},
+    "Biological Platform": {"color": "#FFCC00", "shape": "octagon", "desc": "The solid hardware foundation of the individual (hardware vs software)."},
+    "Hierarchical Nest": {"color": "#FF9900", "shape": "circle", "desc": "A cluster of bodily systems organized by specific functional priority (Energy/Communication)."},
+    "Biological Egoism": {"color": "#CC0000", "shape": "triangle", "desc": "The brain's tendency to consume majority glucose/energy during scarcity."}
 })
+
 # =============================================================================
 # 3. KNOWLEDGE BASE (EXHAUSTIVE 18D SCIENCE FIELDS & ONTOLOGIES)
 # =============================================================================
