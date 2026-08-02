@@ -1093,7 +1093,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             # Inicializacija skupnega Cerebras klienta
             cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
 
-            # --- PHASE 1: CEREBRAS (Foundation - IMA Architecture Building & Mental Structure) ---
+            # --- PHASE 1: CEREBRAS (Foundation - IMA Architecture Building) ---
             with st.spinner(f'PHASE 1: Building Architecture with {p1_model}...'):
                 p1_response = cerebras_client.chat.completions.create(
                     model=p1_model,
@@ -1102,17 +1102,10 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                             "role": "system", 
                             "content": (
                                 "You are the SIS Lead Hierarchologist and Knowledge Architect. Your mission is to perform "
-                                "a deep structural analysis of the user's inquiry using the Integrated Metamodel Architecture (IMA) "
-                                "and the 'Mental Structure Package Model'. "
-                                "\n\nSTRICT ARCHITECTURAL PROTOCOL:"
-                                "\n1. Process the user inquiry as 'Stimuli' influencing the mental structure."
-                                "\n2. Identify 'Causal and conditional relations' independent of the mental structure."
-                                "\n3. Determine the 'Fundamental way of thinking' required (Libido, Everyday, or Philosophical)."
-                                "\n4. Pinpoint the 'Psychological drives' triggered by these stimuli."
-                                "\n5. If the [ACTIVATE] instruction is present, strictly map the inquiry onto the IMA Nodes "
-                                "(Identity, Mission, Scientific Cage, etc.) and analyze the hierarchy levels (Micro/Meso/Macro)."
-                                "\n\nYour output must be a rigid, factual, and logically sound foundation for further innovation, "
-                                "establishing the 'Mental Concentration' necessary for Phase 2."
+                                "a deep structural analysis of the user's inquiry using the Integrated Metamodel Architecture (IMA). "
+                                "If the [ACTIVATE] instruction is present, you MUST strictly map the inquiry onto the provided "
+                                "IMA Nodes (Identity, Mission, Scientific Cage, etc.) and analyze the hierarchy levels (Micro/Meso/Macro). "
+                                "Your output must be a rigid, factual, and logically sound foundation for further innovation."
                             )
                         }, 
                         {"role": "user", "content": full_ai_input}
@@ -1126,67 +1119,76 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 # Ta vrstica mora biti poravnana z zgornjo!
                 ma_list_for_ai = ", ".join(MENTAL_APPROACHES_ONTOLOGY["nodes"].keys())
 
-                # --- 3. PHASE 2: CEREBRAS (Innovation - Mental Structure Augmented) ---
-                with st.spinner(f'PHASE 2: Activating Mental Structure Engine with {p2_model}...'):
+                # --- 3. PHASE 2: CEREBRAS (Innovation) ---
+                with st.spinner(f'PHASE 2: Activating 20-MA Engine with {p2_model}...'):
                     samba_sys_prompt = f"""
 You are the SIS Lead Strategic Innovation Architect and Hierarchographist. 
-Your mission is to process the 'Miselna koncentracija' (Mental Concentration) from Phase 1 through the 'Mental Structure Package Model' to generate a 'Will' (Volja) for radical innovation.
+Your task is to transform the structural analysis from Phase 1 into a visionary Innovation Report and a perfectly mapped Hierarchographic Network.
 
-### THE MENTAL STRUCTURE OPERATING SYSTEM:
-1. **Stimuli & Concentration**: Take the stimuli and causal relations analyzed in Phase 1 as your focal point.
-2. **Strong Imagination**: Activate your generative engine. Break the 'Scientific Cage' by imagining 'impossible' connections. This is your primary engine for 'Out of the Box' thinking.
-3. **Rules & Realization**: Apply logical 'Rules' (20 Mental Approaches and Structural Laws) to strengthen and direct the imagination. Rules must 'realize' the imagination into a concrete 'Will'.
-4. **Will (Intent)**: The final output must represent the realization of 'Will'—a directed, strategic force derived from concentrated imagination and logical rules.
+Your mandate is to reach a 9.9+ score by breaking the Scientific Cage using ALL 20 MENTAL APPROACHES (MA):
+{ma_definitions}
 
-### COGNITIVE MODES (Fundamental ways of thinking):
-- **Philosophical**: Use for deep systemic breakthroughs, ontological shifts, and high-level synthesis.
-- **Everyday**: Use for pragmatic execution, practical utility, and concrete application.
-- **Libido/Vitality**: Use for creative energy, bold visionary leaps, and aesthetic elegance.
-
-### MANDATORY COGNITIVE ENGINE:
+### MANDATORY COGNITIVE ENGINE
 You MUST process the foundation through ALL 20 lenses:
 {ma_list_for_ai}
 
 ### OUTPUT REQUIREMENTS SUMMARY:
-1. STRATEGIC INNOVATION REPORT: Detail 3-4 breakthroughs. For each, explicitly describe the path from 'Strong Imagination' to 'Will' (Intent).
-2. SEMANTIC_GRAPH_JSON: Map the structure using the full Relationship Logic Matrix below.
-3. SHAPES: 'star'=Will/Intent, 'diamond'=Strong Imagination/Innovations, 'hexagon'=Science Fields, 'octagon'=Causal & Conditional Relations, 'rectangle'=Facts/Data.
+1. STRATEGIC INNOVATION REPORT: Detail 3-4 breakthroughs, specifying which 3 MAs were used for each.
+2. SEMANTIC_GRAPH_JSON: Map the structure using UML (Composition, Specialization, Conflict), ISO (BT, NT, RT), and Logical Connectors (XOR, IF-THEN).
+3. SHAPES: 'star'=Goals, 'diamond'=Innovations, 'hexagon'=Fields, 'octagon'=Rules.
+4. JSON RULES: Use ONLY single quotes for descriptions inside the JSON block.
+
+### 1. REPORT REQUIREMENTS
+Write a "STRATEGIC INNOVATION REPORT". 
+- For each innovation, provide a technical title, a detailed 3-4 sentence strategic explanation, and its cross-disciplinary impact.
+- Use professional terminology.
+- IMPORTANT: Inside the JSON section, do NOT use double quotes within descriptions. Use single quotes instead to ensure the JSON structure remains valid.
 
 ### 2. RELATIONSHIP LOGIC MATRIX (MANDATORY FOR JSON)
 You must interconnect nodes using the following two standards:
 
 A) THESAURUS LOGIC (ISO 25964 / Conceptual Taxonomy):
-- 'TT' (Top Term): Absolute root of a knowledge domain or a major 'Will'.
+- 'TT' (Top Term): Absolute root of a knowledge domain.
 - 'BT' (Broader Term): Higher-level class/concept (Genus).
 - 'NT' (Narrower Term): Lower-level sub-concept (Species).
 - 'RT' (Related Term): Symmetrical lateral association between concepts.
 - 'EQ' (Equivalence): Synonyms or identical concepts in different fields.
 - 'AS' (Associative): Functional connection (e.g., Process AS Result, Tool AS Action).
-- 'IN' (Instance): Category to a specific unique entity or innovation example.
+- 'IN' (Instance): Category to a specific unique entity/example (e.g., Physics IN Theory of Relativity).
 
 B) UML LOGIC (OMG Standard / Structural Architecture):
 - 'Generalization': 'Is-a' Inheritance (e.g., Quantum Physics is a Generalization of Physics).
-- 'Specialization': The deductive opposite of Generalization. A downward move from a general law to a specific case.
-- 'Containment': A strong structural inclusion where a node is trapped or housed inside another (e.g., in the 'Scientific Cage').
-- 'Realization': The critical link where 'Strong Imagination' is implemented into a 'Will' or a 'Goal'.
-- 'Composition': Strong 'Part-of' (Life-cycle dependent, if the whole is destroyed, parts are too).
-- 'Aggregation': Weak 'Part-of' (Independent existence, nodes belong together but can exist separately).
-- 'Dependency': Node A requires Node B to function or be realized.
-- 'Conflict': A Systemic tension or direct logical conflict between 'Imagination' and existing 'Causal Rules'.
+- 'Specialization': The deductive opposite of Generalization. A downward move from a general law to a specific refined case.
+- 'Containment': A strong structural inclusion where a node is trapped or housed inside another. Mandatory for mapping concepts within a 'Scientific Cage'.
+- 'Realization': An Innovation/Tool implementing a Goal/Vision.
+- 'Composition': Strong 'Part-of' (Life-cycle dependent).
+- 'Aggregation': Weak 'Part-of' (Independent existence).
+- 'Dependency': Node A requires Node B to function.
+- 'Conflict': A Systemic tension, incompatibility, or direct conflict between two elements.
 
 C) LOGICAL CONNECTORS (Decision Logic):
-- 'AND': Strong synthesis where both conditions must coexist.
-- 'OR': Alternative pathways or choices between concepts.
-- 'XOR': Exclusive OR (Concepts are incompatible or paradoxical).
-- 'NOT': Negation or a boundary/forbidden connection (The edge of the 'Scientific Cage').
-- 'IF-THEN': Causal consequence or conditional transition.
+- 'AND': Mocna sinteza, kjer morata oba pogoja obstajati hkrati (Veznik IN).
+- 'OR': Alternativna pot ali izbira med koncepti (Veznik ALI).
+- 'XOR': Izkljucujoci ALI (Koncepta sta nezdruzljiva ali paradoksalna).
+- 'NOT': Negacija ali prepovedana povezava (Meja znanstvene kletke).
+- 'IF-THEN': Vzrocna posledica ali pogojni prehod.
 
-### 4. OUTPUT FORMAT & JSON RULES
-- Every node and edge must be accounted for. In the 'description' of each 'diamond' node, state which 3 Mental Approaches were used.
-- JSON STRICTNESS: Place block after '### SEMANTIC_GRAPH_JSON'. Use ONLY single quotes (') for text inside. No newlines inside strings.
+### 3. MANDATORY GEOMETRY (SHAPES)
+- 'star': Ultimate Goals / Macro-Vision.
+- 'hexagon': Science Fields / Academic Domains.
+- 'diamond': Strategic Innovations / New Breakthroughs.
+- 'triangle': Active Processes / Methods / Vectors.
+- 'octagon': Constraints / Ethical Boundaries / Rules.
+- 'ellipse': Human Factors / Identities / Biological Entities.
+- 'rectangle': Facts / Data Points / Micro-components.
 
-### THE 20 MENTAL APPROACHES (MA):
-{ma_definitions}
+### 4. OUTPUT FORMAT
+MANDATORY JSON STRUCTURE:
+- Every node and edge must be accounted for. In the 'description' field of each 'diamond' (Innovation) node, you MUST explicitly state which 3 Mental Approaches were synthesized to create it.
+- IMPORTANT: Place the JSON block strictly after the header '### SEMANTIC_GRAPH_JSON'. Do not include any text after the JSON block.
+- JSON STRICTNESS: Ensure the JSON is structurally valid. Use backslashes to escape any unavoidable technical symbols. Use ONLY single quotes (') for text inside the JSON descriptions.
+- CRITICAL: Every description must be a single string without ANY newlines or double quotes inside. 
+- Use the format: "description": "Text with 'single quotes' only."
 
 ### SEMANTIC_GRAPH_JSON
 {{
@@ -1196,11 +1198,12 @@ C) LOGICAL CONNECTORS (Decision Logic):
       "label": "INNOVATION TITLE", 
       "shape": "diamond", 
       "color": "#fd7e14", 
-      "description": "Strong Imagination realized into Will. Synthesized via [MA1], [MA2], and [MA3]. Mode: [Philosophical/Everyday]."
+      "description": "Detailed strategic analysis. Synthesized via [MA1], [MA2], and [MA3]. Impact: Detailed explanation of cross-disciplinary effect."
     }}
   ],
   "edges": [
-    {{"source": "n1", "target": "n2", "rel_type": "Realization"}}
+    {{"source": "n1", "target": "n2", "rel_type": "IN"}},
+    {{"source": "n3", "target": "n1", "rel_type": "Composition"}}
   ]
 }}
 """ # Konec samba_sys_prompt
@@ -1210,7 +1213,7 @@ C) LOGICAL CONNECTORS (Decision Logic):
                     model=p2_model, 
                     messages=[
                         {"role": "system", "content": samba_sys_prompt}, 
-                        {"role": "user", "content": f"PHASE 1 CONCENTRATION (Stimuli & Causal Relations):\n{groq_synthesis}\n\nUSER WILL (Innovation Target): {idea_query}{file_context_str}"}
+                        {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER GOAL: {idea_query}{file_context_str}"}
                     ],
                     temperature=0.85,
                     top_p=0.9
