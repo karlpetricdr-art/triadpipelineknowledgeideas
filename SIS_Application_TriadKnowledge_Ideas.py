@@ -638,55 +638,15 @@ KNOWLEDGE_BASE = {
         "Structuralism": "Elements of human culture must be understood in terms of their relationship to a broader system.",
         "Post-Structuralism": "Critique of structuralism, emphasizing the instability of meaning and systems."
     },
-
-    # --- POSODOBLJENI STRUKTURNI MODELI (Uteženi gradniki informacij) ---
     "Structural models": {
-        "Informations": {
-            "baseline_weight": 1.00, 
-            "description": "Central hub of incoming data. Always high priority for initial synthesis."
-        },
-        "Concepts": {
-            "baseline_weight": 0.80, 
-            "sub_elements": ["Situations", "Actions"],
-            "description": "Abstract cognitive structures. Priority increases for strategic or philosophical modeling."
-        },
-        "Episodes": {
-            "baseline_weight": 0.62, 
-            "sub_elements": ["Involvement of participants", "Sequence of events", "Process flow", "End of processes"],
-            "description": "Narrative sequences and experiential flows. Priority increases for temporal analysis."
-        },
-        "Time Sequences": {
-            "baseline_weight": 0.62, 
-            "sub_elements": ["Distress event A", "Positive event B", "Neutral event C"],
-            "description": "Chronological event chains. Priority increases for emotional or historical context."
-        },
-        "Principles": {
-            "baseline_weight": 0.50, 
-            "sub_elements": ["Relations", "Relationships", "Correlations"],
-            "description": "Fundamental governing rules. Priority increases for fundamental scientific research."
-        },
-        "Glossary of terms": {
-            "baseline_weight": 0.50, 
-            "sub_elements": ["Dictionary of subject labels", "Dictionary of distress", "Lists", "Correlations"],
-            "description": "Terminological clarity. Priority increases for defining new fields or concepts."
-        },
-        "Facts": {
-            "baseline_weight": 0.38, 
-            "sub_elements": ["Characteristics of living things", "Characteristics of inanimate things"],
-            "description": "Verified objective data. Priority increases for empirical validation and technical inquiries."
-        },
-        "Causal Connections": {
-            "baseline_weight": 0.38, 
-            "sub_elements": ["Causes", "Effects"],
-            "description": "Logical dependency chains. Priority increases for root-cause analysis and problem-solving."
-        },
-        "Generalizations": {
-            "baseline_weight": 0.25, 
-            "sub_elements": ["Characteristics", "Categories of (Living beings, Locations, Materials, Events)"],
-            "description": "Broad patterns and abstractions. Priority increases for macro-level forecasting and theory building."
-        }
+        "Causal Connections": "Chains of cause and effect mapping systemic causality.",
+        "Principles & Relations": "Fundamental laws and the inter-relations between entities.",
+        "Episodes & Sequences": "Temporal flow, historical timelines, and event ordering.",
+        "Facts & Characteristics": "Raw data properties, attributes, and static descriptions.",
+        "Generalizations": "Broad frameworks and high-level theoretical models.",
+        "Glossary": "Precise definitions and terminological clarity.",
+        "Concepts": "Abstract constructs and conceptual building blocks."
     },
-
     "Science fields": {
         "Mathematics": {
             "cat": "Formal", 
@@ -1133,38 +1093,24 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             # Inicializacija skupnega Cerebras klienta
             cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
 
-            # --- PHASE 1: CEREBRAS (Foundation - IMA & Dynamic Information Blocks) ---
+            # --- PHASE 1: CEREBRAS (Foundation - IMA Architecture Building) ---
             with st.spinner(f'PHASE 1: Building Architecture with {p1_model}...'):
-                # Priprava opisa gradnikov za prompt (Vključuje pod-elemente s slike za maksimalno natančnost)
-                blocks_context = ""
-                for k, v in KNOWLEDGE_BASE["Structural models"].items():
-                    sub_elements = ", ".join(v.get("sub_elements", [])) if "sub_elements" in v else "N/A"
-                    blocks_context += f"- {k.upper()} (Ref Weight: {v['baseline_weight']}): {v['description']} [Sub-elements: {sub_elements}]\n"
-
                 p1_response = cerebras_client.chat.completions.create(
                     model=p1_model,
                     messages=[
                         {
                             "role": "system", 
                             "content": (
-                                "You are the SIS Lead Hierarchologist. Your mission is to perform a deep structural analysis. "
-                                "You must use the Integrated Metamodel Architecture (IMA) and the FLUID INFORMATION BLOCKS.\n\n"
-                                "### DYNAMIC WEIGHTING PROTOCOL:\n"
-                                "1. EVALUATE: Is the user seeking a new theory, a practical fix, or a historical analysis?\n"
-                                "2. RE-WEIGHT: The following baseline weights are only starting points. Adjust them (0.0 to 1.0) based on the inquiry's needs:\n"
-                                f"{blocks_context}\n"
-                                "3. CATEGORIZE: Map the inquiry strictly into these blocks using your new weights. Pay special attention to:\n"
-                                "   - TIME SEQUENCES: Define the chronology (Distress event A, Positive event B, Neutral event C) and process flows.\n"
-                                "   - GLOSSARY: Establish Subject Labels, Distress Dictionaries, and Lists.\n"
-                                "   - SPECIALIZATION: Explicitly map how Generalizations (broad patterns) are specialized into this unique case.\n"
-                                "   - CAUSAL CONNECTIONS: Trace causes and effects.\n"
-                                "4. JUSTIFY: Briefly explain why you prioritized certain blocks (e.g., why 'Generalizations' are 0.95 and 'Facts' are 0.30).\n\n"
-                                "If the [ACTIVATE] instruction is present, strictly map onto the IMA Nodes (Identity, Mission, Scientific Cage, etc.)."
+                                "You are the SIS Lead Hierarchologist and Knowledge Architect. Your mission is to perform "
+                                "a deep structural analysis of the user's inquiry using the Integrated Metamodel Architecture (IMA). "
+                                "If the [ACTIVATE] instruction is present, you MUST strictly map the inquiry onto the provided "
+                                "IMA Nodes (Identity, Mission, Scientific Cage, etc.) and analyze the hierarchy levels (Micro/Meso/Macro). "
+                                "Your output must be a rigid, factual, and logically sound foundation for further innovation."
                             )
                         }, 
                         {"role": "user", "content": full_ai_input}
                     ],
-                    temperature=0.4
+                    temperature=0.4 # Nizka temperatura za maksimalno logično natančnost
                 )
                 groq_synthesis = p1_response.choices[0].message.content
                 st.session_state.groq_synthesis = groq_synthesis
@@ -1173,43 +1119,106 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 # Ta vrstica mora biti poravnana z zgornjo!
                 ma_list_for_ai = ", ".join(MENTAL_APPROACHES_ONTOLOGY["nodes"].keys())
 
-                # --- 3. PHASE 2: CEREBRAS (Innovation - Strategic Synthesis & Full Block Density) ---
+                # --- 3. PHASE 2: CEREBRAS (Innovation) ---
                 with st.spinner(f'PHASE 2: Activating 20-MA Engine with {p2_model}...'):
                     samba_sys_prompt = f"""
-You are the SIS Lead Strategic Innovation Architect. 
-Your task is to transform the Phase 1 deconstruction into radical 'Useful Innovative Ideas' using the FULL set of Information Building Blocks.
+You are the SIS Lead Strategic Innovation Architect and Hierarchographist. 
+Your task is to transform the structural analysis from Phase 1 into a visionary Innovation Report and a perfectly mapped Hierarchographic Network.
 
-### COGNITIVE ENGINE - BLOCK TRANSFORMATION LOGIC:
-Prioritize breakthroughs based on the weighted building blocks from Phase 1:
-1. **Facts & Causal Connections** -> Engineering breakthroughs (Re-coding assets, breaking loops).
-2. **Episodes & Time Sequences** -> Process breakthroughs (Intervening in 'Distress event A' or changing the 'Process flow').
-3. **Glossary & Concepts** -> Semantic breakthroughs (Creating new 'Subject labels' or redefining 'Situations').
-4. **Principles & Generalizations** -> Paradigm breakthroughs (Establishing new universal rules or 'Specializing' a general law into a unique innovation).
+Your mandate is to reach a 9.9+ score by breaking the Scientific Cage using ALL 20 MENTAL APPROACHES (MA):
+{ma_definitions}
 
-### OUTPUT REQUIREMENTS:
-1. **STRATEGIC INNOVATION REPORT**: Detail 3-4 breakthroughs. For each, identify the primary source block:
-   - Example: "Source Block: Time Sequences (Neutral event C)"
-2. **SEMANTIC_GRAPH_JSON**: 
-   - Map the structure using UML and ISO.
-   - Use 'Specialization' edges to show how a 'Generalization' was applied to a specific solution.
-   - Shapes: 'star'=Will/Goal, 'diamond'=Innovation, 'hexagon'=Science, 'octagon'=Rule, 'ellipse'=Block (Fact/Concept/TimeSeq), 'rectangle'=Data.
+### MANDATORY COGNITIVE ENGINE
+You MUST process the foundation through ALL 20 lenses:
+{ma_list_for_ai}
 
-### JSON RULES:
-- Use ONLY single quotes (') for text inside descriptions. 
-- Ensure every 'diamond' node mentions its MA synthesis and the source Information Block.
-"""
+### OUTPUT REQUIREMENTS SUMMARY:
+1. STRATEGIC INNOVATION REPORT: Detail 3-4 breakthroughs, specifying which 3 MAs were used for each.
+2. SEMANTIC_GRAPH_JSON: Map the structure using UML (Composition, Specialization, Conflict), ISO (BT, NT, RT), and Logical Connectors (XOR, IF-THEN).
+3. SHAPES: 'star'=Goals, 'diamond'=Innovations, 'hexagon'=Fields, 'octagon'=Rules.
+4. JSON RULES: Use ONLY single quotes for descriptions inside the JSON block.
 
-                    # Izvedba klica ostaja ista
-                    samba_response = cerebras_client.chat.completions.create(
-                        model=p2_model, 
-                        messages=[
-                            {"role": "system", "content": samba_sys_prompt}, 
-                            {"role": "user", "content": f"PHASE 1 WEIGHTED FOUNDATION:\n{groq_synthesis}\n\nUSER WILL: {idea_query}{file_context_str}"}
-                        ],
-                        temperature=0.85,
-                        top_p=0.9
-                    )
-                    cerebras_innovation = samba_response.choices[0].message.content
+### 1. REPORT REQUIREMENTS
+Write a "STRATEGIC INNOVATION REPORT". 
+- For each innovation, provide a technical title, a detailed 3-4 sentence strategic explanation, and its cross-disciplinary impact.
+- Use professional terminology.
+- IMPORTANT: Inside the JSON section, do NOT use double quotes within descriptions. Use single quotes instead to ensure the JSON structure remains valid.
+
+### 2. RELATIONSHIP LOGIC MATRIX (MANDATORY FOR JSON)
+You must interconnect nodes using the following two standards:
+
+A) THESAURUS LOGIC (ISO 25964 / Conceptual Taxonomy):
+- 'TT' (Top Term): Absolute root of a knowledge domain.
+- 'BT' (Broader Term): Higher-level class/concept (Genus).
+- 'NT' (Narrower Term): Lower-level sub-concept (Species).
+- 'RT' (Related Term): Symmetrical lateral association between concepts.
+- 'EQ' (Equivalence): Synonyms or identical concepts in different fields.
+- 'AS' (Associative): Functional connection (e.g., Process AS Result, Tool AS Action).
+- 'IN' (Instance): Category to a specific unique entity/example (e.g., Physics IN Theory of Relativity).
+
+B) UML LOGIC (OMG Standard / Structural Architecture):
+- 'Generalization': 'Is-a' Inheritance (e.g., Quantum Physics is a Generalization of Physics).
+- 'Specialization': The deductive opposite of Generalization. A downward move from a general law to a specific refined case.
+- 'Containment': A strong structural inclusion where a node is trapped or housed inside another. Mandatory for mapping concepts within a 'Scientific Cage'.
+- 'Realization': An Innovation/Tool implementing a Goal/Vision.
+- 'Composition': Strong 'Part-of' (Life-cycle dependent).
+- 'Aggregation': Weak 'Part-of' (Independent existence).
+- 'Dependency': Node A requires Node B to function.
+- 'Conflict': A Systemic tension, incompatibility, or direct conflict between two elements.
+
+C) LOGICAL CONNECTORS (Decision Logic):
+- 'AND': Mocna sinteza, kjer morata oba pogoja obstajati hkrati (Veznik IN).
+- 'OR': Alternativna pot ali izbira med koncepti (Veznik ALI).
+- 'XOR': Izkljucujoci ALI (Koncepta sta nezdruzljiva ali paradoksalna).
+- 'NOT': Negacija ali prepovedana povezava (Meja znanstvene kletke).
+- 'IF-THEN': Vzrocna posledica ali pogojni prehod.
+
+### 3. MANDATORY GEOMETRY (SHAPES)
+- 'star': Ultimate Goals / Macro-Vision.
+- 'hexagon': Science Fields / Academic Domains.
+- 'diamond': Strategic Innovations / New Breakthroughs.
+- 'triangle': Active Processes / Methods / Vectors.
+- 'octagon': Constraints / Ethical Boundaries / Rules.
+- 'ellipse': Human Factors / Identities / Biological Entities.
+- 'rectangle': Facts / Data Points / Micro-components.
+
+### 4. OUTPUT FORMAT
+MANDATORY JSON STRUCTURE:
+- Every node and edge must be accounted for. In the 'description' field of each 'diamond' (Innovation) node, you MUST explicitly state which 3 Mental Approaches were synthesized to create it.
+- IMPORTANT: Place the JSON block strictly after the header '### SEMANTIC_GRAPH_JSON'. Do not include any text after the JSON block.
+- JSON STRICTNESS: Ensure the JSON is structurally valid. Use backslashes to escape any unavoidable technical symbols. Use ONLY single quotes (') for text inside the JSON descriptions.
+- CRITICAL: Every description must be a single string without ANY newlines or double quotes inside. 
+- Use the format: "description": "Text with 'single quotes' only."
+
+### SEMANTIC_GRAPH_JSON
+{{
+  "nodes": [
+    {{
+      "id": "n1", 
+      "label": "INNOVATION TITLE", 
+      "shape": "diamond", 
+      "color": "#fd7e14", 
+      "description": "Detailed strategic analysis. Synthesized via [MA1], [MA2], and [MA3]. Impact: Detailed explanation of cross-disciplinary effect."
+    }}
+  ],
+  "edges": [
+    {{"source": "n1", "target": "n2", "rel_type": "IN"}},
+    {{"source": "n3", "target": "n1", "rel_type": "Composition"}}
+  ]
+}}
+""" # Konec samba_sys_prompt
+
+                # --- PHASE 2 EXECUTION ---
+                samba_response = cerebras_client.chat.completions.create(
+                    model=p2_model, 
+                    messages=[
+                        {"role": "system", "content": samba_sys_prompt}, 
+                        {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER GOAL: {idea_query}{file_context_str}"}
+                    ],
+                    temperature=0.85,
+                    top_p=0.9
+                )
+                cerebras_innovation = samba_response.choices[0].message.content
 
             # --- 4. PROCESIRANJE REZULTATOV (Z GEOMETRIJSKO LOGIKO) ---
             g_data = {"nodes": [], "edges": []}
