@@ -1093,7 +1093,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             # Inicializacija skupnega Cerebras klienta
             cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
 
-            # --- PHASE 1: CEREBRAS (Foundation - IMA Architecture Building) ---
+# --- PHASE 1: CEREBRAS (Foundation - IMA Architecture Building) ---
             with st.spinner(f'PHASE 1: Building Architecture with {p1_model}...'):
                 p1_response = cerebras_client.chat.completions.create(
                     model=p1_model,
@@ -1105,6 +1105,8 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                                 "a deep structural analysis of the user's inquiry using the Integrated Metamodel Architecture (IMA). "
                                 "If the [ACTIVATE] instruction is present, you MUST strictly map the inquiry onto the provided "
                                 "IMA Nodes (Identity, Mission, Scientific Cage, etc.) and analyze the hierarchy levels (Micro/Meso/Macro). "
+                                "MANDATORY: Identify 3-4 key interdisciplinary theories or academic pillars that define the current 'Scientific Cage' for this inquiry. "
+                                "Integrate citations (e.g., Author, Year) directly into your structural analysis to anchor the facts. "
                                 "Your output must be a rigid, factual, and logically sound foundation for further innovation."
                             )
                         }, 
@@ -1116,7 +1118,6 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 st.session_state.groq_synthesis = groq_synthesis
 
                 # --- DINAMIČNA AKTIVACIJA VSEH 20 MENTALNIH PRISTOPOV ---
-                # Ta vrstica mora biti poravnana z zgornjo!
                 ma_list_for_ai = ", ".join(MENTAL_APPROACHES_ONTOLOGY["nodes"].keys())
 
                 # --- 3. PHASE 2: CEREBRAS (Innovation) ---
@@ -1132,11 +1133,18 @@ Your mandate is to reach a 9.9+ score by breaking the Scientific Cage using ALL 
 You MUST process the foundation through ALL 20 lenses:
 {ma_list_for_ai}
 
+### INSTRUCTION ON INTERDISCIPLINARY SOURCES:
+Do NOT limit your innovations to what is already written. Instead, use existing scientific concepts as 'Cognitive Launchpads'. 
+Every radical idea should be inspired by, but not limited to, cross-disciplinary principles.
+
 ### OUTPUT REQUIREMENTS SUMMARY:
-1. STRATEGIC INNOVATION REPORT: Detail 3-4 breakthroughs, specifying which 3 MAs were used for each.
-2. SEMANTIC_GRAPH_JSON: Map the structure using UML (Composition, Specialization, Conflict), ISO (BT, NT, RT), and Logical Connectors (XOR, IF-THEN).
-3. SHAPES: 'star'=Goals, 'diamond'=Innovations, 'hexagon'=Fields, 'octagon'=Rules.
-4. JSON RULES: Use ONLY single quotes for descriptions inside the JSON block.
+1. STRATEGIC INNOVATION REPORT: Detail 3-4 breakthroughs, specifying which 3 MAs were used for each. For each innovation, mention an 'Analogical Anchor' (a theory or source from a different field that justifies the logic of your leap).
+2. INTERDISCIPLINARY BIBLIOGRAPHY: At the end of the report, list 5-7 'Synthesized Sources'. 
+   - These should be a mix of foundational papers and disparate interdisciplinary works that provided the 'DNA' for your new ideas.
+   - Format: [Field] Author, Year - Title/Concept (Role: Foundation/Analogical Launchpad).
+3. SEMANTIC_GRAPH_JSON: Map the structure using UML (Composition, Specialization, Conflict), ISO (BT, NT, RT), and Logical Connectors (XOR, IF-THEN).
+4. SHAPES: 'star'=Goals, 'diamond'=Innovations, 'hexagon'=Fields, 'octagon'=Rules.
+5. JSON RULES: Use ONLY single quotes for descriptions inside the JSON block.
 
 ### 1. REPORT REQUIREMENTS
 Write a "STRATEGIC INNOVATION REPORT". 
@@ -1184,7 +1192,7 @@ C) LOGICAL CONNECTORS (Decision Logic):
 
 ### 4. OUTPUT FORMAT
 MANDATORY JSON STRUCTURE:
-- Every node and edge must be accounted for. In the 'description' field of each 'diamond' (Innovation) node, you MUST explicitly state which 3 Mental Approaches were synthesized to create it.
+- Every node and edge must be accounted for. In the 'description' field of each 'diamond' (Innovation) node, you MUST explicitly state which 3 Mental Approaches were synthesized to create it and its primary scientific anchor.
 - IMPORTANT: Place the JSON block strictly after the header '### SEMANTIC_GRAPH_JSON'. Do not include any text after the JSON block.
 - JSON STRICTNESS: Ensure the JSON is structurally valid. Use backslashes to escape any unavoidable technical symbols. Use ONLY single quotes (') for text inside the JSON descriptions.
 - CRITICAL: Every description must be a single string without ANY newlines or double quotes inside. 
@@ -1223,14 +1231,19 @@ MANDATORY JSON STRUCTURE:
             # --- 4. PROCESIRANJE REZULTATOV (Z GEOMETRIJSKO LOGIKO) ---
             g_data = {"nodes": [], "edges": []}
 
-            # POPRAVEK: Ločevanje besedila od JSON-a za preprečevanje redundantnega izpisa
-            if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
+            # NOVO: Napredno ločevanje poročila, bibliografije in JSON-a
+            if "INTERDISCIPLINARY BIBLIOGRAPHY" in cerebras_innovation:
+                report_parts = cerebras_innovation.split("INTERDISCIPLINARY BIBLIOGRAPHY")
+                innovation_text = report_parts[0]
+                # Izoliramo bibliografijo (del med naslovom in JSON oznako)
+                biblio_raw = report_parts[1].split("### SEMANTIC_GRAPH_JSON")[0]
+            elif "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
                 parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
                 innovation_text = parts[0]
-                json_raw = parts[1]
+                biblio_raw = "Interdisciplinary anchors integrated within the text."
             else:
                 innovation_text = cerebras_innovation
-                json_raw = ""
+                biblio_raw = "Interdisciplinary anchors integrated within the text."
 
             # Odstranimo morebitne ostanke backtick-ov (```) iz besedila poročila
             innovation_text = re.sub(r'```json|```', '', innovation_text)
@@ -1393,6 +1406,19 @@ MANDATORY JSON STRUCTURE:
             # Display the full linked report (P1 + P2)
             # Display the full linked report (P1 + P2) - Sedaj brez surovega JSON kosa
             st.markdown(final_interactive_report, unsafe_allow_html=True)
+			# Prikaz glavnega interaktivnega poročila
+            st.markdown(final_interactive_report, unsafe_allow_html=True)
+
+            # --- DODATEK: Vizualni okvir za Interdisciplinarno bibliografijo (Knowledge Pedigree) ---
+            st.markdown(f"""
+            <div style="background-color: #f1faee; border-left: 8px solid #457b9d; padding: 25px; border-radius: 12px; margin-top: 30px; margin-bottom: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e1e8e1;">
+                <h3 style="color: #1d3557; margin-top: 0; font-variant: small-caps; letter-spacing: 1px; font-weight: 800;">🌐 Interdisciplinary Knowledge Pedigree</h3>
+                <p style="font-size: 0.9em; color: #1d3557; margin-bottom: 15px; opacity: 0.8;"><i>The following sources provided the theoretical DNA and analogical frameworks for the proposed radical innovations. These are used as cognitive launchpads to break the scientific cage.</i></p>
+                <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.8; color: #1d3557; font-size: 1.05em;">
+                    {biblio_raw.replace('\n', '<br>')}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
             # 5c. INNOVATION DEEP-DIVE: DETAILED BREAKTHROUGH CATALOG
             if final_elements:
