@@ -1231,23 +1231,28 @@ MANDATORY JSON STRUCTURE:
             # --- 4. PROCESIRANJE REZULTATOV (Z GEOMETRIJSKO LOGIKO) ---
             g_data = {"nodes": [], "edges": []}
 
-            # NOVO: Napredno ločevanje poročila, bibliografije in JSON-a
-            if "INTERDISCIPLINARY BIBLIOGRAPHY" in cerebras_innovation:
-                report_parts = cerebras_innovation.split("INTERDISCIPLINARY BIBLIOGRAPHY")
-                innovation_text = report_parts[0]
-                # Izoliramo bibliografijo (del med naslovom in JSON oznako)
-                biblio_raw = report_parts[1].split("### SEMANTIC_GRAPH_JSON")[0]
-            elif "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
+            # 1. NAJPREJ LOČIMO BESEDILO OD JSON-A (da dobimo json_raw)
+            if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
                 parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
-                innovation_text = parts[0]
-                biblio_raw = "Interdisciplinary anchors integrated within the text."
+                text_before_json = parts[0]
+                json_raw = parts[1] # Tukaj definiramo json_raw za graf
             else:
-                innovation_text = cerebras_innovation
+                text_before_json = cerebras_innovation
+                json_raw = ""
+
+            # 2. NATO IZ BESEDILA IZLUŠČIMO BIBLIOGRAFIJO
+            if "INTERDISCIPLINARY BIBLIOGRAPHY" in text_before_json:
+                report_parts = text_before_json.split("INTERDISCIPLINARY BIBLIOGRAPHY")
+                innovation_text = report_parts[0]
+                biblio_raw = report_parts[1]
+            else:
+                innovation_text = text_before_json
                 biblio_raw = "Interdisciplinary anchors integrated within the text."
 
-            # Odstranimo morebitne ostanke backtick-ov (```) iz besedila poročila
+            # Čiščenje nepotrebnih znakov iz poročila
             innovation_text = re.sub(r'```json|```', '', innovation_text)
 
+            # Priprava končnega poročila za prikaz
             full_report = f"## 📚 Phase 1: Structural Foundation (Cerebras {p1_model})\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations (Cerebras {p2_model})\n\n{innovation_text}"
 
             nodes_to_link = []
