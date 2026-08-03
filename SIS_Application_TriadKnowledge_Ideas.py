@@ -381,6 +381,8 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
     """
     components.html(cyto_html, height=900)
 
+import math # Move all imports to the top of your script if possible
+
 def fetch_author_bibliographies(author_input):
     if not author_input: return ""
     author_list = [a.strip() for a in author_input.split(",")]
@@ -397,13 +399,67 @@ def fetch_author_bibliographies(author_input):
                 for work in works[:12]:
                     summary = work.get('work-summary', [{}])[0]
                     title = summary.get('title', {}).get('title', {}).get('value', 'Unknown Title')
-                    # Boljše iskanje letnice
                     pub_date = summary.get('publication-date')
                     year = pub_date.get('year', {}).get('value', 'n.d.') if pub_date else 'n.d.'
                     comprehensive_biblio += f"- **{year}**: {title}\n"
                 comprehensive_biblio += "\n---\n"
-        except: pass
+        except Exception: 
+            pass # Ignore API errors to keep the app running
     return comprehensive_biblio
+
+import math
+
+def calculate_systemic_stress(f_pf, f_sf, f_pr):
+    """
+    Implements Dr. Petrič's Stress Intensity formula (Page 60).
+    σ0SF = arcsin(sqrt((FSF * FPR) / FPF))
+    """
+    try:
+        # Convert to float and ensure f_pf (Positive Factors) isn't zero to avoid crash
+        pf = float(f_pf)
+        sf = float(f_sf)
+        pr = float(f_pr)
+        
+        if pf <= 0: pf = 0.001 
+        
+        # Calculate the ratio
+        ratio = (sf * pr) / pf
+        
+        # MATH SAFETY: sqrt() needs positive, arcsin() needs value between -1 and 1
+        clamped_ratio = max(0.0, min(ratio, 1.0))
+        
+        stress_rad = math.asin(math.sqrt(clamped_ratio))
+        
+        # Returns the result in "Stress Degrees" (°S) as defined in the book
+        return math.degrees(stress_rad)
+    except Exception:
+        return 0.0
+
+def calculate_effective_energy(stress_intensity, initial_potential=2500):
+    """
+    Implements the Energy Loss Index (W_EP) from Page 61 of the book.
+    W_EP = Initial_Energy - (Initial_Energy * (Stress_Intensity / 90))
+    2500 Kcal is the default baseline used in Dr. Petrič's example.
+    """
+    try:
+        # The book defines 90°S as the theoretical maximum stress
+        max_stress = 90.0
+        
+        # Calculate the proportion of energy lost
+        loss_ratio = stress_intensity / max_stress
+        
+        # Ensure ratio stays within logical bounds [0, 1]
+        loss_ratio = max(0.0, min(loss_ratio, 1.0))
+        
+        # Calculate remaining (effective) energy
+        effective_energy = initial_potential - (initial_potential * loss_ratio)
+        
+        # Efficiency percentage
+        efficiency_pct = (effective_energy / initial_potential) * 100
+        
+        return round(effective_energy, 2), round(efficiency_pct, 1)
+    except Exception:
+        return 0.0, 0.0
 
 # =============================================================================
 # 2. ARCHITECTURAL ONTOLOGIES (IMA & MA) - EXHAUSTIVE EXPANSION
@@ -1184,6 +1240,11 @@ C) LOGICAL CONNECTORS (Decision Logic):
 
 ### 4. OUTPUT FORMAT
 MANDATORY JSON STRUCTURE:
+- You MUST include a "system_metrics" object at the top level to quantify systemic tension.
+- Assign decimal values (0.1 to 1.0) based on your structural analysis of the Phase 1 foundation.
+- f_pf: Real Factor of Positive/Protective Factors found in the system.
+- f_sf: Real Factor of Stress/Risk Factors currently acting on the system.
+- f_pr: Real Factor of Proposals/Solutions provided in this synthesis.
 - Every node and edge must be accounted for. In the 'description' field of each 'diamond' (Innovation) node, you MUST explicitly state which 3 Mental Approaches were synthesized to create it.
 - IMPORTANT: Place the JSON block strictly after the header '### SEMANTIC_GRAPH_JSON'. Do not include any text after the JSON block.
 - JSON STRICTNESS: Ensure the JSON is structurally valid. Use backslashes to escape any unavoidable technical symbols. Use ONLY single quotes (') for text inside the JSON descriptions.
@@ -1192,6 +1253,11 @@ MANDATORY JSON STRUCTURE:
 
 ### SEMANTIC_GRAPH_JSON
 {{
+  "system_metrics": {{
+      "f_pf": 0.85,
+      "f_sf": 0.42,
+      "f_pr": 0.31
+  }},
   "nodes": [
     {{
       "id": "n1", 
