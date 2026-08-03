@@ -1449,8 +1449,7 @@ MANDATORY JSON STRUCTURE:
 
                         # Linkamo le PRVO pojavitev besede za čistočo
                         final_interactive_report = pattern.sub(link_html, final_interactive_report, count=1)
-
-            # 5b. RENDERING THE INTERACTIVE REPORT
+# 5b. RENDERING THE INTERACTIVE REPORT
             st.subheader("🧱 INTEGRATED HIERARCHOLOGICAL REPORT")
             if biblio_data:
                 with st.expander("📚 EXTRACTED AUTHOR BACKGROUND", expanded=False):
@@ -1459,6 +1458,78 @@ MANDATORY JSON STRUCTURE:
             # Display the full linked report (P1 + P2)
             # Display the full linked report (P1 + P2) - Sedaj brez surovega JSON kosa
             st.markdown(final_interactive_report, unsafe_allow_html=True)
+
+            # =================================================================
+            # NEW: SYSTEMIC DIAGNOSTICS DASHBOARD (Visual Result)
+            # =================================================================
+            st.divider()
+            st.subheader("📊 Systemic Diagnostic Report (Dr. Petrič Model)")
+            
+            # 1. Extract values from the AI's JSON
+            metrics = g_data.get("system_metrics", {})
+            f_pf = metrics.get("f_pf", 0.70) # AI logic weight for Positive Factors
+            f_sf = metrics.get("f_sf", 0.40) # AI logic weight for Stress Factors
+            f_pr = metrics.get("f_pr", 0.30) # AI logic weight for Proposals
+
+            # 2. Run the math functions you added earlier
+            stress_score = calculate_systemic_stress(f_pf, f_sf, f_pr)
+            energy_val, energy_pct = calculate_effective_energy(stress_score)
+
+            # 3. Create 3 visual columns for the results
+            m1, m2, m3 = st.columns(3)
+            
+            with m1:
+                # Based on the book's finding of 32.76 °S as "Moderate"
+                st.metric(
+                    label="Systemic Stress Intensity", 
+                    value=f"{stress_score:.2f} °S",
+                    delta="CRITICAL" if stress_score > 45 else "STABLE",
+                    delta_color="inverse"
+                )
+                st.caption("Algorithm: σ0SF = arcsin√((FSF·FPR)/FPF)")
+
+            with m2:
+                # Energy Efficiency from Page 61
+                st.metric(
+                    label="Bio-Energetic Efficiency", 
+                    value=f"{energy_pct}%",
+                    delta=f"{energy_val} Kcal"
+                )
+                st.caption("Effective potential remaining (GUT-BER)")
+
+            with m3:
+                # Qualitative status box
+                if stress_score > 45:
+                    status, color, note = "CRITICAL", "#b91d1d", "System collapse risk"
+                elif stress_score > 32:
+                    status, color, note = "STRESSED", "#fd7e14", "Moderate tension"
+                else:
+                    status, color, note = "OPTIMAL", "#2e7d32", "High stability"
+                
+                st.markdown(f"""
+                    <div style="background-color:{color}; color:white; padding:15px; border-radius:12px; text-align:center;">
+                        <div style="font-size:0.8em; opacity:0.9;">SYSTEMIC STATE</div>
+                        <div style="font-size:1.4em; font-weight:800;">{status}</div>
+                        <div style="font-size:0.7em;">{note}</div>
+                    </div>
+                """, unsafe_allow_html=True)
+            
+            # --- DODATEK: Cosmic Breadth Analysis (Page 202) ---
+            st.write("")
+            levels_found = []
+            report_text_lower = final_interactive_report.lower()
+            if any(w in report_text_lower for w in ["gene", "neuron", "micro", "cell", "atom"]): levels_found.append("MICRO")
+            if any(w in report_text_lower for w in ["society", "urban", "family", "group", "meso"]): levels_found.append("MESO")
+            if any(w in report_text_lower for w in ["planet", "cosmic", "macro", "universe", "energy"]): levels_found.append("MACRO")
+            
+            breadth_cols = st.columns(len(levels_found) if levels_found else 1)
+            for i, lvl in enumerate(levels_found):
+                breadth_cols[i].info(f"🌌 **{lvl}** level activated")
+            
+            if len(levels_found) < 3:
+                st.warning("⚠️ **Scientific Cage Alert:** Synthesis is missing one or more Cosmic Planes (Micro/Meso/Macro).")
+
+            st.divider()
 
             # 5c. INNOVATION DEEP-DIVE: DETAILED BREAKTHROUGH CATALOG
             if final_elements:
