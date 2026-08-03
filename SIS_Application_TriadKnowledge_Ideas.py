@@ -381,8 +381,6 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
     """
     components.html(cyto_html, height=900)
 
-import math # Move all imports to the top of your script if possible
-
 def fetch_author_bibliographies(author_input):
     if not author_input: return ""
     author_list = [a.strip() for a in author_input.split(",")]
@@ -399,67 +397,13 @@ def fetch_author_bibliographies(author_input):
                 for work in works[:12]:
                     summary = work.get('work-summary', [{}])[0]
                     title = summary.get('title', {}).get('title', {}).get('value', 'Unknown Title')
+                    # Boljše iskanje letnice
                     pub_date = summary.get('publication-date')
                     year = pub_date.get('year', {}).get('value', 'n.d.') if pub_date else 'n.d.'
                     comprehensive_biblio += f"- **{year}**: {title}\n"
                 comprehensive_biblio += "\n---\n"
-        except Exception: 
-            pass # Ignore API errors to keep the app running
+        except: pass
     return comprehensive_biblio
-
-import math
-
-def calculate_systemic_stress(f_pf, f_sf, f_pr):
-    """
-    Implements Dr. Petrič's Stress Intensity formula (Page 60).
-    σ0SF = arcsin(sqrt((FSF * FPR) / FPF))
-    """
-    try:
-        # Convert to float and ensure f_pf (Positive Factors) isn't zero to avoid crash
-        pf = float(f_pf)
-        sf = float(f_sf)
-        pr = float(f_pr)
-        
-        if pf <= 0: pf = 0.001 
-        
-        # Calculate the ratio
-        ratio = (sf * pr) / pf
-        
-        # MATH SAFETY: sqrt() needs positive, arcsin() needs value between -1 and 1
-        clamped_ratio = max(0.0, min(ratio, 1.0))
-        
-        stress_rad = math.asin(math.sqrt(clamped_ratio))
-        
-        # Returns the result in "Stress Degrees" (°S) as defined in the book
-        return math.degrees(stress_rad)
-    except Exception:
-        return 0.0
-
-def calculate_effective_energy(stress_intensity, initial_potential=2500):
-    """
-    Implements the Energy Loss Index (W_EP) from Page 61 of the book.
-    W_EP = Initial_Energy - (Initial_Energy * (Stress_Intensity / 90))
-    2500 Kcal is the default baseline used in Dr. Petrič's example.
-    """
-    try:
-        # The book defines 90°S as the theoretical maximum stress
-        max_stress = 90.0
-        
-        # Calculate the proportion of energy lost
-        loss_ratio = stress_intensity / max_stress
-        
-        # Ensure ratio stays within logical bounds [0, 1]
-        loss_ratio = max(0.0, min(loss_ratio, 1.0))
-        
-        # Calculate remaining (effective) energy
-        effective_energy = initial_potential - (initial_potential * loss_ratio)
-        
-        # Efficiency percentage
-        efficiency_pct = (effective_energy / initial_potential) * 100
-        
-        return round(effective_energy, 2), round(efficiency_pct, 1)
-    except Exception:
-        return 0.0, 0.0
 
 # =============================================================================
 # 2. ARCHITECTURAL ONTOLOGIES (IMA & MA) - EXHAUSTIVE EXPANSION
@@ -1240,11 +1184,6 @@ C) LOGICAL CONNECTORS (Decision Logic):
 
 ### 4. OUTPUT FORMAT
 MANDATORY JSON STRUCTURE:
-- You MUST include a "system_metrics" object at the top level to quantify systemic tension.
-- Assign decimal values (0.1 to 1.0) based on your structural analysis of the Phase 1 foundation.
-- f_pf: Real Factor of Positive/Protective Factors found in the system.
-- f_sf: Real Factor of Stress/Risk Factors currently acting on the system.
-- f_pr: Real Factor of Proposals/Solutions provided in this synthesis.
 - Every node and edge must be accounted for. In the 'description' field of each 'diamond' (Innovation) node, you MUST explicitly state which 3 Mental Approaches were synthesized to create it.
 - IMPORTANT: Place the JSON block strictly after the header '### SEMANTIC_GRAPH_JSON'. Do not include any text after the JSON block.
 - JSON STRICTNESS: Ensure the JSON is structurally valid. Use backslashes to escape any unavoidable technical symbols. Use ONLY single quotes (') for text inside the JSON descriptions.
@@ -1253,11 +1192,6 @@ MANDATORY JSON STRUCTURE:
 
 ### SEMANTIC_GRAPH_JSON
 {{
-  "system_metrics": {{
-      "f_pf": 0.85,
-      "f_sf": 0.42,
-      "f_pr": 0.31
-  }},
   "nodes": [
     {{
       "id": "n1", 
@@ -1313,13 +1247,9 @@ MANDATORY JSON STRUCTURE:
                 try:
                     raw_json_str = json_match.group(1)
                     
-                    # --- DODATEK: Odstranjevanje nelegalnih vejic pred zaklepaji (Trailing Commas) ---
-                    raw_json_str = re.sub(r',(\s*[\]\}])', r'\1', raw_json_str)
-                    
                     # 1. Agresivno čiščenje: odstranimo vse, kar ni osnovni nabor znakov za JSON
                     # Odstranimo vse skrite kontrolne znake (npr. nove vrstice sredi nizov)
                     clean_json = raw_json_str.replace('\n', ' ').replace('\r', ' ')
-                    clean_json = re.sub(r'[\x00-\x1F\x7F]', '', clean_json) # Odstrani kontrolne znake
                     
                     # 2. Rešitev za "char 40" napako: AI včasih pozabi ubežiti narekovaje v opisih
                     # Ta funkcija najde vse narekovaje znotraj vrednosti in jih spremeni v enojne
@@ -1338,19 +1268,24 @@ MANDATORY JSON STRUCTURE:
                     # ki niso nujni za strukturo JSON-a.
                     try:
                         # Ta trik "razbije" vse dvojne narekovaje in jih popravi le tam, kjer so ključi
-                        # Najprej poskusimo očistiti vejice še enkrat na surovo
-                        raw_json_str = re.sub(r',(\s*[\]\}])', r'\1', raw_json_str)
                         raw_json_str = re.sub(r'(?<![:{,])"(?![:,}])', "'", raw_json_str)
                         g_data = json.loads(raw_json_str)
                     except:
-                        # Če tudi to ne uspe, poskusimo s sanitizacijo ASCII znakov
-                        try:
-                            sanitized = "".join(i for i in raw_json_str if ord(i) < 128)
-                            sanitized = re.sub(r',(\s*[\]\}])', r'\1', sanitized)
-                            g_data = json.loads(sanitized)
-                        except:
-                            st.warning("⚠️ High-Density Graph Overload: Simplified mapping applied.")
-                            g_data = {"nodes": [], "edges": []}
+                        st.warning("⚠️ High-Density Graph Overload: Simplified mapping applied.")
+                        g_data = {"nodes": [], "edges": []}
+                    
+                    # 4. PARSIRANJE
+                    g_data = json.loads(clean_json)
+                    
+                except json.JSONDecodeError as e:
+                    st.warning(f"⚠️ JSON Parsing Retry: Attempting to fix char {e.pos}")
+                    try:
+                        # Zadnji poskus: Odstranimo vse sumljive znake (non-ASCII)
+                        sanitized = "".join(i for i in raw_json_str if ord(i) < 128)
+                        g_data = json.loads(sanitized)
+                    except:
+                        st.error("❌ Critical Graph Error: AI generated invalid JSON structure.")
+                        g_data = {"nodes": [], "edges": []}
 
             # --- PROCESIRANJE VOZLIŠČ Z DINAMIČNO VELIKOSTJO ---
             if g_data.get("nodes"):
@@ -1448,7 +1383,8 @@ MANDATORY JSON STRUCTURE:
 
                         # Linkamo le PRVO pojavitev besede za čistočo
                         final_interactive_report = pattern.sub(link_html, final_interactive_report, count=1)
-# 5b. RENDERING THE INTERACTIVE REPORT
+
+            # 5b. RENDERING THE INTERACTIVE REPORT
             st.subheader("🧱 INTEGRATED HIERARCHOLOGICAL REPORT")
             if biblio_data:
                 with st.expander("📚 EXTRACTED AUTHOR BACKGROUND", expanded=False):
@@ -1457,78 +1393,6 @@ MANDATORY JSON STRUCTURE:
             # Display the full linked report (P1 + P2)
             # Display the full linked report (P1 + P2) - Sedaj brez surovega JSON kosa
             st.markdown(final_interactive_report, unsafe_allow_html=True)
-
-            # =================================================================
-            # NEW: SYSTEMIC DIAGNOSTICS DASHBOARD (Visual Result)
-            # =================================================================
-            st.divider()
-            st.subheader("📊 Systemic Diagnostic Report (Dr. Petrič Model)")
-            
-            # 1. Extract values from the AI's JSON
-            metrics = g_data.get("system_metrics", {})
-            f_pf = metrics.get("f_pf", 0.70) # AI logic weight for Positive Factors
-            f_sf = metrics.get("f_sf", 0.40) # AI logic weight for Stress Factors
-            f_pr = metrics.get("f_pr", 0.30) # AI logic weight for Proposals
-
-            # 2. Run the math functions you added earlier
-            stress_score = calculate_systemic_stress(f_pf, f_sf, f_pr)
-            energy_val, energy_pct = calculate_effective_energy(stress_score)
-
-            # 3. Create 3 visual columns for the results
-            m1, m2, m3 = st.columns(3)
-            
-            with m1:
-                # Based on the book's finding of 32.76 °S as "Moderate"
-                st.metric(
-                    label="Systemic Stress Intensity", 
-                    value=f"{stress_score:.2f} °S",
-                    delta="CRITICAL" if stress_score > 45 else "STABLE",
-                    delta_color="inverse"
-                )
-                st.caption("Algorithm: σ0SF = arcsin√((FSF·FPR)/FPF)")
-
-            with m2:
-                # Energy Efficiency from Page 61
-                st.metric(
-                    label="Bio-Energetic Efficiency", 
-                    value=f"{energy_pct}%",
-                    delta=f"{energy_val} Kcal"
-                )
-                st.caption("Effective potential remaining (GUT-BER)")
-
-            with m3:
-                # Qualitative status box
-                if stress_score > 45:
-                    status, color, note = "CRITICAL", "#b91d1d", "System collapse risk"
-                elif stress_score > 32:
-                    status, color, note = "STRESSED", "#fd7e14", "Moderate tension"
-                else:
-                    status, color, note = "OPTIMAL", "#2e7d32", "High stability"
-                
-                st.markdown(f"""
-                    <div style="background-color:{color}; color:white; padding:15px; border-radius:12px; text-align:center;">
-                        <div style="font-size:0.8em; opacity:0.9;">SYSTEMIC STATE</div>
-                        <div style="font-size:1.4em; font-weight:800;">{status}</div>
-                        <div style="font-size:0.7em;">{note}</div>
-                    </div>
-                """, unsafe_allow_html=True)
-            
-            # --- DODATEK: Cosmic Breadth Analysis (Page 202) ---
-            st.write("")
-            levels_found = []
-            report_text_lower = final_interactive_report.lower()
-            if any(w in report_text_lower for w in ["gene", "neuron", "micro", "cell", "atom"]): levels_found.append("MICRO")
-            if any(w in report_text_lower for w in ["society", "urban", "family", "group", "meso"]): levels_found.append("MESO")
-            if any(w in report_text_lower for w in ["planet", "cosmic", "macro", "universe", "energy"]): levels_found.append("MACRO")
-            
-            breadth_cols = st.columns(len(levels_found) if levels_found else 1)
-            for i, lvl in enumerate(levels_found):
-                breadth_cols[i].info(f"🌌 **{lvl}** level activated")
-            
-            if len(levels_found) < 3:
-                st.warning("⚠️ **Scientific Cage Alert:** Synthesis is missing one or more Cosmic Planes (Micro/Meso/Macro).")
-
-            st.divider()
 
             # 5c. INNOVATION DEEP-DIVE: DETAILED BREAKTHROUGH CATALOG
             if final_elements:
