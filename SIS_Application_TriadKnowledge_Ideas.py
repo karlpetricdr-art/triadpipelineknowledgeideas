@@ -1313,9 +1313,13 @@ MANDATORY JSON STRUCTURE:
                 try:
                     raw_json_str = json_match.group(1)
                     
+                    # --- DODATEK: Odstranjevanje nelegalnih vejic pred zaklepaji (Trailing Commas) ---
+                    raw_json_str = re.sub(r',(\s*[\]\}])', r'\1', raw_json_str)
+                    
                     # 1. Agresivno čiščenje: odstranimo vse, kar ni osnovni nabor znakov za JSON
                     # Odstranimo vse skrite kontrolne znake (npr. nove vrstice sredi nizov)
                     clean_json = raw_json_str.replace('\n', ' ').replace('\r', ' ')
+                    clean_json = re.sub(r'[\x00-\x1F\x7F]', '', clean_json) # Odstrani kontrolne znake
                     
                     # 2. Rešitev za "char 40" napako: AI včasih pozabi ubežiti narekovaje v opisih
                     # Ta funkcija najde vse narekovaje znotraj vrednosti in jih spremeni v enojne
@@ -1334,24 +1338,19 @@ MANDATORY JSON STRUCTURE:
                     # ki niso nujni za strukturo JSON-a.
                     try:
                         # Ta trik "razbije" vse dvojne narekovaje in jih popravi le tam, kjer so ključi
+                        # Najprej poskusimo očistiti vejice še enkrat na surovo
+                        raw_json_str = re.sub(r',(\s*[\]\}])', r'\1', raw_json_str)
                         raw_json_str = re.sub(r'(?<![:{,])"(?![:,}])', "'", raw_json_str)
                         g_data = json.loads(raw_json_str)
                     except:
-                        st.warning("⚠️ High-Density Graph Overload: Simplified mapping applied.")
-                        g_data = {"nodes": [], "edges": []}
-                    
-                    # 4. PARSIRANJE
-                    g_data = json.loads(clean_json)
-                    
-                except json.JSONDecodeError as e:
-                    st.warning(f"⚠️ JSON Parsing Retry: Attempting to fix char {e.pos}")
-                    try:
-                        # Zadnji poskus: Odstranimo vse sumljive znake (non-ASCII)
-                        sanitized = "".join(i for i in raw_json_str if ord(i) < 128)
-                        g_data = json.loads(sanitized)
-                    except:
-                        st.error("❌ Critical Graph Error: AI generated invalid JSON structure.")
-                        g_data = {"nodes": [], "edges": []}
+                        # Če tudi to ne uspe, poskusimo s sanitizacijo ASCII znakov
+                        try:
+                            sanitized = "".join(i for i in raw_json_str if ord(i) < 128)
+                            sanitized = re.sub(r',(\s*[\]\}])', r'\1', sanitized)
+                            g_data = json.loads(sanitized)
+                        except:
+                            st.warning("⚠️ High-Density Graph Overload: Simplified mapping applied.")
+                            g_data = {"nodes": [], "edges": []}
 
             # --- PROCESIRANJE VOZLIŠČ Z DINAMIČNO VELIKOSTJO ---
             if g_data.get("nodes"):
