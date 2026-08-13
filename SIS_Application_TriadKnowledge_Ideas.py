@@ -1,3 +1,6 @@
+
+
+
 import streamlit as st
 import json
 import base64
@@ -1541,5 +1544,4 @@ if st.session_state.get('report_ready') and 'final_graph_elements' in st.session
 # 7. FOOTER
 # =============================================================================
 st.divider()
-st.caption(f"SIS Universal Knowledge Syn
-
+st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | {SYSTEM_DATE}")
