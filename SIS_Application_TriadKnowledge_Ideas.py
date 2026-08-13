@@ -1042,7 +1042,7 @@ def huggingface_generate(
         "messages": messages,
         "temperature": temperature,
         "stream": False,
-        "max_tokens": 12000,
+        "max_tokens": 8192,  # ✅ POPRAVIL: 12000 → 8192
     }
 
     if top_p is not None:
@@ -3386,7 +3386,6 @@ with r1c3:
         key="expertise_v230",
     )
 
-
 r2c1, r2c2, r2c3 = st.columns(3)
 
 with r2c1:
@@ -3656,7 +3655,6 @@ SELECTED TRANSFORMATION FRAMEWORKS:
 ARCHITECTURAL REQUIREMENT:
 Construct a rich knowledge system, not a stress model.
 """
-
 
         # ---------------------------------------------------------------------
         # GEMINI CLIENT
@@ -3969,7 +3967,7 @@ ADDITIONAL SOURCE
             ]
         )
 
-        with tabs[0]:
+        with tabs:[0]
 
             st.markdown(
                 "### Polyhierarchical Structure"
@@ -4034,11 +4032,20 @@ Relations: {", ".join(hierarchy['relations'])}
                     f"**{target}**"
                 )
 
-
-        with tabs[1]:
+        with tabs:[1]
 
             st.markdown(
-                "### UML / Metamodel Relations"
+                "### UML Class Structure"
+            )
+
+            for cls, attrs in UML_METAMODEL["classes"].items():
+
+                st.markdown(
+                    f"**{cls}** → {', '.join(attrs)}"
+                )
+
+            st.markdown(
+                "### Detected UML relations"
             )
 
             uml_edges = [
@@ -4057,41 +4064,33 @@ Relations: {", ".join(hierarchy['relations'])}
                 }
             ]
 
-            if uml_edges:
+            for edge in uml_edges[:100]:
 
-                for edge in uml_edges[:100]:
-
-                    source = next(
-                        (
-                            n["label"]
-                            for n in graph_data["nodes"]
-                            if n["id"] == edge["source"]
-                        ),
-                        edge["source"],
-                    )
-
-                    target = next(
-                        (
-                            n["label"]
-                            for n in graph_data["nodes"]
-                            if n["id"] == edge["target"]
-                        ),
-                        edge["target"],
-                    )
-
-                    st.markdown(
-                        f"**{source}** "
-                        f"`{edge['rel_type']}` "
-                        f"**{target}**"
-                    )
-
-            else:
-                st.info(
-                    "No explicit UML relation was generated."
+                source = next(
+                    (
+                        n["label"]
+                        for n in graph_data["nodes"]
+                        if n["id"] == edge["source"]
+                    ),
+                    edge["source"],
                 )
 
+                target = next(
+                    (
+                        n["label"]
+                        for n in graph_data["nodes"]
+                        if n["id"] == edge["target"]
+                    ),
+                    edge["target"],
+                )
 
-        with tabs[2]:
+                st.markdown(
+                    f"**{source}** → "
+                    f"`{edge['rel_type']}` → "
+                    f"**{target}**"
+                )
+
+        with tabs:[2]
 
             st.markdown(
                 "### Operational Transformations"
@@ -4113,63 +4112,42 @@ Relations: {", ".join(hierarchy['relations'])}
                     "CONSTRAINS",
                     "MEASURES",
                     "VALIDATES",
-                    "IF-THEN",
-                    "AND",
-                    "OR",
-                    "XOR",
-                    "NOT",
                 }
             ]
 
-            if operational_edges:
+            for edge in operational_edges[:100]:
 
-                for edge in operational_edges[:120]:
-
-                    source = next(
-                        (
-                            n["label"]
-                            for n in graph_data["nodes"]
-                            if n["id"] == edge["source"]
-                        ),
-                        edge["source"],
-                    )
-
-                    target = next(
-                        (
-                            n["label"]
-                            for n in graph_data["nodes"]
-                            if n["id"] == edge["target"]
-                        ),
-                        edge["target"],
-                    )
-
-                    st.markdown(
-                        f"**{source}** "
-                        f"`{edge['rel_type']}` "
-                        f"**{target}**"
-                    )
-
-            else:
-                st.info(
-                    "No explicit operational relations were generated."
+                source = next(
+                    (
+                        n["label"]
+                        for n in graph_data["nodes"]
+                        if n["id"] == edge["source"]
+                    ),
+                    edge["source"],
                 )
 
+                target = next(
+                    (
+                        n["label"]
+                        for n in graph_data["nodes"]
+                        if n["id"] == edge["target"]
+                    ),
+                    edge["target"],
+                )
 
-        with tabs[3]:
+                st.markdown(
+                    f"**{source}** → "
+                    f"`{edge['rel_type']}` → "
+                    f"**{target}**"
+                )
+
+        with tabs:[3]
 
             st.markdown(
-                "### System States and Feedback"
-
+                "### Feedback Loops"
             )
 
-            states = [
-                n
-                for n in graph_data["nodes"]
-                if n["layer"] == "state"
-                or n["shape"] == "round-rectangle"
-            ]
-
-            feedback = [
+            feedback_edges = [
                 e
                 for e in graph_data["edges"]
                 if e["rel_type"]
@@ -4180,34 +4158,15 @@ Relations: {", ".join(hierarchy['relations'])}
                 }
             ]
 
-            if states:
+            if not feedback_edges:
 
-                for state in states:
-
-                    st.markdown(
-                        f"""
-**{state['label']}**
-
-Level: `{state['level']}`
-
-State: `{state['state'] or 'unspecified'}`
-
-{state['description']}
-"""
-                    )
+                st.info(
+                    "No explicit feedback loops detected in current graph."
+                )
 
             else:
-                st.info(
-                    "No explicit system-state nodes were generated."
-                )
 
-            if feedback:
-
-                st.markdown(
-                    "### Feedback loops"
-                )
-
-                for edge in feedback:
+                for edge in feedback_edges:
 
                     source = next(
                         (
@@ -4228,301 +4187,96 @@ State: `{state['state'] or 'unspecified'}`
                     )
 
                     st.markdown(
-                        f"**{source}** "
-                        f"`{edge['rel_type']}` "
+                        f"**{source}** → "
+                        f"`{edge['rel_type']}` → "
                         f"**{target}**"
                     )
 
-            else:
-
-                st.info(
-                    "No explicit feedback loop was generated."
-                )
-
-
-        with tabs[4]:
-
             st.markdown(
-                "### Strategic Knowledge Transformations"
+                "### System States"
             )
 
-            innovations = [
+            state_nodes = [
+                n
+                for n in graph_data["nodes"]
+                if n["shape"] == "round-rectangle"
+                or n["layer"] == "state"
+            ]
+
+            if not state_nodes:
+
+                st.info(
+                    "No explicit system state nodes detected."
+                )
+
+            else:
+
+                for node in state_nodes:
+
+                    st.markdown(
+                        f"**{node['label']}** — "
+                        f"{node.get('description', '')}"
+                    )
+
+        with tabs:[4]
+
+            st.markdown(
+                "### Innovation Nodes"
+            )
+
+            innovation_nodes = [
                 n
                 for n in graph_data["nodes"]
                 if n["shape"] == "diamond"
+                or n["layer"] == "innovation"
             ]
 
-            if innovations:
+            if not innovation_nodes:
 
-                for innovation in innovations:
-
-                    query_url = urllib.parse.quote(
-                        innovation["label"]
-                    )
-
-                    st.markdown(
-                        f"""
-<div style="
-background:#ffffff;
-border-left:7px solid #f4a261;
-padding:24px;
-border-radius:15px;
-border:1px solid #eeeeee;
-margin-bottom:20px;
-box-shadow:0 5px 15px rgba(0,0,0,.06);
-">
-
-<div style="
-font-size:.75em;
-font-weight:800;
-color:#d97706;
-text-transform:uppercase;
-letter-spacing:1px;
-">
-HIERARCHOGRAPHIC INNOVATION
-</div>
-
-<h2 style="
-color:#1d3557;
-margin-bottom:12px;
-">
-{html.escape(innovation['label'])}
-</h2>
-
-<p>
-{html.escape(innovation['description'])}
-</p>
-
-<p>
-<b>Level:</b> {html.escape(innovation['level'])}
-&nbsp;&nbsp;
-<b>Layer:</b> {html.escape(innovation['layer'])}
-</p>
-
-<a href="https://www.google.com/search?q={query_url}"
-target="_blank">
-Technical semantic search ↗
-</a>
-
-</div>
-""",
-                        unsafe_allow_html=True,
-                    )
+                st.info(
+                    "No innovation nodes detected in current graph."
+                )
 
             else:
 
-                st.info(
-                    "No diamond innovation nodes were generated."
-                )
+                for node in innovation_nodes:
+
+                    st.markdown(
+                        f"**{node['label']}**\n\n"
+                        f"{node.get('description', '')}"
+                    )
 
 
         # =====================================================================
-        # LEGEND
-        # =====================================================================
-
-        st.markdown(
-            """
-<div class="graph-legend">
-
-<b style="color:#1d3557;">
-HIERARCHOGRAPHIC VISUAL LANGUAGE
-</b>
-
-<br><br>
-
-<b>Geometry</b><br>
-⭐ Goal / Vision &nbsp;|
-⬢ Domain &nbsp;|
-💠 Innovation &nbsp;|
-△ Process &nbsp;|
-⬣ Rule &nbsp;|
-⬭ Entity &nbsp;|
-▭ Fact / Concept &nbsp;|
-▢ State
-
-<br><br>
-
-<b>Hierarchy</b><br>
-TT = Top Term |
-BT = Broader Term |
-NT = Narrower Term |
-IN = Instance
-
-<br><br>
-
-<b>Association</b><br>
-RT = Related |
-EQ = Equivalence |
-AS = Associative
-
-<br><br>
-
-<b>UML</b><br>
-Generalization |
-Specialization |
-Composition |
-Aggregation |
-Containment |
-Realization |
-Dependency |
-Conflict
-
-<br><br>
-
-<b>Operation</b><br>
-CAUSES |
-ENABLES |
-TRANSFORMS |
-PRODUCES |
-CONSUMES |
-FEEDS |
-TRIGGERS |
-PRECEDES
-
-<br><br>
-
-<b>Logic</b><br>
-AND |
-OR |
-XOR |
-NOT |
-IF-THEN
-
-<br><br>
-
-<b>System Dynamics</b><br>
-FEEDBACK |
-POSITIVE-FEEDBACK |
-NEGATIVE-FEEDBACK
-
-</div>
-""",
-            unsafe_allow_html=True,
-        )
-
-
-        # =====================================================================
-        # PRIMARY HIERARCHOGRAPH
+        # HIERARCHOGRAPHIC VISUALIZATION
         # =====================================================================
 
         st.divider()
 
         st.subheader(
-            "🕸️ PRIMARY HIERARCHOGRAPH"
-        )
-
-        st.caption(
-            "The graph simultaneously represents semantic hierarchy, "
-            "polyhierarchy, associative relations, UML structure, "
-            "operational transformations, system states and feedback."
+            "🌐 HIERARCHOGRAPHIC KNOWLEDGE GRAPH"
         )
 
         render_cytoscape_network(
             graph_data,
             layout_type=graph_perspective,
-            container_id=f"primary_{int(time.time() * 1000)}",
+        )
+
+        st.caption(
+            "Tap nodes for detailed metadata. "
+            "Use toolbar for layout adjustments and export."
         )
 
 
     except Exception as exc:
 
         st.error(
-            f"❌ Pipeline Failure: {type(exc).__name__}: {exc}"
+            f"❌ Pipeline Failure: {exc}"
         )
 
-        st.exception(exc)
+        import traceback
 
-
-# =============================================================================
-# MULTI-PERSPECTIVE GALLERY
-# =============================================================================
-
-if (
-    st.session_state.get("report_ready")
-    and st.session_state.get("final_graph_elements")
-):
-
-    st.divider()
-
-    st.markdown(
-        '<h2 style="color:#1d3557;text-align:center;">'
-        "🖼️ MULTI-PERSPECTIVE HIERARCHOGRAPH GALLERY"
-        "</h2>",
-        unsafe_allow_html=True,
-    )
-
-    st.info(
-        "The same knowledge architecture is displayed through different "
-        "visual grammars. The data model remains identical."
-    )
-
-    gallery_tabs = st.tabs(
-        [
-            "🌳 HIERARCHOGRAPH",
-            "🌲 HIERARCHICAL",
-            "⚙️ OPERATIONAL",
-            "🌐 ORGANIC",
-            "🎯 CONCENTRIC",
-            "⭕ CIRCULAR",
-            "🔲 GRID",
-        ]
-    )
-
-    gallery_views = [
-        ("hierarchographic", "Polyhierarchical semantic architecture."),
-        ("hierarchical", "Vertical taxonomic and structural hierarchy."),
-        ("operational", "Processes, transformations and system states."),
-        ("organic", "Emergent associative clusters."),
-        ("concentric", "Macro-Meso-Micro systemic layers."),
-        ("circular", "Lateral relation density and interdependence."),
-        ("grid", "Structured inspection of the same ontology."),
-    ]
-
-    for tab, (view, description) in zip(
-        gallery_tabs,
-        gallery_views,
-    ):
-
-        with tab:
-
-            st.markdown(
-                f"**{view.upper()} VIEW:** {description}"
-            )
-
-            render_cytoscape_network(
-                st.session_state.final_graph_elements,
-                layout_type=view,
-                container_id=f"gallery_{view}",
-            )
-
-
-# =============================================================================
-# RAW ARCHITECTURE INSPECTION
-# =============================================================================
-
-if st.session_state.get("report_ready"):
-
-    with st.expander(
-        "🔎 RAW HIERARCHOGRAPH DATA",
-        expanded=False,
-    ):
-
-        st.json(
-            st.session_state.last_graph_data
+        st.code(
+            traceback.format_exc(),
+            language="python",
         )
-
-
-# =============================================================================
-# FOOTER
-# =============================================================================
-
-st.divider()
-
-st.caption(
-    f"SIS Universal Knowledge Synthesizer | "
-    f"{VERSION_CODE} | "
-    f"{SYSTEM_DATE} | "
-    "Multidimensional Thesaurus · Polyhierarchical Ontology · "
-    "UML · Hierarchical-Associative Logic · Operational Logic · "
-    "Hierarchography"
-)
