@@ -243,7 +243,6 @@ stroke="#000" stroke-width="4" filter="url(#shadow)"/>
 # =============================================================================
 
 RELATION_DEFINITIONS = {
-    # Thesaurus
     "TT": "Top Term — root concept of a domain.",
     "BT": "Broader Term — hierarchical superordinate concept.",
     "NT": "Narrower Term — hierarchical subordinate concept.",
@@ -251,8 +250,6 @@ RELATION_DEFINITIONS = {
     "EQ": "Equivalence — synonymous or conceptually equivalent term.",
     "AS": "Associative — functional or contextual association.",
     "IN": "Instance — category-to-instance relation.",
-
-    # UML
     "Generalization": "Generalization / inheritance.",
     "Specialization": "Specialization / deductive narrowing.",
     "Composition": "Strong whole-part relation.",
@@ -261,15 +258,11 @@ RELATION_DEFINITIONS = {
     "Realization": "Implementation of an abstract specification.",
     "Dependency": "Operational dependency.",
     "Conflict": "Systemic incompatibility or tension.",
-
-    # Logic
     "AND": "Conjunctive synthesis.",
     "OR": "Alternative path.",
     "XOR": "Exclusive alternative.",
     "NOT": "Negation or prohibition.",
     "IF-THEN": "Conditional transformation.",
-
-    # Operational
     "CAUSES": "Causal transformation.",
     "ENABLES": "Enabling relation.",
     "TRANSFORMS": "Transformation from one system state to another.",
@@ -330,62 +323,16 @@ RELATION_COLORS = {
 # =============================================================================
 
 NODE_GEOMETRY = {
-    "star": {
-        "size": 135,
-        "color": "#ffd166",
-        "layer": "goal",
-        "description": "Goal / macro-vision",
-    },
-    "hexagon": {
-        "size": 115,
-        "color": "#118ab2",
-        "layer": "domain",
-        "description": "Science field / domain",
-    },
-    "diamond": {
-        "size": 120,
-        "color": "#f4a261",
-        "layer": "innovation",
-        "description": "Innovation / transformation",
-    },
-    "triangle": {
-        "size": 105,
-        "color": "#2a9d8f",
-        "layer": "process",
-        "description": "Process / method / operation",
-    },
-    "octagon": {
-        "size": 110,
-        "color": "#e9c46a",
-        "layer": "constraint",
-        "description": "Rule / ethical boundary / constraint",
-    },
-    "ellipse": {
-        "size": 100,
-        "color": "#90be6d",
-        "layer": "entity",
-        "description": "Human / identity / biological entity",
-    },
-    "rectangle": {
-        "size": 90,
-        "color": "#dbe7f3",
-        "layer": "fact",
-        "description": "Fact / concept / micro-component",
-    },
-    "round-rectangle": {
-        "size": 95,
-        "color": "#cdb4db",
-        "layer": "state",
-        "description": "System state",
-    },
-    "barrel": {
-        "size": 100,
-        "color": "#adb5bd",
-        "layer": "data",
-        "description": "Data / evidence",
-    },
+    "star": {"size": 135, "color": "#ffd166", "layer": "goal", "description": "Goal / macro-vision"},
+    "hexagon": {"size": 115, "color": "#118ab2", "layer": "domain", "description": "Science field / domain"},
+    "diamond": {"size": 120, "color": "#f4a261", "layer": "innovation", "description": "Innovation / transformation"},
+    "triangle": {"size": 105, "color": "#2a9d8f", "layer": "process", "description": "Process / method / operation"},
+    "octagon": {"size": 110, "color": "#e9c46a", "layer": "constraint", "description": "Rule / ethical boundary / constraint"},
+    "ellipse": {"size": 100, "color": "#90be6d", "layer": "entity", "description": "Human / identity / biological entity"},
+    "rectangle": {"size": 90, "color": "#dbe7f3", "layer": "fact", "description": "Fact / concept / micro-component"},
+    "round-rectangle": {"size": 95, "color": "#cdb4db", "layer": "state", "description": "System state"},
+    "barrel": {"size": 100, "color": "#adb5bd", "layer": "data", "description": "Data / evidence"},
 }
-
 
 VALID_SHAPES = set(NODE_GEOMETRY.keys())
 
@@ -396,60 +343,13 @@ VALID_SHAPES = set(NODE_GEOMETRY.keys())
 
 THESAURUS_ONTOLOGY = {
     "dimensions": {
-        "semantic": [
-            "concept",
-            "term",
-            "definition",
-            "synonym",
-            "equivalence",
-        ],
-        "hierarchical": [
-            "top-term",
-            "broader-term",
-            "narrower-term",
-            "whole",
-            "part",
-        ],
-        "associative": [
-            "related-term",
-            "cause",
-            "effect",
-            "function",
-            "context",
-            "analogy",
-            "contrast",
-        ],
-        "operational": [
-            "input",
-            "process",
-            "transformation",
-            "output",
-            "feedback",
-            "state",
-        ],
-        "epistemic": [
-            "fact",
-            "hypothesis",
-            "model",
-            "principle",
-            "theory",
-            "evidence",
-        ],
-        "temporal": [
-            "precondition",
-            "event",
-            "transition",
-            "sequence",
-            "cycle",
-        ],
-        "systemic": [
-            "micro",
-            "meso",
-            "macro",
-            "boundary",
-            "environment",
-            "agent",
-        ],
+        "semantic": ["concept", "term", "definition", "synonym", "equivalence"],
+        "hierarchical": ["top-term", "broader-term", "narrower-term", "whole", "part"],
+        "associative": ["related-term", "cause", "effect", "function", "context", "analogy", "contrast"],
+        "operational": ["input", "process", "transformation", "output", "feedback", "state"],
+        "epistemic": ["fact", "hypothesis", "model", "principle", "theory", "evidence"],
+        "temporal": ["precondition", "event", "transition", "sequence", "cycle"],
+        "systemic": ["micro", "meso", "macro", "boundary", "environment", "agent"],
     },
     "relations": RELATION_DEFINITIONS,
 }
@@ -466,56 +366,11 @@ POLYHIERARCHY = {
         "Micro": "Concrete entity, instance, process or observation level.",
     },
     "hierarchies": [
-        {
-            "id": "H1",
-            "name": "Taxonomic hierarchy",
-            "root": "Knowledge Domain",
-            "relations": ["TT", "BT", "NT", "IN"],
-        },
-        {
-            "id": "H2",
-            "name": "Part-whole hierarchy",
-            "root": "System",
-            "relations": ["Composition", "Aggregation", "Containment"],
-        },
-        {
-            "id": "H3",
-            "name": "Operational hierarchy",
-            "root": "System Process",
-            "relations": [
-                "PRECEDES",
-                "CAUSES",
-                "TRANSFORMS",
-                "PRODUCES",
-                "FEEDS",
-            ],
-        },
-        {
-            "id": "H4",
-            "name": "Epistemic hierarchy",
-            "root": "Knowledge",
-            "relations": [
-                "Evidence",
-                "Fact",
-                "Concept",
-                "Model",
-                "Theory",
-                "Principle",
-            ],
-        },
-        {
-            "id": "H5",
-            "name": "Decision hierarchy",
-            "root": "Goal",
-            "relations": [
-                "CONSTRAINS",
-                "IF-THEN",
-                "AND",
-                "OR",
-                "XOR",
-                "NOT",
-            ],
-        },
+        {"id": "H1", "name": "Taxonomic hierarchy", "root": "Knowledge Domain", "relations": ["TT", "BT", "NT", "IN"]},
+        {"id": "H2", "name": "Part-whole hierarchy", "root": "System", "relations": ["Composition", "Aggregation", "Containment"]},
+        {"id": "H3", "name": "Operational hierarchy", "root": "System Process", "relations": ["PRECEDES", "CAUSES", "TRANSFORMS", "PRODUCES", "FEEDS"]},
+        {"id": "H4", "name": "Epistemic hierarchy", "root": "Knowledge", "relations": ["Evidence", "Fact", "Concept", "Model", "Theory", "Principle"]},
+        {"id": "H5", "name": "Decision hierarchy", "root": "Goal", "relations": ["CONSTRAINS", "IF-THEN", "AND", "OR", "XOR", "NOT"]},
     ],
 }
 
@@ -555,26 +410,11 @@ UML_METAMODEL = {
 
 HIERARCHOLOGY_ONTOLOGY = {
     "core_definitions": {
-        "Hierarchology": (
-            "Interdisciplinary study of hierarchical associative systems "
-            "across Micro, Meso and Macro levels."
-        ),
-        "Hierarchography": (
-            "Visual and structural description of hierarchical-associative "
-            "systems through graphs, workflows, trees, UML and network forms."
-        ),
-        "Hierarchical Associative System": (
-            "A system in which vertical hierarchy and lateral association "
-            "operate simultaneously."
-        ),
-        "Polyhierarchy": (
-            "A knowledge structure in which a concept may have more than one "
-            "legitimate broader parent depending on semantic context."
-        ),
-        "Scientific Cage": (
-            "A conceptual boundary produced when an established paradigm "
-            "prevents alternative associations or transformations."
-        ),
+        "Hierarchology": "Interdisciplinary study of hierarchical associative systems across Micro, Meso and Macro levels.",
+        "Hierarchography": "Visual and structural description of hierarchical-associative systems through graphs, workflows, trees, UML and network forms.",
+        "Hierarchical Associative System": "A system in which vertical hierarchy and lateral association operate simultaneously.",
+        "Polyhierarchy": "A knowledge structure in which a concept may have more than one legitimate broader parent depending on semantic context.",
+        "Scientific Cage": "A conceptual boundary produced when an established paradigm prevents alternative associations or transformations.",
     },
     "levels": {
         "Macro": "Universal, strategic, societal or theoretical level.",
@@ -582,35 +422,12 @@ HIERARCHOLOGY_ONTOLOGY = {
         "Micro": "Concrete entities, observations, methods and instances.",
     },
     "operational_logic": {
-        "Internal": (
-            "Inductive movement from observations and micro-components toward "
-            "patterns, concepts and models."
-        ),
-        "External": (
-            "Deductive and dialectical movement from models and principles "
-            "toward concrete applications and transformations."
-        ),
-        "Transformational": (
-            "A state-transition logic connecting input, operation, output "
-            "and feedback."
-        ),
-        "Associative": (
-            "Non-linear lateral movement between concepts sharing context, "
-            "function, contrast, analogy or causal relevance."
-        ),
+        "Internal": "Inductive movement from observations and micro-components toward patterns, concepts and models.",
+        "External": "Deductive and dialectical movement from models and principles toward concrete applications and transformations.",
+        "Transformational": "A state-transition logic connecting input, operation, output and feedback.",
+        "Associative": "Non-linear lateral movement between concepts sharing context, function, contrast, analogy or causal relevance.",
     },
-    "visual_methods": [
-        "Polyhierarchical tree",
-        "Hierarchograph",
-        "UML metamodel",
-        "Semantic network",
-        "Operational flow",
-        "State-transition graph",
-        "Feedback loop",
-        "Knowledge lattice",
-        "Concept map",
-        "Oligograph",
-    ],
+    "visual_methods": ["Polyhierarchical tree", "Hierarchograph", "UML metamodel", "Semantic network", "Operational flow", "State-transition graph", "Feedback loop", "Knowledge lattice", "Concept map", "Oligograph"],
 }
 
 
@@ -620,111 +437,27 @@ HIERARCHOLOGY_ONTOLOGY = {
 
 HUMAN_THINKING_METAMODEL = {
     "nodes": {
-        "Human mental concentration": {
-            "color": "#adb5bd",
-            "shape": "ellipse",
-            "desc": "Foundational cognitive focus.",
-        },
-        "Identity": {
-            "color": "#90be6d",
-            "shape": "ellipse",
-            "desc": "Identity and perspective of the cognitive agent.",
-        },
-        "Autobiographical memory": {
-            "color": "#90be6d",
-            "shape": "ellipse",
-            "desc": "Historical experience influencing current reasoning.",
-        },
-        "Mission": {
-            "color": "#92d050",
-            "shape": "star",
-            "desc": "High-level imperative.",
-        },
-        "Vision": {
-            "color": "#ffd166",
-            "shape": "star",
-            "desc": "Desired future system state.",
-        },
-        "Goal": {
-            "color": "#00b0f0",
-            "shape": "star",
-            "desc": "Operationalized desired outcome.",
-        },
-        "Problem": {
-            "color": "#f2dcdb",
-            "shape": "octagon",
-            "desc": "Gap between current and desired state.",
-        },
-        "Ethics/moral": {
-            "color": "#ffc000",
-            "shape": "octagon",
-            "desc": "Normative boundary.",
-        },
-        "Rule": {
-            "color": "#f2f2f2",
-            "shape": "octagon",
-            "desc": "Constraint or governing rule.",
-        },
-        "Decision-making": {
-            "color": "#ffff99",
-            "shape": "triangle",
-            "desc": "Selection among alternatives.",
-        },
-        "Problem solving": {
-            "color": "#d9d9d9",
-            "shape": "triangle",
-            "desc": "Transformation of a problem state.",
-        },
-        "Conflict situation": {
-            "color": "#ff9999",
-            "shape": "octagon",
-            "desc": "Competing states, goals or rules.",
-        },
-        "Knowledge": {
-            "color": "#ddebf7",
-            "shape": "rectangle",
-            "desc": "Structured knowledge.",
-        },
-        "Tool": {
-            "color": "#00b050",
-            "shape": "triangle",
-            "desc": "Instrument used by a process.",
-        },
-        "Experience": {
-            "color": "#70ad47",
-            "shape": "rectangle",
-            "desc": "Knowledge obtained through application.",
-        },
-        "Classification": {
-            "color": "#ccc0da",
-            "shape": "diamond",
-            "desc": "Semantic organization.",
-        },
-        "Psychological aspect": {
-            "color": "#f8cbad",
-            "shape": "ellipse",
-            "desc": "Individual mental dimension.",
-        },
-        "Sociological aspect": {
-            "color": "#00ffff",
-            "shape": "ellipse",
-            "desc": "Collective social dimension.",
-        },
-        "Hierarchical Associative System": {
-            "color": "#fd7e14",
-            "shape": "ellipse",
-            "desc": "Core hierarchical-associative architecture.",
-        },
-        "Scientific Cage": {
-            "color": "#6c757d",
-            "shape": "octagon",
-            "desc": "Paradigmatic boundary.",
-        },
-        "Hierarchography": {
-            "color": "#e63946",
-            "shape": "diamond",
-            "desc": "Visual representation of the hierarchy-association system.",
-        },
+        "Human mental concentration": {"color": "#adb5bd", "shape": "ellipse", "desc": "Foundational cognitive focus."},
+        "Identity": {"color": "#90be6d", "shape": "ellipse", "desc": "Identity and perspective of the cognitive agent."},
+        "Autobiographical memory": {"color": "#90be6d", "shape": "ellipse", "desc": "Historical experience influencing current reasoning."},
+        "Mission": {"color": "#92d050", "shape": "star", "desc": "High-level imperative."},
+        "Vision": {"color": "#ffd166", "shape": "star", "desc": "Desired future system state."},
+        "Goal": {"color": "#00b0f0", "shape": "star", "desc": "Operationalized desired outcome."},
+        "Problem": {"color": "#f2dcdb", "shape": "octagon", "desc": "Gap between current and desired state."},
+        "Ethics/moral": {"color": "#ffc000", "shape": "octagon", "desc": "Normative boundary."},
+        "Rule": {"color": "#f2f2f2", "shape": "octagon", "desc": "Constraint or governing rule."},
+        "Decision-making": {"color": "#ffff99", "shape": "triangle", "desc": "Selection among alternatives."},
+        "Problem solving": {"color": "#d9d9d9", "shape": "triangle", "desc": "Transformation of a problem state."},
+        "Conflict situation": {"color": "#ff9999", "shape": "octagon", "desc": "Competing states, goals or rules."},
+        "Knowledge": {"color": "#ddebf7", "shape": "rectangle", "desc": "Structured knowledge."},
+        "Tool": {"color": "#00b050", "shape": "triangle", "desc": "Instrument used by a process."},
+        "Experience": {"color": "#70ad47", "shape": "rectangle", "desc": "Knowledge obtained through application."},
+        "Classification": {"color": "#ccc0da", "shape": "diamond", "desc": "Semantic organization."},
+        "Psychological aspect": {"color": "#f8cbad", "shape": "ellipse", "desc": "Individual mental dimension."},
+        "Sociological aspect": {"color": "#00ffff", "shape": "ellipse", "desc": "Collective social dimension."},
+        "Hierarchical Associative System": {"color": "#fd7e14", "shape": "ellipse", "desc": "Core hierarchical-associative architecture."},
+        "Scientific Cage": {"color": "#6c757d", "shape": "octagon", "desc": "Paradigmatic boundary."},
+        "Hierarchography": {"color": "#e63946", "shape": "diamond", "desc": "Visual representation of the hierarchy-association system."},
     },
     "relations": [
         ("Human mental concentration", "Identity", "Dependency"),
@@ -775,188 +508,37 @@ MENTAL_APPROACHES_ONTOLOGY = {
 # =============================================================================
 
 SCIENCE_FIELDS = {
-    "Mathematics": {
-        "cat": "Formal",
-        "methods": ["Axiomatization", "Formal Proof", "Stochastic Modeling", "Topology"],
-        "tools": ["MATLAB", "LaTeX", "WolframAlpha"],
-        "facets": ["Algebra", "Analysis", "Number Theory", "Calculus"],
-    },
-    "Physics": {
-        "cat": "Natural",
-        "methods": ["Quantum Modeling", "Particle Tracking", "Interferometry", "Simulation"],
-        "tools": ["Accelerator", "Spectrometer", "Oscilloscope", "Cryostat"],
-        "facets": ["Relativity", "Quantum Mechanics", "Thermodynamics", "Optics"],
-    },
-    "Chemistry": {
-        "cat": "Natural",
-        "methods": ["Organic Synthesis", "Chromatography", "NMR Spectroscopy", "Titration"],
-        "tools": ["NMR", "Mass Spectrometer", "Incubator", "Burette"],
-        "facets": ["Biochemistry", "Physical Chemistry", "Analytical Chemistry", "Inorganic Chemistry"],
-    },
-    "Biology": {
-        "cat": "Natural",
-        "methods": ["Gene Sequencing", "CRISPR", "Cell Culture", "In-vivo Observation"],
-        "tools": ["Electron Microscope", "PCR Machine", "Centrifuge", "Incubator"],
-        "facets": ["Genetics", "Microbiology", "Ecology", "Cell Biology"],
-    },
-    "Neuroscience": {
-        "cat": "Natural",
-        "methods": ["Neuroimaging", "Optogenetics", "Behavioral Mapping", "Electrophysiology"],
-        "tools": ["fMRI", "EEG", "Electrodes", "Patch Clamp"],
-        "facets": ["Cognitive Neuroscience", "Neural Plasticity", "Synaptic Physiology"],
-    },
-    "Psychology": {
-        "cat": "Social",
-        "methods": ["Psychometrics", "Longitudinal Studies", "Behavioral Experiments", "CBT"],
-        "tools": ["Standardized Tests", "Surveys", "Biofeedback", "Eye Tracking"],
-        "facets": ["Behavioral", "Clinical", "Developmental", "Cognitive Psychology"],
-    },
-    "Sociology": {
-        "cat": "Social",
-        "methods": ["Ethnography", "Network Analysis", "Survey Design", "Grounded Theory"],
-        "tools": ["NVivo", "SPSS", "Census Data", "Social Graphs"],
-        "facets": ["Demography", "Stratification", "Social Dynamics", "Urban Sociology"],
-    },
-    "Political Science": {
-        "cat": "Social",
-        "methods": ["Comparative Method", "Institutional Analysis", "Quantitative Modeling", "Political Theory"],
-        "tools": ["STATA", "Polling Data", "Legislative Archives"],
-        "facets": ["International Relations", "Comparative Politics", "Political Theory", "Public Policy", "Geopolitics"],
-    },
-    "Anthropology": {
-        "cat": "Social/Humanities",
-        "methods": ["Participant Observation", "Ethnography", "Cross-Cultural Comparison", "Archaeological Excavation"],
-        "tools": ["Field Journals", "GIS", "Radiocarbon Dating"],
-        "facets": ["Cultural Anthropology", "Biological Anthropology", "Archaeology", "Linguistic Anthropology"],
-    },
-    "Cognitive Science": {
-        "cat": "Interdisciplinary",
-        "methods": ["Computational Modeling", "Experimental Design", "Turing Analysis"],
-        "tools": ["AI Architectures", "Eye Tracking", "Reaction-Time Analysis"],
-        "facets": ["Artificial Intelligence", "Philosophy of Mind", "Cognitive Psychology", "Linguistics"],
-    },
-    "Complexity Science": {
-        "cat": "Formal/Interdisciplinary",
-        "methods": ["Agent-Based Modeling", "Network Topology", "Chaos Theory", "Fractal Analysis"],
-        "tools": ["NetLogo", "Graph Theory Software", "Non-linear Simulators"],
-        "facets": ["Self-Organization", "Emergence", "System Dynamics", "Complex Adaptive Systems"],
-    },
-    "Computer Science": {
-        "cat": "Formal",
-        "methods": ["Algorithm Design", "Verification", "Complexity Analysis", "Parallelism"],
-        "tools": ["GPU Clusters", "Docker", "Compilers", "IDEs", "Kubernetes"],
-        "facets": ["AI", "Cybersecurity", "Blockchain", "Cloud Computing"],
-    },
-    "Medicine": {
-        "cat": "Applied",
-        "methods": ["Clinical Trials", "Epidemiology", "Radiology", "Pathology"],
-        "tools": ["MRI", "CT Scanner", "Biomarker Assays", "Ultrasound"],
-        "facets": ["Genomics", "Immunology", "Oncology", "Internal Medicine"],
-    },
-    "Psychiatry": {
-        "cat": "Applied/Medical",
-        "methods": ["Clinical Trials", "Diagnostic Interviewing", "Case Formulation", "Neuroimaging Analysis"],
-        "tools": ["DSM-5-TR", "ICD-11", "EEG", "fMRI"],
-        "facets": ["Clinical Psychiatry", "Neuropsychiatry", "Forensic Psychiatry", "Geriatric Psychiatry"],
-    },
-    "Public Health": {
-        "cat": "Applied/Social",
-        "methods": ["Biostatistics", "Community Health Assessment", "Policy Advocacy", "Epidemiological Surveillance"],
-        "tools": ["Vital Statistics", "Health Registries", "GIS"],
-        "facets": ["Epidemiology", "Environmental Health", "Global Health", "Health Policy"],
-    },
-    "Engineering": {
-        "cat": "Applied",
-        "methods": ["FEA Analysis", "Prototyping", "Stress Testing", "Systems Integration"],
-        "tools": ["CAD", "3D Printers", "CNC Machines", "Simulation Software"],
-        "facets": ["Robotics", "Nanotechnology", "Civil Engineering", "Electrical Engineering"],
-    },
-    "Materials Science": {
-        "cat": "Applied/Natural",
-        "methods": ["Crystallography", "Metallography", "Polymer Characterization", "Nanofabrication"],
-        "tools": ["SEM", "X-Ray Diffraction", "Spectroscopy"],
-        "facets": ["Nanomaterials", "Biomaterials", "Metallurgy", "Semiconductors"],
-    },
-    "Economics": {
-        "cat": "Social",
-        "methods": ["Econometrics", "Game Theory", "Macroeconomic Modeling", "Forecasting"],
-        "tools": ["Bloomberg", "Stata", "R", "Python"],
-        "facets": ["Finance", "Behavioral Economics", "Macroeconomics", "Microeconomics"],
-    },
-    "Philosophy": {
-        "cat": "Humanities",
-        "methods": ["Socratic Method", "Dialectics", "Phenomenology", "Conceptual Analysis"],
-        "tools": ["Logic Mapping", "Primary Texts", "Semantic Analysis"],
-        "facets": ["Epistemology", "Ethics", "Metaphysics", "Aesthetics"],
-    },
-    "Linguistics": {
-        "cat": "Humanities",
-        "methods": ["Corpus Analysis", "Syntactic Parsing", "Historical Phonetics", "Transcription"],
-        "tools": ["Praat", "NLTK", "WordNet", "ELAN"],
-        "facets": ["Semantics", "Phonology", "Sociolinguistics", "Computational Linguistics"],
-    },
-    "Ecology": {
-        "cat": "Natural",
-        "methods": ["Remote Sensing", "Trophic Modeling", "Field Sampling", "Biogeochemistry"],
-        "tools": ["GIS", "Biosensors", "Drones", "Satellite Imagery"],
-        "facets": ["Biodiversity", "Conservation Biology", "Restoration Ecology"],
-    },
-    "History": {
-        "cat": "Humanities",
-        "methods": ["Archival Research", "Historiography", "Oral History", "Prosopography"],
-        "tools": ["Radiocarbon Dating", "Microfilm", "Digital Archives"],
-        "facets": ["Military History", "Diplomacy", "Ancient Civilizations", "Social History"],
-    },
-    "Architecture": {
-        "cat": "Applied",
-        "methods": ["Parametric Design", "Environmental Analysis", "BIM", "Urbanism"],
-        "tools": ["Revit", "Rhino 3D", "AutoCAD", "Photogrammetry"],
-        "facets": ["Urban Design", "Sustainability", "Landscape Architecture", "Heritage"],
-    },
-    "Geology": {
-        "cat": "Natural",
-        "methods": ["Stratigraphy", "Mineralogy", "Seismology", "Petrology"],
-        "tools": ["Seismograph", "GIS", "Magnetometers", "Thin Sectioning"],
-        "facets": ["Tectonics", "Petrology", "Paleontology", "Geophysics"],
-    },
-    "Geography": {
-        "cat": "Natural/Social",
-        "methods": ["Spatial Analysis", "Geospatial Modeling", "Remote Sensing", "Field Observation"],
-        "tools": ["ArcGIS/QGIS", "GPS", "Satellite Imagery", "Lidar"],
-        "facets": ["Physical Geography", "Human Geography", "Geomorphology", "Urban Geography"],
-    },
-    "Climatology": {
-        "cat": "Natural",
-        "methods": ["Climate Modeling", "Paleoclimatic Reconstruction", "Time-Series Analysis"],
-        "tools": ["HPC", "Weather Stations", "Satellite Radiometers"],
-        "facets": ["Meteorology", "Paleoclimatology", "Dynamic Climatology", "Applied Climatology"],
-    },
-    "Library Science": {
-        "cat": "Applied",
-        "methods": ["Taxonomy", "Archival Appraisal", "Retrieval Logic", "Metadata"],
-        "tools": ["OPAC", "Metadata Systems", "Thesauri", "Digital Archives"],
-        "facets": ["Knowledge Organization", "Information Retrieval", "Digital Curation"],
-    },
-    "Criminology": {
-        "cat": "Social",
-        "methods": ["Profiling", "Longitudinal Studies", "Victimology Analysis", "Ethnography"],
-        "tools": ["Crime Mapping", "AFIS", "CODIS", "SPSS"],
-        "facets": ["Penology", "Forensic Psychology", "Police Science", "Criminal Justice"],
-    },
-    "Forensic Sciences": {
-        "cat": "Applied/Natural",
-        "methods": ["DNA Profiling", "Ballistics", "Toxicology", "Trace Analysis"],
-        "tools": ["Mass Spectrometer", "Luminol", "Comparison Microscope", "AFIS"],
-        "facets": ["Forensic Biology", "Forensic Chemistry", "Forensic Pathology", "Digital Forensics"],
-    },
-    "Legal Science": {
-        "cat": "Social",
-        "methods": ["Legal Hermeneutics", "Comparative Law", "Dogmatic Method", "Empirical Legal Research"],
-        "tools": ["Legislative Databases", "Case Law Archives", "Constitutional Records", "Westlaw"],
-        "facets": ["Jurisprudence", "Constitutional Law", "Criminal Law", "Civil Law", "International Law"],
-    },
+    "Mathematics": {"cat": "Formal", "methods": ["Axiomatization", "Formal Proof", "Stochastic Modeling", "Topology"], "tools": ["MATLAB", "LaTeX", "WolframAlpha"], "facets": ["Algebra", "Analysis", "Number Theory", "Calculus"]},
+    "Physics": {"cat": "Natural", "methods": ["Quantum Modeling", "Particle Tracking", "Interferometry", "Simulation"], "tools": ["Accelerator", "Spectrometer", "Oscilloscope", "Cryostat"], "facets": ["Relativity", "Quantum Mechanics", "Thermodynamics", "Optics"]},
+    "Chemistry": {"cat": "Natural", "methods": ["Organic Synthesis", "Chromatography", "NMR Spectroscopy", "Titration"], "tools": ["NMR", "Mass Spectrometer", "Incubator", "Burette"], "facets": ["Biochemistry", "Physical Chemistry", "Analytical Chemistry", "Inorganic Chemistry"]},
+    "Biology": {"cat": "Natural", "methods": ["Gene Sequencing", "CRISPR", "Cell Culture", "In-vivo Observation"], "tools": ["Electron Microscope", "PCR Machine", "Centrifuge", "Incubator"], "facets": ["Genetics", "Microbiology", "Ecology", "Cell Biology"]},
+    "Neuroscience": {"cat": "Natural", "methods": ["Neuroimaging", "Optogenetics", "Behavioral Mapping", "Electrophysiology"], "tools": ["fMRI", "EEG", "Electrodes", "Patch Clamp"], "facets": ["Cognitive Neuroscience", "Neural Plasticity", "Synaptic Physiology"]},
+    "Psychology": {"cat": "Social", "methods": ["Psychometrics", "Longitudinal Studies", "Behavioral Experiments", "CBT"], "tools": ["Standardized Tests", "Surveys", "Biofeedback", "Eye Tracking"], "facets": ["Behavioral", "Clinical", "Developmental", "Cognitive Psychology"]},
+    "Sociology": {"cat": "Social", "methods": ["Ethnography", "Network Analysis", "Survey Design", "Grounded Theory"], "tools": ["NVivo", "SPSS", "Census Data", "Social Graphs"], "facets": ["Demography", "Stratification", "Social Dynamics", "Urban Sociology"]},
+    "Political Science": {"cat": "Social", "methods": ["Comparative Method", "Institutional Analysis", "Quantitative Modeling", "Political Theory"], "tools": ["STATA", "Polling Data", "Legislative Archives"], "facets": ["International Relations", "Comparative Politics", "Political Theory", "Public Policy", "Geopolitics"]},
+    "Anthropology": {"cat": "Social/Humanities", "methods": ["Participant Observation", "Ethnography", "Cross-Cultural Comparison", "Archaeological Excavation"], "tools": ["Field Journals", "GIS", "Radiocarbon Dating"], "facets": ["Cultural Anthropology", "Biological Anthropology", "Archaeology", "Linguistic Anthropology"]},
+    "Cognitive Science": {"cat": "Interdisciplinary", "methods": ["Computational Modeling", "Experimental Design", "Turing Analysis"], "tools": ["AI Architectures", "Eye Tracking", "Reaction-Time Analysis"], "facets": ["Artificial Intelligence", "Philosophy of Mind", "Cognitive Psychology", "Linguistics"]},
+    "Complexity Science": {"cat": "Formal/Interdisciplinary", "methods": ["Agent-Based Modeling", "Network Topology", "Chaos Theory", "Fractal Analysis"], "tools": ["NetLogo", "Graph Theory Software", "Non-linear Simulators"], "facets": ["Self-Organization", "Emergence", "System Dynamics", "Complex Adaptive Systems"]},
+    "Computer Science": {"cat": "Formal", "methods": ["Algorithm Design", "Verification", "Complexity Analysis", "Parallelism"], "tools": ["GPU Clusters", "Docker", "Compilers", "IDEs", "Kubernetes"], "facets": ["AI", "Cybersecurity", "Blockchain", "Cloud Computing"]},
+    "Medicine": {"cat": "Applied", "methods": ["Clinical Trials", "Epidemiology", "Radiology", "Pathology"], "tools": ["MRI", "CT Scanner", "Biomarker Assays", "Ultrasound"], "facets": ["Genomics", "Immunology", "Oncology", "Internal Medicine"]},
+    "Psychiatry": {"cat": "Applied/Medical", "methods": ["Clinical Trials", "Diagnostic Interviewing", "Case Formulation", "Neuroimaging Analysis"], "tools": ["DSM-5-TR", "ICD-11", "EEG", "fMRI"], "facets": ["Clinical Psychiatry", "Neuropsychiatry", "Forensic Psychiatry", "Geriatric Psychiatry"]},
+    "Public Health": {"cat": "Applied/Social", "methods": ["Biostatistics", "Community Health Assessment", "Policy Advocacy", "Epidemiological Surveillance"], "tools": ["Vital Statistics", "Health Registries", "GIS"], "facets": ["Epidemiology", "Environmental Health", "Global Health", "Health Policy"]},
+    "Engineering": {"cat": "Applied", "methods": ["FEA Analysis", "Prototyping", "Stress Testing", "Systems Integration"], "tools": ["CAD", "3D Printers", "CNC Machines", "Simulation Software"], "facets": ["Robotics", "Nanotechnology", "Civil Engineering", "Electrical Engineering"]},
+    "Materials Science": {"cat": "Applied/Natural", "methods": ["Crystallography", "Metallography", "Polymer Characterization", "Nanofabrication"], "tools": ["SEM", "X-Ray Diffraction", "Spectroscopy"], "facets": ["Nanomaterials", "Biomaterials", "Metallurgy", "Semiconductors"]},
+    "Economics": {"cat": "Social", "methods": ["Econometrics", "Game Theory", "Macroeconomic Modeling", "Forecasting"], "tools": ["Bloomberg", "Stata", "R", "Python"], "facets": ["Finance", "Behavioral Economics", "Macroeconomics", "Microeconomics"]},
+    "Philosophy": {"cat": "Humanities", "methods": ["Socratic Method", "Dialectics", "Phenomenology", "Conceptual Analysis"], "tools": ["Logic Mapping", "Primary Texts", "Semantic Analysis"], "facets": ["Epistemology", "Ethics", "Metaphysics", "Aesthetics"]},
+    "Linguistics": {"cat": "Humanities", "methods": ["Corpus Analysis", "Syntactic Parsing", "Historical Phonetics", "Transcription"], "tools": ["Praat", "NLTK", "WordNet", "ELAN"], "facets": ["Semantics", "Phonology", "Sociolinguistics", "Computational Linguistics"]},
+    "Ecology": {"cat": "Natural", "methods": ["Remote Sensing", "Trophic Modeling", "Field Sampling", "Biogeochemistry"], "tools": ["GIS", "Biosensors", "Drones", "Satellite Imagery"], "facets": ["Biodiversity", "Conservation Biology", "Restoration Ecology"]},
+    "History": {"cat": "Humanities", "methods": ["Archival Research", "Historiography", "Oral History", "Prosopography"], "tools": ["Radiocarbon Dating", "Microfilm", "Digital Archives"], "facets": ["Military History", "Diplomacy", "Ancient Civilizations", "Social History"]},
+    "Architecture": {"cat": "Applied", "methods": ["Parametric Design", "Environmental Analysis", "BIM", "Urbanism"], "tools": ["Revit", "Rhino 3D", "AutoCAD", "Photogrammetry"], "facets": ["Urban Design", "Sustainability", "Landscape Architecture", "Heritage"]},
+    "Geology": {"cat": "Natural", "methods": ["Stratigraphy", "Mineralogy", "Seismology", "Petrology"], "tools": ["Seismograph", "GIS", "Magnetometers", "Thin Sectioning"], "facets": ["Tectonics", "Petrology", "Paleontology", "Geophysics"]},
+    "Geography": {"cat": "Natural/Social", "methods": ["Spatial Analysis", "Geospatial Modeling", "Remote Sensing", "Field Observation"], "tools": ["ArcGIS/QGIS", "GPS", "Satellite Imagery", "Lidar"], "facets": ["Physical Geography", "Human Geography", "Geomorphology", "Urban Geography"]},
+    "Climatology": {"cat": "Natural", "methods": ["Climate Modeling", "Paleoclimatic Reconstruction", "Time-Series Analysis"], "tools": ["HPC", "Weather Stations", "Satellite Radiometers"], "facets": ["Meteorology", "Paleoclimatology", "Dynamic Climatology", "Applied Climatology"]},
+    "Library Science": {"cat": "Applied", "methods": ["Taxonomy", "Archival Appraisal", "Retrieval Logic", "Metadata"], "tools": ["OPAC", "Metadata Systems", "Thesauri", "Digital Archives"], "facets": ["Knowledge Organization", "Information Retrieval", "Digital Curation"]},
+    "Criminology": {"cat": "Social", "methods": ["Profiling", "Longitudinal Studies", "Victimology Analysis", "Ethnography"], "tools": ["Crime Mapping", "AFIS", "CODIS", "SPSS"], "facets": ["Penology", "Forensic Psychology", "Police Science", "Criminal Justice"]},
+    "Forensic Sciences": {"cat": "Applied/Natural", "methods": ["DNA Profiling", "Ballistics", "Toxicology", "Trace Analysis"], "tools": ["Mass Spectrometer", "Luminol", "Comparison Microscope", "AFIS"], "facets": ["Forensic Biology", "Forensic Chemistry", "Forensic Pathology", "Digital Forensics"]},
+    "Legal Science": {"cat": "Social", "methods": ["Legal Hermeneutics", "Comparative Law", "Dogmatic Method", "Empirical Legal Research"], "tools": ["Legislative Databases", "Case Law Archives", "Constitutional Records", "Westlaw"], "facets": ["Jurisprudence", "Constitutional Law", "Criminal Law", "Civil Law", "International Law"]},
 }
-
 
 SCIENTIFIC_PARADIGMS = {
     "Empiricism": "Knowledge grounded in observation and experience.",
@@ -976,7 +558,6 @@ SCIENTIFIC_PARADIGMS = {
     "Post-Structuralism": "Emphasis on instability, plurality and transformation of structures.",
 }
 
-
 STRUCTURAL_MODELS = {
     "Causal Connections": "Cause-effect chains and mechanisms.",
     "Principles & Relations": "Principles and relations among entities.",
@@ -986,7 +567,6 @@ STRUCTURAL_MODELS = {
     "Glossary": "Definitions and terminology.",
     "Concepts": "Abstract conceptual building blocks.",
 }
-
 
 IDEATION_TECHNIQUES = {
     "Six Thinking Hats": "Data, emotion, risk, value, creativity and control perspectives.",
@@ -1003,57 +583,33 @@ IDEATION_TECHNIQUES = {
 # API FUNCTIONS
 # =============================================================================
 
-def huggingface_generate(
-    api_key,
-    model_id,
-    system_prompt,
-    user_content,
-    temperature=0.5,
-    top_p=None,
-):
+def huggingface_generate(api_key, model_id, system_prompt, user_content, temperature=0.5, top_p=None):
     if not api_key:
-        raise ValueError(
-            "Hugging Face API key is required for Qwen2.5-72B-Instruct."
-        )
+        raise ValueError("Hugging Face API key is required for Qwen2.5-72B-Instruct.")
 
     clean_model_id = model_id[3:] if model_id.startswith("hf:") else model_id
     routed_model = f"{clean_model_id}:fastest"
 
-    headers = {
-        "Authorization": f"Bearer {api_key.strip()}",
-        "Content-Type": "application/json",
-    }
-
+    headers = {"Authorization": f"Bearer {api_key.strip()}", "Content-Type": "application/json"}
     messages = []
 
     if system_prompt:
-        messages.append({
-            "role": "system",
-            "content": system_prompt,
-        })
+        messages.append({"role": "system", "content": system_prompt})
 
-    messages.append({
-        "role": "user",
-        "content": user_content,
-    })
+    messages.append({"role": "user", "content": user_content})
 
     payload = {
         "model": routed_model,
         "messages": messages,
         "temperature": temperature,
         "stream": False,
-        "max_tokens": 8192,  # ✅ POPRAVIL: 12000 → 8192
+        "max_tokens": 8192,
     }
 
     if top_p is not None:
         payload["top_p"] = top_p
 
-    response = requests.post(
-        HF_ROUTER_URL,
-        headers=headers,
-        json=payload,
-        timeout=300,
-    )
+    response = requests.post(HF_ROUTER_URL, headers=headers, json=payload, timeout=300)
 
     if response.status_code != 200:
         try:
@@ -1061,89 +617,40 @@ def huggingface_generate(
             error_message = data.get("error", response.text)
         except Exception:
             error_message = response.text
-
-        raise RuntimeError(
-            f"Hugging Face API error ({response.status_code}): {error_message}"
-        )
+        raise RuntimeError(f"Hugging Face API error ({response.status_code}): {error_message}")
 
     result = response.json()
 
     try:
         return result["choices"][0]["message"]["content"]
     except Exception:
-        raise RuntimeError(
-            "Unexpected Hugging Face response format: "
-            + json.dumps(result, ensure_ascii=False)[:3000]
-        )
+        raise RuntimeError("Unexpected Hugging Face response format: " + json.dumps(result, ensure_ascii=False)[:3000])
 
 
-def gemini_generate(
-    client,
-    model_id,
-    system_prompt,
-    user_content,
-    temperature=0.5,
-    top_p=None,
-    huggingface_api_key=None,
-):
+def gemini_generate(client, model_id, system_prompt, user_content, temperature=0.5, top_p=None, huggingface_api_key=None):
     if model_id.startswith("hf:"):
-        return huggingface_generate(
-            huggingface_api_key,
-            model_id,
-            system_prompt,
-            user_content,
-            temperature,
-            top_p,
-        )
+        return huggingface_generate(huggingface_api_key, model_id, system_prompt, user_content, temperature, top_p)
 
     if client is None:
-        raise RuntimeError(
-            "Google GenAI client is not initialized."
-        )
+        raise RuntimeError("Google GenAI client is not initialized.")
 
-    config_kwargs = {
-        "temperature": temperature,
-    }
-
+    config_kwargs = {"temperature": temperature}
     if top_p is not None:
         config_kwargs["top_p"] = top_p
 
     is_gemma = model_id.startswith("gemma")
 
     if is_gemma:
-        combined_input = (
-            "### SYSTEM INSTRUCTIONS ###\n"
-            + system_prompt
-            + "\n\n### USER INPUT ###\n"
-            + user_content
-        )
-
-        config = genai_types.GenerateContentConfig(
-            **config_kwargs
-        )
-
-        response = client.models.generate_content(
-            model=model_id,
-            contents=combined_input,
-            config=config,
-        )
+        combined_input = "### SYSTEM INSTRUCTIONS ###\n" + system_prompt + "\n\n### USER INPUT ###\n" + user_content
+        config = genai_types.GenerateContentConfig(**config_kwargs)
+        response = client.models.generate_content(model=model_id, contents=combined_input, config=config)
     else:
         config_kwargs["system_instruction"] = system_prompt
-
-        config = genai_types.GenerateContentConfig(
-            **config_kwargs
-        )
-
-        response = client.models.generate_content(
-            model=model_id,
-            contents=user_content,
-            config=config,
-        )
+        config = genai_types.GenerateContentConfig(**config_kwargs)
+        response = client.models.generate_content(model=model_id, contents=user_content, config=config)
 
     if not response or not response.text:
-        raise RuntimeError(
-            "Google model returned an empty response."
-        )
+        raise RuntimeError("Google model returned an empty response.")
 
     return response.text
 
@@ -1161,81 +668,35 @@ def fetch_author_bibliographies(author_input):
 
     for author in authors:
         try:
-            search_url = (
-                "https://pub.orcid.org/v3.0/search/"
-                "?q=" + urllib.parse.quote(author)
-            )
-
-            response = requests.get(
-                search_url,
-                headers={"Accept": "application/json"},
-                timeout=8,
-            )
-
+            search_url = "https://pub.orcid.org/v3.0/search/?q=" + urllib.parse.quote(author)
+            response = requests.get(search_url, headers={"Accept": "application/json"}, timeout=8)
             response.raise_for_status()
             data = response.json()
-
             results = data.get("result", [])
 
             if not results:
                 continue
 
-            orcid_id = (
-                results[0]
-                .get("orcid-identifier", {})
-                .get("path")
-            )
-
+            orcid_id = results[0].get("orcid-identifier", {}).get("path")
             if not orcid_id:
                 continue
 
-            record_url = (
-                f"https://pub.orcid.org/v3.0/{orcid_id}/record"
-            )
-
-            record_response = requests.get(
-                record_url,
-                headers={"Accept": "application/json"},
-                timeout=8,
-            )
-
+            record_url = f"https://pub.orcid.org/v3.0/{orcid_id}/record"
+            record_response = requests.get(record_url, headers={"Accept": "application/json"}, timeout=8)
             record_response.raise_for_status()
             record = record_response.json()
 
-            groups = (
-                record
-                .get("activities-summary", {})
-                .get("works", {})
-                .get("group", [])
-            )
-
-            output += (
-                f"#### ORCID: {author} ({orcid_id})\n"
-            )
+            groups = record.get("activities-summary", {}).get("works", {}).get("group", [])
+            output += f"#### ORCID: {author} ({orcid_id})\n"
 
             for group in groups[:15]:
                 summary = group.get("work-summary", [{}])[0]
-
-                title = (
-                    summary
-                    .get("title", {})
-                    .get("title", {})
-                    .get("value", "Unknown Title")
-                )
-
+                title = summary.get("title", {}).get("title", {}).get("value", "Unknown Title")
                 pub_date = summary.get("publication-date")
-                year = (
-                    pub_date
-                    .get("year", {})
-                    .get("value", "n.d.")
-                    if pub_date
-                    else "n.d."
-                )
-
+                year = pub_date.get("year", {}).get("value", "n.d.") if pub_date else "n.d."
                 output += f"- **{year}**: {title}\n"
 
             output += "\n---\n"
-
         except Exception:
             continue
 
@@ -1246,56 +707,18 @@ def fetch_author_bibliographies(author_input):
 # KNOWLEDGE CONTEXT BUILDERS
 # =============================================================================
 
-def build_knowledge_architecture_context(
-    sciences,
-    paradigms,
-    structural_models,
-    techniques,
-):
+def build_knowledge_architecture_context(sciences, paradigms, structural_models, techniques):
     science_context = []
-
     for field in sciences:
         info = SCIENCE_FIELDS.get(field, {})
-        science_context.append(
-            f"{field}: "
-            f"category={info.get('cat', '')}; "
-            f"methods={', '.join(info.get('methods', []))}; "
-            f"facets={', '.join(info.get('facets', []))}"
-        )
+        science_context.append(f"{field}: category={info.get('cat', '')}; methods={', '.join(info.get('methods', []))}; facets={', '.join(info.get('facets', []))}")
 
-    paradigm_context = "\n".join(
-        f"- {name}: {SCIENTIFIC_PARADIGMS[name]}"
-        for name in paradigms
-        if name in SCIENTIFIC_PARADIGMS
-    )
-
-    model_context = "\n".join(
-        f"- {name}: {STRUCTURAL_MODELS[name]}"
-        for name in structural_models
-        if name in STRUCTURAL_MODELS
-    )
-
-    technique_context = "\n".join(
-        f"- {name}: {IDEATION_TECHNIQUES[name]}"
-        for name in techniques
-        if name in IDEATION_TECHNIQUES
-    )
-
-    thesaurus_relations = "\n".join(
-        f"- {key}: {value}"
-        for key, value in RELATION_DEFINITIONS.items()
-    )
-
-    hierarchy_context = "\n".join(
-        f"- {x['id']} {x['name']}: "
-        f"root={x['root']}; relations={', '.join(x['relations'])}"
-        for x in POLYHIERARCHY["hierarchies"]
-    )
-
-    uml_context = "\n".join(
-        f"- {name}: {', '.join(attrs)}"
-        for name, attrs in UML_METAMODEL["classes"].items()
-    )
+    paradigm_context = "\n".join(f"- {name}: {SCIENTIFIC_PARADIGMS[name]}" for name in paradigms if name in SCIENTIFIC_PARADIGMS)
+    model_context = "\n".join(f"- {name}: {STRUCTURAL_MODELS[name]}" for name in structural_models if name in STRUCTURAL_MODELS)
+    technique_context = "\n".join(f"- {name}: {IDEATION_TECHNIQUES[name]}" for name in techniques if name in IDEATION_TECHNIQUES)
+    thesaurus_relations = "\n".join(f"- {key}: {value}" for key, value in RELATION_DEFINITIONS.items())
+    hierarchy_context = "\n".join(f"- {x['id']} {x['name']}: root={x['root']}; relations={', '.join(x['relations'])}" for x in POLYHIERARCHY["hierarchies"])
+    uml_context = "\n".join(f"- {name}: {', '.join(attrs)}" for name, attrs in UML_METAMODEL["classes"].items())
 
     return f"""
 SIS KNOWLEDGE ARCHITECTURE
@@ -1352,27 +775,17 @@ def extract_json_object(text):
         return None
 
     candidates = []
-
-    fenced = re.findall(
-        r"```(?:json)?\s*(\{.*?\})\s*```",
-        text,
-        flags=re.DOTALL | re.IGNORECASE,
-    )
-
+    fenced = re.findall(r"```(?:json)?\s*(\{.*?\})\s*```", text, flags=re.DOTALL | re.IGNORECASE)
     candidates.extend(fenced)
 
     marker_index = text.find("### SEMANTIC_GRAPH_JSON")
-
     if marker_index >= 0:
-        candidates.append(
-            text[marker_index + len("### SEMANTIC_GRAPH_JSON"):]
-        )
+        candidates.append(text[marker_index + len("### SEMANTIC_GRAPH_JSON"):])
 
     candidates.append(text)
 
     for candidate in candidates:
         start = candidate.find("{")
-
         if start < 0:
             continue
 
@@ -1382,61 +795,42 @@ def extract_json_object(text):
 
         for i in range(start, len(candidate)):
             char = candidate[i]
-
             if escape:
                 escape = False
                 continue
-
             if char == "\\":
                 escape = True
                 continue
-
             if char == '"':
                 in_string = not in_string
                 continue
-
             if in_string:
                 continue
-
             if char == "{":
                 depth += 1
             elif char == "}":
                 depth -= 1
-
                 if depth == 0:
                     raw = candidate[start:i + 1]
-
                     try:
                         return json.loads(raw)
                     except Exception:
                         cleaned = sanitize_json_text(raw)
-
                         try:
                             return json.loads(cleaned)
                         except Exception:
                             pass
-
                     break
 
     return None
 
 
 def sanitize_json_text(raw):
-    raw = raw.replace("\ufeff", "")
-    raw = raw.replace("```json", "")
-    raw = raw.replace("```", "")
-
-    # Remove control characters while retaining Unicode text.
-    raw = "".join(
-        ch for ch in raw
-        if ord(ch) >= 32 or ch in "\n\r\t"
-    )
-
-    # Convert Python-like booleans/null if model accidentally used them.
+    raw = raw.replace("\ufeff", "").replace("```json", "").replace("```", "")
+    raw = "".join(ch for ch in raw if ord(ch) >= 32 or ch in "\n\r\t")
     raw = re.sub(r"\bNone\b", "null", raw)
     raw = re.sub(r"\bTrue\b", "true", raw)
     raw = re.sub(r"\bFalse\b", "false", raw)
-
     return raw.strip()
 
 
@@ -1448,14 +842,8 @@ def normalize_graph_data(data):
     if not isinstance(data, dict):
         return {"nodes": [], "edges": []}
 
-    nodes = data.get("nodes", [])
-    edges = data.get("edges", [])
-
-    if not isinstance(nodes, list):
-        nodes = []
-
-    if not isinstance(edges, list):
-        edges = []
+    nodes = data.get("nodes", []) if isinstance(data.get("nodes", []), list) else []
+    edges = data.get("edges", []) if isinstance(data.get("edges", []), list) else []
 
     normalized_nodes = []
     node_ids = set()
@@ -1464,80 +852,33 @@ def normalize_graph_data(data):
         if not isinstance(node, dict):
             continue
 
-        node_id = str(
-            node.get("id")
-            or f"n{index + 1}"
-        )
-
-        label = str(
-            node.get("label")
-            or node.get("name")
-            or node_id
-        ).strip()
-
+        node_id = str(node.get("id") or f"n{index + 1}")
+        label = str(node.get("label") or node.get("name") or node_id).strip()
         if not label:
             label = node_id
-
         if node_id in node_ids:
             node_id = f"{node_id}_{index}"
-
         node_ids.add(node_id)
 
-        shape = str(
-            node.get("shape", "rectangle")
-        )
-
+        shape = str(node.get("shape", "rectangle"))
         if shape not in VALID_SHAPES:
             shape = "rectangle"
 
         geometry = NODE_GEOMETRY[shape]
-
-        color = str(
-            node.get("color")
-            or geometry["color"]
-        )
-
-        description = str(
-            node.get("description")
-            or node.get("desc")
-            or ""
-        ).replace("\n", " ").strip()
-
-        layer = str(
-            node.get("layer")
-            or geometry["layer"]
-        )
-
-        level = str(
-            node.get("level")
-            or infer_hierarchy_level(layer, shape)
-        )
-
-        semantic_type = str(
-            node.get("semantic_type")
-            or layer
-        )
-
-        state = str(
-            node.get("state")
-            or ""
-        )
+        color = str(node.get("color") or geometry["color"])
+        description = str(node.get("description") or node.get("desc") or "").replace("\n", " ").strip()
+        layer = str(node.get("layer") or geometry["layer"])
+        level = str(node.get("level") or infer_hierarchy_level(layer, shape))
+        semantic_type = str(node.get("semantic_type") or layer)
+        state = str(node.get("state") or "")
 
         normalized_nodes.append({
-            "id": node_id,
-            "label": label[:160],
-            "shape": shape,
-            "color": color,
-            "description": description[:2000],
-            "layer": layer,
-            "level": level,
-            "semantic_type": semantic_type,
-            "state": state,
-            "size": int(node.get("size") or geometry["size"]),
+            "id": node_id, "label": label[:160], "shape": shape, "color": color,
+            "description": description[:2000], "layer": layer, "level": level,
+            "semantic_type": semantic_type, "state": state, "size": int(node.get("size") or geometry["size"]),
         })
 
     valid_ids = {node["id"] for node in normalized_nodes}
-
     normalized_edges = []
 
     for index, edge in enumerate(edges):
@@ -1546,62 +887,35 @@ def normalize_graph_data(data):
 
         source = str(edge.get("source", ""))
         target = str(edge.get("target", ""))
-
         if source not in valid_ids or target not in valid_ids:
             continue
 
-        relation = str(
-            edge.get("rel_type")
-            or edge.get("relation")
-            or "RT"
-        )
-
+        relation = str(edge.get("rel_type") or edge.get("relation") or "RT")
         if relation not in RELATION_DEFINITIONS:
             relation = "RT"
 
         normalized_edges.append({
-            "id": str(edge.get("id") or f"e{index + 1}"),
-            "source": source,
-            "target": target,
-            "rel_type": relation,
-            "label": str(
-                edge.get("label")
-                or RELATION_DEFINITIONS[relation]
-            )[:180],
-            "weight": float(
-                edge.get("weight", 1.0)
-                if str(edge.get("weight", "1.0")).replace(".", "", 1).isdigit()
-                else 1.0
-            ),
-            "direction": str(
-                edge.get("direction", "directed")
-            ),
+            "id": str(edge.get("id") or f"e{index + 1}"), "source": source, "target": target,
+            "rel_type": relation, "label": str(edge.get("label") or RELATION_DEFINITIONS[relation])[:180],
+            "weight": float(edge.get("weight", 1.0) if str(edge.get("weight", "1.0")).replace(".", "", 1).isdigit() else 1.0),
+            "direction": str(edge.get("direction", "directed")),
         })
 
-    return {
-        "nodes": normalized_nodes,
-        "edges": normalized_edges,
-    }
+    return {"nodes": normalized_nodes, "edges": normalized_edges}
 
 
 def infer_hierarchy_level(layer, shape):
     layer = layer.lower()
-
     if layer in {"goal", "domain", "macro", "vision"}:
         return "Macro"
-
     if layer in {"process", "innovation", "constraint", "system", "meso"}:
         return "Meso"
-
     if layer in {"fact", "data", "entity", "state", "micro"}:
         return "Micro"
-
     if shape == "star":
         return "Macro"
-
     if shape in {"diamond", "hexagon", "octagon", "triangle"}:
         return "Meso"
-
     return "Micro"
 
 
@@ -1610,14 +924,7 @@ def infer_hierarchy_level(layer, shape):
 # =============================================================================
 
 def enrich_graph_with_architecture(graph, selected_sciences):
-    """
-    The AI graph remains primary.
-    This function adds structural metadata and missing hierarchical,
-    UML and operational relationships without importing Stress-Barometer logic.
-    """
-
     graph = normalize_graph_data(graph)
-
     nodes = graph["nodes"]
     edges = graph["edges"]
 
@@ -1626,339 +933,122 @@ def enrich_graph_with_architecture(graph, selected_sciences):
 
     node_map = {n["id"]: n for n in nodes}
 
-    # -------------------------------------------------------------------------
-    # Normalize semantic node metadata.
-    # -------------------------------------------------------------------------
-
     for node in nodes:
         if not node.get("level"):
-            node["level"] = infer_hierarchy_level(
-                node.get("layer", ""),
-                node.get("shape", "rectangle"),
-            )
+            node["level"] = infer_hierarchy_level(node.get("layer", ""), node.get("shape", "rectangle"))
+        if node["shape"] == "diamond" and "Mental Approaches" not in node["description"]:
+            node["description"] += " Innovation node: identify the synthesized Mental Approaches and transformational mechanism in the report."
 
-        if node["shape"] == "diamond":
-            if "Mental Approaches" not in node["description"]:
-                node["description"] += (
-                    " Innovation node: identify the synthesized Mental "
-                    "Approaches and transformational mechanism in the report."
-                )
-
-    # -------------------------------------------------------------------------
-    # Add selected science domains when absent.
-    # -------------------------------------------------------------------------
-
-    existing_labels = {
-        n["label"].strip().lower()
-        for n in nodes
-    }
-
+    existing_labels = {n["label"].strip().lower() for n in nodes}
     for science in selected_sciences[:8]:
         if science.lower() in existing_labels:
             continue
-
-        node_id = unique_node_id(
-            "domain_" + slugify(science),
-            node_map,
-        )
-
+        node_id = unique_node_id("domain_" + slugify(science), node_map)
         node = {
-            "id": node_id,
-            "label": science,
-            "shape": "hexagon",
-            "color": NODE_GEOMETRY["hexagon"]["color"],
-            "description": (
-                SCIENCE_FIELDS.get(science, {})
-                .get("cat", "Scientific domain")
-            ),
-            "layer": "domain",
-            "level": "Macro",
-            "semantic_type": "science-domain",
-            "state": "",
-            "size": 115,
+            "id": node_id, "label": science, "shape": "hexagon", "color": NODE_GEOMETRY["hexagon"]["color"],
+            "description": SCIENCE_FIELDS.get(science, {}).get("cat", "Scientific domain"),
+            "layer": "domain", "level": "Macro", "semantic_type": "science-domain", "state": "", "size": 115,
         }
-
         nodes.append(node)
         node_map[node_id] = node
 
-    # -------------------------------------------------------------------------
-    # Create a deterministic hierarchy backbone if the AI did not provide it.
-    # -------------------------------------------------------------------------
-
-    root_id = find_label_node(
-        nodes,
-        ["Knowledge Domain", "Knowledge", "System", "SIS Knowledge System"],
-    )
-
+    root_id = find_label_node(nodes, ["Knowledge Domain", "Knowledge", "System", "SIS Knowledge System"])
     if root_id is None:
         root_id = unique_node_id("knowledge_root", node_map)
-
         root_node = {
-            "id": root_id,
-            "label": "SIS Knowledge System",
-            "shape": "star",
-            "color": "#1d3557",
-            "description": (
-                "Root of the multidimensional SIS knowledge architecture."
-            ),
-            "layer": "goal",
-            "level": "Macro",
-            "semantic_type": "root",
-            "state": "initial",
-            "size": 135,
+            "id": root_id, "label": "SIS Knowledge System", "shape": "star", "color": "#1d3557",
+            "description": "Root of the multidimensional SIS knowledge architecture.",
+            "layer": "goal", "level": "Macro", "semantic_type": "root", "state": "initial", "size": 135,
         }
-
         nodes.insert(0, root_node)
         node_map[root_id] = root_node
 
-    existing_pairs = {
-        (
-            edge["source"],
-            edge["target"],
-            edge["rel_type"],
-        )
-        for edge in edges
-    }
+    existing_pairs = {(edge["source"], edge["target"], edge["rel_type"]) for edge in edges}
 
     def add_edge(source, target, relation, weight=1.0):
         key = (source, target, relation)
-
-        if key in existing_pairs:
+        if key in existing_pairs or source not in node_map or target not in node_map:
             return
-
-        if source not in node_map or target not in node_map:
-            return
-
-        edges.append({
-            "id": f"auto_{len(edges) + 1}",
-            "source": source,
-            "target": target,
-            "rel_type": relation,
-            "label": RELATION_DEFINITIONS[relation],
-            "weight": weight,
-            "direction": "directed",
-        })
-
+        edges.append({"id": f"auto_{len(edges) + 1}", "source": source, "target": target, "rel_type": relation, "label": RELATION_DEFINITIONS[relation], "weight": weight, "direction": "directed"})
         existing_pairs.add(key)
 
-    # -------------------------------------------------------------------------
-    # Connect domains to root using BT/NT semantics.
-    # -------------------------------------------------------------------------
-
     for node in nodes:
-        if node["id"] == root_id:
-            continue
+        if node["id"] != root_id and node["layer"] == "domain":
+            add_edge(root_id, node["id"], "NT", 2.0)
 
-        if node["layer"] == "domain":
-            add_edge(
-                root_id,
-                node["id"],
-                "NT",
-                2.0,
-            )
-
-    # -------------------------------------------------------------------------
-    # Establish polyhierarchical connections.
-    # A concept can participate in several hierarchy dimensions.
-    # -------------------------------------------------------------------------
-
-    macro_nodes = [
-        n for n in nodes
-        if n["level"] == "Macro" and n["id"] != root_id
-    ]
-
-    meso_nodes = [
-        n for n in nodes
-        if n["level"] == "Meso"
-    ]
-
-    micro_nodes = [
-        n for n in nodes
-        if n["level"] == "Micro"
-    ]
+    macro_nodes = [n for n in nodes if n["level"] == "Macro" and n["id"] != root_id]
+    meso_nodes = [n for n in nodes if n["level"] == "Meso"]
+    micro_nodes = [n for n in nodes if n["level"] == "Micro"]
 
     for macro in macro_nodes[:12]:
         for meso in meso_nodes[:20]:
-            if macro["id"] == meso["id"]:
-                continue
-
-            if semantic_related(macro, meso):
-                add_edge(
-                    macro["id"],
-                    meso["id"],
-                    "BT",
-                    1.0,
-                )
+            if macro["id"] != meso["id"] and semantic_related(macro, meso):
+                add_edge(macro["id"], meso["id"], "BT", 1.0)
 
     for meso in meso_nodes[:25]:
         for micro in micro_nodes[:25]:
-            if meso["id"] == micro["id"]:
-                continue
-
-            if semantic_related(meso, micro):
-                add_edge(
-                    meso["id"],
-                    micro["id"],
-                    "NT",
-                    0.8,
-                )
-
-    # -------------------------------------------------------------------------
-    # Add lateral associative relations.
-    # -------------------------------------------------------------------------
+            if meso["id"] != micro["id"] and semantic_related(meso, micro):
+                add_edge(meso["id"], micro["id"], "NT", 0.8)
 
     all_nodes = nodes[:80]
-
     for i, source in enumerate(all_nodes):
         for target in all_nodes[i + 1:]:
-            if source["id"] == target["id"]:
-                continue
+            if source["id"] != target["id"] and semantic_related(source, target):
+                existing = any(e["source"] == source["id"] and e["target"] == target["id"] for e in edges)
+                reverse_existing = any(e["source"] == target["id"] and e["target"] == source["id"] for e in edges)
+                if not existing and not reverse_existing:
+                    add_edge(source["id"], target["id"], "RT", 0.35)
 
-            if not semantic_related(source, target):
-                continue
-
-            existing = any(
-                e["source"] == source["id"]
-                and e["target"] == target["id"]
-                for e in edges
-            )
-
-            reverse_existing = any(
-                e["source"] == target["id"]
-                and e["target"] == source["id"]
-                for e in edges
-            )
-
-            if not existing and not reverse_existing:
-                add_edge(
-                    source["id"],
-                    target["id"],
-                    "RT",
-                    0.35,
-                )
-
-    # -------------------------------------------------------------------------
-    # Detect process -> output operational paths.
-    # -------------------------------------------------------------------------
-
-    process_nodes = [
-        n for n in nodes
-        if n["shape"] == "triangle"
-        or n["layer"] == "process"
-    ]
-
-    innovation_nodes = [
-        n for n in nodes
-        if n["shape"] == "diamond"
-        or n["layer"] == "innovation"
-    ]
-
-    state_nodes = [
-        n for n in nodes
-        if n["shape"] == "round-rectangle"
-        or n["layer"] == "state"
-    ]
+    process_nodes = [n for n in nodes if n["shape"] == "triangle" or n["layer"] == "process"]
+    innovation_nodes = [n for n in nodes if n["shape"] == "diamond" or n["layer"] == "innovation"]
+    state_nodes = [n for n in nodes if n["shape"] == "round-rectangle" or n["layer"] == "state"]
 
     for process in process_nodes[:20]:
         for innovation in innovation_nodes[:20]:
             if semantic_related(process, innovation):
-                add_edge(
-                    process["id"],
-                    innovation["id"],
-                    "TRANSFORMS",
-                    1.2,
-                )
+                add_edge(process["id"], innovation["id"], "TRANSFORMS", 1.2)
 
     for innovation in innovation_nodes[:20]:
         for state in state_nodes[:20]:
-            add_edge(
-                innovation["id"],
-                state["id"],
-                "TRANSFORMS",
-                1.0,
-            )
-
-    # -------------------------------------------------------------------------
-    # Feedback loop representation.
-    # Explicitly creates a feedback edge only when states/operations support it.
-    # -------------------------------------------------------------------------
+            add_edge(innovation["id"], state["id"], "TRANSFORMS", 1.0)
 
     if len(state_nodes) >= 2:
-        first_state = state_nodes[0]
-        second_state = state_nodes[1]
+        add_edge(state_nodes[1]["id"], state_nodes[0]["id"], "FEEDBACK", 0.7)
 
-        add_edge(
-            second_state["id"],
-            first_state["id"],
-            "FEEDBACK",
-            0.7,
-        )
-
-    return {
-        "nodes": nodes,
-        "edges": edges,
-    }
+    return {"nodes": nodes, "edges": edges}
 
 
 def slugify(value):
-    return re.sub(
-        r"[^a-zA-Z0-9]+",
-        "_",
-        str(value).strip().lower(),
-    ).strip("_")
+    return re.sub(r"[^a-zA-Z0-9]+", "_", str(value).strip().lower()).strip("_")
 
 
 def unique_node_id(base, node_map):
     candidate = base or "node"
-
     if candidate not in node_map:
         return candidate
-
     i = 2
-
     while f"{candidate}_{i}" in node_map:
         i += 1
-
     return f"{candidate}_{i}"
 
 
 def find_label_node(nodes, labels):
-    wanted = {
-        x.strip().lower()
-        for x in labels
-    }
-
+    wanted = {x.strip().lower() for x in labels}
     for node in nodes:
         if node["label"].strip().lower() in wanted:
             return node["id"]
-
     return None
 
 
 def semantic_related(a, b):
-    a_words = set(
-        re.findall(
-            r"[a-zA-ZÀ-ž0-9]{4,}",
-            a["label"].lower(),
-        )
-    )
-
-    b_words = set(
-        re.findall(
-            r"[a-zA-ZÀ-ž0-9]{4,}",
-            b["label"].lower(),
-        )
-    )
-
+    a_words = set(re.findall(r"[a-zA-ZÀ-ž0-9]{4,}", a["label"].lower()))
+    b_words = set(re.findall(r"[a-zA-ZÀ-ž0-9]{4,}", b["label"].lower()))
     if a_words & b_words:
         return True
-
     if a.get("layer") == b.get("layer"):
         return True
-
     if a.get("level") != b.get("level"):
         return True
-
     return False
 
 
@@ -1969,169 +1059,45 @@ def semantic_related(a, b):
 def graph_statistics(graph):
     nodes = graph.get("nodes", [])
     edges = graph.get("edges", [])
-
     levels = {}
     layers = {}
     relations = {}
-
     for node in nodes:
         levels[node["level"]] = levels.get(node["level"], 0) + 1
         layers[node["layer"]] = layers.get(node["layer"], 0) + 1
-
     for edge in edges:
         rel = edge["rel_type"]
         relations[rel] = relations.get(rel, 0) + 1
-
-    return {
-        "nodes": len(nodes),
-        "edges": len(edges),
-        "levels": levels,
-        "layers": layers,
-        "relations": relations,
-    }
+    return {"nodes": len(nodes), "edges": len(edges), "levels": levels, "layers": layers, "relations": relations}
 
 
 # =============================================================================
 # CYTOSCAPE HIERARCHOGRAPHIC RENDERER
 # =============================================================================
 
-def render_cytoscape_network(
-    graph,
-    layout_type="hierarchographic",
-    container_id="cy_canvas",
-):
+def render_cytoscape_network(graph, layout_type="hierarchographic", container_id="cy_canvas"):
     graph = normalize_graph_data(graph)
-
     elements = []
 
     for node in graph["nodes"]:
-        elements.append({
-            "data": {
-                "id": node["id"],
-                "label": node["label"],
-                "color": node["color"],
-                "shape": node["shape"],
-                "size": node["size"],
-                "description": node["description"],
-                "layer": node["layer"],
-                "level": node["level"],
-                "semantic_type": node["semantic_type"],
-                "state": node["state"],
-            }
-        })
+        elements.append({"data": {"id": node["id"], "label": node["label"], "color": node["color"], "shape": node["shape"], "size": node["size"], "description": node["description"], "layer": node["layer"], "level": node["level"], "semantic_type": node["semantic_type"], "state": node["state"]}})
 
     for edge in graph["edges"]:
-        color = RELATION_COLORS.get(
-            edge["rel_type"],
-            "#adb5bd",
-        )
-
-        elements.append({
-            "data": {
-                "id": edge["id"],
-                "source": edge["source"],
-                "target": edge["target"],
-                "rel_type": edge["rel_type"],
-                "label": edge["rel_type"],
-                "color": color,
-                "weight": edge["weight"],
-            }
-        })
+        color = RELATION_COLORS.get(edge["rel_type"], "#adb5bd")
+        elements.append({"data": {"id": edge["id"], "source": edge["source"], "target": edge["target"], "rel_type": edge["rel_type"], "label": edge["rel_type"], "color": color, "weight": edge["weight"]}})
 
     layout_configs = {
-        "organic": """
-        {
-            name:'cose',
-            animate:false,
-            fit:true,
-            padding:60,
-            nodeRepulsion:180000,
-            idealEdgeLength:150,
-            edgeElasticity:100,
-            nestingFactor:1.2,
-            gravity:0.25,
-            numIter:1800
-        }
-        """,
-
-        "hierarchical": """
-        {
-            name:'breadthfirst',
-            directed:true,
-            circle:false,
-            padding:70,
-            spacingFactor:1.45,
-            maximal:false,
-            roots:'#knowledge_root'
-        }
-        """,
-
-        "circular": """
-        {
-            name:'circle',
-            padding:70,
-            spacingFactor:1.1
-        }
-        """,
-
-        "concentric": """
-        {
-            name:'concentric',
-            padding:70,
-            minNodeSpacing:65,
-            concentric:function(node){
-                var level=node.data('level');
-                if(level==='Macro') return 3;
-                if(level==='Meso') return 2;
-                return 1;
-            },
-            levelWidth:function(){return 1;}
-        }
-        """,
-
-        "grid": """
-        {
-            name:'grid',
-            padding:70,
-            avoidOverlap:true,
-            avoidOverlapPadding:35,
-            rows:Math.ceil(Math.sqrt(elements.length))
-        }
-        """,
-
-        "hierarchographic": """
-        {
-            name:'breadthfirst',
-            directed:true,
-            circle:false,
-            padding:90,
-            spacingFactor:1.35,
-            maximal:false,
-            roots:'#knowledge_root'
-        }
-        """,
-
-        "operational": """
-        {
-            name:'breadthfirst',
-            directed:true,
-            circle:false,
-            padding:90,
-            spacingFactor:1.55,
-            roots:'#knowledge_root'
-        }
-        """,
+        "organic": "{name:'cose',animate:false,fit:true,padding:60,nodeRepulsion:180000,idealEdgeLength:150,edgeElasticity:100,nestingFactor:1.2,gravity:0.25,numIter:1800}",
+        "hierarchical": "{name:'breadthfirst',directed:true,circle:false,padding:70,spacingFactor:1.45,maximal:false,roots:'#knowledge_root'}",
+        "circular": "{name:'circle',padding:70,spacingFactor:1.1}",
+        "concentric": "{name:'concentric',padding:70,minNodeSpacing:65,concentric:function(node){var level=node.data('level');if(level==='Macro')return 3;if(level==='Meso')return 2;return 1;},levelWidth:function(){return 1;}}",
+        "grid": "{name:'grid',padding:70,avoidOverlap:true,avoidOverlapPadding:35,rows:Math.ceil(Math.sqrt(elements.length))}",
+        "hierarchographic": "{name:'breadthfirst',directed:true,circle:false,padding:90,spacingFactor:1.35,maximal:false,roots:'#knowledge_root'}",
+        "operational": "{name:'breadthfirst',directed:true,circle:false,padding:90,spacingFactor:1.55,roots:'#knowledge_root'}",
     }
 
-    selected_layout = layout_configs.get(
-        layout_type,
-        layout_configs["hierarchographic"],
-    )
-
-    safe_elements = json.dumps(
-        elements,
-        ensure_ascii=False,
-    )
+    selected_layout = layout_configs.get(layout_type, layout_configs["hierarchographic"])
+    safe_elements = json.dumps(elements, ensure_ascii=False)
 
     html_doc = f"""
 <!DOCTYPE html>
@@ -2140,604 +1106,37 @@ def render_cytoscape_network(
 <meta charset="utf-8">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
 <style>
-body {{
-    margin:0;
-    background:#ffffff;
-    font-family:Arial,Helvetica,sans-serif;
-}}
-
-.wrapper {{
-    position:relative;
-    width:100%;
-}}
-
-#legend {{
-    position:absolute;
-    left:18px;
-    top:18px;
-    z-index:1000;
-    background:rgba(255,255,255,.96);
-    border:1px solid #d9dee5;
-    border-radius:12px;
-    padding:12px 15px;
-    font-size:11px;
-    line-height:1.55;
-    box-shadow:0 4px 18px rgba(0,0,0,.10);
-    max-width:330px;
-}}
-
-#toolbar {{
-    position:absolute;
-    right:18px;
-    top:18px;
-    z-index:1000;
-    display:flex;
-    gap:7px;
-}}
-
-.tool {{
-    border:0;
-    border-radius:8px;
-    padding:9px 12px;
-    background:#1d3557;
-    color:white;
-    font-weight:700;
-    cursor:pointer;
-}}
-
-.tool:hover {{
-    background:#457b9d;
-}}
-
-#cy {{
-    width:100%;
-    height:900px;
-    background:#fbfcfe;
-    border:1px solid #dfe5eb;
-    border-radius:18px;
-    box-shadow:0 8px 35px rgba(0,0,0,.08);
-}}
-
-.layer {{
-    display:inline-block;
-    margin-right:7px;
-    font-weight:bold;
-}}
-
-.macro {{color:#1d3557;}}
-.meso {{color:#7b2cb1;}}
-.micro {{color:#2a9d8f;}}
+body{{margin:0;background:#ffffff;font-family:Arial,Helvetica,sans-serif;}}
+.wrapper{{position:relative;width:100%;}}
+#legend{{position:absolute;left:18px;top:18px;z-index:1000;background:rgba(255,255,255,.96);border:1px solid #d9dee5;border-radius:12px;padding:12px 15px;font-size:11px;line-height:1.55;box-shadow:0 4px 18px rgba(0,0,0,.10);max-width:330px;}}
+#toolbar{{position:absolute;right:18px;top:18px;z-index:1000;display:flex;gap:7px;}}
+.tool{{border:0;border-radius:8px;padding:9px 12px;background:#1d3557;color:white;font-weight:700;cursor:pointer;}}
+.tool:hover{{background:#457b9d;}}
+#cy{{width:100%;height:900px;background:#fbfcfe;border:1px solid #dfe5eb;border-radius:18px;box-shadow:0 8px 35px rgba(0,0,0,.08);}}
+.layer{{display:inline-block;margin-right:7px;font-weight:bold;}}
+.macro{{color:#1d3557;}}.meso{{color:#7b2cb1;}}.micro{{color:#2a9d8f;}}
 </style>
 </head>
-
 <body>
 <div class="wrapper">
-
-<div id="legend">
-<b>SIS HIERARCHOGRAPHY</b><br>
-<span class="layer macro">● MACRO</span>
-Goals · domains · principles<br>
-<span class="layer meso">● MESO</span>
-Processes · innovations · rules<br>
-<span class="layer micro">● MICRO</span>
-Facts · entities · states<br><br>
-<b>Vertical:</b> hierarchy / taxonomy<br>
-<b>Horizontal:</b> association / relation<br>
-<b>Operational:</b> transformation / process<br>
-<b>Feedback:</b> cyclic system regulation
-</div>
-
-<div id="toolbar">
-<button class="tool" id="fit">FIT</button>
-<button class="tool" id="hier">HIERARCHY</button>
-<button class="tool" id="save">EXPORT PNG</button>
-</div>
-
+<div id="legend"><b>SIS HIERARCHOGRAPHY</b><br><span class="layer macro">● MACRO</span>Goals · domains · principles<br><span class="layer meso">● MESO</span>Processes · innovations · rules<br><span class="layer micro">● MICRO</span>Facts · entities · states<br><br><b>Vertical:</b> hierarchy / taxonomy<br><b>Horizontal:</b> association / relation<br><b>Operational:</b> transformation / process<br><b>Feedback:</b> cyclic system regulation</div>
+<div id="toolbar"><button class="tool" id="fit">FIT</button><button class="tool" id="hier">HIERARCHY</button><button class="tool" id="save">EXPORT PNG</button></div>
 <div id="cy"></div>
 </div>
-
 <script>
-const elements = {safe_elements};
-
-const cy = cytoscape({{
-    container: document.getElementById('cy'),
-    elements: elements,
-
-    style: [
-
-        {{
-            selector:'node',
-            style:{{
-                'label':'data(label)',
-                'shape':'data(shape)',
-                'background-color':'data(color)',
-                'width':'data(size)',
-                'height':'data(size)',
-                'color':'#17202a',
-                'font-size':'11px',
-                'font-weight':'bold',
-                'text-wrap':'wrap',
-                'text-max-width':'110px',
-                'text-valign':'center',
-                'text-halign':'center',
-                'border-width':2,
-                'border-color':'#ffffff',
-                'border-opacity':.95,
-                'text-outline-color':'#ffffff',
-                'text-outline-width':2
-            }}
-        }},
-
-        {{
-            selector:'node[level="Macro"]',
-            style:{{
-                'border-width':5,
-                'border-color':'#1d3557',
-                'font-size':'13px'
-            }}
-        }},
-
-        {{
-            selector:'node[level="Meso"]',
-            style:{{
-                'border-width':3,
-                'border-color':'#7b2cb1'
-            }}
-        }},
-
-        {{
-            selector:'node[level="Micro"]',
-            style:{{
-                'border-width':2,
-                'border-color':'#2a9d8f'
-            }}
-        }},
-
-        {{
-            selector:'node[shape="star"]',
-            style:{{
-                'border-width':6,
-                'border-color':'#e9b949'
-            }}
-        }},
-
-        {{
-            selector:'node[shape="diamond"]',
-            style:{{
-                'border-width':4,
-                'border-color':'#d97706'
-            }}
-        }},
-
-        {{
-            selector:'node[shape="octagon"]',
-            style:{{
-                'border-width':4,
-                'border-color':'#8a6d1d'
-            }}
-        }},
-
-        {{
-            selector:'node[shape="triangle"]',
-            style:{{
-                'border-width':3,
-                'border-color':'#167d70'
-            }}
-        }},
-
-        {{
-            selector:'edge',
-            style:{{
-                'width':'mapData(weight,0.3,2,1.5,6)',
-                'line-color':'data(color)',
-                'target-arrow-color':'data(color)',
-                'target-arrow-shape':'vee',
-                'curve-style':'bezier',
-                'label':'data(label)',
-                'font-size':'8px',
-                'font-weight':'bold',
-                'color':'#343a40',
-                'text-background-color':'#ffffff',
-                'text-background-opacity':.92,
-                'text-background-padding':'3px',
-                'opacity':.8
-            }}
-        }},
-
-        {{
-            selector:'edge[rel_type="TT"]',
-            style:{{
-                'width':6,
-                'target-arrow-shape':'triangle',
-                'line-color':'#14213d'
-            }}
-        }},
-
-        {{
-            selector:'edge[rel_type="BT"]',
-            style:{{
-                'width':5,
-                'target-arrow-shape':'triangle',
-                'line-color':'#1d3557'
-            }}
-        }},
-
-        {{
-            selector:'edge[rel_type="NT"]',
-            style:{{
-                'width':4,
-                'target-arrow-shape':'vee',
-                'line-color':'#457b9d'
-            }}
-        }},
-
-        {{
-            selector:'edge[rel_type="RT"]',
-            style:{{
-                'width':2,
-                'line-style':'dotted',
-                'target-arrow-shape':'none',
-                'line-color':'#2a9d8f'
-            }}
-        }},
-
-        {{
-            selector:'edge[rel_type="EQ"]',
-            style:{{
-                'width':5,
-                'line-style':'dashed',
-                'target-arrow-shape':'none',
-                'line-color':'#f1c40f'
-            }}
-        }},
-
-        {{
-            selector:'edge[rel_type="AS"]',
-            style:{{
-                'width':3,
-                'line-style':'dashed',
-                'line-color':'#7b2cb1'
-            }}
-        }},
-
-        {{
-            selector:'edge[rel_type="IN"]',
-            style:{{
-                'width':3,
-                'target-arrow-shape':'circle',
-                'line-color':'#0077b6'
-            }}
-        }},
-
-        {{
-            selector:'edge[rel_type="Generalization"]',
-            style:{{
-                'width':4,
-                'target-arrow-shape':'triangle',
-                'target-arrow-fill':'hollow',
-                'line-color':'#e63946'
-            }}
-        }},
-
-        {{
-            selector:'edge[rel_type="Specialization"]',
-            style:{{
-                'width':3,
-                'line-style':'dashed',
-                'target-arrow-shape':'triangle',
-                'target-arrow-fill':'hollow',
-                'line-color':'#111111'
-            }}
-        }},
-
-        {{
-            selector:'edge[rel_type="Composition"]',
-            style:{{
-                'width':5,
-                'source-arrow-shape':'diamond',
-                'source-arrow-fill':'filled',
-                'line-color':'#d62828'
-            }}
-        }},
-
-        {{
-            selector:'edge[rel_type="Aggregation"]',
-            style:{{
-                'width':4,
-                'source-arrow-shape':'diamond',
-                'source-arrow-fill':'hollow',
-                'line-color':'#f77f00'
-            }}
-        }},
-
-        {{
-            selector:'edge[rel_type="Containment"]',
-            style:{{
-                'width':4,
-                'target-arrow-shape':'circle',
-                'target-arrow-fill':'hollow',
-                'line-color':'#1d3557'
-            }}
-        }},
-
-        {{
-            selector:'edge[rel_type="Realization"]',
-            style:{{
-                'width':4,
-                'line-style':'dashed',
-                'target-arrow-shape':'triangle',
-                'target-arrow-fill':'hollow',
-                'line-color':'#e63946'
-            }}
-        }},
-
-        {{
-            selector:'edge[rel_type="Dependency"]',
-            style:{{
-                'width':3,
-                'line-style':'dashed',
-                'target-arrow-shape':'vee',
-                'line-color':'#6c757d'
-            }}
-        }},
-
-        {{
-            selector:'edge[rel_type="Conflict"]',
-            style:{{
-                'width':6,
-                'line-color':'#b91d1d',
-                'target-arrow-shape':'triangle-cross',
-                'source-arrow-shape':'triangle-cross',
-                'target-arrow-color':'#b91d1d',
-                'source-arrow-color':'#b91d1d'
-            }}
-        }},
-
-        {{
-            selector:'edge[rel_type="AND"]',
-            style:{{
-                'width':5,
-                'line-color':'#008000',
-                'target-arrow-shape':'triangle'
-            }}
-        }},
-
-        {{
-            selector:'edge[rel_type="OR"]',
-            style:{{
-                'width':3,
-                'line-style':'dashed',
-                'line-color':'#00a6d6',
-                'target-arrow-shape':'vee'
-            }}
-        }},
-
-        {{
-            selector:'edge[rel_type="XOR"]',
-            style:{{
-                'width':4,
-                'line-style':'dashed',
-                'line-color':'#ff8c00',
-                'target-arrow-shape':'diamond'
-            }}
-        }},
-
-        {{
-            selector:'edge[rel_type="NOT"]',
-            style:{{
-                'width':4,
-                'line-style':'dashed',
-                'line-color':'#ff0000',
-                'target-arrow-shape':'tee'
-            }}
-        }},
-
-        {{
-            selector:'edge[rel_type="IF-THEN"]',
-            style:{{
-                'width':4,
-                'line-color':'#d4a900',
-                'target-arrow-shape':'triangle'
-            }}
-        }},
-
-        {{
-            selector:'edge[rel_type="CAUSES"]',
-            style:{{
-                'width':5,
-                'line-color':'#c1121f',
-                'target-arrow-shape':'triangle'
-            }}
-        }},
-
-        {{
-            selector:'edge[rel_type="TRANSFORMS"]',
-            style:{{
-                'width':5,
-                'line-color':'#8a2be2',
-                'target-arrow-shape':'triangle'
-            }}
-        }},
-
-        {{
-            selector:'edge[rel_type="PRODUCES"]',
-            style:{{
-                'width':4,
-                'line-color':'#218739',
-                'target-arrow-shape':'triangle'
-            }}
-        }},
-
-        {{
-            selector:'edge[rel_type="FEEDS"]',
-            style:{{
-                'width':4,
-                'line-color':'#0077b6',
-                'target-arrow-shape':'vee'
-            }}
-        }},
-
-        {{
-            selector:'edge[rel_type="FEEDBACK"]',
-            style:{{
-                'width':5,
-                'line-color':'#6a4c93',
-                'line-style':'dashed',
-                'target-arrow-shape':'vee',
-                'curve-style':'unbundled-bezier',
-                'control-point-distances':[60,-60]
-            }}
-        }},
-
-        {{
-            selector:'edge[rel_type="POSITIVE-FEEDBACK"]',
-            style:{{
-                'width':5,
-                'line-color':'#008000',
-                'target-arrow-shape':'vee',
-                'curve-style':'unbundled-bezier',
-                'control-point-distances':[70]
-            }}
-        }},
-
-        {{
-            selector:'edge[rel_type="NEGATIVE-FEEDBACK"]',
-            style:{{
-                'width':5,
-                'line-color':'#c77d00',
-                'target-arrow-shape':'vee',
-                'curve-style':'unbundled-bezier',
-                'control-point-distances':[-70]
-            }}
-        }},
-
-        {{
-            selector:'edge[rel_type="PRECEDES"]',
-            style:{{
-                'width':3,
-                'line-color':'#577590',
-                'target-arrow-shape':'vee'
-            }}
-        }},
-
-        {{
-            selector:'edge[rel_type="CONSTRAINS"]',
-            style:{{
-                'width':4,
-                'line-style':'dashed',
-                'line-color':'#6c757d',
-                'target-arrow-shape':'tee'
-            }}
-        }},
-
-        {{
-            selector:'edge[rel_type="MEASURES"]',
-            style:{{
-                'width':3,
-                'line-style':'dotted',
-                'line-color':'#118ab2',
-                'target-arrow-shape':'vee'
-            }}
-        }},
-
-        {{
-            selector:'edge[rel_type="VALIDATES"]',
-            style:{{
-                'width':4,
-                'line-color':'#06a77d',
-                'target-arrow-shape':'triangle'
-            }}
-        }},
-
-        {{
-            selector:':selected',
-            style:{{
-                'border-color':'#000000',
-                'border-width':7,
-                'line-color':'#000000',
-                'target-arrow-color':'#000000',
-                'opacity':1
-            }}
-        }}
-    ],
-
-    layout:{selected_layout}
-}});
-
-cy.ready(function(){{
-    cy.fit(null,80);
-}});
-
-cy.on('tap','node',function(evt){{
-    const n=evt.target;
-    const d=n.data();
-
-    const level=d.level || '';
-    const layer=d.layer || '';
-    const state=d.state || '';
-
-    let text =
-        '<b>'+escapeHtml(d.label)+'</b><br><br>'+
-        '<b>Level:</b> '+escapeHtml(level)+'<br>'+
-        '<b>Layer:</b> '+escapeHtml(layer)+'<br>'+
-        '<b>Semantic type:</b> '+escapeHtml(d.semantic_type||'')+'<br>'+
-        (state ? '<b>State:</b> '+escapeHtml(state)+'<br>' : '')+
-        '<br>'+escapeHtml(d.description||'');
-
-    alert(text.replace(/<br>/g,'\\n').replace(/<[^>]*>/g,''));
-}});
-
-document.getElementById('fit').onclick=function(){{
-    cy.fit(null,80);
-}};
-
-document.getElementById('hier').onclick=function(){{
-    cy.layout({{
-        name:'breadthfirst',
-        directed:true,
-        circle:false,
-        padding:90,
-        spacingFactor:1.35,
-        roots:'#knowledge_root',
-        animate:false
-    }}).run();
-}};
-
-document.getElementById('save').onclick=function(){{
-    const png=cy.png({{
-        full:true,
-        bg:'white',
-        scale:2
-    }});
-
-    const link=document.createElement('a');
-    const stamp=new Date().toISOString()
-        .replace(/[:.]/g,'-')
-        .slice(0,19);
-
-    link.href=png;
-    link.download='SIS_Hierarchograph_'+stamp+'.png';
-    link.click();
-}};
-
-function escapeHtml(value){{
-    return String(value)
-        .replace(/&/g,'&amp;')
-        .replace(/</g,'&lt;')
-        .replace(/>/g,'&gt;')
-        .replace(/"/g,'&quot;')
-        .replace(/'/g,'&#039;');
-}}
+const elements={safe_elements};
+const cy=cytoscape({{container:document.getElementById('cy'),elements:elements,style:[{{selector:'node',style:{{'label':'data(label)','shape':'data(shape)','background-color':'data(color)','width':'data(size)','height':'data(size)','color':'#17202a','font-size':'11px','font-weight':'bold','text-wrap':'wrap','text-max-width':'110px','text-valign':'center','text-halign':'center','border-width':2,'border-color':'#ffffff','border-opacity':.95,'text-outline-color':'#ffffff','text-outline-width':2}}}},{{selector:'node[level="Macro"]',style:{{'border-width':5,'border-color':'#1d3557','font-size':'13px'}}}},{{selector:'node[level="Meso"]',style:{{'border-width':3,'border-color':'#7b2cb1'}}}},{{selector:'node[level="Micro"]',style:{{'border-width':2,'border-color':'#2a9d8f'}}}},{{selector:'node[shape="star"]',style:{{'border-width':6,'border-color':'#e9b949'}}}},{{selector:'node[shape="diamond"]',style:{{'border-width':4,'border-color':'#d97706'}}}},{{selector:'node[shape="octagon"]',style:{{'border-width':4,'border-color':'#8a6d1d'}}}},{{selector:'node[shape="triangle"]',style:{{'border-width':3,'border-color':'#167d70'}}}},{{selector:'edge',style:{{'width':'mapData(weight,0.3,2,1.5,6)','line-color':'data(color)','target-arrow-color':'data(color)','target-arrow-shape':'vee','curve-style':'bezier','label':'data(label)','font-size':'8px','font-weight':'bold','color':'#343a40','text-background-color':'#ffffff','text-background-opacity':.92,'text-background-padding':'3px','opacity':.8}}}},{{selector:'edge[rel_type="TT"]',style:{{'width':6,'target-arrow-shape':'triangle','line-color':'#14213d'}}}},{{selector:'edge[rel_type="BT"]',style:{{'width':5,'target-arrow-shape':'triangle','line-color':'#1d3557'}}}},{{selector:'edge[rel_type="NT"]',style:{{'width':4,'target-arrow-shape':'vee','line-color':'#457b9d'}}}},{{selector:'edge[rel_type="RT"]',style:{{'width':2,'line-style':'dotted','target-arrow-shape':'none','line-color':'#2a9d8f'}}}},{{selector:'edge[rel_type="EQ"]',style:{{'width':5,'line-style':'dashed','target-arrow-shape':'none','line-color':'#f1c40f'}}}},{{selector:'edge[rel_type="AS"]',style:{{'width':3,'line-style':'dashed','line-color':'#7b2cb1'}}}},{{selector:'edge[rel_type="IN"]',style:{{'width':3,'target-arrow-shape':'circle','line-color':'#0077b6'}}}},{{selector:'edge[rel_type="Generalization"]',style:{{'width':4,'target-arrow-shape':'triangle','target-arrow-fill':'hollow','line-color':'#e63946'}}}},{{selector:'edge[rel_type="Specialization"]',style:{{'width':3,'line-style':'dashed','target-arrow-shape':'triangle','target-arrow-fill':'hollow','line-color':'#111111'}}}},{{selector:'edge[rel_type="Composition"]',style:{{'width':5,'source-arrow-shape':'diamond','source-arrow-fill':'filled','line-color':'#d62828'}}}},{{selector:'edge[rel_type="Aggregation"]',style:{{'width':4,'source-arrow-shape':'diamond','source-arrow-fill':'hollow','line-color':'#f77f00'}}}},{{selector:'edge[rel_type="Containment"]',style:{{'width':4,'target-arrow-shape':'circle','target-arrow-fill':'hollow','line-color':'#1d3557'}}}},{{selector:'edge[rel_type="Realization"]',style:{{'width':4,'line-style':'dashed','target-arrow-shape':'triangle','target-arrow-fill':'hollow','line-color':'#e63946'}}}},{{selector:'edge[rel_type="Dependency"]',style:{{'width':3,'line-style':'dashed','target-arrow-shape':'vee','line-color':'#6c757d'}}}},{{selector:'edge[rel_type="Conflict"]',style:{{'width':6,'line-color':'#b91d1d','target-arrow-shape':'triangle-cross','source-arrow-shape':'triangle-cross','target-arrow-color':'#b91d1d','source-arrow-color':'#b91d1d'}}}},{{selector:'edge[rel_type="AND"]',style:{{'width':5,'line-color':'#008000','target-arrow-shape':'triangle'}}}},{{selector:'edge[rel_type="OR"]',style:{{'width':3,'line-style':'dashed','line-color':'#00a6d6','target-arrow-shape':'vee'}}}},{{selector:'edge[rel_type="XOR"]',style:{{'width':4,'line-style':'dashed','line-color':'#ff8c00','target-arrow-shape':'diamond'}}}},{{selector:'edge[rel_type="NOT"]',style:{{'width':4,'line-style':'dashed','line-color':'#ff0000','target-arrow-shape':'tee'}}}},{{selector:'edge[rel_type="IF-THEN"]',style:{{'width':4,'line-color':'#d4a900','target-arrow-shape':'triangle'}}}},{{selector:'edge[rel_type="CAUSES"]',style:{{'width':5,'line-color':'#c1121f','target-arrow-shape':'triangle'}}}},{{selector:'edge[rel_type="TRANSFORMS"]',style:{{'width':5,'line-color':'#8a2be2','target-arrow-shape':'triangle'}}}},{{selector:'edge[rel_type="PRODUCES"]',style:{{'width':4,'line-color':'#218739','target-arrow-shape':'triangle'}}}},{{selector:'edge[rel_type="FEEDS"]',style:{{'width':4,'line-color':'#0077b6','target-arrow-shape':'vee'}}}},{{selector:'edge[rel_type="FEEDBACK"]',style:{{'width':5,'line-color':'#6a4c93','line-style':'dashed','target-arrow-shape':'vee','curve-style':'unbundled-bezier','control-point-distances':[60,-60]}}}},{{selector:'edge[rel_type="POSITIVE-FEEDBACK"]',style:{{'width':5,'line-color':'#008000','target-arrow-shape':'vee','curve-style':'unbundled-bezier','control-point-distances':[70]}}}},{{selector:'edge[rel_type="NEGATIVE-FEEDBACK"]',style:{{'width':5,'line-color':'#c77d00','target-arrow-shape':'vee','curve-style':'unbundled-bezier','control-point-distances':[-70]}}}},{{selector:'edge[rel_type="PRECEDES"]',style:{{'width':3,'line-color':'#577590','target-arrow-shape':'vee'}}}},{{selector:'edge[rel_type="CONSTRAINS"]',style:{{'width':4,'line-style':'dashed','line-color':'#6c757d','target-arrow-shape':'tee'}}}},{{selector:'edge[rel_type="MEASURES"]',style:{{'width':3,'line-style':'dotted','line-color':'#118ab2','target-arrow-shape':'vee'}}}},{{selector:'edge[rel_type="VALIDATES"]',style:{{'width':4,'line-color':'#06a77d','target-arrow-shape':'triangle'}}}},{{selector:':selected',style:{{'border-color':'#000000','border-width':7,'line-color':'#000000','target-arrow-color':'#000000','opacity':1}}}}],layout:{selected_layout}}});
+cy.ready(function(){{cy.fit(null,80);}});
+cy.on('tap','node',function(evt){{const n=evt.target;const d=n.data();const level=d.level||'';const layer=d.layer||'';const state=d.state||'';let text='<b>'+escapeHtml(d.label)+'</b><br><br>'+'<b>Level:</b> '+escapeHtml(level)+'<br>'+'<b>Layer:</b> '+escapeHtml(layer)+'<br>'+'<b>Semantic type:</b> '+escapeHtml(d.semantic_type||'')+'<br>'+(state?'<b>State:</b> '+escapeHtml(state)+'<br>':'')+'<br>'+escapeHtml(d.description||'');alert(text.replace(/<br>/g,'\\n').replace(/<[^>]*>/g,''));}});
+document.getElementById('fit').onclick=function(){{cy.fit(null,80);}};
+document.getElementById('hier').onclick=function(){{cy.layout({{name:'breadthfirst',directed:true,circle:false,padding:90,spacingFactor:1.35,roots:'#knowledge_root',animate:false}}).run();}};
+document.getElementById('save').onclick=function(){{const png=cy.png({{full:true,bg:'white',scale:2}});const link=document.createElement('a');const stamp=new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);link.href=png;link.download='SIS_Hierarchograph_'+stamp+'.png';link.click();}};
+function escapeHtml(value){{return String(value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}}
 </script>
 </body>
 </html>
 """
-
-    components.html(
-        html_doc,
-        height=950,
-        scrolling=False,
-    )
+    components.html(html_doc, height=950, scrolling=False)
 
 
 # =============================================================================
@@ -3587,10 +1986,6 @@ if st.button(
 
     try:
 
-        # ---------------------------------------------------------------------
-        # BUILD ARCHITECTURE CONTEXT
-        # ---------------------------------------------------------------------
-
         architecture_context = build_knowledge_architecture_context(
             selected_sciences,
             selected_paradigms,
@@ -3656,21 +2051,12 @@ ARCHITECTURAL REQUIREMENT:
 Construct a rich knowledge system, not a stress model.
 """
 
-        # ---------------------------------------------------------------------
-        # GEMINI CLIENT
-        # ---------------------------------------------------------------------
-
         gemini_client = None
 
         if google_required:
             gemini_client = genai.Client(
                 api_key=google_api_key
             )
-
-
-        # =====================================================================
-        # PHASE 1 — ONTOLOGY FOUNDATION
-        # =====================================================================
 
         p1_provider_name = (
             "Hugging Face / Qwen2.5-72B-Instruct"
@@ -3701,11 +2087,6 @@ Construct a rich knowledge system, not a stress model.
             )
 
             st.session_state.groq_synthesis = phase1_result
-
-
-        # =====================================================================
-        # PHASE 2 — HIERARCHOGRAPHIC SYNTHESIS
-        # =====================================================================
 
         p2_provider_name = (
             "Hugging Face / Qwen2.5-72B-Instruct"
@@ -3758,11 +2139,6 @@ ADDITIONAL SOURCE
 
             st.session_state.gemini_innovation = phase2_result
 
-
-        # =====================================================================
-        # PARSE PHASE 2
-        # =====================================================================
-
         graph_data = extract_json_object(
             phase2_result
         )
@@ -3779,7 +2155,6 @@ ADDITIONAL SOURCE
                 "edges": [],
             }
 
-
         graph_data = enrich_graph_with_architecture(
             graph_data,
             selected_sciences,
@@ -3792,11 +2167,6 @@ ADDITIONAL SOURCE
         st.session_state.last_graph_data = graph_data
         st.session_state.final_graph_elements = graph_data
         st.session_state.report_ready = True
-
-
-        # =====================================================================
-        # REPORT
-        # =====================================================================
 
         report_phase2 = phase2_result
 
@@ -3825,11 +2195,6 @@ ADDITIONAL SOURCE
 
 {report_phase2}
 """
-
-
-        # =====================================================================
-        # REPORT NODE LINKING
-        # =====================================================================
 
         interactive_report = full_report
 
@@ -3883,11 +2248,6 @@ ADDITIONAL SOURCE
                 interactive_report = new_text
                 replacements += count
 
-
-        # =====================================================================
-        # MAIN REPORT DISPLAY
-        # =====================================================================
-
         st.subheader(
             "🧱 INTEGRATED HIERARCHOLOGICAL KNOWLEDGE REPORT"
         )
@@ -3906,11 +2266,6 @@ ADDITIONAL SOURCE
             interactive_report,
             unsafe_allow_html=True,
         )
-
-
-        # =====================================================================
-        # GRAPH STATISTICS
-        # =====================================================================
 
         stats = graph_statistics(
             graph_data
@@ -3951,11 +2306,6 @@ ADDITIONAL SOURCE
                 "Relation Types",
                 len(stats["relations"]),
             )
-
-
-        # =====================================================================
-        # POLYHIERARCHY / UML / OPERATIONAL TABLES
-        # =====================================================================
 
         tabs = st.tabs(
             [
@@ -4246,11 +2596,6 @@ Relations: {", ".join(hierarchy['relations'])}
                         f"{node.get('description', '')}"
                     )
 
-
-        # =====================================================================
-        # HIERARCHOGRAPHIC VISUALIZATION
-        # =====================================================================
-
         st.divider()
 
         st.subheader(
@@ -4266,7 +2611,6 @@ Relations: {", ".join(hierarchy['relations'])}
             "Tap nodes for detailed metadata. "
             "Use toolbar for layout adjustments and export."
         )
-
 
     except Exception as exc:
 
