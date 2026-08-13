@@ -6,9 +6,53 @@ import urllib.parse
 import re
 import time
 from datetime import datetime
-from openai import OpenAI
-from cerebras.cloud.sdk import Cerebras
+from google import genai
+from google.genai import types as genai_types
 import streamlit.components.v1 as components
+
+# =============================================================================
+# GOOGLE GEMINI MODEL CATALOG (Free-tier friendly, spans 3.1 -> 3.6 + Gemma)
+# =============================================================================
+GEMINI_MODEL_CATALOG = {
+    "Gemini 3.6 Flash (najnovejši, agentni)": "gemini-3.6-flash",
+    "Gemini 3.5 Flash (vsestranski)": "gemini-3.5-flash",
+    "Gemini 3.5 Flash-Lite (najhitrejši, poceni)": "gemini-3.5-flash-lite",
+    "Gemini 3.1 Flash-Lite (predhodna generacija)": "gemini-3.1-flash-lite",
+    "Gemini 3.1 Pro Preview (najmočnejši, ni v brezplačnem paketu)": "gemini-3.1-pro-preview",
+    "Gemma 4 31B (odprtokodni, brezplačen)": "gemma-4-31b-it",
+    "Gemma 4 26B A4B (odprtokodni, brezplačen, hitrejši)": "gemma-4-26b-a4b-it",
+}
+GEMINI_MODEL_IDS = list(GEMINI_MODEL_CATALOG.values())
+GEMINI_MODEL_LABELS = list(GEMINI_MODEL_CATALOG.keys())
+
+def gemini_generate(client, model_id, system_prompt, user_content, temperature=0.5, top_p=None):
+    """
+    Unified helper for calling the Gemini API across both Gemini and Gemma models.
+    Gemma models served via the Gemini API do not support the 'system_instruction'
+    field, so for those we fold the system prompt into the user turn instead.
+    """
+    is_gemma = model_id.startswith("gemma")
+    gen_config_kwargs = {"temperature": temperature}
+    if top_p is not None:
+        gen_config_kwargs["top_p"] = top_p
+
+    if is_gemma:
+        combined_input = f"### SYSTEM INSTRUCTIONS ###\n{system_prompt}\n\n### USER INPUT ###\n{user_content}"
+        config = genai_types.GenerateContentConfig(**gen_config_kwargs)
+        response = client.models.generate_content(
+            model=model_id,
+            contents=combined_input,
+            config=config
+        )
+    else:
+        gen_config_kwargs["system_instruction"] = system_prompt
+        config = genai_types.GenerateContentConfig(**gen_config_kwargs)
+        response = client.models.generate_content(
+            model=model_id,
+            contents=user_content,
+            config=config
+        )
+    return response.text
 
 # =============================================================================
 # 0. GLOBAL CONFIGURATION & SESSION DATE (FEBRUARY 24, 2026)
@@ -843,7 +887,7 @@ IDEATION_TECHNIQUES = {
     "Synectics": "Use direct, personal, and symbolic analogies to make the strange familiar and the familiar strange."
 }
 # =============================================================================
-# 4. KONČNI POPRAVLJEN SIDEBAR (Z SAMBANOVO IN UNIKATNIMI KLJUČI)
+# 4. KONČNI POPRAVLJEN SIDEBAR (Z GOOGLE GEMINI IN UNIKATNIMI KLJUČI)
 # =============================================================================
 with st.sidebar:
     # 1. Original 3D Relief Logo
@@ -854,27 +898,31 @@ with st.sidebar:
 
     st.header("⚙️ SYSTEM CONTROL")
 
-    # 3. CEREBRAS SYSTEM CONTROL (JULIJ 2026 - SIS OPTIMIZED)
-    st.header("⚙️ CEREBRAS SYSTEM CONTROL")
-    cerebras_api_key = st.text_input("Cerebras API Key:", type="password", key="side_cerebras_v2026")
+    # 3. GOOGLE GEMINI SYSTEM CONTROL (AVGUST 2026 - SIS OPTIMIZED)
+    st.header("⚙️ GOOGLE GEMINI SYSTEM CONTROL")
+    google_api_key = st.text_input("Google AI (Gemini) API Key:", type="password", key="side_google_v2026", help="Dobiš ga brezplačno na aistudio.google.com/apikey")
 
     st.subheader("🤖 Sequential Model Selection")
 
     # Izbira za Phase 1 (Foundation)
-    p1_model = st.selectbox(
-        "Phase 1 Model (Structure):", 
-        ["gpt-oss-120b", "gemma-4-31b"], 
-        index=0, 
-        help="Priporočeno: gpt-oss-120b za kompleksno IMA sintezo."
+    p1_label = st.selectbox(
+        "Phase 1 Model (Structure):",
+        GEMINI_MODEL_LABELS,
+        index=1,
+        help="Priporočeno: Gemini 3.5 Flash ali 3.6 Flash za kompleksno IMA sintezo."
     )
+    p1_model = GEMINI_MODEL_CATALOG[p1_label]
 
     # Izbira za Phase 2 (Innovation)
-    p2_model = st.selectbox(
-        "Phase 2 Model (Innovation):", 
-        ["gemma-4-31b", "gpt-oss-120b"], 
-        index=0, 
-        help="Priporočeno: gemma-4-31b za MA inovativne preboje."
+    p2_label = st.selectbox(
+        "Phase 2 Model (Innovation):",
+        GEMINI_MODEL_LABELS,
+        index=0,
+        help="Priporočeno: Gemini 3.6 Flash ali Gemma 4 31B za MA inovativne preboje."
     )
+    p2_model = GEMINI_MODEL_CATALOG[p2_label]
+
+    st.caption("🆓 Flash-Lite in Gemma modeli imajo velikodušen brezplačen nivo (free tier) v Google AI Studio.")
 
     st.divider()
 
@@ -964,19 +1012,19 @@ st.markdown(f"**Sequential Multi-Engine Pipeline** | Current Operating Date: **{
 
 if st.session_state.show_user_guide:
     st.info(f"""
-    **Sequential Synergy Pipeline Workflow (Updated Feb 24, 2026):**
-    1. **Key Input**: Enter your Cerebras (Phase 1) and Cerebras (Phase 2) API keys in the sidebar.
-    2. **Research Foundation (Step 1)**: Cerebras performs structural synthesis foundation using Integrated Metamodel Architecture (IMA).
-    3. **Innovation Prompt (Step 2)**: Cerebras takes Cerebras's work and generates radical 'Useful Innovative Ideas' using Mental Approaches (MA) logic.
+    **Sequential Synergy Pipeline Workflow (Updated Aug 13, 2026):**
+    1. **Key Input**: Enter your Google AI (Gemini) API key in the sidebar, then pick a Phase 1 and Phase 2 model from the full Gemini/Gemma lineup (3.1 Flash-Lite through 3.6 Flash, plus Gemma 4).
+    2. **Research Foundation (Step 1)**: The Phase 1 Gemini model performs structural synthesis foundation using Integrated Metamodel Architecture (IMA).
+    3. **Innovation Prompt (Step 2)**: The Phase 2 Gemini model takes Phase 1's work and generates radical 'Useful Innovative Ideas' using Mental Approaches (MA) logic.
     4. **Visualization**: The interactive 18D graph maps structural facts against generative ideas.
     """)
 
 # REFERENCE ARCHITECTURE BOXES
 col_ref1, col_ref2 = st.columns(2)
 with col_ref1:
-    st.markdown("""<div class="metamodel-box"><b>🏛️ Phase 1: Cerebras (IMA Architecture)</b><br>Structural reasoning building the factual foundation. Focus: Identity, Mission, Problem. </div>""", unsafe_allow_html=True)
+    st.markdown("""<div class="metamodel-box"><b>🏛️ Phase 1: Google Gemini (IMA Architecture)</b><br>Structural reasoning building the factual foundation. Focus: Identity, Mission, Problem. </div>""", unsafe_allow_html=True)
 with col_ref2:
-    st.markdown("""<div class="mental-approach-box"><b>🧠 Phase 2: Cerebras (MA Architecture)</b><br>Cognitive transformation generating innovative solutions. Focus: Dialectics, Perspective, Induction.</div>""", unsafe_allow_html=True)
+    st.markdown("""<div class="mental-approach-box"><b>🧠 Phase 2: Google Gemini (MA Architecture)</b><br>Cognitive transformation generating innovative solutions. Focus: Dialectics, Perspective, Induction.</div>""", unsafe_allow_html=True)
 
 st.markdown("### 🛠️ CONFIGURE SYNERGY PIPELINE")
 
@@ -1012,9 +1060,9 @@ st.divider()
 # DUAL INQUIRY INTERFACE
 col_inq1, col_inq2, col_inq3 = st.columns([2, 2, 1])
 with col_inq1:
-    user_query = st.text_area("❓ STEP 1: Research Inquiry (for CEREBRAS):", placeholder="Fact-based Foundational Inquiry...", height=200)
+    user_query = st.text_area("❓ STEP 1: Research Inquiry (for GEMINI):", placeholder="Fact-based Foundational Inquiry...", height=200)
 with col_inq2:
-    idea_query = st.text_area("💡 STEP 2: Innovation Prompt (for CEREBRAS):", placeholder="Targets for innovative idea production...", height=200)
+    idea_query = st.text_area("💡 STEP 2: Innovation Prompt (for GEMINI):", placeholder="Targets for innovative idea production...", height=200)
 # --- POPRAVEK KORAK 1: Branje vsebine datoteke ---
 # --- KORAK 1: File Upload with English Translation ---
 with col_inq3:
@@ -1031,13 +1079,13 @@ with col_inq3:
             st.error(f"Error reading file: {e}")
 
 # =============================================================================
-# 5. SYNERGY EXECUTION ENGINE (PURE CEREBRAS SEQUENTIAL PIPELINE - UNABRIDGED)
+# 5. SYNERGY EXECUTION ENGINE (PURE GOOGLE GEMINI SEQUENTIAL PIPELINE - UNABRIDGED)
 # =============================================================================
 
 if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_container_width=True, key="exec_pipeline_v2026"):
-    # Preverjamo le Cerebras ključ, saj Gemini ni več potreben
-    if not cerebras_api_key:
-        st.error("❌ Cerebras API key is required to proceed.")
+    # Preverjamo le Google Gemini ključ
+    if not google_api_key:
+        st.error("❌ Google AI (Gemini) API key is required to proceed.")
     elif not user_query:
         st.warning("⚠️ Phase 1 Research Inquiry is required.")
     else:
@@ -1090,36 +1138,29 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             # Combine the trigger context with the user query
             full_ai_input = f"{active_context}{user_query}{file_context_str}{biblio_context}"
 
-            # Inicializacija skupnega Cerebras klienta
-            cerebras_client = OpenAI(api_key=cerebras_api_key, base_url="https://api.cerebras.ai/v1")
+            # Inicializacija skupnega Google Gemini klienta
+            gemini_client = genai.Client(api_key=google_api_key)
 
-            # --- PHASE 1: CEREBRAS (Foundation - IMA Architecture Building) ---
+            # --- PHASE 1: GOOGLE GEMINI (Foundation - IMA Architecture Building) ---
             with st.spinner(f'PHASE 1: Building Architecture with {p1_model}...'):
-                p1_response = cerebras_client.chat.completions.create(
-                    model=p1_model,
-                    messages=[
-                        {
-                            "role": "system", 
-                            "content": (
-                                "You are the SIS Lead Hierarchologist and Knowledge Architect. Your mission is to perform "
-                                "a deep structural analysis of the user's inquiry using the Integrated Metamodel Architecture (IMA). "
-                                "If the [ACTIVATE] instruction is present, you MUST strictly map the inquiry onto the provided "
-                                "IMA Nodes (Identity, Mission, Scientific Cage, etc.) and analyze the hierarchy levels (Micro/Meso/Macro). "
-                                "Your output must be a rigid, factual, and logically sound foundation for further innovation."
-                            )
-                        }, 
-                        {"role": "user", "content": full_ai_input}
-                    ],
-                    temperature=0.4 # Nizka temperatura za maksimalno logično natančnost
+                p1_system_prompt = (
+                    "You are the SIS Lead Hierarchologist and Knowledge Architect. Your mission is to perform "
+                    "a deep structural analysis of the user's inquiry using the Integrated Metamodel Architecture (IMA). "
+                    "If the [ACTIVATE] instruction is present, you MUST strictly map the inquiry onto the provided "
+                    "IMA Nodes (Identity, Mission, Scientific Cage, etc.) and analyze the hierarchy levels (Micro/Meso/Macro). "
+                    "Your output must be a rigid, factual, and logically sound foundation for further innovation."
                 )
-                groq_synthesis = p1_response.choices[0].message.content
+                groq_synthesis = gemini_generate(
+                    gemini_client, p1_model, p1_system_prompt, full_ai_input,
+                    temperature=0.4  # Nizka temperatura za maksimalno logično natančnost
+                )
                 st.session_state.groq_synthesis = groq_synthesis
 
                 # --- DINAMIČNA AKTIVACIJA VSEH 20 MENTALNIH PRISTOPOV ---
                 # Ta vrstica mora biti poravnana z zgornjo!
                 ma_list_for_ai = ", ".join(MENTAL_APPROACHES_ONTOLOGY["nodes"].keys())
 
-                # --- 3. PHASE 2: CEREBRAS (Innovation) ---
+                # --- 3. PHASE 2: GOOGLE GEMINI (Innovation) ---
                 with st.spinner(f'PHASE 2: Activating 20-MA Engine with {p2_model}...'):
                     samba_sys_prompt = f"""
 You are the SIS Lead Strategic Innovation Architect and Hierarchographist. 
@@ -1209,39 +1250,34 @@ MANDATORY JSON STRUCTURE:
 """ # Konec samba_sys_prompt
 
                 # --- PHASE 2 EXECUTION ---
-                samba_response = cerebras_client.chat.completions.create(
-                    model=p2_model, 
-                    messages=[
-                        {"role": "system", "content": samba_sys_prompt}, 
-                        {"role": "user", "content": f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER GOAL: {idea_query}{file_context_str}"}
-                    ],
-                    temperature=0.85,
-                    top_p=0.9
+                p2_user_content = f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER GOAL: {idea_query}{file_context_str}"
+                gemini_innovation = gemini_generate(
+                    gemini_client, p2_model, samba_sys_prompt, p2_user_content,
+                    temperature=0.85, top_p=0.9
                 )
-                cerebras_innovation = samba_response.choices[0].message.content
 
             # --- 4. PROCESIRANJE REZULTATOV (Z GEOMETRIJSKO LOGIKO) ---
             g_data = {"nodes": [], "edges": []}
 
             # POPRAVEK: Ločevanje besedila od JSON-a za preprečevanje redundantnega izpisa
-            if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
-                parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
+            if "### SEMANTIC_GRAPH_JSON" in gemini_innovation:
+                parts = gemini_innovation.split("### SEMANTIC_GRAPH_JSON")
                 innovation_text = parts[0]
                 json_raw = parts[1]
             else:
-                innovation_text = cerebras_innovation
+                innovation_text = gemini_innovation
                 json_raw = ""
 
             # Odstranimo morebitne ostanke backtick-ov (```) iz besedila poročila
             innovation_text = re.sub(r'```json|```', '', innovation_text)
 
-            full_report = f"## 📚 Phase 1: Structural Foundation (Cerebras {p1_model})\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations (Cerebras {p2_model})\n\n{innovation_text}"
+            full_report = f"## 📚 Phase 1: Structural Foundation (Google {p1_model})\n\n{groq_synthesis}\n\n---\n## 💡 Phase 2: Strategic Innovations (Google {p2_model})\n\n{innovation_text}"
 
             nodes_to_link = []
             final_elements = []
 
             # Izboljšano iskanje in varnostno čiščenje JSON-a
-            json_match = re.search(r'(\{.*"nodes".*\})', json_raw if json_raw else cerebras_innovation, re.DOTALL | re.IGNORECASE)
+            json_match = re.search(r'(\{.*"nodes".*\})', json_raw if json_raw else gemini_innovation, re.DOTALL | re.IGNORECASE)
 
             if json_match:
                 try:
