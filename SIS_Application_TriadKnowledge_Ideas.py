@@ -1017,7 +1017,7 @@ def huggingface_generate(
         )
 
     clean_model_id = model_id[3:] if model_id.startswith("hf:") else model_id
-    routed_model = f"{clean_model_id}:fastest"
+    routed_model = f"{clean_model_id}"
 
     headers = {
         "Authorization": f"Bearer {api_key.strip()}",
@@ -1042,7 +1042,7 @@ def huggingface_generate(
         "messages": messages,
         "temperature": temperature,
         "stream": False,
-        "max_tokens": 8192,
+        "max_tokens": 2048,
     }
 
     if top_p is not None:
