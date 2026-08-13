@@ -1,6 +1,3 @@
-
-
-
 import streamlit as st
 import json
 import base64
@@ -17,21 +14,13 @@ import streamlit.components.v1 as components
 # GOOGLE GEMINI MODEL CATALOG (Free-tier friendly, spans 3.1 -> 3.6 + Gemma)
 # =============================================================================
 GEMINI_MODEL_CATALOG = {
-    # --- Current Gemini family ---
     "Gemini 3.6 Flash (najnovejši, agentni)": "gemini-3.6-flash",
     "Gemini 3.5 Flash (vsestranski)": "gemini-3.5-flash",
     "Gemini 3.5 Flash-Lite (najhitrejši, poceni)": "gemini-3.5-flash-lite",
     "Gemini 3.1 Flash-Lite (predhodna generacija)": "gemini-3.1-flash-lite",
     "Gemini 3.1 Pro Preview (najmočnejši, ni v brezplačnem paketu)": "gemini-3.1-pro-preview",
-
-    # --- Legacy / experimental Gemini models ---
-    "Gemini 1.5 Pro 002 (legacy)": "gemini-1.5-pro-002",
-    "Gemini Experimental 1206 (experimental / legacy)": "gemini-exp-1206",
-
-    # --- Gemma family ---
     "Gemma 4 31B (odprtokodni, brezplačen)": "gemma-4-31b-it",
     "Gemma 4 26B A4B (odprtokodni, brezplačen, hitrejši)": "gemma-4-26b-a4b-it",
-    "Gemma 2 27B IT (legacy)": "gemma-2-27b-it",
 }
 GEMINI_MODEL_IDS = list(GEMINI_MODEL_CATALOG.values())
 GEMINI_MODEL_LABELS = list(GEMINI_MODEL_CATALOG.keys())
