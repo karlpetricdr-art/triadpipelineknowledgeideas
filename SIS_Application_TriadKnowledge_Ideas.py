@@ -19,7 +19,7 @@ import streamlit.components.v1 as components
 # =============================================================================
 
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v23.0.0-KNOWLEDGE-ARCHITECTURE-HIERARCHOGRAPHY"
+VERSION_CODE = "v23.1.0-KNOWLEDGE-SYNTHESIS-INNOVATION"
 
 # =============================================================================
 # MODEL CATALOG
@@ -74,8 +74,49 @@ st.markdown(
     """
 <style>
 [data-testid="stSidebar"] {
-    background-color:#202733 !important;
-    border-right:2px solid #394554 !important;
+    background-color:#151b24 !important;
+    border-right:2px solid #566273 !important;
+}
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"],
+[data-testid="stSidebar"] .stMarkdown,
+[data-testid="stSidebar"] .stCaption,
+[data-testid="stSidebar"] .stTextInput,
+[data-testid="stSidebar"] .stSelectbox,
+[data-testid="stSidebar"] .stMultiSelect,
+[data-testid="stSidebar"] .stLinkButton,
+[data-testid="stSidebar"] .stSlider,
+[data-testid="stSidebar"] .stExpander {
+    color:#ffffff !important;
+}
+[data-testid="stSidebar"] input,
+[data-testid="stSidebar"] textarea {
+    color:#ffffff !important;
+    background:#0d1219 !important;
+    border:1px solid #718096 !important;
+}
+[data-testid="stSidebar"] [data-baseweb="select"] > div {
+    color:#ffffff !important;
+    background:#0d1219 !important;
+    border-color:#718096 !important;
+}
+[data-testid="stSidebar"] [data-baseweb="tag"] {
+    color:#ffffff !important;
+    background:#263241 !important;
+}
+[data-testid="stSidebar"] [data-testid="stSlider"] label,
+[data-testid="stSidebar"] [data-testid="stSlider"] div {
+    color:#ffffff !important;
+}
+[data-testid="stSidebar"] button {
+    color:#ffffff !important;
+    background:#263241 !important;
+    border:1px solid #718096 !important;
+    font-weight:800 !important;
+}
+[data-testid="stSidebar"] button:hover {
+    color:#ffffff !important;
+    background:#3a4a5f !important;
+    border-color:#a8b4c2 !important;
 }
 
 [data-testid="stSidebar"] .stMarkdown p,
@@ -89,37 +130,7 @@ st.markdown(
     opacity:1 !important;
 }
 
-[data-testid="stSidebar"] button,
-[data-testid="stSidebar"] .stButton > button,
-[data-testid="stSidebar"] [data-testid="stLinkButton"] a,
-[data-testid="stSidebar"] [data-testid^="baseButton"] {
-    color:#ffffff !important;
-    background-color:#3a4658 !important;
-    border:1px solid #56637c !important;
-    font-weight:700 !important;
-    opacity:1 !important;
-}
-
-[data-testid="stSidebar"] button:hover,
-[data-testid="stSidebar"] .stButton > button:hover,
-[data-testid="stSidebar"] [data-testid="stLinkButton"] a:hover {
-    color:#ffffff !important;
-    background-color:#4f5f7a !important;
-    border-color:#8291ad !important;
-}
-
-[data-testid="stSidebar"] button:focus,
-[data-testid="stSidebar"] button:active,
-[data-testid="stSidebar"] .stButton > button:focus,
-[data-testid="stSidebar"] .stButton > button:active {
-    color:#ffffff !important;
-    background-color:#4f5f7a !important;
-    box-shadow:0 0 0 2px #8291ad !important;
-}
-
-[data-testid="stSidebar"] [data-baseweb="select"] > div,
-[data-testid="stSidebar"] [data-baseweb="base-input"],
-[data-testid="stSidebar"] .stSlider {
+[data-testid="stSidebar"] button {
     color:#ffffff !important;
 }
 
@@ -209,8 +220,9 @@ st.markdown(
 .stButton>button {
     width:100%;
     border-radius:10px;
-    font-weight:700;
+    font-weight:800;
     transition:.2s;
+    border:1px solid #718096;
 }
 
 .graph-legend {
@@ -352,50 +364,6 @@ RELATION_COLORS = {
     "CONSTRAINS": "#6c757d",
     "MEASURES": "#118ab2",
     "VALIDATES": "#06a77d",
-}
-
-
-# =============================================================================
-# RELATION CATEGORIES (used by the graph display filters)
-# =============================================================================
-
-RELATION_CATEGORIES = {
-    "🧬 Tezaverske (Thesaurus)": {
-        "TT", "BT", "NT", "RT", "EQ", "AS", "IN",
-    },
-    "📐 UML / Metamodel": {
-        "Generalization", "Specialization", "Composition",
-        "Aggregation", "Containment", "Realization",
-        "Dependency", "Conflict",
-    },
-    "⚙️ Operativne (Operational)": {
-        "CAUSES", "ENABLES", "TRANSFORMS", "PRODUCES", "CONSUMES",
-        "FEEDS", "TRIGGERS", "PRECEDES", "CONSTRAINS", "MEASURES",
-        "VALIDATES",
-    },
-    "🔀 Logične (Logical)": {
-        "AND", "OR", "XOR", "NOT", "IF-THEN",
-    },
-    "🔄 Povratne zanke (Feedback)": {
-        "FEEDBACK", "POSITIVE-FEEDBACK", "NEGATIVE-FEEDBACK",
-    },
-}
-
-
-# =============================================================================
-# NODE LAYER LABELS (used by the graph display filters)
-# =============================================================================
-
-LAYER_LABELS = {
-    "goal": "⭐ Cilji / vizija (Goal)",
-    "domain": "⬢ Znanstvena področja (Domain)",
-    "innovation": "💠 Inovacije (Innovation)",
-    "process": "△ Procesi / metode (Process)",
-    "constraint": "⬣ Pravila / omejitve (Constraint)",
-    "entity": "⬭ Entitete / akterji (Entity)",
-    "fact": "▭ Dejstva / koncepti (Fact)",
-    "state": "▢ Stanja sistema (State)",
-    "data": "🛢 Podatki / dokazi (Data)",
 }
 
 
@@ -2066,74 +2034,67 @@ def graph_statistics(graph):
 
 
 # =============================================================================
-# DISPLAY-ONLY GRAPH FILTERING
+# GRAPH DISPLAY LIMITER
 # =============================================================================
 
-def filter_graph_for_display(
-    graph,
-    selected_layers=None,
-    selected_relation_categories=None,
-    max_nodes=None,
-):
+def limit_graph_nodes(graph, max_nodes=80):
     """
-    Produces a display-only filtered view of the knowledge graph.
-    Never mutates the underlying stored graph — statistics, the report
-    and raw JSON inspection always reflect the full, unfiltered data.
-
-    selected_layers: iterable of layer keys to keep (None = keep all).
-    selected_relation_categories: iterable of RELATION_CATEGORIES keys
-        to keep (None = keep all relation types).
-    max_nodes: cap on the number of nodes shown. Macro nodes are kept
-        first, then Meso, then Micro, so the backbone of the
-        architecture survives truncation.
+    Return a display-only graph containing at most max_nodes.
+    The underlying AI-generated graph is never modified.
+    Selection prioritizes the knowledge root, high-degree nodes, Macro/Meso
+    nodes and innovation/process nodes, then fills remaining slots by degree.
     """
-
     graph = normalize_graph_data(graph)
-
     nodes = graph["nodes"]
     edges = graph["edges"]
 
-    if selected_layers is not None:
-        nodes = [
-            n for n in nodes
-            if n.get("layer") in selected_layers
-        ]
+    if max_nodes is None or max_nodes >= len(nodes):
+        return graph
 
-    level_priority = {"Macro": 0, "Meso": 1, "Micro": 2}
+    max_nodes = max(1, int(max_nodes))
 
-    if max_nodes is not None and len(nodes) > max_nodes:
-        nodes = sorted(
-            nodes,
-            key=lambda n: level_priority.get(n.get("level"), 3),
-        )[:max_nodes]
-
-    valid_ids = {n["id"] for n in nodes}
-
-    allowed_relations = None
-
-    if selected_relation_categories is not None:
-        allowed_relations = set()
-
-        for category in selected_relation_categories:
-            allowed_relations |= RELATION_CATEGORIES.get(category, set())
-
-    filtered_edges = []
-
+    degree = {n["id"]: 0 for n in nodes}
     for edge in edges:
-        if edge["source"] not in valid_ids or edge["target"] not in valid_ids:
-            continue
+        if edge["source"] in degree:
+            degree[edge["source"]] += 1
+        if edge["target"] in degree:
+            degree[edge["target"]] += 1
 
-        if (
-            allowed_relations is not None
-            and edge["rel_type"] not in allowed_relations
-        ):
-            continue
+    def priority(node):
+        label = node.get("label", "").lower()
+        root_bonus = 100000 if node.get("id") == "knowledge_root" else 0
+        semantic_bonus = 5000 if node.get("semantic_type") == "root" else 0
+        level_bonus = {
+            "Macro": 3000,
+            "Meso": 2000,
+            "Micro": 1000,
+        }.get(node.get("level"), 0)
+        shape_bonus = {
+            "star": 1500,
+            "diamond": 1200,
+            "hexagon": 900,
+            "triangle": 700,
+        }.get(node.get("shape"), 0)
+        return (
+            root_bonus
+            + semantic_bonus
+            + level_bonus
+            + shape_bonus
+            + degree.get(node["id"], 0) * 25
+            + min(len(label), 80)
+        )
 
-        filtered_edges.append(edge)
+    selected = sorted(nodes, key=priority, reverse=True)[:max_nodes]
+    selected_ids = {n["id"] for n in selected}
+
+    selected_edges = [
+        edge for edge in edges
+        if edge["source"] in selected_ids and edge["target"] in selected_ids
+    ]
 
     return {
-        "nodes": nodes,
-        "edges": filtered_edges,
+        "nodes": selected,
+        "edges": selected_edges,
     }
 
 
@@ -2145,8 +2106,9 @@ def render_cytoscape_network(
     graph,
     layout_type="hierarchographic",
     container_id="cy_canvas",
+    max_nodes=None,
 ):
-    graph = normalize_graph_data(graph)
+    graph = limit_graph_nodes(graph, max_nodes=max_nodes)
 
     elements = []
 
@@ -2892,15 +2854,15 @@ function escapeHtml(value){{
 
 def build_phase1_system_prompt():
     return """
-You are the SIS Lead Knowledge Architect, Hierarchologist and Ontology Engineer.
+You are the SIS Lead Knowledge Synthesizer, Hierarchologist and Ontology Engineer.
 
-This is NOT a stress analysis system.
+PHASE 1 HAS ONE PURPOSE: KNOWLEDGE SYNTHESIS.
 
-Your task is to construct a multidimensional knowledge architecture from the
-user's inquiry.
+Do not treat Phase 1 as an Innovation Objective and do not solve the innovation
+objective yet. Synthesize the user's inquiry into a rich, structured knowledge
+system that can later serve as the knowledge substrate for Phase 2 innovation.
 
-The architecture MUST simultaneously contain:
-
+The synthesis MUST simultaneously contain:
 1. A rich multidimensional thesaurus.
 2. A polyhierarchical ontology.
 3. A UML/metamodel representation.
@@ -2911,53 +2873,68 @@ The architecture MUST simultaneously contain:
 8. Feedback loops where logically justified.
 9. Macro, Meso and Micro levels.
 10. A hierarchographic representation.
+11. Relevant scientific domains, paradigms, structural models and evidence.
+12. Explicit concepts, definitions, mechanisms, causes, effects, functions,
+    contexts, constraints and dependencies.
+
+The central question of Phase 1 is:
+WHAT KNOWLEDGE MUST BE SYNTHESIZED, STRUCTURED, RELATED AND ORGANIZED
+TO FULLY UNDERSTAND THE USER'S INQUIRY?
+
+Do not optimize for novelty yet. Do not generate the final innovation solution.
+Build the richest defensible knowledge substrate for Phase 2.
 
 Do NOT use Stress Barometer concepts, stress degrees, kcal, sigma, positive
 factors, negative factors, psychosocial stress scores or similar logic.
 
-The central question is:
-
-HOW ARE CONCEPTS STRUCTURED, RELATED, TRANSFORMED AND ORGANIZED?
-
-You must distinguish vertical relations from lateral relations.
-
-Vertical:
+Vertical relations:
 TT, BT, NT, IN, Generalization, Specialization, Composition, Aggregation,
 Containment.
 
-Lateral:
+Lateral relations:
 RT, EQ, AS, Dependency, Conflict.
 
-Operational:
+Operational relations:
 CAUSES, ENABLES, TRANSFORMS, PRODUCES, CONSUMES, FEEDS, TRIGGERS,
 PRECEDES, CONSTRAINS, MEASURES, VALIDATES.
 
-Logical:
+Logical relations:
 AND, OR, XOR, NOT, IF-THEN.
 
 Feedback:
 FEEDBACK, POSITIVE-FEEDBACK, NEGATIVE-FEEDBACK.
 
-Use Micro/Meso/Macro explicitly.
+Use Micro/Meso/Macro explicitly. Think like an ontology engineer, systems
+architect, UML modeler, knowledge organization specialist and hierarchographist
+simultaneously.
 
-Think like an ontology engineer, systems architect, UML modeler,
-knowledge organization specialist and hierarchographist simultaneously.
-
-The result must be structurally rich rather than merely a concept list.
+The result must be a knowledge synthesis, not a simple concept list and not
+an innovation proposal.
 """
-
 
 def build_phase2_system_prompt(architecture_context):
     return f"""
-You are the SIS Lead Hierarchographist and Strategic Knowledge Synthesizer.
+You are the SIS Lead Innovation Architect and Hierarchographist.
 
-This is a KNOWLEDGE SYNTHESIZER.
+PHASE 2 HAS ONE PURPOSE: INNOVATION OBJECTIVE.
 
-It is NOT a Stress Barometer.
+It is NOT a second general knowledge synthesis phase and it is NOT a Stress
+Barometer.
 
-Your task is to transform the Phase 1 knowledge architecture into a
-multidimensional, polyhierarchical, UML-compatible and operational
-hierarchographic knowledge system.
+Use the completed Phase 1 knowledge synthesis as the knowledge substrate, but
+focus exclusively on the user's stated INNOVATION OBJECTIVE. Determine what
+should be transformed, invented, recombined, improved, operationalized or
+implemented.
+
+The innovation output MUST remain grounded in the Phase 1 knowledge synthesis
+and must use the system's multidimensional thesaurus, polyhierarchy, UML,
+hierarchical-associative logic, operational logic, state transitions and
+hierarchography.
+
+Do not reopen the general inquiry as a new research question. Do not produce
+generic background knowledge. Do not merely repeat Phase 1. Produce an
+innovation-oriented transformation of the Phase 1 knowledge in response to the
+explicit Innovation Objective.
 
 The graph must represent:
 
@@ -3247,7 +3224,7 @@ with st.sidebar:
     st.subheader("🤖 Sequential Model Selection")
 
     p1_label = st.selectbox(
-        "Phase 1 Model — Ontology / Structure",
+        "Phase 1 Model — Knowledge Synthesis",
         GEMINI_MODEL_LABELS,
         index=1,
         key="p1_model_v230",
@@ -3256,7 +3233,7 @@ with st.sidebar:
     p1_model = GEMINI_MODEL_CATALOG[p1_label]
 
     p2_label = st.selectbox(
-        "Phase 2 Model — Synthesis / Innovation",
+        "Phase 2 Model — Innovation Objective",
         GEMINI_MODEL_LABELS,
         index=0,
         key="p2_model_v230",
@@ -3280,63 +3257,23 @@ with st.sidebar:
             "grid",
         ],
         index=0,
-        key="graph_perspective_v230",
+        key="graph_perspective_v231",
+    )
+
+    graph_node_limit = st.slider(
+        "🔢 Graph nodes to display",
+        min_value=10,
+        max_value=200,
+        value=80,
+        step=5,
+        key="graph_node_limit_v231",
+        help="Limits the number of displayed nodes while preserving the most structurally important nodes and their valid relations.",
     )
 
     st.caption(
         "Hierarchographic = polyhierarchy + semantic association + "
-        "operational transformations + system states."
-    )
-
-    st.divider()
-
-    st.subheader("🎛️ GRAPH DISPLAY FILTERS")
-
-    graph_max_nodes = st.slider(
-        "Maks. število prikazanih vozlišč",
-        min_value=10,
-        max_value=200,
-        value=100,
-        step=5,
-        key="graph_max_nodes_v230",
-        help=(
-            "Omeji število vozlišč, prikazanih v grafu. Najprej se "
-            "ohranijo Macro vozlišča, nato Meso, nato Micro."
-        ),
-    )
-
-    relation_category_options = list(RELATION_CATEGORIES.keys())
-
-    graph_relation_categories = st.multiselect(
-        "Vrste povezav v grafu",
-        relation_category_options,
-        default=relation_category_options,
-        key="graph_relation_categories_v230",
-        help=(
-            "Izberi, katere kategorije povezav (tezaverske, UML, "
-            "operativne, logične, povratne zanke) naj bodo prikazane."
-        ),
-    )
-
-    layer_options = list(LAYER_LABELS.keys())
-
-    graph_node_layers = st.multiselect(
-        "Vrste vozlišč v grafu",
-        layer_options,
-        default=layer_options,
-        format_func=lambda x: LAYER_LABELS.get(x, x),
-        key="graph_node_layers_v230",
-        help=(
-            "Izberi, katere vrste vozlišč (znanstvena področja, cilji, "
-            "procesi, inovacije, pravila, dejstva, stanja ...) naj bodo "
-            "prikazane."
-        ),
-    )
-
-    st.caption(
-        "Filtri vplivajo samo na vizualni prikaz grafa (Primary "
-        "Hierarchograph + Galerija). Statistika, poročilo in surovi JSON "
-        "ostanejo nespremenjeni."
+        "operational transformations + system states. "
+        "Use the slider to control graph density."
     )
 
     st.divider()
@@ -3472,12 +3409,18 @@ if st.session_state.show_user_guide:
 
     st.info(
         """
-### SIS Knowledge Architecture Workflow
+### SIS Knowledge Synthesis → Innovation Workflow
 
-**1. Inquiry**
-The user defines a scientific, conceptual or strategic knowledge problem.
+**PHASE 1 — KNOWLEDGE SYNTHESIS**
+The system synthesizes the inquiry into a rich multidimensional knowledge
+structure: thesaurus, ontology, polyhierarchy, UML, hierarchical-associative
+relations, operational logic, states, processes and evidence.
 
-**2. Thesaurus**
+**PHASE 2 — INNOVATION OBJECTIVE**
+The system works exclusively on the stated innovation objective and transforms
+the Phase 1 knowledge synthesis into an innovation-oriented solution space.
+
+**Thesaurus**
 Concepts are expanded into terms, broader terms, narrower terms,
 related terms, equivalences and associative relations.
 
@@ -3663,10 +3606,10 @@ col_inq1, col_inq2, col_inq3 = st.columns([2, 2, 1])
 with col_inq1:
 
     user_query = st.text_area(
-        "❓ STEP 1 — Knowledge Architecture Inquiry",
+        "🧠 PHASE 1 — KNOWLEDGE SYNTHESIS",
         placeholder=(
-            "Define the scientific, conceptual or systemic problem "
-            "to be transformed into a structured knowledge architecture."
+             "Enter the scientific, conceptual or systemic inquiry from which the "
+            "system should synthesize a rich body of structured knowledge."
         ),
         height=230,
         key="user_query_v230",
@@ -3676,10 +3619,10 @@ with col_inq1:
 with col_inq2:
 
     idea_query = st.text_area(
-        "💡 STEP 2 — Synthesis / Innovation Objective",
+        "💡 PHASE 2 — INNOVATION OBJECTIVE",
         placeholder=(
-            "Define what should be transformed, connected, invented, "
-            "explained or operationalized."
+             "Define exclusively what should be invented, transformed, improved, "
+            "connected, operationalized or otherwise innovated."
         ),
         height=230,
         key="idea_query_v230",
@@ -3762,7 +3705,15 @@ if st.button(
     if not user_query.strip():
 
         st.warning(
-            "⚠️ Knowledge Architecture Inquiry is required."
+            "⚠️ Phase 1 — Knowledge Synthesis inquiry is required."
+        )
+
+        st.stop()
+
+    if not idea_query.strip():
+
+        st.warning(
+            "⚠️ Phase 2 — Innovation Objective is required."
         )
 
         st.stop()
@@ -3868,7 +3819,7 @@ Construct a rich knowledge system, not a stress model.
 
 
         # =====================================================================
-        # PHASE 1 — ONTOLOGY FOUNDATION
+        # PHASE 1 — KNOWLEDGE SYNTHESIS
         # =====================================================================
 
         p1_provider_name = (
@@ -3878,7 +3829,7 @@ Construct a rich knowledge system, not a stress model.
         )
 
         with st.spinner(
-            f"PHASE 1 — Building multidimensional ontology with {p1_provider_name}..."
+            f"PHASE 1 — Synthesizing knowledge with {p1_provider_name}..."
         ):
 
             phase1_system = build_phase1_system_prompt()
@@ -3903,7 +3854,7 @@ Construct a rich knowledge system, not a stress model.
 
 
         # =====================================================================
-        # PHASE 2 — HIERARCHOGRAPHIC SYNTHESIS
+        # PHASE 2 — INNOVATION OBJECTIVE
         # =====================================================================
 
         p2_provider_name = (
@@ -3913,7 +3864,7 @@ Construct a rich knowledge system, not a stress model.
         )
 
         with st.spinner(
-            f"PHASE 2 — Generating hierarchographic knowledge synthesis with {p2_provider_name}..."
+            f"PHASE 2 — Executing Innovation Objective with {p2_provider_name}..."
         ):
 
             phase2_system = build_phase2_system_prompt(
@@ -4014,13 +3965,13 @@ ADDITIONAL SOURCE
         )
 
         full_report = f"""
-## 📚 PHASE 1 — MULTIDIMENSIONAL KNOWLEDGE FOUNDATION
+## 🧠 PHASE 1 — KNOWLEDGE SYNTHESIS
 
 {phase1_result}
 
 ---
 
-## 🧠 PHASE 2 — HIERARCHOGRAPHIC KNOWLEDGE SYNTHESIS
+## 💡 PHASE 2 — INNOVATION OBJECTIVE
 
 {report_phase2}
 """
@@ -4604,10 +4555,22 @@ NEGATIVE-FEEDBACK
 
         st.divider()
 
-        st.info(
-            "🕸️ Poglej **PRIMARY HIERARCHOGRAPH** in **GALERIJO** spodaj — "
-            "prikaz upošteva trenutne nastavitve 🎛️ GRAPH DISPLAY FILTERS "
-            "v stranski vrstici (št. vozlišč, vrste povezav, vrste vozlišč)."
+        st.subheader(
+            "🕸️ PRIMARY HIERARCHOGRAPH"
+        )
+
+        st.caption(
+            "The graph simultaneously represents semantic hierarchy, "
+            "polyhierarchy, associative relations, UML structure, "
+            "operational transformations, system states and feedback. "
+            f"Displayed nodes: up to {graph_node_limit}."
+        )
+
+        render_cytoscape_network(
+            graph_data,
+            layout_type=graph_perspective,
+            container_id=f"primary_{int(time.time() * 1000)}",
+            max_nodes=graph_node_limit,
         )
 
 
@@ -4621,61 +4584,13 @@ NEGATIVE-FEEDBACK
 
 
 # =============================================================================
-# GRAPH VISUALIZATION — PRIMARY HIERARCHOGRAPH + MULTI-PERSPECTIVE GALLERY
+# MULTI-PERSPECTIVE GALLERY
 # =============================================================================
 
 if (
     st.session_state.get("report_ready")
     and st.session_state.get("final_graph_elements")
 ):
-
-    full_graph_for_display = st.session_state.final_graph_elements
-
-    display_graph = filter_graph_for_display(
-        full_graph_for_display,
-        selected_layers=graph_node_layers,
-        selected_relation_categories=graph_relation_categories,
-        max_nodes=graph_max_nodes,
-    )
-
-    total_nodes = len(full_graph_for_display.get("nodes", []))
-    total_edges = len(full_graph_for_display.get("edges", []))
-    shown_nodes = len(display_graph["nodes"])
-    shown_edges = len(display_graph["edges"])
-
-    st.divider()
-
-    st.subheader(
-        "🕸️ PRIMARY HIERARCHOGRAPH"
-    )
-
-    st.caption(
-        "The graph simultaneously represents semantic hierarchy, "
-        "polyhierarchy, associative relations, UML structure, "
-        "operational transformations, system states and feedback."
-    )
-
-    st.caption(
-        f"🎛️ Filtrirano prek stranske vrstice: prikazanih "
-        f"**{shown_nodes}/{total_nodes}** vozlišč in "
-        f"**{shown_edges}/{total_edges}** povezav."
-    )
-
-    if not display_graph["nodes"]:
-
-        st.warning(
-            "⚠️ Trenutni filtri ne prikazujejo nobenega vozlišča. "
-            "Prilagodi nastavitve v 🎛️ GRAPH DISPLAY FILTERS v stranski "
-            "vrstici (vrste vozlišč / vrste povezav / št. vozlišč)."
-        )
-
-    else:
-
-        render_cytoscape_network(
-            display_graph,
-            layout_type=graph_perspective,
-            container_id=f"primary_{int(time.time() * 1000)}",
-        )
 
     st.divider()
 
@@ -4688,56 +4603,48 @@ if (
 
     st.info(
         "The same knowledge architecture is displayed through different "
-        "visual grammars. The data model remains identical. Filters from "
-        "🎛️ GRAPH DISPLAY FILTERS in the sidebar apply to every view below."
+        "visual grammars. The data model remains identical."
     )
 
-    if not display_graph["nodes"]:
-
-        st.warning(
-            "⚠️ Ni vozlišč za prikaz galerije glede na trenutne filtre."
-        )
-
-    else:
-
-        gallery_tabs = st.tabs(
-            [
-                "🌳 HIERARCHOGRAPH",
-                "🌲 HIERARCHICAL",
-                "⚙️ OPERATIONAL",
-                "🌐 ORGANIC",
-                "🎯 CONCENTRIC",
-                "⭕ CIRCULAR",
-                "🔲 GRID",
-            ]
-        )
-
-        gallery_views = [
-            ("hierarchographic", "Polyhierarchical semantic architecture."),
-            ("hierarchical", "Vertical taxonomic and structural hierarchy."),
-            ("operational", "Processes, transformations and system states."),
-            ("organic", "Emergent associative clusters."),
-            ("concentric", "Macro-Meso-Micro systemic layers."),
-            ("circular", "Lateral relation density and interdependence."),
-            ("grid", "Structured inspection of the same ontology."),
+    gallery_tabs = st.tabs(
+        [
+            "🌳 HIERARCHOGRAPH",
+            "🌲 HIERARCHICAL",
+            "⚙️ OPERATIONAL",
+            "🌐 ORGANIC",
+            "🎯 CONCENTRIC",
+            "⭕ CIRCULAR",
+            "🔲 GRID",
         ]
+    )
 
-        for tab, (view, description) in zip(
-            gallery_tabs,
-            gallery_views,
-        ):
+    gallery_views = [
+        ("hierarchographic", "Polyhierarchical semantic architecture."),
+        ("hierarchical", "Vertical taxonomic and structural hierarchy."),
+        ("operational", "Processes, transformations and system states."),
+        ("organic", "Emergent associative clusters."),
+        ("concentric", "Macro-Meso-Micro systemic layers."),
+        ("circular", "Lateral relation density and interdependence."),
+        ("grid", "Structured inspection of the same ontology."),
+    ]
 
-            with tab:
+    for tab, (view, description) in zip(
+        gallery_tabs,
+        gallery_views,
+    ):
 
-                st.markdown(
-                    f"**{view.upper()} VIEW:** {description}"
-                )
+        with tab:
 
-                render_cytoscape_network(
-                    display_graph,
-                    layout_type=view,
-                    container_id=f"gallery_{view}",
-                )
+            st.markdown(
+                f"**{view.upper()} VIEW:** {description}"
+            )
+
+            render_cytoscape_network(
+                st.session_state.final_graph_elements,
+                layout_type=view,
+                container_id=f"gallery_{view}",
+                max_nodes=graph_node_limit,
+            )
 
 
 # =============================================================================
