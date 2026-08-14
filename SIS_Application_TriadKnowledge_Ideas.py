@@ -107,16 +107,29 @@ st.markdown(
 [data-testid="stSidebar"] [data-testid="stSlider"] div {
     color:#ffffff !important;
 }
-[data-testid="stSidebar"] button {
-    color:#ffffff !important;
-    background:#263241 !important;
-    border:1px solid #718096 !important;
-    font-weight:800 !important;
+/* Popravek za vse gumbe v sidebarju (navadni in link_button) */
+[data-testid="stSidebar"] .stButton button, 
+[data-testid="stSidebar"] .stLinkButton a {
+    color: #ffffff !important;
+    background-color: #263241 !important;
+    border: 1px solid #718096 !important;
+    font-weight: 800 !important;
+    text-decoration: none !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
-[data-testid="stSidebar"] button:hover {
-    color:#ffffff !important;
-    background:#3a4a5f !important;
-    border-color:#a8b4c2 !important;
+
+/* Zagotovi, da je besedilo znotraj link_button vidno */
+[data-testid="stSidebar"] .stLinkButton a p {
+    color: #ffffff !important;
+}
+
+/* Učinek ob prehodu z miško */
+[data-testid="stSidebar"] .stButton button:hover, 
+[data-testid="stSidebar"] .stLinkButton a:hover {
+    background-color: #3a4a5f !important;
+    border-color: #a8b4c2 !important;
 }
 
 [data-testid="stSidebar"] .stMarkdown p,
