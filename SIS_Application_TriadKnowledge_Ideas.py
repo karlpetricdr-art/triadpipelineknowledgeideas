@@ -89,7 +89,37 @@ st.markdown(
     opacity:1 !important;
 }
 
-[data-testid="stSidebar"] button {
+[data-testid="stSidebar"] button,
+[data-testid="stSidebar"] .stButton > button,
+[data-testid="stSidebar"] [data-testid="stLinkButton"] a,
+[data-testid="stSidebar"] [data-testid^="baseButton"] {
+    color:#ffffff !important;
+    background-color:#3a4658 !important;
+    border:1px solid #56637c !important;
+    font-weight:700 !important;
+    opacity:1 !important;
+}
+
+[data-testid="stSidebar"] button:hover,
+[data-testid="stSidebar"] .stButton > button:hover,
+[data-testid="stSidebar"] [data-testid="stLinkButton"] a:hover {
+    color:#ffffff !important;
+    background-color:#4f5f7a !important;
+    border-color:#8291ad !important;
+}
+
+[data-testid="stSidebar"] button:focus,
+[data-testid="stSidebar"] button:active,
+[data-testid="stSidebar"] .stButton > button:focus,
+[data-testid="stSidebar"] .stButton > button:active {
+    color:#ffffff !important;
+    background-color:#4f5f7a !important;
+    box-shadow:0 0 0 2px #8291ad !important;
+}
+
+[data-testid="stSidebar"] [data-baseweb="select"] > div,
+[data-testid="stSidebar"] [data-baseweb="base-input"],
+[data-testid="stSidebar"] .stSlider {
     color:#ffffff !important;
 }
 
@@ -322,6 +352,50 @@ RELATION_COLORS = {
     "CONSTRAINS": "#6c757d",
     "MEASURES": "#118ab2",
     "VALIDATES": "#06a77d",
+}
+
+
+# =============================================================================
+# RELATION CATEGORIES (used by the graph display filters)
+# =============================================================================
+
+RELATION_CATEGORIES = {
+    "🧬 Tezaverske (Thesaurus)": {
+        "TT", "BT", "NT", "RT", "EQ", "AS", "IN",
+    },
+    "📐 UML / Metamodel": {
+        "Generalization", "Specialization", "Composition",
+        "Aggregation", "Containment", "Realization",
+        "Dependency", "Conflict",
+    },
+    "⚙️ Operativne (Operational)": {
+        "CAUSES", "ENABLES", "TRANSFORMS", "PRODUCES", "CONSUMES",
+        "FEEDS", "TRIGGERS", "PRECEDES", "CONSTRAINS", "MEASURES",
+        "VALIDATES",
+    },
+    "🔀 Logične (Logical)": {
+        "AND", "OR", "XOR", "NOT", "IF-THEN",
+    },
+    "🔄 Povratne zanke (Feedback)": {
+        "FEEDBACK", "POSITIVE-FEEDBACK", "NEGATIVE-FEEDBACK",
+    },
+}
+
+
+# =============================================================================
+# NODE LAYER LABELS (used by the graph display filters)
+# =============================================================================
+
+LAYER_LABELS = {
+    "goal": "⭐ Cilji / vizija (Goal)",
+    "domain": "⬢ Znanstvena področja (Domain)",
+    "innovation": "💠 Inovacije (Innovation)",
+    "process": "△ Procesi / metode (Process)",
+    "constraint": "⬣ Pravila / omejitve (Constraint)",
+    "entity": "⬭ Entitete / akterji (Entity)",
+    "fact": "▭ Dejstva / koncepti (Fact)",
+    "state": "▢ Stanja sistema (State)",
+    "data": "🛢 Podatki / dokazi (Data)",
 }
 
 
@@ -1992,6 +2066,78 @@ def graph_statistics(graph):
 
 
 # =============================================================================
+# DISPLAY-ONLY GRAPH FILTERING
+# =============================================================================
+
+def filter_graph_for_display(
+    graph,
+    selected_layers=None,
+    selected_relation_categories=None,
+    max_nodes=None,
+):
+    """
+    Produces a display-only filtered view of the knowledge graph.
+    Never mutates the underlying stored graph — statistics, the report
+    and raw JSON inspection always reflect the full, unfiltered data.
+
+    selected_layers: iterable of layer keys to keep (None = keep all).
+    selected_relation_categories: iterable of RELATION_CATEGORIES keys
+        to keep (None = keep all relation types).
+    max_nodes: cap on the number of nodes shown. Macro nodes are kept
+        first, then Meso, then Micro, so the backbone of the
+        architecture survives truncation.
+    """
+
+    graph = normalize_graph_data(graph)
+
+    nodes = graph["nodes"]
+    edges = graph["edges"]
+
+    if selected_layers is not None:
+        nodes = [
+            n for n in nodes
+            if n.get("layer") in selected_layers
+        ]
+
+    level_priority = {"Macro": 0, "Meso": 1, "Micro": 2}
+
+    if max_nodes is not None and len(nodes) > max_nodes:
+        nodes = sorted(
+            nodes,
+            key=lambda n: level_priority.get(n.get("level"), 3),
+        )[:max_nodes]
+
+    valid_ids = {n["id"] for n in nodes}
+
+    allowed_relations = None
+
+    if selected_relation_categories is not None:
+        allowed_relations = set()
+
+        for category in selected_relation_categories:
+            allowed_relations |= RELATION_CATEGORIES.get(category, set())
+
+    filtered_edges = []
+
+    for edge in edges:
+        if edge["source"] not in valid_ids or edge["target"] not in valid_ids:
+            continue
+
+        if (
+            allowed_relations is not None
+            and edge["rel_type"] not in allowed_relations
+        ):
+            continue
+
+        filtered_edges.append(edge)
+
+    return {
+        "nodes": nodes,
+        "edges": filtered_edges,
+    }
+
+
+# =============================================================================
 # CYTOSCAPE HIERARCHOGRAPHIC RENDERER
 # =============================================================================
 
@@ -3140,6 +3286,57 @@ with st.sidebar:
     st.caption(
         "Hierarchographic = polyhierarchy + semantic association + "
         "operational transformations + system states."
+    )
+
+    st.divider()
+
+    st.subheader("🎛️ GRAPH DISPLAY FILTERS")
+
+    graph_max_nodes = st.slider(
+        "Maks. število prikazanih vozlišč",
+        min_value=10,
+        max_value=200,
+        value=100,
+        step=5,
+        key="graph_max_nodes_v230",
+        help=(
+            "Omeji število vozlišč, prikazanih v grafu. Najprej se "
+            "ohranijo Macro vozlišča, nato Meso, nato Micro."
+        ),
+    )
+
+    relation_category_options = list(RELATION_CATEGORIES.keys())
+
+    graph_relation_categories = st.multiselect(
+        "Vrste povezav v grafu",
+        relation_category_options,
+        default=relation_category_options,
+        key="graph_relation_categories_v230",
+        help=(
+            "Izberi, katere kategorije povezav (tezaverske, UML, "
+            "operativne, logične, povratne zanke) naj bodo prikazane."
+        ),
+    )
+
+    layer_options = list(LAYER_LABELS.keys())
+
+    graph_node_layers = st.multiselect(
+        "Vrste vozlišč v grafu",
+        layer_options,
+        default=layer_options,
+        format_func=lambda x: LAYER_LABELS.get(x, x),
+        key="graph_node_layers_v230",
+        help=(
+            "Izberi, katere vrste vozlišč (znanstvena področja, cilji, "
+            "procesi, inovacije, pravila, dejstva, stanja ...) naj bodo "
+            "prikazane."
+        ),
+    )
+
+    st.caption(
+        "Filtri vplivajo samo na vizualni prikaz grafa (Primary "
+        "Hierarchograph + Galerija). Statistika, poročilo in surovi JSON "
+        "ostanejo nespremenjeni."
     )
 
     st.divider()
@@ -4407,20 +4604,10 @@ NEGATIVE-FEEDBACK
 
         st.divider()
 
-        st.subheader(
-            "🕸️ PRIMARY HIERARCHOGRAPH"
-        )
-
-        st.caption(
-            "The graph simultaneously represents semantic hierarchy, "
-            "polyhierarchy, associative relations, UML structure, "
-            "operational transformations, system states and feedback."
-        )
-
-        render_cytoscape_network(
-            graph_data,
-            layout_type=graph_perspective,
-            container_id=f"primary_{int(time.time() * 1000)}",
+        st.info(
+            "🕸️ Poglej **PRIMARY HIERARCHOGRAPH** in **GALERIJO** spodaj — "
+            "prikaz upošteva trenutne nastavitve 🎛️ GRAPH DISPLAY FILTERS "
+            "v stranski vrstici (št. vozlišč, vrste povezav, vrste vozlišč)."
         )
 
 
@@ -4434,13 +4621,61 @@ NEGATIVE-FEEDBACK
 
 
 # =============================================================================
-# MULTI-PERSPECTIVE GALLERY
+# GRAPH VISUALIZATION — PRIMARY HIERARCHOGRAPH + MULTI-PERSPECTIVE GALLERY
 # =============================================================================
 
 if (
     st.session_state.get("report_ready")
     and st.session_state.get("final_graph_elements")
 ):
+
+    full_graph_for_display = st.session_state.final_graph_elements
+
+    display_graph = filter_graph_for_display(
+        full_graph_for_display,
+        selected_layers=graph_node_layers,
+        selected_relation_categories=graph_relation_categories,
+        max_nodes=graph_max_nodes,
+    )
+
+    total_nodes = len(full_graph_for_display.get("nodes", []))
+    total_edges = len(full_graph_for_display.get("edges", []))
+    shown_nodes = len(display_graph["nodes"])
+    shown_edges = len(display_graph["edges"])
+
+    st.divider()
+
+    st.subheader(
+        "🕸️ PRIMARY HIERARCHOGRAPH"
+    )
+
+    st.caption(
+        "The graph simultaneously represents semantic hierarchy, "
+        "polyhierarchy, associative relations, UML structure, "
+        "operational transformations, system states and feedback."
+    )
+
+    st.caption(
+        f"🎛️ Filtrirano prek stranske vrstice: prikazanih "
+        f"**{shown_nodes}/{total_nodes}** vozlišč in "
+        f"**{shown_edges}/{total_edges}** povezav."
+    )
+
+    if not display_graph["nodes"]:
+
+        st.warning(
+            "⚠️ Trenutni filtri ne prikazujejo nobenega vozlišča. "
+            "Prilagodi nastavitve v 🎛️ GRAPH DISPLAY FILTERS v stranski "
+            "vrstici (vrste vozlišč / vrste povezav / št. vozlišč)."
+        )
+
+    else:
+
+        render_cytoscape_network(
+            display_graph,
+            layout_type=graph_perspective,
+            container_id=f"primary_{int(time.time() * 1000)}",
+        )
 
     st.divider()
 
@@ -4453,47 +4688,56 @@ if (
 
     st.info(
         "The same knowledge architecture is displayed through different "
-        "visual grammars. The data model remains identical."
+        "visual grammars. The data model remains identical. Filters from "
+        "🎛️ GRAPH DISPLAY FILTERS in the sidebar apply to every view below."
     )
 
-    gallery_tabs = st.tabs(
-        [
-            "🌳 HIERARCHOGRAPH",
-            "🌲 HIERARCHICAL",
-            "⚙️ OPERATIONAL",
-            "🌐 ORGANIC",
-            "🎯 CONCENTRIC",
-            "⭕ CIRCULAR",
-            "🔲 GRID",
+    if not display_graph["nodes"]:
+
+        st.warning(
+            "⚠️ Ni vozlišč za prikaz galerije glede na trenutne filtre."
+        )
+
+    else:
+
+        gallery_tabs = st.tabs(
+            [
+                "🌳 HIERARCHOGRAPH",
+                "🌲 HIERARCHICAL",
+                "⚙️ OPERATIONAL",
+                "🌐 ORGANIC",
+                "🎯 CONCENTRIC",
+                "⭕ CIRCULAR",
+                "🔲 GRID",
+            ]
+        )
+
+        gallery_views = [
+            ("hierarchographic", "Polyhierarchical semantic architecture."),
+            ("hierarchical", "Vertical taxonomic and structural hierarchy."),
+            ("operational", "Processes, transformations and system states."),
+            ("organic", "Emergent associative clusters."),
+            ("concentric", "Macro-Meso-Micro systemic layers."),
+            ("circular", "Lateral relation density and interdependence."),
+            ("grid", "Structured inspection of the same ontology."),
         ]
-    )
 
-    gallery_views = [
-        ("hierarchographic", "Polyhierarchical semantic architecture."),
-        ("hierarchical", "Vertical taxonomic and structural hierarchy."),
-        ("operational", "Processes, transformations and system states."),
-        ("organic", "Emergent associative clusters."),
-        ("concentric", "Macro-Meso-Micro systemic layers."),
-        ("circular", "Lateral relation density and interdependence."),
-        ("grid", "Structured inspection of the same ontology."),
-    ]
+        for tab, (view, description) in zip(
+            gallery_tabs,
+            gallery_views,
+        ):
 
-    for tab, (view, description) in zip(
-        gallery_tabs,
-        gallery_views,
-    ):
+            with tab:
 
-        with tab:
+                st.markdown(
+                    f"**{view.upper()} VIEW:** {description}"
+                )
 
-            st.markdown(
-                f"**{view.upper()} VIEW:** {description}"
-            )
-
-            render_cytoscape_network(
-                st.session_state.final_graph_elements,
-                layout_type=view,
-                container_id=f"gallery_{view}",
-            )
+                render_cytoscape_network(
+                    display_graph,
+                    layout_type=view,
+                    container_id=f"gallery_{view}",
+                )
 
 
 # =============================================================================
