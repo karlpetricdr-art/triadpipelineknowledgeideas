@@ -1097,7 +1097,7 @@ def huggingface_generate(
         "messages": messages,
         "temperature": temperature,
         "stream": False,
-        "max_tokens": 2048,
+        "max_tokens": 1536,
     }
 
     if top_p is not None:
