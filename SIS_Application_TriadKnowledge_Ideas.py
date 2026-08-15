@@ -19,7 +19,7 @@ import streamlit.components.v1 as components
 # =============================================================================
 
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v23.4.0-RICH-RELATIONS-UML-LOGIC-THESAURUS"
+VERSION_CODE = "v23.5.0-NATURAL-NARRATIVE-SYNTHESIS"
 
 # =============================================================================
 # MODEL CATALOG
@@ -1782,7 +1782,6 @@ def enrich_graph_with_architecture(graph, selected_sciences):
                 add_edge(meso["id"], micro["id"], "NT", 0.85)
                 add_edge(micro["id"], meso["id"], "BT", 0.7)
 
-    # Instance relations
     for meso in meso_nodes[:20]:
         for micro in micro_nodes[:20]:
             if semantic_related(meso, micro, threshold=0.40):
@@ -1822,7 +1821,6 @@ def enrich_graph_with_architecture(graph, selected_sciences):
     state_nodes = [n for n in nodes if n["shape"] == "round-rectangle" or n["layer"] == "state"]
     data_nodes = [n for n in nodes if n["shape"] == "barrel" or n["layer"] == "data"]
 
-    # Generalization / Specialization (is-a)
     for goal in goal_nodes[:8]:
         for domain in domain_nodes[:12]:
             if semantic_related(goal, domain, threshold=0.25):
@@ -1835,7 +1833,6 @@ def enrich_graph_with_architecture(graph, selected_sciences):
                 add_edge(process["id"], domain["id"], "Generalization", 0.9)
                 add_edge(domain["id"], process["id"], "Specialization", 0.75)
 
-    # Composition (strong whole-part) and Aggregation (weak)
     for goal in goal_nodes[:6]:
         for process in process_nodes[:12]:
             add_edge(goal["id"], process["id"], "Composition", 1.2)
@@ -1849,14 +1846,12 @@ def enrich_graph_with_architecture(graph, selected_sciences):
         for entity in entity_nodes[:10]:
             add_edge(domain["id"], entity["id"], "Aggregation", 0.7)
 
-    # Containment
     for domain in domain_nodes[:10]:
         for process in process_nodes[:12]:
             add_edge(domain["id"], process["id"], "Containment", 0.9)
         for state in state_nodes[:8]:
             add_edge(domain["id"], state["id"], "Containment", 0.7)
 
-    # Realization (implements)
     for innovation in innovation_nodes[:12]:
         for process in process_nodes[:15]:
             if semantic_related(innovation, process, threshold=0.28):
@@ -1864,7 +1859,6 @@ def enrich_graph_with_architecture(graph, selected_sciences):
         for goal in goal_nodes[:6]:
             add_edge(innovation["id"], goal["id"], "Realization", 0.9)
 
-    # Dependency
     for process in process_nodes[:15]:
         for data in data_nodes[:10]:
             add_edge(process["id"], data["id"], "Dependency", 0.8)
@@ -1877,7 +1871,6 @@ def enrich_graph_with_architecture(graph, selected_sciences):
         for process in process_nodes[:12]:
             add_edge(innovation["id"], process["id"], "Dependency", 0.9)
 
-    # Conflict
     for constraint in constraint_nodes[:10]:
         for goal in goal_nodes[:8]:
             add_edge(constraint["id"], goal["id"], "Conflict", 0.7)
@@ -1891,14 +1884,12 @@ def enrich_graph_with_architecture(graph, selected_sciences):
     # 4. Logical operators
     # -------------------------------------------------------------------------
 
-    # IF-THEN: constraint / rule → process or innovation
     for constraint in constraint_nodes[:12]:
         for process in process_nodes[:15]:
             add_edge(constraint["id"], process["id"], "IF-THEN", 0.85)
         for innovation in innovation_nodes[:10]:
             add_edge(constraint["id"], innovation["id"], "IF-THEN", 0.8)
 
-    # AND / OR between parallel processes or innovations
     for i, p1 in enumerate(process_nodes[:12]):
         for p2 in process_nodes[i + 1:12]:
             if semantic_related(p1, p2, threshold=0.30):
@@ -1910,7 +1901,6 @@ def enrich_graph_with_architecture(graph, selected_sciences):
         for inn2 in innovation_nodes[i + 1:8]:
             add_edge(inn1["id"], inn2["id"], "XOR", 0.55)
 
-    # NOT: constraint forbids certain states or processes
     for constraint in constraint_nodes[:8]:
         for state in state_nodes[:8]:
             add_edge(constraint["id"], state["id"], "NOT", 0.6)
@@ -1959,7 +1949,6 @@ def enrich_graph_with_architecture(graph, selected_sciences):
             add_edge(data["id"], fact["id"], "MEASURES", 0.75)
             add_edge(fact["id"], data["id"], "VALIDATES", 0.7)
 
-    # Feedback
     if len(state_nodes) >= 2:
         add_edge(state_nodes[1]["id"], state_nodes[0]["id"], "FEEDBACK", 0.8)
         if len(state_nodes) >= 3:
@@ -3401,7 +3390,7 @@ function escapeHtml(value){{
 
 
 # =============================================================================
-# AI PROMPTS
+# AI PROMPTS – NATURAL NARRATIVE SYNTHESIS
 # =============================================================================
 
 def build_phase1_system_prompt():
@@ -3410,69 +3399,37 @@ You are the SIS Lead Knowledge Synthesizer, Hierarchologist and Ontology Enginee
 
 PHASE 1 HAS ONE PURPOSE: KNOWLEDGE SYNTHESIS.
 
-Do not treat Phase 1 as an Innovation Objective and do not solve the innovation
-objective yet. Synthesize the user's inquiry into a rich, structured knowledge
-system that can later serve as the knowledge substrate for Phase 2 innovation.
+Write a continuous, natural, academic prose text — never a telegraphic list of bullets or isolated keywords.
 
-CRITICAL OUTPUT QUALITY REQUIREMENT (especially for Qwen / Hugging Face):
-- Write in full, coherent paragraphs. Do NOT produce telegraphic, bullet-only
-  or keyword-list style answers.
-- Every major concept must be explained with definition, context, relations
-  and functional role.
-- Explicitly name and justify thesaurus relations (TT, BT, NT, RT, EQ, AS, IN),
-  UML relations and operational relations.
-- Include Macro / Meso / Micro levels and polyhierarchical parentage.
-- Aim for dense, readable academic prose of at least 800–1500 words when the
-  topic allows. Prefer depth over brevity.
+STRUCTURE THE SYNTHESIS AS A COHERENT ESSAY:
 
-The synthesis MUST simultaneously contain:
-1. A rich multidimensional thesaurus.
-2. A polyhierarchical ontology.
-3. A UML/metamodel representation.
-4. Hierarchical-associative relations.
-5. Operational relations.
-6. State and transformation logic.
-7. Temporal/process logic.
-8. Feedback loops where logically justified.
-9. Macro, Meso and Micro levels.
-10. A hierarchographic representation.
-11. Relevant scientific domains, paradigms, structural models and evidence.
-12. Explicit concepts, definitions, mechanisms, causes, effects, functions,
-    contexts, constraints and dependencies.
+1. Begin with a proper INTRODUCTION that situates the inquiry, states its intellectual significance, and outlines the scope of the synthesis.
 
-The central question of Phase 1 is:
-WHAT KNOWLEDGE MUST BE SYNTHESIZED, STRUCTURED, RELATED AND ORGANIZED
-TO FULLY UNDERSTAND THE USER'S INQUIRY?
+2. Continue with a flowing exposition of the core conceptual landscape. Introduce each major concept in full sentences, define it, situate it historically or theoretically, and show how it relates to neighbouring concepts.
 
-Do not optimize for novelty yet. Do not generate the final innovation solution.
-Build the richest defensible knowledge substrate for Phase 2.
+3. Weave the multidimensional thesaurus (TT, BT, NT, RT, EQ, AS, IN), polyhierarchical structure, UML relations, operational logic and feedback loops into the narrative itself. Do not isolate them as separate bullet lists; let the relations emerge naturally from the prose.
 
-Do NOT use Stress Barometer concepts, stress degrees, kcal, sigma, positive
-factors, negative factors, psychosocial stress scores or similar logic.
+4. Move from Macro-level principles and domains through Meso-level processes and systems down to Micro-level facts, entities and states, always in continuous paragraphs.
 
-Vertical relations:
-TT, BT, NT, IN, Generalization, Specialization, Composition, Aggregation,
-Containment.
+5. Close with a synthetic CONCLUSION that draws the threads together, highlights the most important structural insights, and prepares the ground for later innovation without yet proposing the innovation itself.
 
-Lateral relations:
-RT, EQ, AS, Dependency, Conflict.
+STYLE REQUIREMENTS (STRICT):
+- Continuous paragraphs, not bullet points or numbered keyword lists.
+- Full, well-formed sentences.
+- Natural academic tone, readable and precise.
+- Explicit definitions and justifications appear inside the flowing text.
+- Aim for 900–1600 words of dense, coherent prose when the topic allows.
+- Prefer depth, context and relational explanation over brevity.
 
-Operational relations:
-CAUSES, ENABLES, TRANSFORMS, PRODUCES, CONSUMES, FEEDS, TRIGGERS,
-PRECEDES, CONSTRAINS, MEASURES, VALIDATES.
+FORBIDDEN:
+- Telegraphic style
+- Isolated bullet lists of concepts without surrounding explanation
+- Keyword dumps
+- Stress-Barometer or quantitative stress logic
 
-Logical relations:
-AND, OR, XOR, NOT, IF-THEN.
+The result must feel like a carefully written scholarly overview that a reader can follow from beginning to end, not like a set of notes.
 
-Feedback:
-FEEDBACK, POSITIVE-FEEDBACK, NEGATIVE-FEEDBACK.
-
-Use Micro/Meso/Macro explicitly. Think like an ontology engineer, systems
-architect, UML modeler, knowledge organization specialist and hierarchographist
-simultaneously.
-
-The result must be a knowledge synthesis, not a simple concept list and not
-an innovation proposal.
+Do not solve the innovation objective yet. Build only the knowledge substrate.
 """
 
 def build_phase2_system_prompt(architecture_context):
@@ -3609,16 +3566,10 @@ Produce:
 
 ### STRATEGIC KNOWLEDGE SYNTHESIS
 
-Explain:
-- core ontology
-- polyhierarchy
-- major semantic associations
-- UML architecture
-- operational transformations
-- system states
-- feedback
-- innovations
-- interdisciplinary implications
+Write in continuous, natural academic prose (not telegraphic bullets).
+Explain the innovation architecture, the polyhierarchy, the key UML and
+operational relations, the system states and the feedback loops in flowing
+paragraphs.
 
 Then produce:
 
@@ -3888,8 +3839,8 @@ if st.session_state.show_user_guide:
 
 **PHASE 1 — KNOWLEDGE SYNTHESIS**
 The system synthesizes the inquiry into a rich multidimensional knowledge
-structure: thesaurus, ontology, polyhierarchy, UML, hierarchical-associative
-relations, operational logic, states, processes and evidence.
+structure written as continuous academic prose (introduction → exposition →
+conclusion), not as telegraphic bullet lists.
 
 **PHASE 2 — INNOVATION OBJECTIVE**
 The system works exclusively on the stated innovation objective and transforms
@@ -3918,10 +3869,8 @@ Where justified, positive and negative feedback loops are represented
 as directed cycles.
 
 **8. Human Thinking Metamodel + Mental Approaches**
-The full cognitive metamodel (identity, mission, vision, goal, rules,
-decision-making, etc.) and the full set of Mental Approaches are always
-activated as real nodes and relations in the graph, in addition to
-whatever the AI model generates.
+The full cognitive metamodel and the full set of Mental Approaches are always
+activated as real nodes and relations in the graph.
 
 **9. Hierarchography**
 The complete architecture is rendered as a multidimensional graph.
@@ -4279,7 +4228,7 @@ SELECTED TRANSFORMATION FRAMEWORKS:
 {biblio_context}
 
 ARCHITECTURAL REQUIREMENT:
-Construct a rich knowledge system, not a stress model.
+Construct a rich knowledge system written as continuous natural academic prose, not a stress model and not a telegraphic bullet list.
 """
 
 
@@ -4314,8 +4263,8 @@ Construct a rich knowledge system, not a stress model.
                 p1_model,
                 phase1_system,
                 phase1_input,
-                temperature=0.45 if p1_is_hf else 0.35,
-                top_p=0.9 if p1_is_hf else 0.85,
+                temperature=0.55 if p1_is_hf else 0.45,
+                top_p=0.92 if p1_is_hf else 0.88,
                 huggingface_api_key=huggingface_api_key,
             )
 
