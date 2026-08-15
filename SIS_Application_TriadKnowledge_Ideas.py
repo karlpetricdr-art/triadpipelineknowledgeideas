@@ -19,7 +19,7 @@ import streamlit.components.v1 as components
 # =============================================================================
 
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v23.5.0-NATURAL-NARRATIVE-SYNTHESIS"
+VERSION_CODE = "v23.6.0-SELECTABLE-COMPONENTS-NO-STRESS"
 
 # =============================================================================
 # MODEL CATALOG
@@ -51,6 +51,21 @@ DEFAULT_SESSION = {
     "final_graph_elements": [],
     "report_ready": False,
     "last_graph_data": {},
+    "selected_graph_components": [
+        "Innovations",
+        "Science Fields",
+        "Scientific Paradigms",
+        "Structural Models",
+        "Human Thinking Metamodel",
+        "Mental Approaches",
+        "Processes",
+        "Goals / Vision",
+        "Constraints / Rules",
+        "Entities",
+        "Facts / Concepts",
+        "System States",
+        "Data / Evidence",
+    ],
 }
 
 for key, value in DEFAULT_SESSION.items():
@@ -1027,6 +1042,129 @@ IDEATION_TECHNIQUES = {
 
 
 # =============================================================================
+# COMPONENT FILTER DEFINITIONS
+# =============================================================================
+
+GRAPH_COMPONENT_OPTIONS = [
+    "Innovations",
+    "Science Fields",
+    "Scientific Paradigms",
+    "Structural Models",
+    "Human Thinking Metamodel",
+    "Mental Approaches",
+    "Processes",
+    "Goals / Vision",
+    "Constraints / Rules",
+    "Entities",
+    "Facts / Concepts",
+    "System States",
+    "Data / Evidence",
+    "Root / Knowledge System",
+]
+
+
+def node_matches_component(node, selected_components):
+    """Return True if the node belongs to at least one selected component category."""
+    if not selected_components:
+        return True
+
+    shape = node.get("shape", "")
+    layer = node.get("layer", "")
+    semantic = node.get("semantic_type", "")
+    label_lower = node.get("label", "").lower()
+
+    if "Root / Knowledge System" in selected_components:
+        if semantic == "root" or "sis knowledge system" in label_lower or node.get("id") == "knowledge_root":
+            return True
+
+    if "Innovations" in selected_components:
+        if shape == "diamond" or layer == "innovation" or semantic == "innovation":
+            return True
+
+    if "Science Fields" in selected_components:
+        if shape == "hexagon" or layer == "domain" or semantic == "science-domain":
+            return True
+
+    if "Scientific Paradigms" in selected_components:
+        if any(p.lower() in label_lower for p in SCIENTIFIC_PARADIGMS):
+            return True
+        if "paradigm" in label_lower or "paradigm" in semantic:
+            return True
+
+    if "Structural Models" in selected_components:
+        if any(m.lower() in label_lower for m in STRUCTURAL_MODELS):
+            return True
+        if "structural" in label_lower or "model" in semantic:
+            return True
+
+    if "Human Thinking Metamodel" in selected_components:
+        if semantic == "human-thinking-metamodel":
+            return True
+
+    if "Mental Approaches" in selected_components:
+        if semantic in {"mental-approach", "mental-approaches-hub"}:
+            return True
+
+    if "Processes" in selected_components:
+        if shape == "triangle" or layer == "process":
+            return True
+
+    if "Goals / Vision" in selected_components:
+        if shape == "star" or layer == "goal":
+            return True
+
+    if "Constraints / Rules" in selected_components:
+        if shape == "octagon" or layer == "constraint":
+            return True
+
+    if "Entities" in selected_components:
+        if shape == "ellipse" or layer == "entity":
+            return True
+
+    if "Facts / Concepts" in selected_components:
+        if shape == "rectangle" or layer == "fact":
+            return True
+
+    if "System States" in selected_components:
+        if shape == "round-rectangle" or layer == "state":
+            return True
+
+    if "Data / Evidence" in selected_components:
+        if shape == "barrel" or layer == "data":
+            return True
+
+    return False
+
+
+def filter_graph_by_components(graph, selected_components):
+    """Keep only nodes that match the selected components and their connecting edges."""
+    if not selected_components or set(selected_components) == set(GRAPH_COMPONENT_OPTIONS):
+        return graph
+
+    graph = normalize_graph_data(graph)
+    nodes = graph["nodes"]
+    edges = graph["edges"]
+
+    kept_ids = {
+        n["id"] for n in nodes
+        if node_matches_component(n, selected_components)
+    }
+
+    # Always keep the root if present so the graph stays anchored
+    for n in nodes:
+        if n.get("semantic_type") == "root" or n.get("id") == "knowledge_root":
+            kept_ids.add(n["id"])
+
+    filtered_nodes = [n for n in nodes if n["id"] in kept_ids]
+    filtered_edges = [
+        e for e in edges
+        if e.get("source") in kept_ids and e.get("target") in kept_ids
+    ]
+
+    return {"nodes": filtered_nodes, "edges": filtered_edges}
+
+
+# =============================================================================
 # API FUNCTIONS
 # =============================================================================
 
@@ -1751,10 +1889,6 @@ def enrich_graph_with_architecture(graph, selected_sciences):
 
         existing_pairs.add(key)
 
-    # -------------------------------------------------------------------------
-    # 1. Thesaurus hierarchy: TT / BT / NT / IN
-    # -------------------------------------------------------------------------
-
     for node in nodes:
         if node["id"] == root_id:
             continue
@@ -1787,10 +1921,6 @@ def enrich_graph_with_architecture(graph, selected_sciences):
             if semantic_related(meso, micro, threshold=0.40):
                 add_edge(meso["id"], micro["id"], "IN", 0.75)
 
-    # -------------------------------------------------------------------------
-    # 2. Lateral thesaurus: RT / AS / EQ
-    # -------------------------------------------------------------------------
-
     all_nodes = nodes[:70]
     for i, source in enumerate(all_nodes):
         for target in all_nodes[i + 1:]:
@@ -1806,10 +1936,6 @@ def enrich_graph_with_architecture(graph, selected_sciences):
                 or source.get("semantic_type") == target.get("semantic_type")
             ):
                 add_edge(source["id"], target["id"], "AS", 0.35)
-
-    # -------------------------------------------------------------------------
-    # 3. UML relations based on shape / layer
-    # -------------------------------------------------------------------------
 
     goal_nodes = [n for n in nodes if n["shape"] == "star" or n["layer"] == "goal"]
     domain_nodes = [n for n in nodes if n["shape"] == "hexagon" or n["layer"] == "domain"]
@@ -1880,10 +2006,6 @@ def enrich_graph_with_architecture(graph, selected_sciences):
         for process in process_nodes[:12]:
             add_edge(constraint["id"], process["id"], "Conflict", 0.6)
 
-    # -------------------------------------------------------------------------
-    # 4. Logical operators
-    # -------------------------------------------------------------------------
-
     for constraint in constraint_nodes[:12]:
         for process in process_nodes[:15]:
             add_edge(constraint["id"], process["id"], "IF-THEN", 0.85)
@@ -1907,10 +2029,6 @@ def enrich_graph_with_architecture(graph, selected_sciences):
         for process in process_nodes[:8]:
             if not semantic_related(constraint, process, threshold=0.35):
                 add_edge(constraint["id"], process["id"], "NOT", 0.5)
-
-    # -------------------------------------------------------------------------
-    # 5. Operational relations
-    # -------------------------------------------------------------------------
 
     for process in process_nodes[:20]:
         for innovation in innovation_nodes[:15]:
@@ -3425,7 +3543,6 @@ FORBIDDEN:
 - Telegraphic style
 - Isolated bullet lists of concepts without surrounding explanation
 - Keyword dumps
-- Stress-Barometer or quantitative stress logic
 
 The result must feel like a carefully written scholarly overview that a reader can follow from beginning to end, not like a set of notes.
 
@@ -3438,8 +3555,7 @@ You are the SIS Lead Innovation Architect and Hierarchographist.
 
 PHASE 2 HAS ONE PURPOSE: INNOVATION OBJECTIVE.
 
-It is NOT a second general knowledge synthesis phase and it is NOT a Stress
-Barometer.
+It is NOT a second general knowledge synthesis phase.
 
 Use the completed Phase 1 knowledge synthesis as the knowledge substrate, but
 focus exclusively on the user's stated INNOVATION OBJECTIVE. Determine what
@@ -3874,6 +3990,8 @@ activated as real nodes and relations in the graph.
 
 **9. Hierarchography**
 The complete architecture is rendered as a multidimensional graph.
+You can select which components (innovations, science fields, paradigms,
+structural models, etc.) you want to see under the graph.
 """
     )
 
@@ -4228,7 +4346,7 @@ SELECTED TRANSFORMATION FRAMEWORKS:
 {biblio_context}
 
 ARCHITECTURAL REQUIREMENT:
-Construct a rich knowledge system written as continuous natural academic prose, not a stress model and not a telegraphic bullet list.
+Construct a rich knowledge system written as continuous natural academic prose, not a telegraphic bullet list.
 """
 
 
@@ -5025,17 +5143,49 @@ NEGATIVE-FEEDBACK
         "🕸️ PRIMARY HIERARCHOGRAPH"
     )
 
+    # -------------------------------------------------------------------------
+    # COMPONENT SELECTOR UNDER THE GRAPH
+    # -------------------------------------------------------------------------
+
+    st.markdown("#### 🎛️ Select components to display")
+
+    selected_components = st.multiselect(
+        "Choose which building blocks you want to see in the graph "
+        "(leave all selected to show everything):",
+        options=GRAPH_COMPONENT_OPTIONS,
+        default=st.session_state.get(
+            "selected_graph_components",
+            GRAPH_COMPONENT_OPTIONS,
+        ),
+        key="graph_component_selector",
+        help=(
+            "You can show only innovations, only science fields, only paradigms, "
+            "structural models, human thinking metamodel, mental approaches, "
+            "processes, goals, constraints, entities, facts, states, data, "
+            "or any combination. The root node is always kept for orientation."
+        ),
+    )
+
+    st.session_state.selected_graph_components = selected_components
+
+    # Apply component filter
+    filtered_graph = filter_graph_by_components(
+        graph_data,
+        selected_components,
+    )
+
     st.caption(
         "The graph simultaneously represents semantic hierarchy, "
         "polyhierarchy, associative relations, UML structure, "
         "operational transformations, system states and feedback. "
-        f"Displayed nodes: up to {graph_node_limit}. Use the ➕/➖ ZOOM "
-        "buttons or the mouse wheel to zoom in and out. "
+        f"Displayed nodes: up to {graph_node_limit}. "
+        f"Currently showing {len(filtered_graph['nodes'])} nodes after component filter. "
+        "Use the ➕/➖ ZOOM buttons or the mouse wheel to zoom in and out. "
         "Edge labels show the relation type (TT/BT/NT/RT/UML/operational)."
     )
 
     render_cytoscape_network(
-        graph_data,
+        filtered_graph,
         layout_type=graph_perspective,
         container_id="primary_graph",
         max_nodes=graph_node_limit,
@@ -5064,7 +5214,14 @@ if (
         "The same knowledge architecture is displayed through different "
         "visual grammars. The data model remains identical. Every view "
         "supports mouse-wheel zoom and the ➕/➖ ZOOM buttons. "
-        "Relation types are always shown on edges."
+        "Relation types are always shown on edges. "
+        "The component filter selected above also applies to the gallery."
+    )
+
+    # Re-use the same filter for the gallery
+    gallery_base = filter_graph_by_components(
+        st.session_state.final_graph_elements,
+        st.session_state.get("selected_graph_components", GRAPH_COMPONENT_OPTIONS),
     )
 
     gallery_tabs = st.tabs(
@@ -5099,7 +5256,7 @@ if (
             )
 
             render_cytoscape_network(
-                st.session_state.final_graph_elements,
+                gallery_base,
                 layout_type=view,
                 container_id=f"gallery_{view}",
                 max_nodes=graph_node_limit,
