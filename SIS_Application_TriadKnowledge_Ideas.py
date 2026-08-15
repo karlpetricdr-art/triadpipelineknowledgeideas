@@ -19,7 +19,7 @@ import streamlit.components.v1 as components
 # =============================================================================
 
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v23.1.0-KNOWLEDGE-SYNTHESIS-INNOVATION"
+VERSION_CODE = "v23.2.0-KNOWLEDGE-SYNTHESIS-CONNECTED-HIERARCHOGRAPH"
 
 # =============================================================================
 # MODEL CATALOG
@@ -2232,31 +2232,225 @@ def find_label_node(nodes, labels):
     return None
 
 
-def semantic_related(a, b):
-    a_words = set(
-        re.findall(
-            r"[a-zA-ZÀ-ž0-9]{4,}",
-            a["label"].lower(),
-        )
-    )
+SEMANTIC_STOPWORDS = {
+    "knowledge", "system", "domain", "concept", "process",
+    "approach", "method", "aspect", "level", "state", "human",
+    "mental", "thinking", "science", "scientific", "model",
+    "structure", "framework", "general", "specific", "information",
+}
 
-    b_words = set(
-        re.findall(
-            r"[a-zA-ZÀ-ž0-9]{4,}",
-            b["label"].lower(),
-        )
-    )
 
-    if a_words & b_words:
+def _semantic_tokens(node):
+    text = " ".join([
+        str(node.get("label", "")),
+        str(node.get("description", "")),
+        str(node.get("semantic_type", "")),
+    ]).lower()
+    tokens = set(re.findall(r"[a-zA-ZÀ-ž0-9]{4,}", text))
+    return {t for t in tokens if t not in SEMANTIC_STOPWORDS}
+
+
+def semantic_similarity(a, b):
+    """Deterministic lexical-semantic score in [0, 1].
+
+    Hierarchy level or layer alone is deliberately NOT treated as semantic
+    evidence.  This prevents the previous graph-wide edge explosion.
+    """
+    if not a or not b:
+        return 0.0
+
+    if a.get("id") == b.get("id"):
+        return 1.0
+
+    a_label = str(a.get("label", "")).strip().lower()
+    b_label = str(b.get("label", "")).strip().lower()
+
+    if a_label and a_label == b_label:
+        return 1.0
+
+    a_words = _semantic_tokens(a)
+    b_words = _semantic_tokens(b)
+
+    if not a_words or not b_words:
+        return 0.0
+
+    intersection = len(a_words & b_words)
+    if intersection == 0:
+        return 0.0
+
+    union = len(a_words | b_words)
+    jaccard = intersection / max(union, 1)
+    containment = intersection / max(min(len(a_words), len(b_words)), 1)
+
+    # Containment is useful for labels such as "Decision" /
+    # "Decision-making process" without making every same-layer node related.
+    return min(1.0, 0.65 * containment + 0.35 * jaccard)
+
+
+def semantic_related(a, b, threshold=0.34):
+    """Return True only when a defensible semantic relation exists."""
+    if not a or not b:
+        return False
+
+    if a.get("id") == b.get("id"):
+        return False
+
+    score = semantic_similarity(a, b)
+    if score >= threshold:
         return True
 
-    if a.get("layer") == b.get("layer"):
-        return True
+    # Strong structural compatibility is accepted only when both nodes share
+    # meaningful semantic vocabulary.  Same layer or different hierarchy
+    # levels by themselves are NEVER sufficient.
+    a_words = _semantic_tokens(a)
+    b_words = _semantic_tokens(b)
+    shared = a_words & b_words
 
-    if a.get("level") != b.get("level"):
-        return True
+    if shared and (
+        a.get("semantic_type") == b.get("semantic_type")
+        or a.get("layer") == b.get("layer")
+    ):
+        return len(shared) >= 1
 
     return False
+
+
+def _edge_exists(edges, source, target, relation=None):
+    for edge in edges:
+        if edge.get("source") == source and edge.get("target") == target:
+            if relation is None or edge.get("rel_type") == relation:
+                return True
+        if relation is not None and edge.get("source") == target and edge.get("target") == source and edge.get("rel_type") == relation:
+            return True
+    return False
+
+
+def connect_isolated_components(graph):
+    """Connect disconnected semantic islands without creating RT noise.
+
+    The function builds an explicit SIS backbone first, then joins any
+    remaining component to the most semantically appropriate anchor using AS.
+    It never creates all-to-all relations.
+    """
+    graph = normalize_graph_data(graph)
+    nodes = graph["nodes"]
+    edges = graph["edges"]
+
+    if not nodes:
+        return graph
+
+    node_map = {n["id"]: n for n in nodes}
+
+    def add_edge(source, target, relation, weight=0.6):
+        if source not in node_map or target not in node_map or source == target:
+            return False
+        if _edge_exists(edges, source, target, relation):
+            return False
+        edges.append({
+            "id": f"connect_e{len(edges) + 1}",
+            "source": source,
+            "target": target,
+            "rel_type": relation,
+            "label": RELATION_DEFINITIONS.get(relation, relation),
+            "weight": weight,
+            "direction": "directed",
+        })
+        return True
+
+    root_id = find_label_node(
+        nodes,
+        ["SIS Knowledge System", "Knowledge Domain", "Knowledge", "System"],
+    )
+    if root_id is None:
+        root_id = "knowledge_root"
+
+    if root_id not in node_map:
+        root_id = next((n["id"] for n in nodes if n.get("semantic_type") == "root"), nodes[0]["id"])
+
+    # Explicit integration hubs: these are architectural dimensions, not
+    # accidental AI-generated islands.
+    htm = find_label_node(nodes, ["Human Thinking Metamodel", "Human Thinking"])
+    ma = find_label_node(nodes, ["Mental Approaches", "Mental Approaches Hub"])
+
+    if htm and htm != root_id:
+        add_edge(root_id, htm, "NT", 2.0)
+    if ma and ma != root_id:
+        add_edge(root_id, ma, "NT", 2.0)
+
+    # Build undirected connectivity for component analysis.
+    def components():
+        adjacency = {n["id"]: set() for n in nodes}
+        for e in edges:
+            s, t = e.get("source"), e.get("target")
+            if s in adjacency and t in adjacency:
+                adjacency[s].add(t)
+                adjacency[t].add(s)
+        seen = set()
+        result = []
+        for nid in adjacency:
+            if nid in seen:
+                continue
+            stack = [nid]
+            comp = set()
+            while stack:
+                cur = stack.pop()
+                if cur in seen:
+                    continue
+                seen.add(cur)
+                comp.add(cur)
+                stack.extend(adjacency[cur] - seen)
+            result.append(comp)
+        return result
+
+    comps = components()
+    root_comp = next((c for c in comps if root_id in c), {root_id})
+
+    for comp in comps:
+        if comp is root_comp or root_id in comp:
+            continue
+
+        comp_nodes = [node_map[nid] for nid in comp if nid in node_map]
+        if not comp_nodes:
+            continue
+
+        # Candidate anchors already in the main component.
+        anchors = [node_map[nid] for nid in root_comp if nid in node_map]
+
+        best_pair = None
+        best_score = -1.0
+
+        for source in comp_nodes:
+            for target in anchors:
+                score = semantic_similarity(source, target)
+
+                # Prefer architectural hubs and domain nodes as bridges.
+                if target.get("semantic_type") in {
+                    "root", "science-domain", "human-thinking-metamodel",
+                    "mental-approaches-hub", "mental-approach",
+                }:
+                    score += 0.08
+
+                if source.get("level") == target.get("level"):
+                    score += 0.02
+
+                if score > best_score:
+                    best_score = score
+                    best_pair = (source, target)
+
+        if best_pair is None:
+            continue
+
+        source, target = best_pair
+        relation = "AS"
+        weight = max(0.45, min(0.9, best_score))
+        add_edge(source["id"], target["id"], relation, weight)
+
+        # Recompute root component so the next island can attach to the now
+        # enlarged connected core rather than to an arbitrary node.
+        comps = components()
+        root_comp = next((c for c in comps if root_id in c), root_comp)
+
+    return {"nodes": nodes, "edges": edges}
 
 
 # =============================================================================
@@ -2293,13 +2487,13 @@ def graph_statistics(graph):
 # =============================================================================
 
 def limit_graph_nodes(graph, max_nodes=80):
+    """Return a connected, importance-aware display subgraph.
+
+    Selection starts at the SIS root and grows through actual graph edges.
+    The limiter therefore cannot arbitrarily remove bridge nodes and split the
+    displayed hierarchograph into unrelated islands.
     """
-    Return a display-only graph containing at most max_nodes.
-    The underlying AI-generated graph is never modified.
-    Selection prioritizes the knowledge root, high-degree nodes, Macro/Meso
-    nodes and innovation/process nodes, then fills remaining slots by degree.
-    """
-    graph = normalize_graph_data(graph)
+    graph = connect_isolated_components(normalize_graph_data(graph))
     nodes = graph["nodes"]
     edges = graph["edges"]
 
@@ -2307,48 +2501,98 @@ def limit_graph_nodes(graph, max_nodes=80):
         return graph
 
     max_nodes = max(1, int(max_nodes))
+    if max_nodes == 1:
+        root = next((n for n in nodes if n.get("semantic_type") == "root" or n.get("id") == "knowledge_root"), nodes[0])
+        return {"nodes": [root], "edges": []}
 
-    degree = {n["id"]: 0 for n in nodes}
+    node_map = {n["id"]: n for n in nodes}
+    adjacency = {n["id"]: [] for n in nodes}
+
     for edge in edges:
-        if edge["source"] in degree:
-            degree[edge["source"]] += 1
-        if edge["target"] in degree:
-            degree[edge["target"]] += 1
+        s, t = edge.get("source"), edge.get("target")
+        if s not in adjacency or t not in adjacency:
+            continue
+        adjacency[s].append((t, edge))
+        adjacency[t].append((s, edge))
 
-    def priority(node):
-        label = node.get("label", "").lower()
-        root_bonus = 100000 if node.get("id") == "knowledge_root" else 0
-        semantic_bonus = 5000 if node.get("semantic_type") == "root" else 0
-        level_bonus = {
-            "Macro": 3000,
-            "Meso": 2000,
-            "Micro": 1000,
-        }.get(node.get("level"), 0)
-        shape_bonus = {
-            "star": 1500,
-            "diamond": 1200,
-            "hexagon": 900,
-            "triangle": 700,
-        }.get(node.get("shape"), 0)
-        return (
-            root_bonus
-            + semantic_bonus
-            + level_bonus
-            + shape_bonus
-            + degree.get(node["id"], 0) * 25
-            + min(len(label), 80)
+    root_id = next((
+        n["id"] for n in nodes
+        if n.get("semantic_type") == "root" or n.get("id") == "knowledge_root"
+    ), nodes[0]["id"])
+
+    def node_priority(node, edge=None):
+        p = 0.0
+        p += {"Macro": 30, "Meso": 22, "Micro": 14}.get(node.get("level"), 8)
+        p += {"domain": 16, "goal": 18, "innovation": 14, "process": 13, "constraint": 11, "entity": 9, "fact": 8, "state": 8}.get(node.get("layer"), 6)
+        p += {
+            "root": 1000,
+            "science-domain": 90,
+            "human-thinking-metamodel": 75,
+            "mental-approaches-hub": 75,
+            "mental-approach": 50,
+        }.get(node.get("semantic_type"), 0)
+        if node.get("shape") in {"star", "hexagon", "diamond"}:
+            p += 10
+        if edge is not None:
+            p += min(40.0, float(edge.get("weight", 1.0)) * 12.0)
+            if edge.get("rel_type") in {"NT", "BT", "TT", "Generalization", "Specialization", "Composition", "Containment"}:
+                p += 12
+            elif edge.get("rel_type") in {"AS", "RT", "EQ"}:
+                p += 3
+        return p
+
+    selected = {root_id}
+    frontier = []
+
+    for neighbor_id, edge in adjacency.get(root_id, []):
+        frontier.append((
+            node_priority(node_map[neighbor_id], edge),
+            neighbor_id,
+            root_id,
+            edge,
+        ))
+
+    while frontier and len(selected) < max_nodes:
+        frontier.sort(key=lambda x: x[0], reverse=True)
+        score, candidate, parent, parent_edge = frontier.pop(0)
+
+        if candidate in selected:
+            continue
+
+        selected.add(candidate)
+
+        for neighbor_id, edge in adjacency.get(candidate, []):
+            if neighbor_id in selected:
+                continue
+            frontier.append((
+                node_priority(node_map[neighbor_id], edge)
+                + node_priority(node_map[candidate]) * 0.12,
+                neighbor_id,
+                candidate,
+                edge,
+            ))
+
+    # If a malformed graph still leaves unreachable nodes, add the strongest
+    # remaining component only after the connected root expansion is complete.
+    if len(selected) < max_nodes:
+        remaining = [n for n in nodes if n["id"] not in selected]
+        remaining.sort(
+            key=lambda n: node_priority(n) + len(adjacency.get(n["id"], [])) * 0.5,
+            reverse=True,
         )
+        for node in remaining:
+            if len(selected) >= max_nodes:
+                break
+            selected.add(node["id"])
 
-    selected = sorted(nodes, key=priority, reverse=True)[:max_nodes]
-    selected_ids = {n["id"] for n in selected}
-
+    selected_nodes = [n for n in nodes if n["id"] in selected]
     selected_edges = [
-        edge for edge in edges
-        if edge["source"] in selected_ids and edge["target"] in selected_ids
+        e for e in edges
+        if e.get("source") in selected and e.get("target") in selected
     ]
 
     return {
-        "nodes": selected,
+        "nodes": selected_nodes,
         "edges": selected_edges,
     }
 
@@ -2707,7 +2951,7 @@ const cy = cytoscape({{
                 'target-arrow-color':'data(color)',
                 'target-arrow-shape':'vee',
                 'curve-style':'bezier',
-                'label':'data(label)',
+                'label':'',
                 'font-size':'8px',
                 'font-weight':'bold',
                 'color':'#343a40',
@@ -4249,6 +4493,16 @@ ADDITIONAL SOURCE
         graph_data = enrich_graph_with_mental_approaches(
             graph_data,
             selected_techniques,
+        )
+
+        graph_data = normalize_graph_data(
+            graph_data
+        )
+
+        # Final topology pass: guarantee one connected SIS architecture while
+        # preserving semantic, UML and operational relation types.
+        graph_data = connect_isolated_components(
+            graph_data
         )
 
         graph_data = normalize_graph_data(
