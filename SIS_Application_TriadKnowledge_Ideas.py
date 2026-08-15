@@ -19,7 +19,7 @@ import streamlit.components.v1 as components
 # =============================================================================
 
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v23.2.0-KNOWLEDGE-SYNTHESIS-CONNECTED-HIERARCHOGRAPH"
+VERSION_CODE = "v23.3.0-KNOWLEDGE-SYNTHESIS-CONNECTED-HIERARCHOGRAPH-LABELS"
 
 # =============================================================================
 # MODEL CATALOG
@@ -107,7 +107,6 @@ st.markdown(
 [data-testid="stSidebar"] [data-testid="stSlider"] div {
     color:#ffffff !important;
 }
-/* Popravek za vse gumbe v sidebarju (navadni in link_button) */
 [data-testid="stSidebar"] .stButton button, 
 [data-testid="stSidebar"] .stLinkButton a {
     color: #ffffff !important;
@@ -119,19 +118,14 @@ st.markdown(
     align-items: center !important;
     justify-content: center !important;
 }
-
-/* Zagotovi, da je besedilo znotraj link_button vidno */
 [data-testid="stSidebar"] .stLinkButton a p {
     color: #ffffff !important;
 }
-
-/* Učinek ob prehodu z miško */
 [data-testid="stSidebar"] .stButton button:hover, 
 [data-testid="stSidebar"] .stLinkButton a:hover {
     background-color: #3a4a5f !important;
     border-color: #a8b4c2 !important;
 }
-
 [data-testid="stSidebar"] .stMarkdown p,
 [data-testid="stSidebar"] .stMarkdown li,
 [data-testid="stSidebar"] label,
@@ -142,23 +136,19 @@ st.markdown(
     color:#ffffff !important;
     opacity:1 !important;
 }
-
 [data-testid="stSidebar"] button {
     color:#ffffff !important;
 }
-
 .stExpander {
     background-color:#303947 !important;
     border:1px solid #485463 !important;
     border-radius:12px !important;
     margin-bottom:10px !important;
 }
-
 .stExpander details summary p {
     color:#ffffff !important;
     font-weight:800 !important;
 }
-
 .main-header-gradient {
     background:linear-gradient(90deg,#1d3557,#457b9d);
     -webkit-background-clip:text;
@@ -166,7 +156,6 @@ st.markdown(
     font-weight:800;
     font-size:2.8rem;
 }
-
 .date-badge {
     background:#1d3557;
     color:#ffffff;
@@ -179,13 +168,11 @@ st.markdown(
     text-align:center;
     box-shadow:0 4px 15px rgba(29,53,87,.3);
 }
-
 .sidebar-logo-container {
     display:flex;
     justify-content:center;
     padding:10px 0;
 }
-
 .metamodel-box,
 .ontology-box,
 .operational-box,
@@ -195,27 +182,22 @@ st.markdown(
     margin-bottom:20px;
     box-shadow:0 4px 12px rgba(0,0,0,.06);
 }
-
 .metamodel-box {
     background:#f4f8fb;
     border-left:8px solid #00b0f0;
 }
-
 .ontology-box {
     background:#f6f4ff;
     border-left:8px solid #7b2cb1;
 }
-
 .operational-box {
     background:#f4fff7;
     border-left:8px solid #2a9d8f;
 }
-
 .hierarchography-box {
     background:#fff9ed;
     border-left:8px solid #f4a261;
 }
-
 .semantic-node-highlight {
     color:#007f73;
     font-weight:bold;
@@ -225,11 +207,9 @@ st.markdown(
     border-radius:4px;
     text-decoration:none !important;
 }
-
 .semantic-node-highlight:hover {
     background:#ccfbf1;
 }
-
 .stButton>button {
     width:100%;
     border-radius:10px;
@@ -237,7 +217,6 @@ st.markdown(
     transition:.2s;
     border:1px solid #718096;
 }
-
 .graph-legend {
     font-size:.82em;
     color:#333;
@@ -298,7 +277,6 @@ stroke="#000" stroke-width="4" filter="url(#shadow)"/>
 # =============================================================================
 
 RELATION_DEFINITIONS = {
-    # Thesaurus
     "TT": "Top Term — root concept of a domain.",
     "BT": "Broader Term — hierarchical superordinate concept.",
     "NT": "Narrower Term — hierarchical subordinate concept.",
@@ -306,8 +284,6 @@ RELATION_DEFINITIONS = {
     "EQ": "Equivalence — synonymous or conceptually equivalent term.",
     "AS": "Associative — functional or contextual association.",
     "IN": "Instance — category-to-instance relation.",
-
-    # UML
     "Generalization": "Generalization / inheritance.",
     "Specialization": "Specialization / deductive narrowing.",
     "Composition": "Strong whole-part relation.",
@@ -316,15 +292,11 @@ RELATION_DEFINITIONS = {
     "Realization": "Implementation of an abstract specification.",
     "Dependency": "Operational dependency.",
     "Conflict": "Systemic incompatibility or tension.",
-
-    # Logic
     "AND": "Conjunctive synthesis.",
     "OR": "Alternative path.",
     "XOR": "Exclusive alternative.",
     "NOT": "Negation or prohibition.",
     "IF-THEN": "Conditional transformation.",
-
-    # Operational
     "CAUSES": "Causal transformation.",
     "ENABLES": "Enabling relation.",
     "TRANSFORMS": "Transformation from one system state to another.",
@@ -1097,7 +1069,7 @@ def huggingface_generate(
         "messages": messages,
         "temperature": temperature,
         "stream": False,
-        "max_tokens": 1536,
+        "max_tokens": 4096,
     }
 
     if top_p is not None:
@@ -1481,13 +1453,11 @@ def sanitize_json_text(raw):
     raw = raw.replace("```json", "")
     raw = raw.replace("```", "")
 
-    # Remove control characters while retaining Unicode text.
     raw = "".join(
         ch for ch in raw
         if ord(ch) >= 32 or ch in "\n\r\t"
     )
 
-    # Convert Python-like booleans/null if model accidentally used them.
     raw = re.sub(r"\bNone\b", "null", raw)
     raw = re.sub(r"\bTrue\b", "true", raw)
     raw = re.sub(r"\bFalse\b", "false", raw)
@@ -1619,10 +1589,8 @@ def normalize_graph_data(data):
             "source": source,
             "target": target,
             "rel_type": relation,
-            "label": str(
-                edge.get("label")
-                or RELATION_DEFINITIONS[relation]
-            )[:180],
+            "label": relation,
+            "full_label": RELATION_DEFINITIONS[relation],
             "weight": float(
                 edge.get("weight", 1.0)
                 if str(edge.get("weight", "1.0")).replace(".", "", 1).isdigit()
@@ -1665,12 +1633,6 @@ def infer_hierarchy_level(layer, shape):
 # =============================================================================
 
 def enrich_graph_with_architecture(graph, selected_sciences):
-    """
-    The AI graph remains primary.
-    This function adds structural metadata and missing hierarchical,
-    UML and operational relationships without importing Stress-Barometer logic.
-    """
-
     graph = normalize_graph_data(graph)
 
     nodes = graph["nodes"]
@@ -1680,10 +1642,6 @@ def enrich_graph_with_architecture(graph, selected_sciences):
         return graph
 
     node_map = {n["id"]: n for n in nodes}
-
-    # -------------------------------------------------------------------------
-    # Normalize semantic node metadata.
-    # -------------------------------------------------------------------------
 
     for node in nodes:
         if not node.get("level"):
@@ -1698,10 +1656,6 @@ def enrich_graph_with_architecture(graph, selected_sciences):
                     " Innovation node: identify the synthesized Mental "
                     "Approaches and transformational mechanism in the report."
                 )
-
-    # -------------------------------------------------------------------------
-    # Add selected science domains when absent.
-    # -------------------------------------------------------------------------
 
     existing_labels = {
         n["label"].strip().lower()
@@ -1736,10 +1690,6 @@ def enrich_graph_with_architecture(graph, selected_sciences):
         nodes.append(node)
         node_map[node_id] = node
         existing_labels.add(science.lower())
-
-    # -------------------------------------------------------------------------
-    # Create a deterministic hierarchy backbone if the AI did not provide it.
-    # -------------------------------------------------------------------------
 
     root_id = find_label_node(
         nodes,
@@ -1790,16 +1740,13 @@ def enrich_graph_with_architecture(graph, selected_sciences):
             "source": source,
             "target": target,
             "rel_type": relation,
-            "label": RELATION_DEFINITIONS[relation],
+            "label": relation,
+            "full_label": RELATION_DEFINITIONS[relation],
             "weight": weight,
             "direction": "directed",
         })
 
         existing_pairs.add(key)
-
-    # -------------------------------------------------------------------------
-    # Connect domains to root using BT/NT semantics.
-    # -------------------------------------------------------------------------
 
     for node in nodes:
         if node["id"] == root_id:
@@ -1812,11 +1759,6 @@ def enrich_graph_with_architecture(graph, selected_sciences):
                 "NT",
                 2.0,
             )
-
-    # -------------------------------------------------------------------------
-    # Establish polyhierarchical connections.
-    # A concept can participate in several hierarchy dimensions.
-    # -------------------------------------------------------------------------
 
     macro_nodes = [
         n for n in nodes
@@ -1859,18 +1801,14 @@ def enrich_graph_with_architecture(graph, selected_sciences):
                     0.8,
                 )
 
-    # -------------------------------------------------------------------------
-    # Add lateral associative relations.
-    # -------------------------------------------------------------------------
-
-    all_nodes = nodes[:80]
+    all_nodes = nodes[:60]
 
     for i, source in enumerate(all_nodes):
         for target in all_nodes[i + 1:]:
             if source["id"] == target["id"]:
                 continue
 
-            if not semantic_related(source, target):
+            if not semantic_related(source, target, threshold=0.42):
                 continue
 
             existing = any(
@@ -1892,10 +1830,6 @@ def enrich_graph_with_architecture(graph, selected_sciences):
                     "RT",
                     0.35,
                 )
-
-    # -------------------------------------------------------------------------
-    # Detect process -> output operational paths.
-    # -------------------------------------------------------------------------
 
     process_nodes = [
         n for n in nodes
@@ -1934,11 +1868,6 @@ def enrich_graph_with_architecture(graph, selected_sciences):
                 1.0,
             )
 
-    # -------------------------------------------------------------------------
-    # Feedback loop representation.
-    # Explicitly creates a feedback edge only when states/operations support it.
-    # -------------------------------------------------------------------------
-
     if len(state_nodes) >= 2:
         first_state = state_nodes[0]
         second_state = state_nodes[1]
@@ -1961,12 +1890,6 @@ def enrich_graph_with_architecture(graph, selected_sciences):
 # =============================================================================
 
 def enrich_graph_with_human_thinking_metamodel(graph):
-    """
-    Deterministically activates the full Human Thinking Metamodel (HTM) as
-    real graph nodes and relations, so it always appears in the
-    hierarchograph regardless of what the AI model chose to generate.
-    """
-
     graph = normalize_graph_data(graph)
 
     nodes = graph["nodes"]
@@ -2043,7 +1966,8 @@ def enrich_graph_with_human_thinking_metamodel(graph):
             "source": source,
             "target": target,
             "rel_type": relation,
-            "label": RELATION_DEFINITIONS[relation],
+            "label": relation,
+            "full_label": RELATION_DEFINITIONS[relation],
             "weight": weight,
             "direction": "directed",
         })
@@ -2064,12 +1988,6 @@ def enrich_graph_with_human_thinking_metamodel(graph):
 
 
 def enrich_graph_with_mental_approaches(graph, selected_techniques=None):
-    """
-    Deterministically activates the full Mental Approaches (MA) ontology as
-    real graph nodes connected to a central hub and, where semantically
-    relevant, to innovation (diamond) nodes already present in the graph.
-    """
-
     graph = normalize_graph_data(graph)
 
     nodes = graph["nodes"]
@@ -2129,7 +2047,8 @@ def enrich_graph_with_mental_approaches(graph, selected_techniques=None):
             "source": source,
             "target": target,
             "rel_type": relation,
-            "label": RELATION_DEFINITIONS[relation],
+            "label": relation,
+            "full_label": RELATION_DEFINITIONS[relation],
             "weight": weight,
             "direction": "directed",
         })
@@ -2251,11 +2170,6 @@ def _semantic_tokens(node):
 
 
 def semantic_similarity(a, b):
-    """Deterministic lexical-semantic score in [0, 1].
-
-    Hierarchy level or layer alone is deliberately NOT treated as semantic
-    evidence.  This prevents the previous graph-wide edge explosion.
-    """
     if not a or not b:
         return 0.0
 
@@ -2282,13 +2196,10 @@ def semantic_similarity(a, b):
     jaccard = intersection / max(union, 1)
     containment = intersection / max(min(len(a_words), len(b_words)), 1)
 
-    # Containment is useful for labels such as "Decision" /
-    # "Decision-making process" without making every same-layer node related.
     return min(1.0, 0.65 * containment + 0.35 * jaccard)
 
 
-def semantic_related(a, b, threshold=0.34):
-    """Return True only when a defensible semantic relation exists."""
+def semantic_related(a, b, threshold=0.38):
     if not a or not b:
         return False
 
@@ -2299,9 +2210,6 @@ def semantic_related(a, b, threshold=0.34):
     if score >= threshold:
         return True
 
-    # Strong structural compatibility is accepted only when both nodes share
-    # meaningful semantic vocabulary.  Same layer or different hierarchy
-    # levels by themselves are NEVER sufficient.
     a_words = _semantic_tokens(a)
     b_words = _semantic_tokens(b)
     shared = a_words & b_words
@@ -2326,12 +2234,6 @@ def _edge_exists(edges, source, target, relation=None):
 
 
 def connect_isolated_components(graph):
-    """Connect disconnected semantic islands without creating RT noise.
-
-    The function builds an explicit SIS backbone first, then joins any
-    remaining component to the most semantically appropriate anchor using AS.
-    It never creates all-to-all relations.
-    """
     graph = normalize_graph_data(graph)
     nodes = graph["nodes"]
     edges = graph["edges"]
@@ -2351,7 +2253,8 @@ def connect_isolated_components(graph):
             "source": source,
             "target": target,
             "rel_type": relation,
-            "label": RELATION_DEFINITIONS.get(relation, relation),
+            "label": relation,
+            "full_label": RELATION_DEFINITIONS.get(relation, relation),
             "weight": weight,
             "direction": "directed",
         })
@@ -2367,8 +2270,6 @@ def connect_isolated_components(graph):
     if root_id not in node_map:
         root_id = next((n["id"] for n in nodes if n.get("semantic_type") == "root"), nodes[0]["id"])
 
-    # Explicit integration hubs: these are architectural dimensions, not
-    # accidental AI-generated islands.
     htm = find_label_node(nodes, ["Human Thinking Metamodel", "Human Thinking"])
     ma = find_label_node(nodes, ["Mental Approaches", "Mental Approaches Hub"])
 
@@ -2377,7 +2278,6 @@ def connect_isolated_components(graph):
     if ma and ma != root_id:
         add_edge(root_id, ma, "NT", 2.0)
 
-    # Build undirected connectivity for component analysis.
     def components():
         adjacency = {n["id"]: set() for n in nodes}
         for e in edges:
@@ -2413,7 +2313,6 @@ def connect_isolated_components(graph):
         if not comp_nodes:
             continue
 
-        # Candidate anchors already in the main component.
         anchors = [node_map[nid] for nid in root_comp if nid in node_map]
 
         best_pair = None
@@ -2423,7 +2322,6 @@ def connect_isolated_components(graph):
             for target in anchors:
                 score = semantic_similarity(source, target)
 
-                # Prefer architectural hubs and domain nodes as bridges.
                 if target.get("semantic_type") in {
                     "root", "science-domain", "human-thinking-metamodel",
                     "mental-approaches-hub", "mental-approach",
@@ -2445,8 +2343,6 @@ def connect_isolated_components(graph):
         weight = max(0.45, min(0.9, best_score))
         add_edge(source["id"], target["id"], relation, weight)
 
-        # Recompute root component so the next island can attach to the now
-        # enlarged connected core rather than to an arbitrary node.
         comps = components()
         root_comp = next((c for c in comps if root_id in c), root_comp)
 
@@ -2487,12 +2383,6 @@ def graph_statistics(graph):
 # =============================================================================
 
 def limit_graph_nodes(graph, max_nodes=80):
-    """Return a connected, importance-aware display subgraph.
-
-    Selection starts at the SIS root and grows through actual graph edges.
-    The limiter therefore cannot arbitrarily remove bridge nodes and split the
-    displayed hierarchograph into unrelated islands.
-    """
     graph = connect_isolated_components(normalize_graph_data(graph))
     nodes = graph["nodes"]
     edges = graph["edges"]
@@ -2572,8 +2462,6 @@ def limit_graph_nodes(graph, max_nodes=80):
                 edge,
             ))
 
-    # If a malformed graph still leaves unreachable nodes, add the strongest
-    # remaining component only after the connected root expansion is complete.
     if len(selected) < max_nodes:
         remaining = [n for n in nodes if n["id"] not in selected]
         remaining.sort(
@@ -2640,6 +2528,7 @@ def render_cytoscape_network(
                 "target": edge["target"],
                 "rel_type": edge["rel_type"],
                 "label": edge["rel_type"],
+                "full_label": edge.get("full_label", RELATION_DEFINITIONS.get(edge["rel_type"], edge["rel_type"])),
                 "color": color,
                 "weight": edge["weight"],
             }
@@ -2829,7 +2718,8 @@ Facts · entities · states<br><br>
 <b>Vertical:</b> hierarchy / taxonomy<br>
 <b>Horizontal:</b> association / relation<br>
 <b>Operational:</b> transformation / process<br>
-<b>Feedback:</b> cyclic system regulation
+<b>Feedback:</b> cyclic system regulation<br>
+<b>Edge labels:</b> relation type always visible
 </div>
 
 <div id="toolbar">
@@ -2951,14 +2841,16 @@ const cy = cytoscape({{
                 'target-arrow-color':'data(color)',
                 'target-arrow-shape':'vee',
                 'curve-style':'bezier',
-                'label':'',
-                'font-size':'8px',
+                'label':'data(label)',
+                'font-size':'9px',
                 'font-weight':'bold',
-                'color':'#343a40',
+                'color':'#1a1a1a',
                 'text-background-color':'#ffffff',
-                'text-background-opacity':.92,
+                'text-background-opacity':0.95,
                 'text-background-padding':'3px',
-                'opacity':.8
+                'text-rotation':'autorotate',
+                'text-margin-y':-8,
+                'opacity':0.92
             }}
         }},
 
@@ -3268,6 +3160,33 @@ const cy = cytoscape({{
         }},
 
         {{
+            selector:'edge[rel_type="ENABLES"]',
+            style:{{
+                'width':4,
+                'line-color':'#2a9d8f',
+                'target-arrow-shape':'triangle'
+            }}
+        }},
+
+        {{
+            selector:'edge[rel_type="CONSUMES"]',
+            style:{{
+                'width':4,
+                'line-color':'#9b2226',
+                'target-arrow-shape':'triangle'
+            }}
+        }},
+
+        {{
+            selector:'edge[rel_type="TRIGGERS"]',
+            style:{{
+                'width':4,
+                'line-color':'#e76f51',
+                'target-arrow-shape':'triangle'
+            }}
+        }},
+
+        {{
             selector:':selected',
             style:{{
                 'border-color':'#000000',
@@ -3303,6 +3222,16 @@ cy.on('tap','node',function(evt){{
         '<br>'+escapeHtml(d.description||'');
 
     alert(text.replace(/<br>/g,'\\n').replace(/<[^>]*>/g,''));
+}});
+
+cy.on('tap','edge',function(evt){{
+    const e=evt.target;
+    const d=e.data();
+    const text =
+        'Relation: '+ (d.rel_type || '') + '\\n' +
+        'Meaning: ' + (d.full_label || d.label || '') + '\\n' +
+        'Weight: ' + (d.weight || 1);
+    alert(text);
 }});
 
 document.getElementById('fit').onclick=function(){{
@@ -3393,6 +3322,17 @@ PHASE 1 HAS ONE PURPOSE: KNOWLEDGE SYNTHESIS.
 Do not treat Phase 1 as an Innovation Objective and do not solve the innovation
 objective yet. Synthesize the user's inquiry into a rich, structured knowledge
 system that can later serve as the knowledge substrate for Phase 2 innovation.
+
+CRITICAL OUTPUT QUALITY REQUIREMENT (especially for Qwen / Hugging Face):
+- Write in full, coherent paragraphs. Do NOT produce telegraphic, bullet-only
+  or keyword-list style answers.
+- Every major concept must be explained with definition, context, relations
+  and functional role.
+- Explicitly name and justify thesaurus relations (TT, BT, NT, RT, EQ, AS, IN),
+  UML relations and operational relations.
+- Include Macro / Meso / Micro levels and polyhierarchical parentage.
+- Aim for dense, readable academic prose of at least 800–1500 words when the
+  topic allows. Prefer depth over brevity.
 
 The synthesis MUST simultaneously contain:
 1. A rich multidimensional thesaurus.
@@ -4287,10 +4227,6 @@ if st.button(
 
     try:
 
-        # ---------------------------------------------------------------------
-        # BUILD ARCHITECTURE CONTEXT
-        # ---------------------------------------------------------------------
-
         architecture_context = build_knowledge_architecture_context(
             selected_sciences,
             selected_paradigms,
@@ -4357,10 +4293,6 @@ Construct a rich knowledge system, not a stress model.
 """
 
 
-        # ---------------------------------------------------------------------
-        # GEMINI CLIENT
-        # ---------------------------------------------------------------------
-
         gemini_client = None
 
         if google_required:
@@ -4368,10 +4300,6 @@ Construct a rich knowledge system, not a stress model.
                 api_key=google_api_key
             )
 
-
-        # =====================================================================
-        # PHASE 1 — KNOWLEDGE SYNTHESIS
-        # =====================================================================
 
         p1_provider_name = (
             "Hugging Face / Qwen2.5-72B-Instruct"
@@ -4396,17 +4324,13 @@ Construct a rich knowledge system, not a stress model.
                 p1_model,
                 phase1_system,
                 phase1_input,
-                temperature=0.35,
-                top_p=0.85,
+                temperature=0.45 if p1_is_hf else 0.35,
+                top_p=0.9 if p1_is_hf else 0.85,
                 huggingface_api_key=huggingface_api_key,
             )
 
             st.session_state.groq_synthesis = phase1_result
 
-
-        # =====================================================================
-        # PHASE 2 — INNOVATION OBJECTIVE
-        # =====================================================================
 
         p2_provider_name = (
             "Hugging Face / Qwen2.5-72B-Instruct"
@@ -4460,10 +4384,6 @@ ADDITIONAL SOURCE
             st.session_state.gemini_innovation = phase2_result
 
 
-        # =====================================================================
-        # PARSE PHASE 2
-        # =====================================================================
-
         graph_data = extract_json_object(
             phase2_result
         )
@@ -4499,8 +4419,6 @@ ADDITIONAL SOURCE
             graph_data
         )
 
-        # Final topology pass: guarantee one connected SIS architecture while
-        # preserving semantic, UML and operational relation types.
         graph_data = connect_isolated_components(
             graph_data
         )
@@ -4514,10 +4432,6 @@ ADDITIONAL SOURCE
         st.session_state.report_ready = True
         st.session_state.biblio_data = biblio_data
 
-
-        # =====================================================================
-        # REPORT
-        # =====================================================================
 
         report_phase2 = phase2_result
 
@@ -4547,10 +4461,6 @@ ADDITIONAL SOURCE
 {report_phase2}
 """
 
-
-        # =====================================================================
-        # REPORT NODE LINKING
-        # =====================================================================
 
         interactive_report = full_report
 
@@ -4617,9 +4527,6 @@ ADDITIONAL SOURCE
 
 # =============================================================================
 # MAIN REPORT + GRAPH DISPLAY
-# (Runs on every rerun — including slider changes — so the node-count slider
-# stays live for the current synthesis/innovation graph, not just the button
-# click that generated it.)
 # =============================================================================
 
 if st.session_state.get("report_ready") and st.session_state.get("last_graph_data"):
@@ -4648,10 +4555,6 @@ if st.session_state.get("report_ready") and st.session_state.get("last_graph_dat
             unsafe_allow_html=True,
         )
 
-
-    # =====================================================================
-    # GRAPH STATISTICS
-    # =====================================================================
 
     stats = graph_statistics(
         graph_data
@@ -4693,10 +4596,6 @@ if st.session_state.get("report_ready") and st.session_state.get("last_graph_dat
             len(stats["relations"]),
         )
 
-
-    # =====================================================================
-    # POLYHIERARCHY / UML / OPERATIONAL TABLES
-    # =====================================================================
 
     tabs = st.tabs(
         [
@@ -5100,10 +4999,6 @@ Technical semantic search ↗
             )
 
 
-    # =====================================================================
-    # LEGEND
-    # =====================================================================
-
     st.markdown(
         """
 <div class="graph-legend">
@@ -5185,10 +5080,6 @@ NEGATIVE-FEEDBACK
     )
 
 
-    # =====================================================================
-    # PRIMARY HIERARCHOGRAPH
-    # =====================================================================
-
     st.divider()
 
     st.subheader(
@@ -5200,7 +5091,8 @@ NEGATIVE-FEEDBACK
         "polyhierarchy, associative relations, UML structure, "
         "operational transformations, system states and feedback. "
         f"Displayed nodes: up to {graph_node_limit}. Use the ➕/➖ ZOOM "
-        "buttons or the mouse wheel to zoom in and out."
+        "buttons or the mouse wheel to zoom in and out. "
+        "Edge labels show the relation type (TT/BT/NT/RT/UML/operational)."
     )
 
     render_cytoscape_network(
@@ -5232,7 +5124,8 @@ if (
     st.info(
         "The same knowledge architecture is displayed through different "
         "visual grammars. The data model remains identical. Every view "
-        "supports mouse-wheel zoom and the ➕/➖ ZOOM buttons."
+        "supports mouse-wheel zoom and the ➕/➖ ZOOM buttons. "
+        "Relation types are always shown on edges."
     )
 
     gallery_tabs = st.tabs(
