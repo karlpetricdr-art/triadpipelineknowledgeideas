@@ -19,7 +19,7 @@ import streamlit.components.v1 as components
 # =============================================================================
 
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v23.3.0-KNOWLEDGE-SYNTHESIS-CONNECTED-HIERARCHOGRAPH-LABELS"
+VERSION_CODE = "v23.4.0-RICH-RELATIONS-UML-LOGIC-THESAURUS"
 
 # =============================================================================
 # MODEL CATALOG
@@ -1629,7 +1629,7 @@ def infer_hierarchy_level(layer, shape):
 
 
 # =============================================================================
-# DETERMINISTIC ONTOLOGICAL ENRICHMENT
+# DETERMINISTIC ONTOLOGICAL ENRICHMENT (RICH RELATIONS)
 # =============================================================================
 
 def enrich_graph_with_architecture(graph, selected_sciences):
@@ -1735,149 +1735,236 @@ def enrich_graph_with_architecture(graph, selected_sciences):
         if source not in node_map or target not in node_map:
             return
 
+        if source == target:
+            return
+
         edges.append({
             "id": f"auto_{len(edges) + 1}",
             "source": source,
             "target": target,
             "rel_type": relation,
             "label": relation,
-            "full_label": RELATION_DEFINITIONS[relation],
+            "full_label": RELATION_DEFINITIONS.get(relation, relation),
             "weight": weight,
             "direction": "directed",
         })
 
         existing_pairs.add(key)
 
+    # -------------------------------------------------------------------------
+    # 1. Thesaurus hierarchy: TT / BT / NT / IN
+    # -------------------------------------------------------------------------
+
     for node in nodes:
         if node["id"] == root_id:
             continue
+        if node["layer"] == "domain" or node["semantic_type"] == "science-domain":
+            add_edge(root_id, node["id"], "NT", 2.0)
+            add_edge(root_id, node["id"], "TT", 1.5)
 
-        if node["layer"] == "domain":
-            add_edge(
-                root_id,
-                node["id"],
-                "NT",
-                2.0,
-            )
+    macro_nodes = [n for n in nodes if n["level"] == "Macro" and n["id"] != root_id]
+    meso_nodes = [n for n in nodes if n["level"] == "Meso"]
+    micro_nodes = [n for n in nodes if n["level"] == "Micro"]
 
-    macro_nodes = [
-        n for n in nodes
-        if n["level"] == "Macro" and n["id"] != root_id
-    ]
-
-    meso_nodes = [
-        n for n in nodes
-        if n["level"] == "Meso"
-    ]
-
-    micro_nodes = [
-        n for n in nodes
-        if n["level"] == "Micro"
-    ]
-
-    for macro in macro_nodes[:12]:
-        for meso in meso_nodes[:20]:
+    for macro in macro_nodes[:15]:
+        for meso in meso_nodes[:25]:
             if macro["id"] == meso["id"]:
                 continue
+            if semantic_related(macro, meso, threshold=0.30):
+                add_edge(macro["id"], meso["id"], "BT", 1.1)
+                add_edge(meso["id"], macro["id"], "NT", 0.9)
 
-            if semantic_related(macro, meso):
-                add_edge(
-                    macro["id"],
-                    meso["id"],
-                    "BT",
-                    1.0,
-                )
-
-    for meso in meso_nodes[:25]:
-        for micro in micro_nodes[:25]:
+    for meso in meso_nodes[:30]:
+        for micro in micro_nodes[:30]:
             if meso["id"] == micro["id"]:
                 continue
+            if semantic_related(meso, micro, threshold=0.30):
+                add_edge(meso["id"], micro["id"], "NT", 0.85)
+                add_edge(micro["id"], meso["id"], "BT", 0.7)
 
-            if semantic_related(meso, micro):
-                add_edge(
-                    meso["id"],
-                    micro["id"],
-                    "NT",
-                    0.8,
-                )
+    # Instance relations
+    for meso in meso_nodes[:20]:
+        for micro in micro_nodes[:20]:
+            if semantic_related(meso, micro, threshold=0.40):
+                add_edge(meso["id"], micro["id"], "IN", 0.75)
 
-    all_nodes = nodes[:60]
+    # -------------------------------------------------------------------------
+    # 2. Lateral thesaurus: RT / AS / EQ
+    # -------------------------------------------------------------------------
 
+    all_nodes = nodes[:70]
     for i, source in enumerate(all_nodes):
         for target in all_nodes[i + 1:]:
             if source["id"] == target["id"]:
                 continue
+            score = semantic_similarity(source, target)
+            if score >= 0.55:
+                add_edge(source["id"], target["id"], "EQ", 0.9)
+            elif score >= 0.38:
+                add_edge(source["id"], target["id"], "RT", 0.45)
+            elif score >= 0.28 and (
+                source.get("layer") == target.get("layer")
+                or source.get("semantic_type") == target.get("semantic_type")
+            ):
+                add_edge(source["id"], target["id"], "AS", 0.35)
 
-            if not semantic_related(source, target, threshold=0.42):
-                continue
+    # -------------------------------------------------------------------------
+    # 3. UML relations based on shape / layer
+    # -------------------------------------------------------------------------
 
-            existing = any(
-                e["source"] == source["id"]
-                and e["target"] == target["id"]
-                for e in edges
-            )
+    goal_nodes = [n for n in nodes if n["shape"] == "star" or n["layer"] == "goal"]
+    domain_nodes = [n for n in nodes if n["shape"] == "hexagon" or n["layer"] == "domain"]
+    process_nodes = [n for n in nodes if n["shape"] == "triangle" or n["layer"] == "process"]
+    innovation_nodes = [n for n in nodes if n["shape"] == "diamond" or n["layer"] == "innovation"]
+    constraint_nodes = [n for n in nodes if n["shape"] == "octagon" or n["layer"] == "constraint"]
+    entity_nodes = [n for n in nodes if n["shape"] == "ellipse" or n["layer"] == "entity"]
+    fact_nodes = [n for n in nodes if n["shape"] == "rectangle" or n["layer"] == "fact"]
+    state_nodes = [n for n in nodes if n["shape"] == "round-rectangle" or n["layer"] == "state"]
+    data_nodes = [n for n in nodes if n["shape"] == "barrel" or n["layer"] == "data"]
 
-            reverse_existing = any(
-                e["source"] == target["id"]
-                and e["target"] == source["id"]
-                for e in edges
-            )
+    # Generalization / Specialization (is-a)
+    for goal in goal_nodes[:8]:
+        for domain in domain_nodes[:12]:
+            if semantic_related(goal, domain, threshold=0.25):
+                add_edge(domain["id"], goal["id"], "Generalization", 1.0)
+                add_edge(goal["id"], domain["id"], "Specialization", 0.8)
 
-            if not existing and not reverse_existing:
-                add_edge(
-                    source["id"],
-                    target["id"],
-                    "RT",
-                    0.35,
-                )
+    for domain in domain_nodes[:12]:
+        for process in process_nodes[:15]:
+            if semantic_related(domain, process, threshold=0.28):
+                add_edge(process["id"], domain["id"], "Generalization", 0.9)
+                add_edge(domain["id"], process["id"], "Specialization", 0.75)
 
-    process_nodes = [
-        n for n in nodes
-        if n["shape"] == "triangle"
-        or n["layer"] == "process"
-    ]
+    # Composition (strong whole-part) and Aggregation (weak)
+    for goal in goal_nodes[:6]:
+        for process in process_nodes[:12]:
+            add_edge(goal["id"], process["id"], "Composition", 1.2)
+        for innovation in innovation_nodes[:10]:
+            add_edge(goal["id"], innovation["id"], "Composition", 1.1)
 
-    innovation_nodes = [
-        n for n in nodes
-        if n["shape"] == "diamond"
-        or n["layer"] == "innovation"
-    ]
+    for domain in domain_nodes[:10]:
+        for fact in fact_nodes[:15]:
+            if semantic_related(domain, fact, threshold=0.25):
+                add_edge(domain["id"], fact["id"], "Aggregation", 0.8)
+        for entity in entity_nodes[:10]:
+            add_edge(domain["id"], entity["id"], "Aggregation", 0.7)
 
-    state_nodes = [
-        n for n in nodes
-        if n["shape"] == "round-rectangle"
-        or n["layer"] == "state"
-    ]
+    # Containment
+    for domain in domain_nodes[:10]:
+        for process in process_nodes[:12]:
+            add_edge(domain["id"], process["id"], "Containment", 0.9)
+        for state in state_nodes[:8]:
+            add_edge(domain["id"], state["id"], "Containment", 0.7)
+
+    # Realization (implements)
+    for innovation in innovation_nodes[:12]:
+        for process in process_nodes[:15]:
+            if semantic_related(innovation, process, threshold=0.28):
+                add_edge(process["id"], innovation["id"], "Realization", 1.0)
+        for goal in goal_nodes[:6]:
+            add_edge(innovation["id"], goal["id"], "Realization", 0.9)
+
+    # Dependency
+    for process in process_nodes[:15]:
+        for data in data_nodes[:10]:
+            add_edge(process["id"], data["id"], "Dependency", 0.8)
+        for entity in entity_nodes[:10]:
+            add_edge(process["id"], entity["id"], "Dependency", 0.7)
+        for constraint in constraint_nodes[:10]:
+            add_edge(process["id"], constraint["id"], "Dependency", 0.85)
+
+    for innovation in innovation_nodes[:10]:
+        for process in process_nodes[:12]:
+            add_edge(innovation["id"], process["id"], "Dependency", 0.9)
+
+    # Conflict
+    for constraint in constraint_nodes[:10]:
+        for goal in goal_nodes[:8]:
+            add_edge(constraint["id"], goal["id"], "Conflict", 0.7)
+        for innovation in innovation_nodes[:10]:
+            if semantic_related(constraint, innovation, threshold=0.20):
+                add_edge(constraint["id"], innovation["id"], "Conflict", 0.65)
+        for process in process_nodes[:12]:
+            add_edge(constraint["id"], process["id"], "Conflict", 0.6)
+
+    # -------------------------------------------------------------------------
+    # 4. Logical operators
+    # -------------------------------------------------------------------------
+
+    # IF-THEN: constraint / rule → process or innovation
+    for constraint in constraint_nodes[:12]:
+        for process in process_nodes[:15]:
+            add_edge(constraint["id"], process["id"], "IF-THEN", 0.85)
+        for innovation in innovation_nodes[:10]:
+            add_edge(constraint["id"], innovation["id"], "IF-THEN", 0.8)
+
+    # AND / OR between parallel processes or innovations
+    for i, p1 in enumerate(process_nodes[:12]):
+        for p2 in process_nodes[i + 1:12]:
+            if semantic_related(p1, p2, threshold=0.30):
+                add_edge(p1["id"], p2["id"], "AND", 0.7)
+            else:
+                add_edge(p1["id"], p2["id"], "OR", 0.5)
+
+    for i, inn1 in enumerate(innovation_nodes[:8]):
+        for inn2 in innovation_nodes[i + 1:8]:
+            add_edge(inn1["id"], inn2["id"], "XOR", 0.55)
+
+    # NOT: constraint forbids certain states or processes
+    for constraint in constraint_nodes[:8]:
+        for state in state_nodes[:8]:
+            add_edge(constraint["id"], state["id"], "NOT", 0.6)
+        for process in process_nodes[:8]:
+            if not semantic_related(constraint, process, threshold=0.35):
+                add_edge(constraint["id"], process["id"], "NOT", 0.5)
+
+    # -------------------------------------------------------------------------
+    # 5. Operational relations
+    # -------------------------------------------------------------------------
 
     for process in process_nodes[:20]:
-        for innovation in innovation_nodes[:20]:
-            if semantic_related(process, innovation):
-                add_edge(
-                    process["id"],
-                    innovation["id"],
-                    "TRANSFORMS",
-                    1.2,
-                )
+        for innovation in innovation_nodes[:15]:
+            if semantic_related(process, innovation, threshold=0.25):
+                add_edge(process["id"], innovation["id"], "TRANSFORMS", 1.2)
+                add_edge(process["id"], innovation["id"], "ENABLES", 1.0)
 
-    for innovation in innovation_nodes[:20]:
-        for state in state_nodes[:20]:
-            add_edge(
-                innovation["id"],
-                state["id"],
-                "TRANSFORMS",
-                1.0,
-            )
+    for innovation in innovation_nodes[:15]:
+        for state in state_nodes[:12]:
+            add_edge(innovation["id"], state["id"], "TRANSFORMS", 1.0)
+            add_edge(innovation["id"], state["id"], "PRODUCES", 0.9)
 
+    for process in process_nodes[:15]:
+        for state in state_nodes[:10]:
+            add_edge(process["id"], state["id"], "CAUSES", 0.95)
+            add_edge(process["id"], state["id"], "PRECEDES", 0.8)
+
+    for data in data_nodes[:10]:
+        for process in process_nodes[:12]:
+            add_edge(data["id"], process["id"], "FEEDS", 0.85)
+            add_edge(process["id"], data["id"], "CONSUMES", 0.7)
+
+    for constraint in constraint_nodes[:10]:
+        for process in process_nodes[:12]:
+            add_edge(constraint["id"], process["id"], "CONSTRAINS", 1.0)
+        for goal in goal_nodes[:6]:
+            add_edge(constraint["id"], goal["id"], "CONSTRAINS", 0.9)
+
+    for process in process_nodes[:12]:
+        for process2 in process_nodes[:12]:
+            if process["id"] != process2["id"] and semantic_related(process, process2, threshold=0.30):
+                add_edge(process["id"], process2["id"], "TRIGGERS", 0.7)
+
+    for data in data_nodes[:8]:
+        for fact in fact_nodes[:10]:
+            add_edge(data["id"], fact["id"], "MEASURES", 0.75)
+            add_edge(fact["id"], data["id"], "VALIDATES", 0.7)
+
+    # Feedback
     if len(state_nodes) >= 2:
-        first_state = state_nodes[0]
-        second_state = state_nodes[1]
-
-        add_edge(
-            second_state["id"],
-            first_state["id"],
-            "FEEDBACK",
-            0.7,
-        )
+        add_edge(state_nodes[1]["id"], state_nodes[0]["id"], "FEEDBACK", 0.8)
+        if len(state_nodes) >= 3:
+            add_edge(state_nodes[2]["id"], state_nodes[0]["id"], "NEGATIVE-FEEDBACK", 0.7)
+            add_edge(state_nodes[0]["id"], state_nodes[1]["id"], "POSITIVE-FEEDBACK", 0.65)
 
     return {
         "nodes": nodes,
@@ -2425,10 +2512,14 @@ def limit_graph_nodes(graph, max_nodes=80):
             p += 10
         if edge is not None:
             p += min(40.0, float(edge.get("weight", 1.0)) * 12.0)
-            if edge.get("rel_type") in {"NT", "BT", "TT", "Generalization", "Specialization", "Composition", "Containment"}:
-                p += 12
-            elif edge.get("rel_type") in {"AS", "RT", "EQ"}:
-                p += 3
+            if edge.get("rel_type") in {
+                "NT", "BT", "TT", "Generalization", "Specialization",
+                "Composition", "Containment", "Aggregation", "Dependency",
+                "Conflict", "IF-THEN", "AND", "OR", "XOR", "NOT",
+            }:
+                p += 14
+            elif edge.get("rel_type") in {"AS", "RT", "EQ", "IN"}:
+                p += 5
         return p
 
     selected = {root_id}
@@ -3408,6 +3499,29 @@ generic background knowledge. Do not merely repeat Phase 1. Produce an
 innovation-oriented transformation of the Phase 1 knowledge in response to the
 explicit Innovation Objective.
 
+MANDATORY RELATION DIVERSITY IN THE GRAPH JSON:
+You MUST create edges using ALL of the following relation families:
+
+THESAURUS (use all of these):
+TT, BT, NT, RT, EQ, AS, IN
+
+UML (use all of these):
+Generalization, Specialization, Composition, Aggregation, Containment,
+Realization, Dependency, Conflict
+
+LOGICAL OPERATORS (use all of these):
+AND, OR, XOR, NOT, IF-THEN
+
+OPERATIONAL:
+CAUSES, ENABLES, TRANSFORMS, PRODUCES, CONSUMES, FEEDS, TRIGGERS,
+PRECEDES, CONSTRAINS, MEASURES, VALIDATES
+
+FEEDBACK:
+FEEDBACK, POSITIVE-FEEDBACK, NEGATIVE-FEEDBACK
+
+Do NOT produce a graph that contains only NT edges. The relation vocabulary
+must be rich and balanced.
+
 The graph must represent:
 
 THESAURUS
@@ -3439,148 +3553,39 @@ A concept may therefore have:
 This is POLYHIERARCHY.
 
 ============================================================
-THESAURUS
-============================================================
-
-Use:
-TT = Top Term
-BT = Broader Term
-NT = Narrower Term
-RT = Related Term
-EQ = Equivalence
-AS = Associative
-IN = Instance
-
-============================================================
-UML
-============================================================
-
-Use:
-Generalization
-Specialization
-Composition
-Aggregation
-Containment
-Realization
-Dependency
-Conflict
-
-============================================================
-OPERATIONAL LOGIC
-============================================================
-
-Use:
-CAUSES
-ENABLES
-TRANSFORMS
-PRODUCES
-CONSUMES
-FEEDS
-TRIGGERS
-PRECEDES
-CONSTRAINS
-MEASURES
-VALIDATES
-
-============================================================
-LOGICAL CONNECTORS
-============================================================
-
-Use:
-AND
-OR
-XOR
-NOT
-IF-THEN
-
-============================================================
-FEEDBACK
-============================================================
-
-Where the domain justifies it, use:
-FEEDBACK
-POSITIVE-FEEDBACK
-NEGATIVE-FEEDBACK
-
-Feedback must form genuine directed cycles.
-
-============================================================
 GEOMETRIC LANGUAGE
 ============================================================
 
-star:
-Goal, mission, vision, macro objective.
-
-hexagon:
-Scientific field, discipline or domain.
-
-diamond:
-Innovation, synthesis, transformation or new conceptual construction.
-
-triangle:
-Process, method, operation, mechanism.
-
-octagon:
-Rule, constraint, ethical boundary, limitation.
-
-ellipse:
-Human factor, agent, identity or biological entity.
-
-rectangle:
-Fact, concept, evidence, data or micro-component.
-
-round-rectangle:
-System state or transition state.
-
-barrel:
-Evidence/data repository.
+star: Goal, mission, vision, macro objective.
+hexagon: Scientific field, discipline or domain.
+diamond: Innovation, synthesis, transformation or new conceptual construction.
+triangle: Process, method, operation, mechanism.
+octagon: Rule, constraint, ethical boundary, limitation.
+ellipse: Human factor, agent, identity or biological entity.
+rectangle: Fact, concept, evidence, data or micro-component.
+round-rectangle: System state or transition state.
+barrel: Evidence/data repository.
 
 ============================================================
 HIERARCHICAL LEVELS
 ============================================================
 
 Every node MUST have:
-
 "level": "Macro" | "Meso" | "Micro"
-
-Macro:
-principles, domains, missions, goals, global structures.
-
-Meso:
-systems, disciplines, processes, innovations, subsystems.
-
-Micro:
-facts, instances, observations, concrete mechanisms and states.
 
 ============================================================
 NODE METADATA
 ============================================================
 
 Every node must contain:
-
-id
-label
-shape
-color
-description
-layer
-level
-semantic_type
-state
+id, label, shape, color, description, layer, level, semantic_type, state
 
 ============================================================
 EDGE METADATA
 ============================================================
 
 Every edge must contain:
-
-id
-source
-target
-rel_type
-label
-weight
-direction
+id, source, target, rel_type, label, weight, direction
 
 ============================================================
 INNOVATION REQUIREMENT
@@ -3589,22 +3594,12 @@ INNOVATION REQUIREMENT
 Every diamond innovation node must explicitly identify three Mental Approaches
 used in its synthesis.
 
-Do not randomly attach three approaches.
-Explain why the three approaches produce the transformation.
-
 ============================================================
 SYSTEM STATES
 ============================================================
 
 Where appropriate create state nodes representing:
-
-initial state
-problem state
-transition state
-target state
-validated state
-
-Connect them using operational relations.
+initial state, problem state, transition state, target state, validated state
 
 ============================================================
 REPORT
@@ -3630,7 +3625,6 @@ Then produce:
 ### SEMANTIC_GRAPH_JSON
 
 The JSON must be the FINAL content of the response.
-
 Do not write anything after the JSON.
 
 ============================================================
@@ -3638,13 +3632,9 @@ JSON
 ============================================================
 
 Return valid JSON.
-
 Do not put markdown inside the JSON.
-
 Descriptions must be single-line strings.
-
 No comments.
-
 No trailing commas.
 
 ============================================================
