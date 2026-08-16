@@ -19,7 +19,7 @@ import streamlit.components.v1 as components
 # =============================================================================
 
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v23.6.0-SELECTABLE-COMPONENTS-NO-STRESS"
+VERSION_CODE = "v24.0.0-IMA-MA-TWO-PHASE-PRO"
 
 # =============================================================================
 # MODEL CATALOG
@@ -51,6 +51,11 @@ DEFAULT_SESSION = {
     "final_graph_elements": [],
     "report_ready": False,
     "last_graph_data": {},
+    "phase1_graph_data": {},
+    "phase2_graph_data": {},
+    "phase1_report": "",
+    "phase2_report": "",
+    "integrated_report": "",
     "selected_graph_components": [
         "Innovations",
         "Science Fields",
@@ -1207,7 +1212,7 @@ def huggingface_generate(
         "messages": messages,
         "temperature": temperature,
         "stream": False,
-        "max_tokens": 4096,
+        "max_tokens": 8192,
     }
 
     if top_p is not None:
@@ -1696,6 +1701,10 @@ def normalize_graph_data(data):
             "level": level,
             "semantic_type": semantic_type,
             "state": state,
+            "source_phase": str(node.get("source_phase") or ""),
+            "importance": float(node.get("importance", 0.0) or 0.0),
+            "innovation_score": float(node.get("innovation_score", 0.0) or 0.0),
+            "feasibility_score": float(node.get("feasibility_score", 0.0) or 0.0),
             "size": int(node.get("size") or geometry["size"]),
         })
 
@@ -2544,6 +2553,229 @@ def connect_isolated_components(graph):
 
 
 # =============================================================================
+# TWO-PHASE GRAPH INTEGRATION + IMPORTANCE RANKING
+# =============================================================================
+
+def _label_key(label):
+    return re.sub(r"[^a-z0-9]+", " ", str(label).lower()).strip()
+
+
+def merge_phase_graphs(phase1_graph, phase2_graph):
+    """Merge IMA and MA graphs by semantic label while preserving provenance."""
+    g1 = normalize_graph_data(phase1_graph)
+    g2 = normalize_graph_data(phase2_graph)
+
+    nodes = []
+    edges = []
+    label_to_id = {}
+    id_map = {}
+
+    def add_phase(graph, phase_name):
+        for node in graph["nodes"]:
+            key = _label_key(node["label"])
+            if not key:
+                continue
+
+            if key in label_to_id:
+                existing = next(n for n in nodes if n["id"] == label_to_id[key])
+                existing_phase = existing.get("source_phase", "")
+                if phase_name not in existing_phase.split("+"):
+                    existing["source_phase"] = "+".join(
+                        [x for x in [existing_phase, phase_name] if x]
+                    )
+                if node.get("description") and node["description"] not in existing["description"]:
+                    existing["description"] = (
+                        existing["description"].rstrip(".") + ". " +
+                        node["description"].strip()
+                    )[:2000]
+                id_map[(phase_name, node["id"])] = existing["id"]
+                continue
+
+            new_id = node["id"]
+            if new_id in {n["id"] for n in nodes}:
+                new_id = unique_node_id(f"{phase_name.lower()}_{new_id}", {n["id"]: n for n in nodes})
+
+            copied = dict(node)
+            copied["id"] = new_id
+            copied["source_phase"] = phase_name
+            copied["importance"] = 0.0
+            nodes.append(copied)
+            label_to_id[key] = new_id
+            id_map[(phase_name, node["id"])] = new_id
+
+        for edge in graph["edges"]:
+            source = id_map.get((phase_name, edge["source"]))
+            target = id_map.get((phase_name, edge["target"]))
+            if not source or not target or source == target:
+                continue
+            edges.append({
+                **edge,
+                "id": f"{phase_name.lower()}_{edge['id']}",
+                "source": source,
+                "target": target,
+            })
+
+    add_phase(g1, "IMA")
+    add_phase(g2, "MA")
+
+    # Deduplicate semantically identical edges while preserving strongest weight.
+    dedup = {}
+    for edge in edges:
+        key = (edge["source"], edge["target"], edge["rel_type"])
+        if key not in dedup or edge["weight"] > dedup[key]["weight"]:
+            dedup[key] = edge
+
+    return normalize_graph_data({"nodes": nodes, "edges": list(dedup.values())})
+
+
+def rank_integrated_graph(graph):
+    """Compute structural importance so the displayed graph favors meaningful bridges."""
+    graph = normalize_graph_data(graph)
+    nodes = graph["nodes"]
+    edges = graph["edges"]
+
+    adjacency = {n["id"]: [] for n in nodes}
+    for edge in edges:
+        s, t = edge["source"], edge["target"]
+        if s in adjacency and t in adjacency:
+            w = max(0.1, float(edge.get("weight", 1.0)))
+            adjacency[s].append((t, w, edge))
+            adjacency[t].append((s, w, edge))
+
+    for node in nodes:
+        nid = node["id"]
+        degree = len(adjacency.get(nid, []))
+        weighted_degree = sum(x[1] for x in adjacency.get(nid, []))
+        p = min(100.0, degree * 5.0 + weighted_degree * 3.0)
+
+        p += {"Macro": 18, "Meso": 13, "Micro": 7}.get(node.get("level"), 4)
+        p += {
+            "root": 80,
+            "goal": 22,
+            "innovation": 32,
+            "process": 16,
+            "domain": 18,
+            "constraint": 12,
+            "state": 12,
+            "fact": 8,
+            "entity": 8,
+            "data": 7,
+        }.get(node.get("layer"), 5)
+
+        if node.get("source_phase") == "IMA+MA":
+            p += 42
+        elif node.get("source_phase") in {"IMA", "MA"}:
+            p += 12
+
+        if node.get("semantic_type") in {
+            "human-thinking-metamodel",
+            "mental-approach",
+            "mental-approaches-hub",
+            "science-domain",
+        }:
+            p += 8
+
+        # Prefer bridges between phases and operationally meaningful relations.
+        phase_bridge = 0
+        for other, weight, edge in adjacency.get(nid, []):
+            other_node = next((x for x in nodes if x["id"] == other), None)
+            if not other_node:
+                continue
+            if {node.get("source_phase"), other_node.get("source_phase")} == {"IMA", "MA"}:
+                phase_bridge += 18
+            if edge.get("rel_type") in {
+                "CAUSES", "ENABLES", "TRANSFORMS", "PRODUCES",
+                "REALIZATION", "Realization", "Dependency",
+                "IF-THEN", "FEEDBACK", "VALIDATES",
+            }:
+                p += 3
+        p += phase_bridge
+
+        node["importance"] = round(p, 2)
+        node["innovation_score"] = 1.0 if node.get("layer") == "innovation" else 0.0
+
+    return graph
+
+
+def select_key_integrated_graph(graph, max_nodes=80):
+    """Return a connected, cross-phase, importance-ranked view of the integrated graph."""
+    graph = rank_integrated_graph(graph)
+    nodes = graph["nodes"]
+    edges = graph["edges"]
+
+    if not nodes or max_nodes is None or len(nodes) <= max_nodes:
+        return graph
+
+    node_map = {n["id"]: n for n in nodes}
+    adjacency = {n["id"]: [] for n in nodes}
+    for edge in edges:
+        if edge["source"] in adjacency and edge["target"] in adjacency:
+            adjacency[edge["source"]].append(edge)
+            adjacency[edge["target"]].append(edge)
+
+    root = next(
+        (n for n in nodes if n.get("semantic_type") == "root" or n.get("id") == "knowledge_root"),
+        max(nodes, key=lambda n: n.get("importance", 0)),
+    )
+
+    # Seeds ensure that the view visibly represents both reports and the innovations.
+    seeds = [root["id"]]
+    candidates = sorted(
+        nodes,
+        key=lambda n: (
+            1 if n.get("source_phase") == "IMA+MA" else 0,
+            1 if n.get("layer") == "innovation" else 0,
+            n.get("importance", 0),
+        ),
+        reverse=True,
+    )
+    for node in candidates:
+        if len(seeds) >= min(max_nodes, 14):
+            break
+        if node["id"] not in seeds and (
+            node.get("source_phase") in {"IMA+MA", "IMA", "MA"}
+            or node.get("layer") in {"innovation", "goal", "domain"}
+        ):
+            seeds.append(node["id"])
+
+    selected = set(seeds)
+
+    # Expand through strongest edges, keeping the graph connected where possible.
+    while len(selected) < max_nodes:
+        frontier = []
+        for sid in selected:
+            for edge in adjacency.get(sid, []):
+                other = edge["target"] if edge["source"] == sid else edge["source"]
+                if other in selected:
+                    continue
+                n = node_map[other]
+                score = (
+                    n.get("importance", 0)
+                    + float(edge.get("weight", 1.0)) * 15
+                    + (25 if n.get("source_phase") == "IMA+MA" else 0)
+                )
+                frontier.append((score, other))
+
+        if not frontier:
+            break
+        frontier.sort(reverse=True)
+        selected.add(frontier[0][1])
+
+    # Fill remaining slots by importance.
+    for node in sorted(nodes, key=lambda n: n.get("importance", 0), reverse=True):
+        if len(selected) >= max_nodes:
+            break
+        selected.add(node["id"])
+
+    selected_nodes = [n for n in nodes if n["id"] in selected]
+    selected_edges = [
+        e for e in edges
+        if e["source"] in selected and e["target"] in selected
+    ]
+    return {"nodes": selected_nodes, "edges": selected_edges}
+
+
+# =============================================================================
 # GRAPH STATISTICS
 # =============================================================================
 
@@ -2577,110 +2809,13 @@ def graph_statistics(graph):
 # =============================================================================
 
 def limit_graph_nodes(graph, max_nodes=80):
-    graph = connect_isolated_components(normalize_graph_data(graph))
-    nodes = graph["nodes"]
-    edges = graph["edges"]
-
-    if max_nodes is None or max_nodes >= len(nodes):
+    """Limit the visual graph by integrated semantic importance, not insertion order."""
+    graph = normalize_graph_data(graph)
+    if not graph["nodes"]:
         return graph
-
-    max_nodes = max(1, int(max_nodes))
-    if max_nodes == 1:
-        root = next((n for n in nodes if n.get("semantic_type") == "root" or n.get("id") == "knowledge_root"), nodes[0])
-        return {"nodes": [root], "edges": []}
-
-    node_map = {n["id"]: n for n in nodes}
-    adjacency = {n["id"]: [] for n in nodes}
-
-    for edge in edges:
-        s, t = edge.get("source"), edge.get("target")
-        if s not in adjacency or t not in adjacency:
-            continue
-        adjacency[s].append((t, edge))
-        adjacency[t].append((s, edge))
-
-    root_id = next((
-        n["id"] for n in nodes
-        if n.get("semantic_type") == "root" or n.get("id") == "knowledge_root"
-    ), nodes[0]["id"])
-
-    def node_priority(node, edge=None):
-        p = 0.0
-        p += {"Macro": 30, "Meso": 22, "Micro": 14}.get(node.get("level"), 8)
-        p += {"domain": 16, "goal": 18, "innovation": 14, "process": 13, "constraint": 11, "entity": 9, "fact": 8, "state": 8}.get(node.get("layer"), 6)
-        p += {
-            "root": 1000,
-            "science-domain": 90,
-            "human-thinking-metamodel": 75,
-            "mental-approaches-hub": 75,
-            "mental-approach": 50,
-        }.get(node.get("semantic_type"), 0)
-        if node.get("shape") in {"star", "hexagon", "diamond"}:
-            p += 10
-        if edge is not None:
-            p += min(40.0, float(edge.get("weight", 1.0)) * 12.0)
-            if edge.get("rel_type") in {
-                "NT", "BT", "TT", "Generalization", "Specialization",
-                "Composition", "Containment", "Aggregation", "Dependency",
-                "Conflict", "IF-THEN", "AND", "OR", "XOR", "NOT",
-            }:
-                p += 14
-            elif edge.get("rel_type") in {"AS", "RT", "EQ", "IN"}:
-                p += 5
-        return p
-
-    selected = {root_id}
-    frontier = []
-
-    for neighbor_id, edge in adjacency.get(root_id, []):
-        frontier.append((
-            node_priority(node_map[neighbor_id], edge),
-            neighbor_id,
-            root_id,
-            edge,
-        ))
-
-    while frontier and len(selected) < max_nodes:
-        frontier.sort(key=lambda x: x[0], reverse=True)
-        score, candidate, parent, parent_edge = frontier.pop(0)
-
-        if candidate in selected:
-            continue
-
-        selected.add(candidate)
-
-        for neighbor_id, edge in adjacency.get(candidate, []):
-            if neighbor_id in selected:
-                continue
-            frontier.append((
-                node_priority(node_map[neighbor_id], edge)
-                + node_priority(node_map[candidate]) * 0.12,
-                neighbor_id,
-                candidate,
-                edge,
-            ))
-
-    if len(selected) < max_nodes:
-        remaining = [n for n in nodes if n["id"] not in selected]
-        remaining.sort(
-            key=lambda n: node_priority(n) + len(adjacency.get(n["id"], [])) * 0.5,
-            reverse=True,
-        )
-        for node in remaining:
-            if len(selected) >= max_nodes:
-                break
-            selected.add(node["id"])
-
-    selected_nodes = [n for n in nodes if n["id"] in selected]
-    selected_edges = [
-        e for e in edges
-        if e.get("source") in selected and e.get("target") in selected
-    ]
-
-    return {
-        "nodes": selected_nodes,
-        "edges": selected_edges,
-    }
+    if max_nodes is None or max_nodes >= len(graph["nodes"]):
+        return rank_integrated_graph(graph)
+    return select_key_integrated_graph(graph, max_nodes=max_nodes)
 
 
 # =============================================================================
@@ -2710,6 +2845,8 @@ def render_cytoscape_network(
                 "level": node["level"],
                 "semantic_type": node["semantic_type"],
                 "state": node["state"],
+                "source_phase": node.get("source_phase", ""),
+                "importance": node.get("importance", 0.0),
             }
         })
 
@@ -2916,6 +3053,7 @@ Facts · entities · states<br><br>
 <b>Vertical:</b> hierarchy / taxonomy<br>
 <b>Horizontal:</b> association / relation<br>
 <b>Operational:</b> transformation / process<br>
+<b>Cross-phase:</b> IMA ↔ MA bridge concepts are prioritized<br>
 <b>Feedback:</b> cyclic system regulation<br>
 <b>Edge labels:</b> relation type always visible
 </div>
@@ -3512,202 +3650,235 @@ function escapeHtml(value){{
 # =============================================================================
 
 def build_phase1_system_prompt():
-    return """
-You are the SIS Lead Knowledge Synthesizer, Hierarchologist and Ontology Engineer.
+    ima_nodes = "\n".join(
+        f"- {name}: {meta.get('desc', '')}"
+        for name, meta in HUMAN_THINKING_METAMODEL["nodes"].items()
+    )
+    ima_relations = "\n".join(
+        f"- {s} --{r}--> {t}"
+        for s, t, r in HUMAN_THINKING_METAMODEL["relations"]
+    )
 
-PHASE 1 HAS ONE PURPOSE: KNOWLEDGE SYNTHESIS.
-
-Write a continuous, natural, academic prose text — never a telegraphic list of bullets or isolated keywords.
-
-STRUCTURE THE SYNTHESIS AS A COHERENT ESSAY:
-
-1. Begin with a proper INTRODUCTION that situates the inquiry, states its intellectual significance, and outlines the scope of the synthesis.
-
-2. Continue with a flowing exposition of the core conceptual landscape. Introduce each major concept in full sentences, define it, situate it historically or theoretically, and show how it relates to neighbouring concepts.
-
-3. Weave the multidimensional thesaurus (TT, BT, NT, RT, EQ, AS, IN), polyhierarchical structure, UML relations, operational logic and feedback loops into the narrative itself. Do not isolate them as separate bullet lists; let the relations emerge naturally from the prose.
-
-4. Move from Macro-level principles and domains through Meso-level processes and systems down to Micro-level facts, entities and states, always in continuous paragraphs.
-
-5. Close with a synthetic CONCLUSION that draws the threads together, highlights the most important structural insights, and prepares the ground for later innovation without yet proposing the innovation itself.
-
-STYLE REQUIREMENTS (STRICT):
-- Continuous paragraphs, not bullet points or numbered keyword lists.
-- Full, well-formed sentences.
-- Natural academic tone, readable and precise.
-- Explicit definitions and justifications appear inside the flowing text.
-- Aim for 900–1600 words of dense, coherent prose when the topic allows.
-- Prefer depth, context and relational explanation over brevity.
-
-FORBIDDEN:
-- Telegraphic style
-- Isolated bullet lists of concepts without surrounding explanation
-- Keyword dumps
-
-The result must feel like a carefully written scholarly overview that a reader can follow from beginning to end, not like a set of notes.
-
-Do not solve the innovation objective yet. Build only the knowledge substrate.
-"""
-
-def build_phase2_system_prompt(architecture_context):
     return f"""
-You are the SIS Lead Innovation Architect and Hierarchographist.
+You are the SIS Lead Knowledge Synthesizer, Hierarchologist and IMA Architect.
 
-PHASE 2 HAS ONE PURPOSE: INNOVATION OBJECTIVE.
-
-It is NOT a second general knowledge synthesis phase.
-
-Use the completed Phase 1 knowledge synthesis as the knowledge substrate, but
-focus exclusively on the user's stated INNOVATION OBJECTIVE. Determine what
-should be transformed, invented, recombined, improved, operationalized or
-implemented.
-
-The innovation output MUST remain grounded in the Phase 1 knowledge synthesis
-and must use the system's multidimensional thesaurus, polyhierarchy, UML,
-hierarchical-associative logic, operational logic, state transitions and
+PHASE 1 — IMA KNOWLEDGE SYNTHESIS
+=================================
+IMA means the COMPLETE METAMODEL OF HUMAN THINKING. Phase 1 is therefore not
+merely a literature summary. It is a professional, structured reconstruction
+of the knowledge space through the full Human Thinking Metamodel (IMA),
+supported by multidimensional thesaurus, polyhierarchy, UML, hierarchical-
+associative logic, operational logic, epistemic relations, system states and
 hierarchography.
 
-Do not reopen the general inquiry as a new research question. Do not produce
-generic background knowledge. Do not merely repeat Phase 1. Produce an
-innovation-oriented transformation of the Phase 1 knowledge in response to the
-explicit Innovation Objective.
+The complete IMA architecture is active. Do not select only a few cognitive
+components. Integrate the complete supplied IMA metamodel where relevant:
 
-MANDATORY RELATION DIVERSITY IN THE GRAPH JSON:
-You MUST create edges using ALL of the following relation families:
+IMA NODES:
+{ima_nodes}
 
-THESAURUS (use all of these):
-TT, BT, NT, RT, EQ, AS, IN
+IMA RELATIONS:
+{ima_relations}
 
-UML (use all of these):
-Generalization, Specialization, Composition, Aggregation, Containment,
-Realization, Dependency, Conflict
+REPORT QUALITY
+==============
+Produce a professional scholarly report suitable for an expert reader.
+Use clear section headings and substantial continuous prose. The report must
+contain, in this order:
 
-LOGICAL OPERATORS (use all of these):
-AND, OR, XOR, NOT, IF-THEN
+1. Executive synthesis — the central finding of the inquiry.
+2. Scope, assumptions and epistemic status — distinguish established
+   knowledge, interpretation, inference and unresolved uncertainty.
+3. Conceptual and scientific landscape — define and relate the major concepts.
+4. IMA reconstruction — show how the inquiry maps onto the complete human
+   thinking metamodel: identity, memory, mission, vision, goals, problem,
+   ethics, rules, decision-making, problem solving, conflict, knowledge,
+   tools, experience, classification, psychological/social aspects and the
+   hierarchical-associative system.
+5. Polyhierarchical knowledge architecture — explain the most important
+   simultaneous taxonomic, part-whole, process and associative structures.
+6. Operational and systemic logic — explain inputs, processes, transformations,
+   outputs, states, feedback, constraints and causal mechanisms.
+7. Cross-disciplinary synthesis — identify meaningful bridges among the
+   selected sciences, paradigms and structural models.
+8. Critical assessment — expose contradictions, gaps, assumptions and
+   scientific/operational limitations.
+9. Strategic knowledge implications — identify the knowledge structures that
+   Phase 2 should transform, without proposing the innovations themselves.
+10. Conclusion.
 
-OPERATIONAL:
-CAUSES, ENABLES, TRANSFORMS, PRODUCES, CONSUMES, FEEDS, TRIGGERS,
-PRECEDES, CONSTRAINS, MEASURES, VALIDATES
+Do NOT solve the innovation objective in Phase 1. Phase 1 creates the
+knowledge substrate from which Phase 2 will innovate.
 
-FEEDBACK:
-FEEDBACK, POSITIVE-FEEDBACK, NEGATIVE-FEEDBACK
+STYLE
+=====
+Professional, precise, analytical and readable. Avoid keyword dumps and
+telegraphic prose. Bullets may be used only for compact metadata; the
+substantive report must be continuous academic prose.
 
-Do NOT produce a graph that contains only NT edges. The relation vocabulary
-must be rich and balanced.
+SEMANTIC GRAPH
+==============
+After the report, output the exact marker:
 
-The graph must represent:
+### IMA_SEMANTIC_GRAPH_JSON
 
-THESAURUS
-ONTOLOGY
-POLYHIERARCHY
-UML
-HIERARCHICAL-ASSOCIATIVE LOGIC
-OPERATIONAL LOGIC
-TRANSFORMATIONS
-SYSTEM STATES
-FEEDBACK
-HIERARCHOGRAPHY
+Then output valid JSON with:
+{{
+  "nodes": [...],
+  "edges": [...]
+}}
 
-============================================================
-MANDATORY ARCHITECTURAL PRINCIPLE
-============================================================
+The IMA graph should contain approximately 18–45 of the MOST IMPORTANT
+concepts from the report, not every word. It must represent actual concepts
+from the report and the IMA architecture.
 
-Do not produce a simple mind map.
+Every node:
+id, label, shape, color, description, layer, level, semantic_type, state,
+source_phase
 
-Build a semantic architecture in which the same concept may participate in
-several legitimate hierarchies.
-
-A concept may therefore have:
-- one parent in a taxonomic hierarchy,
-- another parent in a process hierarchy,
-- another relationship in a part-whole hierarchy,
-- and lateral RT/AS/EQ relations.
-
-This is POLYHIERARCHY.
-
-============================================================
-GEOMETRIC LANGUAGE
-============================================================
-
-star: Goal, mission, vision, macro objective.
-hexagon: Scientific field, discipline or domain.
-diamond: Innovation, synthesis, transformation or new conceptual construction.
-triangle: Process, method, operation, mechanism.
-octagon: Rule, constraint, ethical boundary, limitation.
-ellipse: Human factor, agent, identity or biological entity.
-rectangle: Fact, concept, evidence, data or micro-component.
-round-rectangle: System state or transition state.
-barrel: Evidence/data repository.
-
-============================================================
-HIERARCHICAL LEVELS
-============================================================
-
-Every node MUST have:
-"level": "Macro" | "Meso" | "Micro"
-
-============================================================
-NODE METADATA
-============================================================
-
-Every node must contain:
-id, label, shape, color, description, layer, level, semantic_type, state
-
-============================================================
-EDGE METADATA
-============================================================
-
-Every edge must contain:
+Every edge:
 id, source, target, rel_type, label, weight, direction
 
-============================================================
-INNOVATION REQUIREMENT
-============================================================
+Use a balanced mixture of TT, BT, NT, RT, EQ, AS, IN, UML relations,
+logical operators, operational relations and feedback relations where
+semantically justified. Never manufacture a relation merely to satisfy a
+quota.
 
-Every diamond innovation node must explicitly identify three Mental Approaches
-used in its synthesis.
+GEOMETRY:
+star=mission/vision/goal; hexagon=science/domain; diamond=transformation or
+synthesis; triangle=process/method; octagon=rule/constraint/conflict;
+ellipse=human/agent; rectangle=concept/fact/evidence; round-rectangle=state;
+barrel=data/evidence repository.
 
-============================================================
-SYSTEM STATES
-============================================================
+LEVEL:
+Macro, Meso or Micro.
 
-Where appropriate create state nodes representing:
-initial state, problem state, transition state, target state, validated state
+The JSON must be the final content of the response.
+Do not put markdown inside JSON. No comments. No trailing commas.
 
-============================================================
-REPORT
-============================================================
-
-Produce:
-
-### STRATEGIC KNOWLEDGE SYNTHESIS
-
-Write in continuous, natural academic prose (not telegraphic bullets).
-Explain the innovation architecture, the polyhierarchy, the key UML and
-operational relations, the system states and the feedback loops in flowing
-paragraphs.
-
-Then produce:
-
-### SEMANTIC_GRAPH_JSON
-
-The JSON must be the FINAL content of the response.
-Do not write anything after the JSON.
-
-============================================================
-JSON
-============================================================
-
-Return valid JSON.
-Do not put markdown inside the JSON.
-Descriptions must be single-line strings.
-No comments.
-No trailing commas.
-
-============================================================
 KNOWLEDGE ARCHITECTURE REFERENCE
-============================================================
+================================
+Use the architecture context supplied with the user input as the governing
+semantic vocabulary.
+"""
 
+
+def build_phase2_system_prompt(architecture_context):
+    ma_nodes = "\n".join(
+        f"- {name}: {description}"
+        for name, description in MENTAL_APPROACHES_ONTOLOGY.items()
+    )
+
+    return f"""
+You are the SIS Lead Innovation Architect, MA Architect and Hierarchographist.
+
+PHASE 2 — MA INNOVATION ARCHITECTURE
+====================================
+MA means ALL MENTAL APPROACHES. Phase 2 must therefore activate the complete
+Mental Approaches architecture, not merely the user-selected ideation
+techniques. The selected ideation frameworks are supplementary tools; they do
+not replace MA.
+
+COMPLETE MENTAL APPROACHES
+==========================
+{ma_nodes}
+
+PURPOSE
+=======
+Use the completed Phase 1 IMA knowledge synthesis as the knowledge substrate
+and transform it exclusively in response to the explicit Innovation Objective.
+Do not repeat Phase 1 as background. Find what can be invented, recombined,
+reframed, improved, operationalized or implemented.
+
+VISIONARY BUT REALISTIC INNOVATION
+==================================
+Every proposed innovation must satisfy BOTH criteria:
+1. VISIONARY: it should create a meaningful new configuration, capability,
+   relationship, service, process, technology or conceptual architecture.
+2. REALIZABLE: it must remain within a defensible path of technical,
+   organizational, economic, ethical/legal and temporal feasibility.
+
+Do not confuse visionary with speculative. Avoid science-fiction claims,
+unsupported technological promises and impossible implementation assumptions.
+
+For each major innovation, explicitly reason about:
+- novelty and value;
+- the problem/gap it addresses;
+- mechanism of action;
+- the Mental Approaches that generated it;
+- required knowledge, technology and organizational capabilities;
+- feasibility across technical, organizational, economic, ethical/legal and
+  temporal dimensions;
+- principal risks and failure modes;
+- validation or pilot strategy;
+- first practical implementation step;
+- expected near-term, medium-term and long-term horizon.
+
+PROFESSIONAL PHASE 2 REPORT
+===========================
+Produce a professional innovation strategy report with these sections:
+
+1. Executive innovation thesis.
+2. Transformation logic from Phase 1 to Phase 2.
+3. Opportunity landscape and unmet potential.
+4. MA synthesis — explicitly show how multiple Mental Approaches interact,
+   with ALL Mental Approaches considered and the most productive ones selected
+   for each innovation.
+5. Innovation portfolio — present 3–7 genuinely differentiated solutions.
+6. For each solution: concept, novelty, mechanism, value, MA combination,
+   prerequisites, feasibility, risks, validation and implementation path.
+7. Vision-to-realization roadmap — distinguish near (0–2 years), medium
+   (3–5 years) and long (6–10+ years) horizons where appropriate.
+8. Portfolio comparison and prioritization.
+9. Strategic recommendation.
+10. Conclusion.
+
+Use concise tables only where they materially improve comparison; otherwise
+use strong continuous analytical prose.
+
+FEASIBILITY DISCIPLINE
+======================
+Rate each innovation on a 1–5 scale for:
+technical, organizational, economic, ethical/legal and temporal feasibility.
+Give an overall feasibility judgment and explain it. An innovation with low
+feasibility may remain in the visionary portfolio, but it must be explicitly
+labelled as exploratory rather than presented as immediately implementable.
+
+SEMANTIC GRAPH
+==============
+After the report, output:
+
+### MA_SEMANTIC_GRAPH_JSON
+
+Then valid JSON with:
+{{
+  "nodes": [...],
+  "edges": [...]
+}}
+
+The MA graph should contain approximately 20–55 of the most important
+innovation concepts, IMA concepts reused by the innovation, Mental Approaches,
+processes, states, constraints, goals and evidence. It must explicitly
+connect innovations back to concepts from Phase 1.
+
+Every diamond innovation node MUST contain in its description at least three
+Mental Approaches used in its synthesis. Preferably identify more when they
+genuinely contributed.
+
+Every node:
+id, label, shape, color, description, layer, level, semantic_type, state,
+source_phase
+
+Every edge:
+id, source, target, rel_type, label, weight, direction
+
+Use semantically justified thesaurus, UML, logical, operational and feedback
+relations. Do not force artificial relation diversity.
+
+The graph is NOT a mind map. It is a polyhierarchical semantic architecture.
+
+KNOWLEDGE ARCHITECTURE REFERENCE
+================================
 {architecture_context}
 """
 
@@ -3753,7 +3924,7 @@ with st.sidebar:
     st.subheader("🤖 Sequential Model Selection")
 
     p1_label = st.selectbox(
-        "Phase 1 Model — Knowledge Synthesis",
+        "Phase 1 Model — IMA Knowledge Synthesis",
         GEMINI_MODEL_LABELS,
         index=1,
         key="p1_model_v230",
@@ -3762,7 +3933,7 @@ with st.sidebar:
     p1_model = GEMINI_MODEL_CATALOG[p1_label]
 
     p2_label = st.selectbox(
-        "Phase 2 Model — Innovation Objective",
+        "Phase 2 Model — MA Innovation Architecture",
         GEMINI_MODEL_LABELS,
         index=0,
         key="p2_model_v230",
@@ -4119,7 +4290,7 @@ st.divider()
 st.markdown("### 🧬 KNOWLEDGE TRANSFORMATION STRATEGY")
 
 selected_techniques = st.multiselect(
-    "Select Mental / Ideation Frameworks",
+    "Additional Ideation Frameworks (supplementary to ALL Mental Approaches)",
     list(IDEATION_TECHNIQUES.keys()),
     default=["First Principles", "Lateral Thinking"],
     key="techniques_v230",
@@ -4154,7 +4325,7 @@ col_inq1, col_inq2, col_inq3 = st.columns([2, 2, 1])
 with col_inq1:
 
     user_query = st.text_area(
-        "🧠 PHASE 1 — KNOWLEDGE SYNTHESIS",
+        "🧠 PHASE 1 — IMA KNOWLEDGE SYNTHESIS",
         placeholder=(
              "Enter the scientific, conceptual or systemic inquiry from which the "
             "system should synthesize a rich body of structured knowledge."
@@ -4167,7 +4338,7 @@ with col_inq1:
 with col_inq2:
 
     idea_query = st.text_area(
-        "💡 PHASE 2 — INNOVATION OBJECTIVE",
+        "💡 PHASE 2 — MA INNOVATION ARCHITECTURE",
         placeholder=(
              "Define exclusively what should be invented, transformed, improved, "
             "connected, operationalized or otherwise innovated."
@@ -4212,78 +4383,42 @@ with col_inq3:
 
 
 # =============================================================================
-# EXECUTION
+# EXECUTION — IMA → MA TWO-PHASE PIPELINE
 # =============================================================================
 
 if st.button(
-    "🚀 EXECUTE MULTI-DIMENSIONAL KNOWLEDGE SYNTHESIS",
+    "🚀 EXECUTE IMA → MA KNOWLEDGE & INNOVATION PIPELINE",
     use_container_width=True,
-    key="execute_v230",
+    key="execute_v2400",
 ):
 
     p1_is_hf = p1_model.startswith("hf:")
     p2_is_hf = p2_model.startswith("hf:")
 
-    google_required = (
-        not p1_is_hf
-        or not p2_is_hf
-    )
-
-    hf_required = (
-        p1_is_hf
-        or p2_is_hf
-    )
+    google_required = (not p1_is_hf or not p2_is_hf)
+    hf_required = (p1_is_hf or p2_is_hf)
 
     if google_required and not google_api_key:
-
-        st.error(
-            "❌ Google AI API key is required for the selected Google model."
-        )
-
+        st.error("❌ Google AI API key is required for the selected Google model.")
         st.stop()
 
     if hf_required and not huggingface_api_key:
-
-        st.error(
-            "❌ Hugging Face API key is required for Qwen2.5-72B-Instruct."
-        )
-
+        st.error("❌ Hugging Face API key is required for Qwen2.5-72B-Instruct.")
         st.stop()
 
     if not user_query.strip():
-
-        st.warning(
-            "⚠️ Phase 1 — Knowledge Synthesis inquiry is required."
-        )
-
+        st.warning("⚠️ Phase 1 — IMA knowledge synthesis inquiry is required.")
         st.stop()
 
     if not idea_query.strip():
-
-        st.warning(
-            "⚠️ Phase 2 — Innovation Objective is required."
-        )
-
+        st.warning("⚠️ Phase 2 — MA innovation objective is required.")
         st.stop()
 
     if not selected_sciences:
-
-        st.warning(
-            "⚠️ Select at least one science field."
-        )
-
-        st.stop()
-
-    if not selected_techniques:
-
-        st.warning(
-            "⚠️ Select at least one transformation framework."
-        )
-
+        st.warning("⚠️ Select at least one science field.")
         st.stop()
 
     try:
-
         architecture_context = build_knowledge_architecture_context(
             selected_sciences,
             selected_paradigms,
@@ -4292,35 +4427,25 @@ if st.button(
         )
 
         file_context = (
-            "\n\nSOURCE FILE CONTEXT:\n"
-            + file_content
-            if file_content
-            else ""
+            "\n\nSOURCE FILE CONTEXT:\n" + file_content
+            if file_content else ""
         )
 
         biblio_data = ""
-
         if target_authors:
-
-            with st.spinner(
-                "📚 Accessing ORCID bibliographic metadata..."
-            ):
-                biblio_data = fetch_author_bibliographies(
-                    target_authors
-                )
+            with st.spinner("📚 Accessing ORCID bibliographic metadata..."):
+                biblio_data = fetch_author_bibliographies(target_authors)
 
         biblio_context = (
-            "\n\nAUTHOR RESEARCH BACKGROUND:\n"
-            + biblio_data
-            if biblio_data
-            else ""
+            "\n\nAUTHOR RESEARCH BACKGROUND:\n" + biblio_data
+            if biblio_data else ""
         )
 
         full_input = f"""
 USER INQUIRY:
 {user_query}
 
-INNOVATION / TRANSFORMATION OBJECTIVE:
+INNOVATION OBJECTIVE:
 {idea_query}
 
 EXPERTISE:
@@ -4332,100 +4457,108 @@ STRATEGIC GOAL:
 SELECTED SCIENCE FIELDS:
 {", ".join(selected_sciences)}
 
-SELECTED PARADIGMS:
-{", ".join(selected_paradigms)}
+SELECTED SCIENTIFIC PARADIGMS:
+{", ".join(selected_paradigms) if selected_paradigms else "None specified"}
 
 SELECTED STRUCTURAL MODELS:
-{", ".join(selected_models)}
+{", ".join(selected_models) if selected_models else "None specified"}
 
-SELECTED TRANSFORMATION FRAMEWORKS:
-{", ".join(selected_techniques)}
+SUPPLEMENTARY IDEATION FRAMEWORKS:
+{", ".join(selected_techniques) if selected_techniques else "None specified"}
+
+IMPORTANT:
+The complete IMA architecture is mandatory in Phase 1.
+ALL Mental Approaches are mandatory in Phase 2.
+The supplementary ideation frameworks above are not a substitute for MA.
 
 {file_context}
-
 {biblio_context}
-
-ARCHITECTURAL REQUIREMENT:
-Construct a rich knowledge system written as continuous natural academic prose, not a telegraphic bullet list.
 """
 
-
         gemini_client = None
-
         if google_required:
-            gemini_client = genai.Client(
-                api_key=google_api_key
-            )
+            gemini_client = genai.Client(api_key=google_api_key)
 
-
+        # ---------------------------------------------------------------------
+        # PHASE 1 — IMA
+        # ---------------------------------------------------------------------
         p1_provider_name = (
             "Hugging Face / Qwen2.5-72B-Instruct"
-            if p1_is_hf
-            else f"Google / {p1_model}"
+            if p1_is_hf else f"Google / {p1_model}"
         )
 
         with st.spinner(
-            f"PHASE 1 — Synthesizing knowledge with {p1_provider_name}..."
+            f"PHASE 1 — IMA Complete Human Thinking Metamodel synthesis with {p1_provider_name}..."
         ):
-
-            phase1_system = build_phase1_system_prompt()
-
-            phase1_input = (
-                architecture_context
-                + "\n\n"
-                + full_input
-            )
-
             phase1_result = gemini_generate(
                 gemini_client,
                 p1_model,
-                phase1_system,
-                phase1_input,
+                build_phase1_system_prompt(),
+                architecture_context + "\n\n" + full_input,
                 temperature=0.55 if p1_is_hf else 0.45,
                 top_p=0.92 if p1_is_hf else 0.88,
                 huggingface_api_key=huggingface_api_key,
             )
 
-            st.session_state.groq_synthesis = phase1_result
+        phase1_graph = extract_json_object(phase1_result) or {"nodes": [], "edges": []}
+        phase1_graph = normalize_graph_data(phase1_graph)
 
+        # Deterministic IMA enrichment.
+        phase1_graph = enrich_graph_with_architecture(
+            phase1_graph, selected_sciences
+        )
+        phase1_graph = enrich_graph_with_human_thinking_metamodel(
+            phase1_graph
+        )
+        phase1_graph = normalize_graph_data(phase1_graph)
 
+        # ---------------------------------------------------------------------
+        # PHASE 2 — MA
+        # ---------------------------------------------------------------------
         p2_provider_name = (
             "Hugging Face / Qwen2.5-72B-Instruct"
-            if p2_is_hf
-            else f"Google / {p2_model}"
+            if p2_is_hf else f"Google / {p2_model}"
+        )
+
+        phase1_graph_for_prompt = json.dumps(
+            phase1_graph,
+            ensure_ascii=False,
+            indent=2,
         )
 
         with st.spinner(
-            f"PHASE 2 — Executing Innovation Objective with {p2_provider_name}..."
+            f"PHASE 2 — MA All Mental Approaches innovation architecture with {p2_provider_name}..."
         ):
-
-            phase2_system = build_phase2_system_prompt(
-                architecture_context
-            )
+            phase2_system = build_phase2_system_prompt(architecture_context)
 
             phase2_input = f"""
-PHASE 1 KNOWLEDGE ARCHITECTURE
-================================
-
+COMPLETED PHASE 1 — IMA KNOWLEDGE SYNTHESIS
+============================================
 {phase1_result}
 
-================================
-USER TRANSFORMATION OBJECTIVE
-================================
+============================================
+PHASE 1 IMA SEMANTIC GRAPH
+============================================
+{phase1_graph_for_prompt}
 
+============================================
+USER INNOVATION OBJECTIVE
+============================================
 {idea_query}
 
-================================
+============================================
 ORIGINAL INQUIRY
-================================
-
+============================================
 {user_query}
 
-================================
-ADDITIONAL SOURCE
-================================
-
+============================================
+SOURCE MATERIAL
+============================================
 {file_context}
+
+Now create the professional MA innovation report and its innovation-centric
+semantic graph. Reuse and extend important Phase 1 concepts rather than
+creating an unrelated graph.
 """
 
             phase2_result = gemini_generate(
@@ -4433,152 +4566,134 @@ ADDITIONAL SOURCE
                 p2_model,
                 phase2_system,
                 phase2_input,
-                temperature=0.75,
-                top_p=0.9,
+                temperature=0.72 if p2_is_hf else 0.68,
+                top_p=0.92 if p2_is_hf else 0.90,
                 huggingface_api_key=huggingface_api_key,
             )
 
-            st.session_state.gemini_innovation = phase2_result
+        phase2_graph = extract_json_object(phase2_result) or {"nodes": [], "edges": []}
+        phase2_graph = normalize_graph_data(phase2_graph)
 
+        # Deterministic MA enrichment: the complete MA architecture is always
+        # present, while the selected techniques remain supplementary.
+        phase2_graph = enrich_graph_with_architecture(
+            phase2_graph, selected_sciences
+        )
+        phase2_graph = enrich_graph_with_mental_approaches(
+            phase2_graph, selected_techniques
+        )
+        phase2_graph = normalize_graph_data(phase2_graph)
 
-        graph_data = extract_json_object(
-            phase2_result
+        # ---------------------------------------------------------------------
+        # INTEGRATED GRAPH — BOTH REPORTS
+        # ---------------------------------------------------------------------
+        integrated_graph = merge_phase_graphs(
+            phase1_graph,
+            phase2_graph,
         )
 
-        if graph_data is None:
-
-            st.warning(
-                "⚠️ The model did not return valid graph JSON. "
-                "A structural fallback graph will be created."
-            )
-
-            graph_data = {
-                "nodes": [],
-                "edges": [],
-            }
-
-
-        graph_data = enrich_graph_with_architecture(
-            graph_data,
+        integrated_graph = enrich_graph_with_architecture(
+            integrated_graph,
             selected_sciences,
         )
-
-        graph_data = enrich_graph_with_human_thinking_metamodel(
-            graph_data
+        integrated_graph = enrich_graph_with_human_thinking_metamodel(
+            integrated_graph,
         )
-
-        graph_data = enrich_graph_with_mental_approaches(
-            graph_data,
+        integrated_graph = enrich_graph_with_mental_approaches(
+            integrated_graph,
             selected_techniques,
         )
+        integrated_graph = normalize_graph_data(integrated_graph)
+        integrated_graph = connect_isolated_components(integrated_graph)
+        integrated_graph = rank_integrated_graph(integrated_graph)
+        integrated_graph = normalize_graph_data(integrated_graph)
 
-        graph_data = normalize_graph_data(
-            graph_data
-        )
-
-        graph_data = connect_isolated_components(
-            graph_data
-        )
-
-        graph_data = normalize_graph_data(
-            graph_data
-        )
-
-        st.session_state.last_graph_data = graph_data
-        st.session_state.final_graph_elements = graph_data
-        st.session_state.report_ready = True
-        st.session_state.biblio_data = biblio_data
-
+        # Professional report extraction: remove graph payloads from prose.
+        report_phase1 = phase1_result
+        if "### IMA_SEMANTIC_GRAPH_JSON" in report_phase1:
+            report_phase1 = report_phase1.split(
+                "### IMA_SEMANTIC_GRAPH_JSON", 1
+            )[0].strip()
 
         report_phase2 = phase2_result
-
-        if "### SEMANTIC_GRAPH_JSON" in report_phase2:
-
+        if "### MA_SEMANTIC_GRAPH_JSON" in report_phase2:
             report_phase2 = report_phase2.split(
-                "### SEMANTIC_GRAPH_JSON",
-                1,
-            )[0]
+                "### MA_SEMANTIC_GRAPH_JSON", 1
+            )[0].strip()
 
-        report_phase2 = re.sub(
-            r"```(?:json)?",
-            "",
-            report_phase2,
-            flags=re.IGNORECASE,
-        )
+        report_phase1 = re.sub(r"```(?:json)?", "", report_phase1, flags=re.I).strip()
+        report_phase2 = re.sub(r"```(?:json)?", "", report_phase2, flags=re.I).strip()
 
-        full_report = f"""
-## 🧠 PHASE 1 — KNOWLEDGE SYNTHESIS
+        integrated_report = f"""
+## 🧠 PHASE 1 — IMA KNOWLEDGE SYNTHESIS
+### Complete Metamodel of Human Thinking
 
-{phase1_result}
+{report_phase1}
 
 ---
 
-## 💡 PHASE 2 — INNOVATION OBJECTIVE
+## 💡 PHASE 2 — MA INNOVATION ARCHITECTURE
+### All Mental Approaches → Visionary but Realizable Solutions
 
 {report_phase2}
+
+---
+
+## 🔗 INTEGRATED IMA → MA ARCHITECTURE
+
+The final hierarchograph integrates the most important concepts, structures,
+processes, innovations and Mental Approaches identified across both reports.
+Node importance is calculated from semantic connectivity, cross-phase
+bridging, structural level, relation strength and innovation relevance.
 """
 
-
-        interactive_report = full_report
-
+        # Interactive report links only use labels from the integrated graph.
+        interactive_report = integrated_report
         labels = sorted(
-            [
-                node["label"]
-                for node in graph_data["nodes"]
-                if len(node["label"]) > 3
-            ],
+            [n["label"] for n in integrated_graph["nodes"] if len(n["label"]) > 3],
             key=len,
             reverse=True,
         )
 
         replacements = 0
-
-        for label in labels[:40]:
-
-            if replacements >= 25:
+        for label in labels[:45]:
+            if replacements >= 28:
                 break
 
-            query_url = urllib.parse.quote(
-                label
-            )
-
-            safe_label = html.escape(
-                label
-            )
-
+            query_url = urllib.parse.quote(label)
+            safe_label = html.escape(label)
             link_html = (
                 f'<a href="https://www.google.com/search?q={query_url}" '
-                f'target="_blank" '
-                f'class="semantic-node-highlight">'
-                f'{safe_label} ↗'
-                f"</a>"
+                f'target="_blank" class="semantic-node-highlight">'
+                f'{safe_label} ↗</a>'
             )
 
             pattern = re.compile(
-                rf"(?<![\w>])"
-                + re.escape(label)
-                + r"(?![\w<])",
+                rf"(?<![\w>])" + re.escape(label) + r"(?![\w<])",
                 re.IGNORECASE,
             )
-
             new_text, count = pattern.subn(
                 link_html,
                 interactive_report,
                 count=1,
             )
-
             if count:
                 interactive_report = new_text
                 replacements += count
 
+        st.session_state.phase1_graph_data = phase1_graph
+        st.session_state.phase2_graph_data = phase2_graph
+        st.session_state.last_graph_data = integrated_graph
+        st.session_state.final_graph_elements = integrated_graph
+        st.session_state.phase1_report = report_phase1
+        st.session_state.phase2_report = report_phase2
+        st.session_state.integrated_report = integrated_report
         st.session_state.interactive_report = interactive_report
+        st.session_state.report_ready = True
+        st.session_state.biblio_data = biblio_data
 
     except Exception as exc:
-
-        st.error(
-            f"❌ Pipeline Failure: {type(exc).__name__}: {exc}"
-        )
-
+        st.error(f"❌ Pipeline Failure: {type(exc).__name__}: {exc}")
         st.exception(exc)
 
 
@@ -4593,7 +4708,7 @@ if st.session_state.get("report_ready") and st.session_state.get("last_graph_dat
     biblio_data = st.session_state.get("biblio_data", "")
 
     st.subheader(
-        "🧱 INTEGRATED HIERARCHOLOGICAL KNOWLEDGE REPORT"
+        "🧠 IMA → MA PROFESSIONAL KNOWLEDGE & INNOVATION REPORT"
     )
 
     if biblio_data:
@@ -5140,7 +5255,7 @@ NEGATIVE-FEEDBACK
     st.divider()
 
     st.subheader(
-        "🕸️ PRIMARY HIERARCHOGRAPH"
+        "🕸️ INTEGRATED IMA → MA PRIMARY HIERARCHOGRAPH"
     )
 
     # -------------------------------------------------------------------------
