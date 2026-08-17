@@ -2776,32 +2776,134 @@ def select_key_integrated_graph(graph, max_nodes=80):
 
 
 # =============================================================================
-# GRAPH STATISTICS
+# COMPACT KNOWLEDGE ARCHITECTURE SYNTHESIS
 # =============================================================================
 
-def graph_statistics(graph):
+def compact_knowledge_architecture_synthesis(graph, max_concepts=10, max_relations=8):
+    """
+    Replace low-value graph statistics with a compact semantic synthesis.
+
+    This is deliberately deterministic and uses the already constructed
+    integrated graph, so it adds report value without making another AI call.
+    """
+    graph = normalize_graph_data(graph)
     nodes = graph.get("nodes", [])
     edges = graph.get("edges", [])
 
-    levels = {}
-    layers = {}
-    relations = {}
+    if not nodes:
+        return (
+            "The integrated knowledge architecture contains no sufficiently "
+            "structured graph data for a compact synthesis."
+        )
 
-    for node in nodes:
-        levels[node["level"]] = levels.get(node["level"], 0) + 1
-        layers[node["layer"]] = layers.get(node["layer"], 0) + 1
+    node_map = {n.get("id"): n for n in nodes}
 
+    def node_score(node):
+        try:
+            return float(node.get("importance", 0))
+        except (TypeError, ValueError):
+            return 0.0
+
+    ranked_nodes = sorted(
+        nodes,
+        key=lambda n: (node_score(n), n.get("label", "")),
+        reverse=True,
+    )
+
+    key_concepts = []
+    seen_labels = set()
+    for node in ranked_nodes:
+        label = str(node.get("label", "")).strip()
+        if not label:
+            continue
+        normalized = label.casefold()
+        if normalized in seen_labels:
+            continue
+        seen_labels.add(normalized)
+        key_concepts.append(
+            (
+                label,
+                str(node.get("level", "Meso")),
+                str(node.get("semantic_type", "concept")),
+            )
+        )
+        if len(key_concepts) >= max_concepts:
+            break
+
+    relation_counts = {}
     for edge in edges:
-        rel = edge["rel_type"]
-        relations[rel] = relations.get(rel, 0) + 1
+        rel = str(edge.get("rel_type", "ASSOCIATED"))
+        relation_counts[rel] = relation_counts.get(rel, 0) + 1
 
-    return {
-        "nodes": len(nodes),
-        "edges": len(edges),
-        "levels": levels,
-        "layers": layers,
-        "relations": relations,
-    }
+    top_relations = sorted(
+        relation_counts.items(),
+        key=lambda item: (item[1], item[0]),
+        reverse=True,
+    )[:max_relations]
+
+    level_counts = {}
+    for node in nodes:
+        level = str(node.get("level", "Meso"))
+        level_counts[level] = level_counts.get(level, 0) + 1
+
+    phase_counts = {}
+    for node in nodes:
+        phase = str(node.get("source_phase", "")).strip()
+        if phase:
+            phase_counts[phase] = phase_counts.get(phase, 0) + 1
+
+    cross_phase_edges = 0
+    for edge in edges:
+        source = node_map.get(edge.get("source"), {})
+        target = node_map.get(edge.get("target"), {})
+        source_phase = str(source.get("source_phase", ""))
+        target_phase = str(target.get("source_phase", ""))
+        if source_phase and target_phase and source_phase != target_phase:
+            cross_phase_edges += 1
+
+    concept_text = ", ".join(
+        f"**{label}** ({level})"
+        for label, level, _ in key_concepts
+    )
+
+    relation_text = ", ".join(
+        f"`{rel}` ({count})"
+        for rel, count in top_relations
+    )
+
+    level_text = ", ".join(
+        f"{level}: {count}"
+        for level, count in sorted(level_counts.items())
+    )
+
+    if phase_counts:
+        phase_text = ", ".join(
+            f"{phase}: {count}"
+            for phase, count in sorted(phase_counts.items())
+        )
+    else:
+        phase_text = "Phase provenance is not explicitly encoded in the graph."
+
+    bridge_text = (
+        f"The integrated graph contains **{cross_phase_edges} explicit cross-phase "
+        f"bridging relation(s)** between IMA and MA material."
+        if cross_phase_edges
+        else
+        "The graph does not contain explicit cross-phase bridges in the current "
+        "representation."
+    )
+
+    return f"""
+### Compact Knowledge Architecture Synthesis
+
+The integrated hierarchograph is organized as a **multi-level, hierarchical-associative knowledge structure** rather than as an isolated collection of concepts. The strongest semantic nodes are {concept_text}. Together they indicate the principal conceptual backbone of the synthesis.
+
+The dominant relation vocabulary is {relation_text}. This shows how the architecture combines hierarchical relations with associative, UML, logical and operational relations rather than relying on a single relation type. The current level distribution is {level_text}.
+
+The graph provenance is distributed as follows: {phase_text}. {bridge_text} This bridging is important because Phase 1 provides the structured knowledge substrate, while Phase 2 transforms that substrate through Mental Approaches into innovation-oriented structures.
+
+The resulting architecture should therefore be read primarily through **conceptual centrality, hierarchical position, cross-domain association, operational transformation and IMA→MA bridging**, rather than through raw node or edge counts. The graph is consequently used as an analytical knowledge model and as a substrate for further synthesis and innovation.
+""".strip()
 
 
 # =============================================================================
@@ -4624,6 +4726,10 @@ creating an unrelated graph.
         report_phase1 = re.sub(r"```(?:json)?", "", report_phase1, flags=re.I).strip()
         report_phase2 = re.sub(r"```(?:json)?", "", report_phase2, flags=re.I).strip()
 
+        compact_architecture_synthesis = compact_knowledge_architecture_synthesis(
+            integrated_graph
+        )
+
         integrated_report = f"""
 ## 🧠 PHASE 1 — IMA KNOWLEDGE SYNTHESIS
 ### Complete Metamodel of Human Thinking
@@ -4645,6 +4751,8 @@ The final hierarchograph integrates the most important concepts, structures,
 processes, innovations and Mental Approaches identified across both reports.
 Node importance is calculated from semantic connectivity, cross-phase
 bridging, structural level, relation strength and innovation relevance.
+
+{compact_architecture_synthesis}
 """
 
         # Interactive report links only use labels from the integrated graph.
@@ -4728,45 +4836,13 @@ if st.session_state.get("report_ready") and st.session_state.get("last_graph_dat
         )
 
 
-    stats = graph_statistics(
-        graph_data
-    )
-
     st.divider()
 
-    st.subheader(
-        "📊 KNOWLEDGE ARCHITECTURE STATISTICS"
+    st.markdown(
+        compact_knowledge_architecture_synthesis(
+            graph_data
+        )
     )
-
-    s1, s2, s3, s4 = st.columns(4)
-
-    with s1:
-        st.metric(
-            "Nodes",
-            stats["nodes"],
-        )
-
-    with s2:
-        st.metric(
-            "Relations",
-            stats["edges"],
-        )
-
-    with s3:
-        st.metric(
-            "Macro / Meso / Micro",
-            (
-                f"{stats['levels'].get('Macro', 0)} / "
-                f"{stats['levels'].get('Meso', 0)} / "
-                f"{stats['levels'].get('Micro', 0)}"
-            ),
-        )
-
-    with s4:
-        st.metric(
-            "Relation Types",
-            len(stats["relations"]),
-        )
 
 
     tabs = st.tabs(
