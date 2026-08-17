@@ -2906,6 +2906,127 @@ The resulting architecture should therefore be read primarily through **conceptu
 """.strip()
 
 
+
+# =============================================================================
+# PRACTICAL INNOVATION GUIDANCE FROM IMA ARCHITECTURE
+# =============================================================================
+
+def build_practical_innovation_guidance(graph, max_items=6):
+    """
+    Convert the useful architectural information from the IMA graph into a
+    compact deterministic briefing for Phase 2. This replaces the former
+    architecture-report exposition with actionable innovation guidance.
+    No additional AI call is made.
+    """
+    graph = normalize_graph_data(graph)
+    nodes = graph.get("nodes", [])
+    edges = graph.get("edges", [])
+
+    if not nodes:
+        return "No structured IMA graph is available. Derive practical constraints and implementation requirements directly from Phase 1."
+
+    def score(n):
+        try:
+            return float(n.get("importance", 0))
+        except (TypeError, ValueError):
+            return 0.0
+
+    def label(n):
+        return str(n.get("label", "")).strip()
+
+    def is_type(n, *types):
+        st = str(n.get("semantic_type", "")).lower()
+        layer = str(n.get("layer", "")).lower()
+        shape = str(n.get("shape", "")).lower()
+        return any(t in st or t in layer or t in shape for t in types)
+
+    groups = {
+        "goals": [],
+        "problems": [],
+        "processes": [],
+        "constraints": [],
+        "states": [],
+        "evidence": [],
+        "innovations": [],
+        "mental_approaches": [],
+    }
+
+    for n in nodes:
+        text = " ".join([
+            str(n.get("semantic_type", "")),
+            str(n.get("layer", "")),
+            str(n.get("shape", "")),
+            label(n),
+        ]).lower()
+        if any(k in text for k in ("goal", "vision", "mission")):
+            groups["goals"].append(n)
+        if "problem" in text or "conflict" in text:
+            groups["problems"].append(n)
+        if any(k in text for k in ("process", "operation", "method")):
+            groups["processes"].append(n)
+        if any(k in text for k in ("constraint", "rule", "ethic")):
+            groups["constraints"].append(n)
+        if "state" in text:
+            groups["states"].append(n)
+        if any(k in text for k in ("evidence", "data", "fact")):
+            groups["evidence"].append(n)
+        if "innovation" in text:
+            groups["innovations"].append(n)
+        if n.get("semantic_type") == "mental-approach":
+            groups["mental_approaches"].append(n)
+
+    for key in groups:
+        groups[key] = sorted(groups[key], key=score, reverse=True)[:max_items]
+
+    operational_types = {
+        "CAUSES", "ENABLES", "TRANSFORMS", "PRODUCES", "CONSUMES",
+        "FEEDS", "TRIGGERS", "PRECEDES", "CONSTRAINS", "MEASURES",
+        "VALIDATES", "IF-THEN",
+    }
+    node_map = {n.get("id"): n for n in nodes}
+    operational_edges = []
+    for e in edges:
+        if str(e.get("rel_type", "")) in operational_types:
+            a = node_map.get(e.get("source"), {})
+            b = node_map.get(e.get("target"), {})
+            if a and b:
+                operational_edges.append((
+                    float(e.get("weight", 1.0) or 1.0),
+                    label(a),
+                    str(e.get("rel_type", "")),
+                    label(b),
+                ))
+    operational_edges.sort(reverse=True)
+
+    def names(items):
+        return ", ".join(label(n) for n in items[:max_items] if label(n)) or "none explicitly identified"
+
+    edge_text = "; ".join(
+        f"{a} → {rel} → {b}"
+        for _, a, rel, b in operational_edges[:max_items]
+        if a and b
+    ) or "none explicitly identified"
+
+    return f"""
+PRACTICAL INNOVATION BRIEFING FROM THE IMA ARCHITECTURE
+=======================================================
+Use the following extracted architecture as an implementation-oriented design constraint for Phase 2. Do NOT reproduce it as a separate theoretical section in the final report.
+
+1. Desired outcomes / strategic direction: {names(groups['goals'])}
+2. Problems, gaps or conflicts to solve: {names(groups['problems'])}
+3. Processes and mechanisms already indicated by the knowledge structure: {names(groups['processes'])}
+4. Constraints, rules and ethical boundaries: {names(groups['constraints'])}
+5. Relevant system states / transitions: {names(groups['states'])}
+6. Evidence, facts or data anchors: {names(groups['evidence'])}
+7. Existing innovation/transformation concepts: {names(groups['innovations'])}
+8. Most relevant Mental Approaches already connected to the architecture: {names(groups['mental_approaches'])}
+9. Strong operational relations to preserve or exploit: {edge_text}
+
+PRACTICALITY REQUIREMENT
+------------------------
+For every proposed innovation, convert the architectural information above into concrete action. Explicitly identify: the user/problem served; the mechanism; required inputs and capabilities; dependencies; constraints; first prototype or pilot; measurable success criteria; responsible actor or organizational owner; principal implementation risk; mitigation; approximate implementation horizon; and the next executable step. Prefer innovations that can be tested, piloted, measured and progressively scaled over ideas that remain primarily conceptual.
+""".strip()
+
 # =============================================================================
 # GRAPH DISPLAY LIMITER
 # =============================================================================
@@ -4628,6 +4749,10 @@ The supplementary ideation frameworks above are not a substitute for MA.
             indent=2,
         )
 
+        practical_innovation_guidance = build_practical_innovation_guidance(
+            phase1_graph
+        )
+
         with st.spinner(
             f"PHASE 2 — MA All Mental Approaches innovation architecture with {p2_provider_name}..."
         ):
@@ -4642,6 +4767,11 @@ COMPLETED PHASE 1 — IMA KNOWLEDGE SYNTHESIS
 PHASE 1 IMA SEMANTIC GRAPH
 ============================================
 {phase1_graph_for_prompt}
+
+============================================
+PRACTICAL INNOVATION BRIEFING DERIVED FROM PHASE 1
+============================================
+{practical_innovation_guidance}
 
 ============================================
 USER INNOVATION OBJECTIVE
@@ -4726,9 +4856,6 @@ creating an unrelated graph.
         report_phase1 = re.sub(r"```(?:json)?", "", report_phase1, flags=re.I).strip()
         report_phase2 = re.sub(r"```(?:json)?", "", report_phase2, flags=re.I).strip()
 
-        compact_architecture_synthesis = compact_knowledge_architecture_synthesis(
-            integrated_graph
-        )
 
         integrated_report = f"""
 ## 🧠 PHASE 1 — IMA KNOWLEDGE SYNTHESIS
@@ -4743,16 +4870,6 @@ creating an unrelated graph.
 
 {report_phase2}
 
----
-
-## 🔗 INTEGRATED IMA → MA ARCHITECTURE
-
-The final hierarchograph integrates the most important concepts, structures,
-processes, innovations and Mental Approaches identified across both reports.
-Node importance is calculated from semantic connectivity, cross-phase
-bridging, structural level, relation strength and innovation relevance.
-
-{compact_architecture_synthesis}
 """
 
         # Interactive report links only use labels from the integrated graph.
@@ -4838,495 +4955,6 @@ if st.session_state.get("report_ready") and st.session_state.get("last_graph_dat
 
     st.divider()
 
-    st.markdown(
-        compact_knowledge_architecture_synthesis(
-            graph_data
-        )
-    )
-
-
-    tabs = st.tabs(
-        [
-            "🌳 Polyhierarchy",
-            "📐 UML",
-            "⚙️ Operational Logic",
-            "🔄 Feedback / States",
-            "💠 Innovations",
-            "🧠 Human Thinking / Mental Approaches",
-        ]
-    )
-
-    with tabs[0]:
-
-        st.markdown(
-            "### Polyhierarchical Structure"
-        )
-
-        for hierarchy in POLYHIERARCHY["hierarchies"]:
-
-            st.markdown(
-                f"""
-**{hierarchy['id']} — {hierarchy['name']}**
-
-Root: `{hierarchy['root']}`
-
-Relations: {", ".join(hierarchy['relations'])}
-"""
-            )
-
-        st.markdown(
-            "### Detected hierarchical relations"
-        )
-
-        hierarchical_edges = [
-            e
-            for e in graph_data["edges"]
-            if e["rel_type"]
-            in {
-                "TT",
-                "BT",
-                "NT",
-                "IN",
-                "Generalization",
-                "Specialization",
-                "Composition",
-                "Aggregation",
-                "Containment",
-            }
-        ]
-
-        for edge in hierarchical_edges[:100]:
-
-            source = next(
-                (
-                    n["label"]
-                    for n in graph_data["nodes"]
-                    if n["id"] == edge["source"]
-                ),
-                edge["source"],
-            )
-
-            target = next(
-                (
-                    n["label"]
-                    for n in graph_data["nodes"]
-                    if n["id"] == edge["target"]
-                ),
-                edge["target"],
-            )
-
-            st.markdown(
-                f"**{source}** → "
-                f"`{edge['rel_type']}` → "
-                f"**{target}**"
-            )
-
-
-    with tabs[1]:
-
-        st.markdown(
-            "### UML / Metamodel Relations"
-        )
-
-        uml_edges = [
-            e
-            for e in graph_data["edges"]
-            if e["rel_type"]
-            in {
-                "Generalization",
-                "Specialization",
-                "Composition",
-                "Aggregation",
-                "Containment",
-                "Realization",
-                "Dependency",
-                "Conflict",
-            }
-        ]
-
-        if uml_edges:
-
-            for edge in uml_edges[:100]:
-
-                source = next(
-                    (
-                        n["label"]
-                        for n in graph_data["nodes"]
-                        if n["id"] == edge["source"]
-                    ),
-                    edge["source"],
-                )
-
-                target = next(
-                    (
-                        n["label"]
-                        for n in graph_data["nodes"]
-                        if n["id"] == edge["target"]
-                    ),
-                    edge["target"],
-                )
-
-                st.markdown(
-                    f"**{source}** "
-                    f"`{edge['rel_type']}` "
-                    f"**{target}**"
-                )
-
-        else:
-            st.info(
-                "No explicit UML relation was generated."
-            )
-
-
-    with tabs[2]:
-
-        st.markdown(
-            "### Operational Transformations"
-        )
-
-        operational_edges = [
-            e
-            for e in graph_data["edges"]
-            if e["rel_type"]
-            in {
-                "CAUSES",
-                "ENABLES",
-                "TRANSFORMS",
-                "PRODUCES",
-                "CONSUMES",
-                "FEEDS",
-                "TRIGGERS",
-                "PRECEDES",
-                "CONSTRAINS",
-                "MEASURES",
-                "VALIDATES",
-                "IF-THEN",
-                "AND",
-                "OR",
-                "XOR",
-                "NOT",
-            }
-        ]
-
-        if operational_edges:
-
-            for edge in operational_edges[:120]:
-
-                source = next(
-                    (
-                        n["label"]
-                        for n in graph_data["nodes"]
-                        if n["id"] == edge["source"]
-                    ),
-                    edge["source"],
-                )
-
-                target = next(
-                    (
-                        n["label"]
-                        for n in graph_data["nodes"]
-                        if n["id"] == edge["target"]
-                    ),
-                    edge["target"],
-                )
-
-                st.markdown(
-                    f"**{source}** "
-                    f"`{edge['rel_type']}` "
-                    f"**{target}**"
-                )
-
-        else:
-            st.info(
-                "No explicit operational relations were generated."
-            )
-
-
-    with tabs[3]:
-
-        st.markdown(
-            "### System States and Feedback"
-
-        )
-
-        states = [
-            n
-            for n in graph_data["nodes"]
-            if n["layer"] == "state"
-            or n["shape"] == "round-rectangle"
-        ]
-
-        feedback = [
-            e
-            for e in graph_data["edges"]
-            if e["rel_type"]
-            in {
-                "FEEDBACK",
-                "POSITIVE-FEEDBACK",
-                "NEGATIVE-FEEDBACK",
-            }
-        ]
-
-        if states:
-
-            for state in states:
-
-                st.markdown(
-                    f"""
-**{state['label']}**
-
-Level: `{state['level']}`
-
-State: `{state['state'] or 'unspecified'}`
-
-{state['description']}
-"""
-                )
-
-        else:
-            st.info(
-                "No explicit system-state nodes were generated."
-            )
-
-        if feedback:
-
-            st.markdown(
-                "### Feedback loops"
-            )
-
-            for edge in feedback:
-
-                source = next(
-                    (
-                        n["label"]
-                        for n in graph_data["nodes"]
-                        if n["id"] == edge["source"]
-                    ),
-                    edge["source"],
-                )
-
-                target = next(
-                    (
-                        n["label"]
-                        for n in graph_data["nodes"]
-                        if n["id"] == edge["target"]
-                    ),
-                    edge["target"],
-                )
-
-                st.markdown(
-                    f"**{source}** "
-                    f"`{edge['rel_type']}` "
-                    f"**{target}**"
-                )
-
-        else:
-
-            st.info(
-                "No explicit feedback loop was generated."
-            )
-
-
-    with tabs[4]:
-
-        st.markdown(
-            "### Strategic Knowledge Transformations"
-        )
-
-        innovations = [
-            n
-            for n in graph_data["nodes"]
-            if n["shape"] == "diamond"
-        ]
-
-        if innovations:
-
-            for innovation in innovations:
-
-                query_url = urllib.parse.quote(
-                    innovation["label"]
-                )
-
-                st.markdown(
-                    f"""
-<div style="
-background:#ffffff;
-border-left:7px solid #f4a261;
-padding:24px;
-border-radius:15px;
-border:1px solid #eeeeee;
-margin-bottom:20px;
-box-shadow:0 5px 15px rgba(0,0,0,.06);
-">
-
-<div style="
-font-size:.75em;
-font-weight:800;
-color:#d97706;
-text-transform:uppercase;
-letter-spacing:1px;
-">
-HIERARCHOGRAPHIC INNOVATION
-</div>
-
-<h2 style="
-color:#1d3557;
-margin-bottom:12px;
-">
-{html.escape(innovation['label'])}
-</h2>
-
-<p>
-{html.escape(innovation['description'])}
-</p>
-
-<p>
-<b>Level:</b> {html.escape(innovation['level'])}
-&nbsp;&nbsp;
-<b>Layer:</b> {html.escape(innovation['layer'])}
-</p>
-
-<a href="https://www.google.com/search?q={query_url}"
-target="_blank">
-Technical semantic search ↗
-</a>
-
-</div>
-""",
-                    unsafe_allow_html=True,
-                )
-
-        else:
-
-            st.info(
-                "No diamond innovation nodes were generated."
-            )
-
-
-    with tabs[5]:
-
-        st.markdown(
-            "### Human Thinking Metamodel nodes present in the graph"
-        )
-
-        htm_nodes = [
-            n
-            for n in graph_data["nodes"]
-            if n["semantic_type"] == "human-thinking-metamodel"
-        ]
-
-        if htm_nodes:
-            for node in htm_nodes:
-                st.markdown(
-                    f"**{node['label']}** (`{node['shape']}`, "
-                    f"{node['level']}) — {node['description']}"
-                )
-        else:
-            st.info(
-                "No Human Thinking Metamodel nodes detected."
-            )
-
-        st.markdown(
-            "### Mental Approaches present in the graph"
-        )
-
-        ma_nodes = [
-            n
-            for n in graph_data["nodes"]
-            if n["semantic_type"] == "mental-approach"
-        ]
-
-        if ma_nodes:
-            for node in ma_nodes:
-                st.markdown(
-                    f"**{node['label']}** — {node['description']}"
-                )
-        else:
-            st.info(
-                "No Mental Approach nodes detected."
-            )
-
-
-    st.markdown(
-        """
-<div class="graph-legend">
-
-<b style="color:#1d3557;">
-HIERARCHOGRAPHIC VISUAL LANGUAGE
-</b>
-
-<br><br>
-
-<b>Geometry</b><br>
-⭐ Goal / Vision &nbsp;|
-⬢ Domain &nbsp;|
-💠 Innovation &nbsp;|
-△ Process &nbsp;|
-⬣ Rule &nbsp;|
-⬭ Entity &nbsp;|
-▭ Fact / Concept &nbsp;|
-▢ State
-
-<br><br>
-
-<b>Hierarchy</b><br>
-TT = Top Term |
-BT = Broader Term |
-NT = Narrower Term |
-IN = Instance
-
-<br><br>
-
-<b>Association</b><br>
-RT = Related |
-EQ = Equivalence |
-AS = Associative
-
-<br><br>
-
-<b>UML</b><br>
-Generalization |
-Specialization |
-Composition |
-Aggregation |
-Containment |
-Realization |
-Dependency |
-Conflict
-
-<br><br>
-
-<b>Operation</b><br>
-CAUSES |
-ENABLES |
-TRANSFORMS |
-PRODUCES |
-CONSUMES |
-FEEDS |
-TRIGGERS |
-PRECEDES
-
-<br><br>
-
-<b>Logic</b><br>
-AND |
-OR |
-XOR |
-NOT |
-IF-THEN
-
-<br><br>
-
-<b>System Dynamics</b><br>
-FEEDBACK |
-POSITIVE-FEEDBACK |
-NEGATIVE-FEEDBACK
-
-</div>
-""",
-        unsafe_allow_html=True,
-    )
-
 
     st.divider()
 
@@ -5366,9 +4994,10 @@ NEGATIVE-FEEDBACK
     )
 
     st.caption(
-        "The graph simultaneously represents semantic hierarchy, "
-        "polyhierarchy, associative relations, UML structure, "
-        "operational transformations, system states and feedback. "
+        "The hierarchograph is used as an operational design substrate for the "
+        "innovation phase: it exposes goals, problems, constraints, processes, "
+        "states, evidence, Mental Approaches and transformation relations that "
+        "can be converted into practical, testable and implementable solutions. "
         f"Displayed nodes: up to {graph_node_limit}. "
         f"Currently showing {len(filtered_graph['nodes'])} nodes after component filter. "
         "Use the ➕/➖ ZOOM buttons or the mouse wheel to zoom in and out. "
