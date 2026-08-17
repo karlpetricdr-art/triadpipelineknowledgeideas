@@ -19,7 +19,7 @@ import streamlit.components.v1 as components
 # =============================================================================
 
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v24.0.0-IMA-MA-TWO-PHASE-PRO"
+VERSION_CODE = "v24.1.0-IMA-MA-PRACTICAL-VISIONARY-BLUEPRINT"
 
 # =============================================================================
 # MODEL CATALOG
@@ -59,17 +59,11 @@ DEFAULT_SESSION = {
     "selected_graph_components": [
         "Innovations",
         "Science Fields",
-        "Scientific Paradigms",
-        "Structural Models",
+        "Goals / Vision",
         "Human Thinking Metamodel",
         "Mental Approaches",
         "Processes",
-        "Goals / Vision",
-        "Constraints / Rules",
-        "Entities",
         "Facts / Concepts",
-        "System States",
-        "Data / Evidence",
     ],
 }
 
@@ -2082,6 +2076,13 @@ def enrich_graph_with_architecture(graph, selected_sciences):
             add_edge(state_nodes[2]["id"], state_nodes[0]["id"], "NEGATIVE-FEEDBACK", 0.7)
             add_edge(state_nodes[0]["id"], state_nodes[1]["id"], "POSITIVE-FEEDBACK", 0.65)
 
+    # Explicit innovation ↔ science bridges are represented as thesaurus
+    # RT relations so they remain visible in the simplified blueprint.
+    for innovation in innovation_nodes[:20]:
+        for domain in domain_nodes[:15]:
+            if semantic_related(innovation, domain, threshold=0.24):
+                add_edge(innovation["id"], domain["id"], "RT", 0.8)
+
     return {
         "nodes": nodes,
         "edges": edges,
@@ -3042,6 +3043,170 @@ def limit_graph_nodes(graph, max_nodes=80):
 
 
 # =============================================================================
+# INNOVATION BLUEPRINT GRAPH
+# =============================================================================
+
+def build_innovation_blueprint_graph(graph, max_nodes=80):
+    """
+    Build the presentation layer for the final innovation blueprint.
+
+    The complete IMA/MA graph remains intact. This function only selects the
+    most useful visual substrate: innovations and science fields are primary
+    anchors, while goals, relevant IMA concepts, Mental Approaches and directly
+    connected supporting nodes are retained where they clarify realization.
+    """
+    graph = rank_integrated_graph(normalize_graph_data(graph))
+    nodes = graph.get("nodes", [])
+    edges = graph.get("edges", [])
+
+    if not nodes:
+        return graph
+
+    node_map = {n["id"]: n for n in nodes}
+
+    def is_innovation(n):
+        return (
+            n.get("layer") == "innovation"
+            or n.get("semantic_type") == "innovation"
+            or n.get("shape") == "diamond"
+        )
+
+    def is_science(n):
+        return (
+            n.get("layer") == "domain"
+            or n.get("semantic_type") == "science-domain"
+            or n.get("shape") == "hexagon"
+        )
+
+    def is_goal(n):
+        return n.get("layer") == "goal" or n.get("shape") == "star"
+
+    def is_support(n):
+        return (
+            n.get("semantic_type") in {
+                "human-thinking-metamodel",
+                "mental-approach",
+                "mental-approaches-hub",
+                "root",
+            }
+            or n.get("layer") in {
+                "process", "constraint", "fact", "state", "entity", "data"
+            }
+        )
+
+    innovations = sorted(
+        [n for n in nodes if is_innovation(n)],
+        key=lambda x: x.get("importance", 0),
+        reverse=True,
+    )
+    sciences = sorted(
+        [n for n in nodes if is_science(n)],
+        key=lambda x: x.get("importance", 0),
+        reverse=True,
+    )
+    goals = sorted(
+        [n for n in nodes if is_goal(n)],
+        key=lambda x: x.get("importance", 0),
+        reverse=True,
+    )
+
+    selected = set()
+
+    # Primary blueprint anchors.
+    for n in innovations:
+        selected.add(n["id"])
+    for n in sciences:
+        selected.add(n["id"])
+
+    # Keep the root and only the strongest strategic goals for orientation.
+    root = next(
+        (
+            n for n in nodes
+            if n.get("semantic_type") == "root"
+            or n.get("id") == "knowledge_root"
+        ),
+        None,
+    )
+    if root:
+        selected.add(root["id"])
+    for n in goals[:4]:
+        selected.add(n["id"])
+
+    adjacency = {n["id"]: [] for n in nodes}
+    for e in edges:
+        s, t = e.get("source"), e.get("target")
+        if s in adjacency and t in adjacency:
+            w = float(e.get("weight", 1.0) or 1.0)
+            adjacency[s].append((t, w, e))
+            adjacency[t].append((s, w, e))
+
+    # First ring: strongest direct relationships around the blueprint anchors.
+    frontier = []
+    for aid in list(selected):
+        for other, weight, edge in adjacency.get(aid, []):
+            if other in selected:
+                continue
+            n = node_map.get(other)
+            if not n:
+                continue
+
+            score = float(n.get("importance", 0))
+            score += weight * 20
+            if edge.get("rel_type") in PRIMARY_GRAPH_RELATIONS:
+                score += 18
+            if n.get("semantic_type") == "mental-approach":
+                score += 12
+            if n.get("source_phase") == "IMA+MA":
+                score += 10
+            if n.get("layer") == "process":
+                score += 7
+            frontier.append((score, other))
+
+    for _, nid in sorted(frontier, reverse=True):
+        if len(selected) >= max_nodes:
+            break
+        selected.add(nid)
+
+    # Second ring: only supporting nodes that materially explain the blueprint.
+    frontier2 = []
+    for aid in list(selected):
+        for other, weight, edge in adjacency.get(aid, []):
+            if other in selected:
+                continue
+            n = node_map.get(other)
+            if not n or not is_support(n):
+                continue
+
+            score = float(n.get("importance", 0)) + weight * 15
+            if edge.get("rel_type") in PRIMARY_GRAPH_RELATIONS:
+                score += 15
+            if n.get("semantic_type") in {
+                "human-thinking-metamodel", "mental-approach"
+            }:
+                score += 10
+            frontier2.append((score, other))
+
+    for _, nid in sorted(frontier2, reverse=True):
+        if len(selected) >= max_nodes:
+            break
+        selected.add(nid)
+
+    # Never let a node cap accidentally remove the strongest innovations.
+    for n in innovations:
+        if len(selected) >= max_nodes:
+            break
+        selected.add(n["id"])
+
+    selected_nodes = [n for n in nodes if n["id"] in selected]
+    selected_edges = [
+        e for e in edges
+        if e.get("source") in selected and e.get("target") in selected
+    ]
+
+    return {"nodes": selected_nodes, "edges": selected_edges}
+
+
+# =============================================================================
 # GRAPH RELATION VISIBILITY
 # =============================================================================
 
@@ -3334,8 +3499,8 @@ Facts · entities · states<br><br>
 <b>Vertical:</b> hierarchy / taxonomy<br>
 <b>Horizontal:</b> association / relation<br>
 <b>Operational:</b> transformation / process<br>
+<b>Blueprint:</b> innovations + science fields are primary anchors<br>
 <b>Cross-phase:</b> IMA ↔ MA bridge concepts are prioritized<br>
-<b>Feedback:</b> cyclic system regulation<br>
 <b>Primary edges:</b> thesaurus · UML · IF-THEN / AND / OR / XOR / NOT<br>
 <b>Additional edges:</b> optional operational relations
 </div>
@@ -3985,9 +4150,28 @@ contain, in this order:
    selected sciences, paradigms and structural models.
 8. Critical assessment — expose contradictions, gaps, assumptions and
    scientific/operational limitations.
-9. Strategic knowledge implications — identify the knowledge structures that
-   Phase 2 should transform, without proposing the innovations themselves.
-10. Conclusion.
+9. Knowledge integration and synthesis — explicitly distinguish the most
+   important convergences, complementarities and tensions among concepts,
+   scientific fields, paradigms, structural models and the IMA architecture.
+10. Evidence, limitations and unresolved questions — identify what is well
+    supported, what is inferential, what remains uncertain and what should be
+    validated in subsequent work.
+11. Strategic knowledge implications — identify the knowledge structures,
+    relationships and mechanisms that Phase 2 should transform, without
+    proposing the innovations themselves.
+12. Conclusion — provide a substantive synthesis of the inquiry, including
+    the most important implications for subsequent innovation work.
+
+REPORT DEPTH
+===========
+The report should be somewhat more exhaustive than a conventional summary.
+Develop the reasoning behind the major relationships instead of merely naming
+them. Explain why the central concepts belong together, how the selected
+sciences complement one another, how the IMA elements interact, and where
+the architecture reveals important gaps or opportunities. Prefer analytical
+depth and meaningful synthesis over repetition. The final report should give
+the reader a coherent intellectual model of the inquiry, not merely a list of
+components.
 
 Do NOT solve the innovation objective in Phase 1. Phase 1 creates the
 knowledge substrate from which Phase 2 will innovate.
@@ -4072,29 +4256,43 @@ and transform it exclusively in response to the explicit Innovation Objective.
 Do not repeat Phase 1 as background. Find what can be invented, recombined,
 reframed, improved, operationalized or implemented.
 
-VISIONARY BUT REALISTIC INNOVATION
-==================================
-Every proposed innovation must satisfy BOTH criteria:
-1. VISIONARY: it should create a meaningful new configuration, capability,
-   relationship, service, process, technology or conceptual architecture.
-2. REALIZABLE: it must remain within a defensible path of technical,
-   organizational, economic, ethical/legal and temporal feasibility.
+VISIONARY + PRACTICAL INNOVATION DISCIPLINE
+=============================================
+Every proposed innovation must satisfy BOTH criteria simultaneously:
+1. VISIONARY: it should create a genuinely new configuration, capability,
+relationship, service, process, technology, organizational arrangement or
+conceptual architecture that could have meaningful long-term impact.
+2. PRACTICAL: it must have a credible path from the present situation to a
+working prototype, pilot, service, process or deployable capability.
 
-Do not confuse visionary with speculative. Avoid science-fiction claims,
-unsupported technological promises and impossible implementation assumptions.
+The objective is NOT to choose between visionary and practical ideas. The
+strongest innovations should be both: ambitious in destination and concrete
+in execution. Do not confuse visionary with speculative. Avoid science-fiction
+claims, unsupported technological promises and impossible implementation
+assumptions.
 
 For each major innovation, explicitly reason about:
-- novelty and value;
-- the problem/gap it addresses;
-- mechanism of action;
-- the Mental Approaches that generated it;
-- required knowledge, technology and organizational capabilities;
-- feasibility across technical, organizational, economic, ethical/legal and
-  temporal dimensions;
+- the unmet need, user or system problem;
+- novelty and distinctive value;
+- the mechanism of action;
+- the Mental Approaches that generated and shaped it;
+- the sciences and Phase 1 concepts it recombines;
+- required knowledge, technology, data and organizational capabilities;
+- a concrete first prototype, pilot or proof-of-concept;
+- implementation dependencies and prerequisites;
+- technical, organizational, economic, ethical/legal and temporal feasibility;
 - principal risks and failure modes;
-- validation or pilot strategy;
-- first practical implementation step;
-- expected near-term, medium-term and long-term horizon.
+- measurable success criteria and validation method;
+- responsible actor, team or organizational owner where identifiable;
+- first executable next step;
+- near-term (0–2 years), medium-term (3–5 years) and long-term (6–10+ years)
+development path;
+- the visionary end-state if the innovation succeeds at scale.
+
+Each innovation should therefore be readable as a mini blueprint: WHAT is
+being created, WHY it matters, HOW it works, WHAT is needed to build it,
+HOW it can first be tested, HOW success is measured, and WHAT larger future
+state it could enable.
 
 PROFESSIONAL PHASE 2 REPORT
 ===========================
@@ -5018,7 +5216,7 @@ if st.session_state.get("report_ready") and st.session_state.get("last_graph_dat
     st.divider()
 
     st.subheader(
-        "🕸️ INTEGRATED IMA → MA PRIMARY HIERARCHOGRAPH"
+        "🧭 IMA → MA INNOVATION BLUEPRINT HIERARCHOGRAPH"
     )
 
     # -------------------------------------------------------------------------
@@ -5046,9 +5244,15 @@ if st.session_state.get("report_ready") and st.session_state.get("last_graph_dat
 
     st.session_state.selected_graph_components = selected_components
 
-    # Apply component filter
-    filtered_graph = filter_graph_by_components(
+    # Build the innovation-centric presentation layer without changing
+    # the underlying integrated IMA → MA knowledge graph.
+    blueprint_graph = build_innovation_blueprint_graph(
         graph_data,
+        max_nodes=graph_node_limit,
+    )
+
+    filtered_graph = filter_graph_by_components(
+        blueprint_graph,
         selected_components,
     )
 
@@ -5065,11 +5269,13 @@ if st.session_state.get("report_ready") and st.session_state.get("last_graph_dat
     )
 
     st.caption(
-        "The hierarchograph is used as an operational design substrate for the "
-        "innovation phase. To keep it understandable, the default view emphasises "
-        "thesaurus hierarchy/association, UML structure and explicit logical "
-        "relations. Additional operational relations remain available on demand. "
-        f"Displayed nodes: up to {graph_node_limit}. "
+        "The hierarchograph is presented as an **innovation blueprint**. "
+        "Innovations and involved science fields form the primary anchors; "
+        "selected IMA/MA concepts, goals and supporting nodes explain the route "
+        "from knowledge to implementation. The default visual language is limited "
+        "to thesaurus relations, UML relations and IF-THEN / AND / OR / XOR / NOT. "
+        "Additional operational relations remain available on demand. "
+        f"Blueprint capacity: up to {graph_node_limit} nodes. "
         f"Currently showing {len(filtered_graph['nodes'])} nodes after component filter. "
         "Use the ➕/➖ ZOOM buttons or the mouse wheel to zoom in and out."
     )
@@ -5078,7 +5284,7 @@ if st.session_state.get("report_ready") and st.session_state.get("last_graph_dat
         filtered_graph,
         layout_type=graph_perspective,
         container_id="primary_graph",
-        max_nodes=graph_node_limit,
+        max_nodes=None,
         show_additional_relations=show_additional_relations,
     )
 
@@ -5102,16 +5308,21 @@ if (
     )
 
     st.info(
-        "The same knowledge architecture is displayed through different "
-        "visual grammars. The data model remains identical. Every view "
-        "supports mouse-wheel zoom and the ➕/➖ ZOOM buttons. "
-        "Relation types are always shown on edges. "
+        "The same innovation blueprint is displayed through different visual "
+        "grammars. The complete underlying knowledge model remains unchanged. "
+        "Innovations and science fields remain the principal anchors, while "
+        "thesaurus, UML and basic logical relations keep the blueprint readable. "
+        "Every view supports mouse-wheel zoom and the ➕/➖ ZOOM buttons. "
         "The component filter selected above also applies to the gallery."
     )
 
-    # Re-use the same filter for the gallery
-    gallery_base = filter_graph_by_components(
+    # Re-use the same innovation-blueprint layer for the gallery.
+    gallery_blueprint = build_innovation_blueprint_graph(
         st.session_state.final_graph_elements,
+        max_nodes=graph_node_limit,
+    )
+    gallery_base = filter_graph_by_components(
+        gallery_blueprint,
         st.session_state.get("selected_graph_components", GRAPH_COMPONENT_OPTIONS),
     )
 
