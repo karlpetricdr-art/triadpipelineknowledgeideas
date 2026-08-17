@@ -3042,6 +3042,59 @@ def limit_graph_nodes(graph, max_nodes=80):
 
 
 # =============================================================================
+# GRAPH RELATION VISIBILITY
+# =============================================================================
+
+# Default visual language: keep the graph understandable by prioritising
+# thesaurus, UML and explicit logical relations. Operational relations remain
+# available through an optional display switch.
+PRIMARY_GRAPH_RELATIONS = {
+    # Thesaurus / hierarchical-associative relations
+    "TT", "BT", "NT", "RT", "EQ", "AS", "IN",
+    # UML relations
+    "Generalization", "Specialization", "Composition", "Aggregation",
+    "Containment", "Realization", "Dependency", "Conflict",
+    # Explicit logical relations
+    "IF-THEN", "AND", "OR", "XOR", "NOT",
+}
+
+LOGICAL_GRAPH_RELATIONS = {
+    "IF-THEN", "AND", "OR", "XOR", "NOT",
+}
+
+THESAURUS_GRAPH_RELATIONS = {
+    "TT", "BT", "NT", "RT", "EQ", "AS", "IN",
+}
+
+UML_GRAPH_RELATIONS = {
+    "Generalization", "Specialization", "Composition", "Aggregation",
+    "Containment", "Realization", "Dependency", "Conflict",
+}
+
+
+def filter_graph_relations_for_display(graph, show_additional_relations=False):
+    """
+    Simplify the visual graph without changing the underlying knowledge graph.
+
+    By default only thesaurus, UML and explicit logical relations are shown.
+    Other operational relations can be enabled by the user when needed.
+    Nodes are never deleted here; only visual edges are filtered.
+    """
+    graph = normalize_graph_data(graph)
+    if show_additional_relations:
+        return graph
+
+    edges = [
+        e for e in graph["edges"]
+        if e.get("rel_type") in PRIMARY_GRAPH_RELATIONS
+    ]
+    return {
+        "nodes": graph["nodes"],
+        "edges": edges,
+    }
+
+
+# =============================================================================
 # CYTOSCAPE HIERARCHOGRAPHIC RENDERER
 # =============================================================================
 
@@ -3050,8 +3103,13 @@ def render_cytoscape_network(
     layout_type="hierarchical",
     container_id="cy_canvas",
     max_nodes=None,
+    show_additional_relations=False,
 ):
     graph = limit_graph_nodes(graph, max_nodes=max_nodes)
+    graph = filter_graph_relations_for_display(
+        graph,
+        show_additional_relations=show_additional_relations,
+    )
 
     elements = []
 
@@ -3278,7 +3336,8 @@ Facts · entities · states<br><br>
 <b>Operational:</b> transformation / process<br>
 <b>Cross-phase:</b> IMA ↔ MA bridge concepts are prioritized<br>
 <b>Feedback:</b> cyclic system regulation<br>
-<b>Edge labels:</b> relation type always visible
+<b>Primary edges:</b> thesaurus · UML · IF-THEN / AND / OR / XOR / NOT<br>
+<b>Additional edges:</b> optional operational relations
 </div>
 
 <div id="toolbar">
@@ -4993,15 +5052,26 @@ if st.session_state.get("report_ready") and st.session_state.get("last_graph_dat
         selected_components,
     )
 
+    show_additional_relations = st.checkbox(
+        "⚙️ Show additional operational relations",
+        value=False,
+        key="show_additional_graph_relations",
+        help=(
+            "By default the graph shows only the most intelligible relations: "
+            "thesaurus, UML and IF-THEN / AND / OR / XOR / NOT. Enable this "
+            "option to reveal additional causal, transformational, feedback "
+            "and other operational relations."
+        ),
+    )
+
     st.caption(
         "The hierarchograph is used as an operational design substrate for the "
-        "innovation phase: it exposes goals, problems, constraints, processes, "
-        "states, evidence, Mental Approaches and transformation relations that "
-        "can be converted into practical, testable and implementable solutions. "
+        "innovation phase. To keep it understandable, the default view emphasises "
+        "thesaurus hierarchy/association, UML structure and explicit logical "
+        "relations. Additional operational relations remain available on demand. "
         f"Displayed nodes: up to {graph_node_limit}. "
         f"Currently showing {len(filtered_graph['nodes'])} nodes after component filter. "
-        "Use the ➕/➖ ZOOM buttons or the mouse wheel to zoom in and out. "
-        "Edge labels show the relation type (TT/BT/NT/RT/UML/operational)."
+        "Use the ➕/➖ ZOOM buttons or the mouse wheel to zoom in and out."
     )
 
     render_cytoscape_network(
@@ -5009,6 +5079,7 @@ if st.session_state.get("report_ready") and st.session_state.get("last_graph_dat
         layout_type=graph_perspective,
         container_id="primary_graph",
         max_nodes=graph_node_limit,
+        show_additional_relations=show_additional_relations,
     )
 
 
@@ -5080,6 +5151,9 @@ if (
                 layout_type=view,
                 container_id=f"gallery_{view}",
                 max_nodes=graph_node_limit,
+                show_additional_relations=st.session_state.get(
+                    "show_additional_graph_relations", False
+                ),
             )
 
 
