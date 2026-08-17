@@ -19,7 +19,7 @@ import streamlit.components.v1 as components
 # =============================================================================
 
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v24.1.0-IMA-MA-PRACTICAL-VISIONARY-BLUEPRINT"
+VERSION_CODE = "v24.2.0-IMA-MA-INNOVATION-BLUEPRINT-CLEAR"
 
 # =============================================================================
 # MODEL CATALOG
@@ -1160,7 +1160,11 @@ def filter_graph_by_components(graph, selected_components):
         if e.get("source") in kept_ids and e.get("target") in kept_ids
     ]
 
-    return {"nodes": filtered_nodes, "edges": filtered_edges}
+    return {
+        "nodes": filtered_nodes,
+        "edges": filtered_edges,
+        "blueprint_mode": graph.get("blueprint_mode", False),
+    }
 
 
 # =============================================================================
@@ -3047,20 +3051,22 @@ def limit_graph_nodes(graph, max_nodes=80):
 # =============================================================================
 
 def build_innovation_blueprint_graph(graph, max_nodes=80):
-    """
-    Build the presentation layer for the final innovation blueprint.
+    """Create a deliberately sparse, innovation-centred blueprint projection.
 
-    The complete IMA/MA graph remains intact. This function only selects the
-    most useful visual substrate: innovations and science fields are primary
-    anchors, while goals, relevant IMA concepts, Mental Approaches and directly
-    connected supporting nodes are retained where they clarify realization.
+    The complete IMA/MA graph is preserved in the underlying architecture.
+    This function changes only the presentation layer: innovations and involved
+    sciences become the primary visual elements, while the relation vocabulary
+    is restricted to thesaurus, UML and IF-THEN / AND / OR / XOR / NOT.
+
+    The most important readability rule is edge sparsity: each innovation is
+    connected to at most two strongest science fields. This prevents the visual
+    result from becoming a dense semantic network or "hairball".
     """
     graph = rank_integrated_graph(normalize_graph_data(graph))
     nodes = graph.get("nodes", [])
     edges = graph.get("edges", [])
-
     if not nodes:
-        return graph
+        return {"nodes": [], "edges": [], "blueprint_mode": True}
 
     node_map = {n["id"]: n for n in nodes}
 
@@ -3081,129 +3087,192 @@ def build_innovation_blueprint_graph(graph, max_nodes=80):
     def is_goal(n):
         return n.get("layer") == "goal" or n.get("shape") == "star"
 
-    def is_support(n):
-        return (
-            n.get("semantic_type") in {
-                "human-thinking-metamodel",
-                "mental-approach",
-                "mental-approaches-hub",
-                "root",
-            }
-            or n.get("layer") in {
-                "process", "constraint", "fact", "state", "entity", "data"
-            }
-        )
-
     innovations = sorted(
         [n for n in nodes if is_innovation(n)],
-        key=lambda x: x.get("importance", 0),
+        key=lambda x: float(x.get("importance", 0) or 0),
         reverse=True,
     )
     sciences = sorted(
         [n for n in nodes if is_science(n)],
-        key=lambda x: x.get("importance", 0),
+        key=lambda x: float(x.get("importance", 0) or 0),
         reverse=True,
     )
     goals = sorted(
         [n for n in nodes if is_goal(n)],
-        key=lambda x: x.get("importance", 0),
+        key=lambda x: float(x.get("importance", 0) or 0),
         reverse=True,
     )
 
-    selected = set()
+    # Keep the number of innovation ideas compact and readable.
+    innovation_cap = min(8, max(3, max_nodes // 3))
+    selected_innovations = innovations[:innovation_cap]
 
-    # Primary blueprint anchors.
-    for n in innovations:
-        selected.add(n["id"])
-    for n in sciences:
-        selected.add(n["id"])
-
-    # Keep the root and only the strongest strategic goals for orientation.
-    root = next(
-        (
-            n for n in nodes
-            if n.get("semantic_type") == "root"
-            or n.get("id") == "knowledge_root"
-        ),
-        None,
-    )
-    if root:
-        selected.add(root["id"])
-    for n in goals[:4]:
-        selected.add(n["id"])
-
-    adjacency = {n["id"]: [] for n in nodes}
-    for e in edges:
-        s, t = e.get("source"), e.get("target")
-        if s in adjacency and t in adjacency:
-            w = float(e.get("weight", 1.0) or 1.0)
-            adjacency[s].append((t, w, e))
-            adjacency[t].append((s, w, e))
-
-    # First ring: strongest direct relationships around the blueprint anchors.
-    frontier = []
-    for aid in list(selected):
-        for other, weight, edge in adjacency.get(aid, []):
-            if other in selected:
-                continue
-            n = node_map.get(other)
-            if not n:
-                continue
-
-            score = float(n.get("importance", 0))
-            score += weight * 20
-            if edge.get("rel_type") in PRIMARY_GRAPH_RELATIONS:
-                score += 18
-            if n.get("semantic_type") == "mental-approach":
-                score += 12
-            if n.get("source_phase") == "IMA+MA":
-                score += 10
-            if n.get("layer") == "process":
-                score += 7
-            frontier.append((score, other))
-
-    for _, nid in sorted(frontier, reverse=True):
-        if len(selected) >= max_nodes:
-            break
-        selected.add(nid)
-
-    # Second ring: only supporting nodes that materially explain the blueprint.
-    frontier2 = []
-    for aid in list(selected):
-        for other, weight, edge in adjacency.get(aid, []):
-            if other in selected:
-                continue
-            n = node_map.get(other)
-            if not n or not is_support(n):
-                continue
-
-            score = float(n.get("importance", 0)) + weight * 15
-            if edge.get("rel_type") in PRIMARY_GRAPH_RELATIONS:
-                score += 15
-            if n.get("semantic_type") in {
-                "human-thinking-metamodel", "mental-approach"
-            }:
-                score += 10
-            frontier2.append((score, other))
-
-    for _, nid in sorted(frontier2, reverse=True):
-        if len(selected) >= max_nodes:
-            break
-        selected.add(nid)
-
-    # Never let a node cap accidentally remove the strongest innovations.
-    for n in innovations:
-        if len(selected) >= max_nodes:
-            break
-        selected.add(n["id"])
-
-    selected_nodes = [n for n in nodes if n["id"] in selected]
-    selected_edges = [
+    primary_edges = [
         e for e in edges
-        if e.get("source") in selected and e.get("target") in selected
+        if e.get("rel_type") in PRIMARY_GRAPH_RELATIONS
     ]
 
-    return {"nodes": selected_nodes, "edges": selected_edges}
+    adjacency = {n["id"]: [] for n in nodes}
+    for e in primary_edges:
+        s, t = e.get("source"), e.get("target")
+        if s in adjacency and t in adjacency:
+            adjacency[s].append((t, float(e.get("weight", 1.0) or 1.0), e))
+            adjacency[t].append((s, float(e.get("weight", 1.0) or 1.0), e))
+
+    selected_science_ids = set()
+    innovation_science_pairs = []
+
+    # One or two science fields per innovation: existing semantic links first,
+    # semantic similarity only as a controlled fallback.
+    for innovation in selected_innovations:
+        iid = innovation["id"]
+        candidates = []
+
+        for sid, weight, edge in adjacency.get(iid, []):
+            science = node_map.get(sid)
+            if not science or not is_science(science):
+                continue
+            relation = edge.get("rel_type", "RT")
+            bonus = 50 if relation in THESAURUS_GRAPH_RELATIONS else 30
+            bonus += 20 if relation in UML_GRAPH_RELATIONS else 0
+            score = bonus + weight * 25 + float(science.get("importance", 0) or 0)
+            candidates.append((score, sid, edge))
+
+        if len(candidates) < 2:
+            for science in sciences:
+                sid = science["id"]
+                if any(c[1] == sid for c in candidates):
+                    continue
+                similarity = semantic_similarity(innovation, science)
+                if similarity <= 0:
+                    continue
+                score = 35 * similarity + float(science.get("importance", 0) or 0) * 0.25
+                candidates.append((score, sid, None))
+
+        candidates.sort(key=lambda x: x[0], reverse=True)
+        for score, sid, existing_edge in candidates[:2]:
+            selected_science_ids.add(sid)
+            innovation_science_pairs.append((iid, sid, score, existing_edge))
+
+    # Guarantee a small scientific foundation even when the generated concepts
+    # contain no usable lexical overlap with the selected science vocabulary.
+    if not selected_science_ids and sciences:
+        for science in sciences[:min(4, max(1, max_nodes - len(selected_innovations)))]:
+            selected_science_ids.add(science["id"])
+
+    selected_sciences = [
+        node_map[sid] for sid in selected_science_ids if sid in node_map
+    ]
+
+    selected_goal = goals[0] if goals else None
+    selected_ids = {n["id"] for n in selected_innovations}
+    selected_ids.update(n["id"] for n in selected_sciences)
+    if selected_goal:
+        selected_ids.add(selected_goal["id"])
+
+    # Rebuild only the edges that belong to the blueprint. This is the decisive
+    # simplification: unrelated entities, processes, states and data cannot
+    # create visual noise in this view.
+    blueprint_edges = []
+    edge_keys = set()
+
+    def add_edge(source, target, relation, weight=1.0, full_label=None):
+        if source not in selected_ids or target not in selected_ids or source == target:
+            return
+        key = (source, target, relation)
+        reverse_key = (target, source, relation)
+        if key in edge_keys or reverse_key in edge_keys:
+            return
+        edge_keys.add(key)
+        blueprint_edges.append({
+            "id": f"blueprint_{len(blueprint_edges) + 1}",
+            "source": source,
+            "target": target,
+            "rel_type": relation,
+            "label": relation,
+            "full_label": full_label or RELATION_DEFINITIONS.get(relation, relation),
+            "weight": float(weight or 1.0),
+            "direction": "directed",
+        })
+
+    # Preserve genuine thesaurus/UML/logical relations among the selected nodes.
+    for edge in primary_edges:
+        source = edge.get("source")
+        target = edge.get("target")
+        if source in selected_ids and target in selected_ids:
+            add_edge(
+                source,
+                target,
+                edge.get("rel_type", "RT"),
+                edge.get("weight", 1.0),
+                edge.get("full_label"),
+            )
+
+    # Explicitly show the strongest innovation ↔ science associations. RT is a
+    # thesaurus association and therefore remains inside the requested language.
+    for iid, sid, score, existing_edge in innovation_science_pairs:
+        relation = "RT"
+        if existing_edge and existing_edge.get("rel_type") in PRIMARY_GRAPH_RELATIONS:
+            relation = existing_edge.get("rel_type")
+        add_edge(iid, sid, relation, min(1.5, max(0.7, score / 60.0)))
+
+    # The strategic goal is included only when a real primary relation already
+    # connects it with an innovation. No artificial edge is created.
+    if selected_goal:
+        gid = selected_goal["id"]
+        innovation_ids = {n["id"] for n in selected_innovations}
+        for edge in primary_edges:
+            source = edge.get("source")
+            target = edge.get("target")
+            if gid in {source, target}:
+                other = target if source == gid else source
+                if other in innovation_ids:
+                    add_edge(
+                        source,
+                        target,
+                        edge.get("rel_type", "RT"),
+                        edge.get("weight", 1.0),
+                        edge.get("full_label"),
+                    )
+
+    # Presentation metadata for the deterministic three-band blueprint layout.
+    blueprint_nodes = []
+    if selected_goal:
+        goal_node = dict(selected_goal)
+        goal_node["blueprint_role"] = "goal"
+        goal_node["blueprint_rank"] = 0
+        blueprint_nodes.append(goal_node)
+
+    for rank, node in enumerate(selected_innovations):
+        innovation_node = dict(node)
+        innovation_node["blueprint_role"] = "innovation"
+        innovation_node["blueprint_rank"] = rank
+        blueprint_nodes.append(innovation_node)
+
+    connection_count = {n["id"]: 0 for n in selected_sciences}
+    for _, sid, _, _ in innovation_science_pairs:
+        if sid in connection_count:
+            connection_count[sid] += 1
+
+    selected_sciences.sort(
+        key=lambda n: (
+            connection_count.get(n["id"], 0),
+            float(n.get("importance", 0) or 0),
+        ),
+        reverse=True,
+    )
+
+    for rank, node in enumerate(selected_sciences):
+        science_node = dict(node)
+        science_node["blueprint_role"] = "science"
+        science_node["blueprint_rank"] = rank
+        blueprint_nodes.append(science_node)
+
+    return {
+        "nodes": blueprint_nodes,
+        "edges": blueprint_edges,
+        "blueprint_mode": True,
+    }
 
 
 # =============================================================================
@@ -3256,6 +3325,7 @@ def filter_graph_relations_for_display(graph, show_additional_relations=False):
     return {
         "nodes": graph["nodes"],
         "edges": edges,
+        "blueprint_mode": graph.get("blueprint_mode", False),
     }
 
 
@@ -3270,11 +3340,14 @@ def render_cytoscape_network(
     max_nodes=None,
     show_additional_relations=False,
 ):
-    graph = limit_graph_nodes(graph, max_nodes=max_nodes)
+    blueprint_mode = bool(graph.get("blueprint_mode", False))
+    if not (blueprint_mode and max_nodes is None):
+        graph = limit_graph_nodes(graph, max_nodes=max_nodes)
     graph = filter_graph_relations_for_display(
         graph,
         show_additional_relations=show_additional_relations,
     )
+    graph["blueprint_mode"] = blueprint_mode
 
     elements = []
 
@@ -3293,7 +3366,9 @@ def render_cytoscape_network(
                 "state": node["state"],
                 "source_phase": node.get("source_phase", ""),
                 "importance": node.get("importance", 0.0),
-            }
+                "blueprint_role": node.get("blueprint_role", ""),
+                "blueprint_rank": node.get("blueprint_rank", -1),
+            },
         })
 
     for edge in graph["edges"]:
@@ -3388,10 +3463,55 @@ def render_cytoscape_network(
         """,
     }
 
-    selected_layout = layout_configs.get(
-        layout_type,
-        layout_configs["hierarchical"],
-    )
+    if graph.get("blueprint_mode"):
+        # Deterministic three-band layout:
+        # strategic goal (optional) -> innovation ideas -> science foundations.
+        goal_nodes = [n for n in graph["nodes"] if n.get("blueprint_role") == "goal"]
+        innovation_nodes = [n for n in graph["nodes"] if n.get("blueprint_role") == "innovation"]
+        science_nodes = [n for n in graph["nodes"] if n.get("blueprint_role") == "science"]
+
+        canvas_width = 1200
+        x_center = canvas_width / 2
+        positions = {}
+
+        if goal_nodes:
+            positions[goal_nodes[0]["id"]] = {"x": x_center, "y": 110}
+
+        def spread(row_nodes, y):
+            if not row_nodes:
+                return
+            count = len(row_nodes)
+            side_margin = 120
+            usable = canvas_width - 2 * side_margin
+            if count == 1:
+                xs = [x_center]
+            else:
+                step = usable / (count - 1)
+                xs = [side_margin + i * step for i in range(count)]
+            for node, x in zip(row_nodes, xs):
+                positions[node["id"]] = {"x": x, "y": y}
+
+        spread(innovation_nodes, 350)
+        spread(science_nodes, 625)
+
+        for element in elements:
+            node_id = element["data"]["id"]
+            if node_id in positions:
+                element["position"] = positions[node_id]
+
+        selected_layout = """
+        {
+            name:'preset',
+            fit:true,
+            padding:85,
+            animate:false
+        }
+        """
+    else:
+        selected_layout = layout_configs.get(
+            layout_type,
+            layout_configs["hierarchical"],
+        )
 
     safe_elements = json.dumps(
         elements,
@@ -3593,6 +3713,45 @@ const cy = cytoscape({{
         }},
 
         {{
+            selector:'node[blueprint_role="goal"]',
+            style:{{
+                'width':170,
+                'height':100,
+                'font-size':'16px',
+                'font-weight':'bold',
+                'text-max-width':'145px',
+                'border-width':6,
+                'border-color':'#e9b949'
+            }}
+        }},
+
+        {{
+            selector:'node[blueprint_role="innovation"]',
+            style:{{
+                'width':175,
+                'height':125,
+                'font-size':'13px',
+                'font-weight':'bold',
+                'text-max-width':'140px',
+                'border-width':4,
+                'border-color':'#d97706'
+            }}
+        }},
+
+        {{
+            selector:'node[blueprint_role="science"]',
+            style:{{
+                'width':125,
+                'height':105,
+                'font-size':'11px',
+                'font-weight':'bold',
+                'text-max-width':'105px',
+                'border-width':4,
+                'border-color':'#167d70'
+            }}
+        }},
+
+        {{
             selector:'node[shape="diamond"]',
             style:{{
                 'border-width':4,
@@ -3625,7 +3784,7 @@ const cy = cytoscape({{
                 'target-arrow-shape':'vee',
                 'curve-style':'bezier',
                 'label':'data(label)',
-                'font-size':'9px',
+                'font-size':'8px',
                 'font-weight':'bold',
                 'color':'#1a1a1a',
                 'text-background-color':'#ffffff',
@@ -3667,10 +3826,11 @@ const cy = cytoscape({{
         {{
             selector:'edge[rel_type="RT"]',
             style:{{
-                'width':2,
-                'line-style':'dotted',
-                'target-arrow-shape':'none',
-                'line-color':'#2a9d8f'
+                'width':2.5,
+                'line-style':'dashed',
+                'target-arrow-shape':'vee',
+                'line-color':'#2a9d8f',
+                'curve-style':'straight'
             }}
         }},
 
@@ -5269,11 +5429,12 @@ if st.session_state.get("report_ready") and st.session_state.get("last_graph_dat
     )
 
     st.caption(
-        "The hierarchograph is presented as an **innovation blueprint**. "
-        "Innovations and involved science fields form the primary anchors; "
-        "selected IMA/MA concepts, goals and supporting nodes explain the route "
-        "from knowledge to implementation. The default visual language is limited "
-        "to thesaurus relations, UML relations and IF-THEN / AND / OR / XOR / NOT. "
+        "The hierarchograph is presented as a deliberately sparse **innovation blueprint**. "
+        "Innovation ideas are the central design elements and involved science fields "
+        "form their interdisciplinary foundation. Only the strongest one or two science "
+        "connections per innovation are shown, preventing the graph from becoming a "
+        "dense semantic network. The default visual language is limited to thesaurus "
+        "relations, UML relations and IF-THEN / AND / OR / XOR / NOT. "
         "Additional operational relations remain available on demand. "
         f"Blueprint capacity: up to {graph_node_limit} nodes. "
         f"Currently showing {len(filtered_graph['nodes'])} nodes after component filter. "
@@ -5361,7 +5522,7 @@ if (
                 gallery_base,
                 layout_type=view,
                 container_id=f"gallery_{view}",
-                max_nodes=graph_node_limit,
+                max_nodes=None,
                 show_additional_relations=st.session_state.get(
                     "show_additional_graph_relations", False
                 ),
