@@ -4777,7 +4777,7 @@ The supplementary ideation frameworks above are not a substitute for MA.
                 p1_model,
                 build_phase1_system_prompt(),
                 architecture_context + "\n\n" + full_input,
-                temperature=0.55 if p1_is_hf else 0.45,
+                temperature=0.40,
                 top_p=0.92 if p1_is_hf else 0.88,
                 huggingface_api_key=huggingface_api_key,
             )
@@ -4857,7 +4857,7 @@ creating an unrelated graph.
                 p2_model,
                 phase2_system,
                 phase2_input,
-                temperature=0.72 if p2_is_hf else 0.68,
+                temperature=0.85,
                 top_p=0.92 if p2_is_hf else 0.90,
                 huggingface_api_key=huggingface_api_key,
             )
