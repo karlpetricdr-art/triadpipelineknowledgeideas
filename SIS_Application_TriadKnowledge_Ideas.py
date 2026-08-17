@@ -3329,6 +3329,176 @@ def filter_graph_relations_for_display(graph, show_additional_relations=False):
     }
 
 
+
+# =============================================================================
+# MODULAR HIERARCHY PARTITIONING (compound nodes – visual boxes as in the image)
+# =============================================================================
+
+MODULE_VISUALS = {
+    "Environmental Foundation": {
+        "color": "#e0e7ff",
+        "border": "#6366f1",
+        "label_color": "#312e81",
+    },
+    "Informational Hierarchy": {
+        "color": "#ccfbf1",
+        "border": "#0d9488",
+        "label_color": "#134e4a",
+    },
+    "Mechanical Hierarchy": {
+        "color": "#dbeafe",
+        "border": "#2563eb",
+        "label_color": "#1e3a8a",
+    },
+    "Biochemical Hierarchy": {
+        "color": "#ffedd5",
+        "border": "#ea580c",
+        "label_color": "#9a3412",
+    },
+    "Hierarchical Operating System": {
+        "color": "#1e293b",
+        "border": "#0f172a",
+        "label_color": "#f8fafc",
+    },
+    "Systemic Core": {
+        "color": "#fef9c3",
+        "border": "#ca8a04",
+        "label_color": "#713f12",
+    },
+    "Default Module": {
+        "color": "#f1f5f9",
+        "border": "#64748b",
+        "label_color": "#1e293b",
+    },
+}
+
+
+def _infer_module_name(node):
+    """Heuristic that maps nodes to the same modules visible in the organic screenshot."""
+    label = (node.get("label") or "").lower()
+    layer = (node.get("layer") or "").lower()
+    semantic = (node.get("semantic_type") or "").lower()
+    shape = (node.get("shape") or "").lower()
+
+    # Explicit overrides from description / state (matches the attached image)
+    if "co2" in label or "environmental" in label or "450ppm" in label:
+        return "Environmental Foundation"
+    if "prestige" in label or "status drive" in label or "cognitive dream" in label or "neuroscience" in label:
+        return "Informational Hierarchy"
+    if "leakage" in label or "respiratory" in label or "mechanical" in label:
+        return "Mechanical Hierarchy"
+    if "ph" in label or "tds" in label or "metabolic" in label or "biochemical" in label or "acidosis" in label:
+        return "Biochemical Hierarchy"
+    if "hierarchical operating" in label or (shape == "rectangle" and "operating" in label):
+        return "Hierarchical Operating System"
+    if shape == "star" or "systemic stability" in label or "ω-st" in label or "omega-st" in label:
+        return "Systemic Core"
+
+    # Layer / semantic fallbacks
+    if layer in {"domain", "science"} or semantic in {"science-domain"}:
+        if any(k in label for k in ("neuro", "cognitive", "psych")):
+            return "Informational Hierarchy"
+        if any(k in label for k in ("respiratory", "mechanical", "engineer")):
+            return "Mechanical Hierarchy"
+        if any(k in label for k in ("metabolic", "physiol", "biochem", "chemistry")):
+            return "Biochemical Hierarchy"
+        return "Environmental Foundation"
+
+    if layer == "innovation" or shape == "diamond":
+        if any(k in label for k in ("co2", "environmental")):
+            return "Environmental Foundation"
+        if any(k in label for k in ("dream", "cognitive", "prestige", "status")):
+            return "Informational Hierarchy"
+        if any(k in label for k in ("leakage", "adaptive")):
+            return "Mechanical Hierarchy"
+        if any(k in label for k in ("ph", "modulation", "biochem")):
+            return "Biochemical Hierarchy"
+
+    if layer == "process" or shape == "triangle":
+        if "leakage" in label:
+            return "Mechanical Hierarchy"
+        if "ph" in label or "tds" in label:
+            return "Biochemical Hierarchy"
+
+    if layer == "constraint" or shape == "octagon":
+        if "co2" in label:
+            return "Environmental Foundation"
+        if "prestige" in label or "status" in label:
+            return "Informational Hierarchy"
+
+    return "Default Module"
+
+
+def partition_graph_into_modules(graph, force_modules=None):
+    """
+    Split the graph into visual modules (compound parent nodes) exactly as shown
+    in the organic hierarchograph screenshot.
+
+    Returns a new graph dict that contains both the original nodes and extra
+    parent nodes. Child nodes receive a 'parent' key that Cytoscape understands.
+    """
+    graph = normalize_graph_data(graph)
+    nodes = [dict(n) for n in graph["nodes"]]
+    edges = [dict(e) for e in graph["edges"]]
+
+    if not nodes:
+        return graph
+
+    # 1. Assign every node to a module
+    module_of = {}
+    for n in nodes:
+        if force_modules and n["id"] in force_modules:
+            module_of[n["id"]] = force_modules[n["id"]]
+        else:
+            module_of[n["id"]] = _infer_module_name(n)
+
+    # 2. Collect unique modules that actually contain nodes
+    used_modules = sorted(set(module_of.values()))
+    if not used_modules:
+        return graph
+
+    # 3. Create parent (compound) nodes
+    parent_nodes = []
+    for mod_name in used_modules:
+        visual = MODULE_VISUALS.get(mod_name, MODULE_VISUALS["Default Module"])
+        parent_id = f"module_{mod_name.replace(' ', '_').lower()}"
+        parent_nodes.append({
+            "id": parent_id,
+            "label": mod_name,
+            "shape": "round-rectangle",
+            "color": visual["color"],
+            "description": f"Hierarchy module: {mod_name}",
+            "layer": "module",
+            "level": "Macro",
+            "semantic_type": "hierarchy-module",
+            "state": "",
+            "source_phase": "modular",
+            "importance": 10.0,
+            "innovation_score": 0.0,
+            "feasibility_score": 0.0,
+            "size": 220,
+            "is_parent": True,
+            "border_color": visual["border"],
+            "label_color": visual["label_color"],
+        })
+
+    # 4. Attach parent reference to every child
+    for n in nodes:
+        mod = module_of[n["id"]]
+        parent_id = f"module_{mod.replace(' ', '_').lower()}"
+        n["parent"] = parent_id
+
+    # 5. Merge (parents first so they exist before children)
+    all_nodes = parent_nodes + nodes
+
+    return {
+        "nodes": all_nodes,
+        "edges": edges,
+        "blueprint_mode": graph.get("blueprint_mode", False),
+        "modular": True,
+    }
+
+
 # =============================================================================
 # CYTOSCAPE HIERARCHOGRAPHIC RENDERER
 # =============================================================================
@@ -3339,6 +3509,7 @@ def render_cytoscape_network(
     container_id="cy_canvas",
     max_nodes=None,
     show_additional_relations=False,
+    modular_view=False,
 ):
     blueprint_mode = bool(graph.get("blueprint_mode", False))
     if not (blueprint_mode and max_nodes is None):
@@ -3349,27 +3520,37 @@ def render_cytoscape_network(
     )
     graph["blueprint_mode"] = blueprint_mode
 
+    # Modular hierarchy view – compound boxes like the attached organic screenshot
+    if modular_view:
+        graph = partition_graph_into_modules(graph)
+
     elements = []
 
     for node in graph["nodes"]:
-        elements.append({
-            "data": {
-                "id": node["id"],
-                "label": node["label"],
-                "color": node["color"],
-                "shape": node["shape"],
-                "size": node["size"],
-                "description": node["description"],
-                "layer": node["layer"],
-                "level": node["level"],
-                "semantic_type": node["semantic_type"],
-                "state": node["state"],
-                "source_phase": node.get("source_phase", ""),
-                "importance": node.get("importance", 0.0),
-                "blueprint_role": node.get("blueprint_role", ""),
-                "blueprint_rank": node.get("blueprint_rank", -1),
-            },
-        })
+        data = {
+            "id": node["id"],
+            "label": node["label"],
+            "color": node["color"],
+            "shape": node["shape"],
+            "size": node["size"],
+            "description": node["description"],
+            "layer": node["layer"],
+            "level": node["level"],
+            "semantic_type": node["semantic_type"],
+            "state": node["state"],
+            "source_phase": node.get("source_phase", ""),
+            "importance": node.get("importance", 0.0),
+            "blueprint_role": node.get("blueprint_role", ""),
+            "blueprint_rank": node.get("blueprint_rank", -1),
+        }
+        # Compound / parent support for modular view
+        if node.get("parent"):
+            data["parent"] = node["parent"]
+        if node.get("is_parent"):
+            data["is_parent"] = True
+            data["border_color"] = node.get("border_color", "#64748b")
+            data["label_color"] = node.get("label_color", "#1e293b")
+        elements.append({"data": data})
 
     for edge in graph["edges"]:
         color = RELATION_COLORS.get(
@@ -3463,7 +3644,25 @@ def render_cytoscape_network(
         """,
     }
 
-    if graph.get("blueprint_mode"):
+    if graph.get("modular"):
+        # Compound / modular hierarchy view needs a force-directed layout
+        # so parent boxes can expand around their children.
+        selected_layout = """
+        {
+            name:'cose',
+            animate:false,
+            fit:true,
+            padding:70,
+            nodeRepulsion:120000,
+            idealEdgeLength:140,
+            edgeElasticity:90,
+            nestingFactor:1.8,
+            gravity:0.3,
+            numIter:1600,
+            componentSpacing:80
+        }
+        """
+    elif graph.get("blueprint_mode"):
         # Deterministic three-band layout:
         # strategic goal (optional) -> innovation ideas -> science foundations.
         goal_nodes = [n for n in graph["nodes"] if n.get("blueprint_role") == "goal"]
@@ -4126,6 +4325,40 @@ const cy = cytoscape({{
                 'width':4,
                 'line-color':'#e76f51',
                 'target-arrow-shape':'triangle'
+            }}
+        }},
+
+        {{
+            selector:'node[is_parent]',
+            style:{{
+                'shape':'round-rectangle',
+                'background-color':'data(color)',
+                'background-opacity':0.18,
+                'border-width':3,
+                'border-color':'data(border_color)',
+                'border-opacity':0.85,
+                'padding':28,
+                'text-valign':'top',
+                'text-halign':'center',
+                'font-size':'15px',
+                'font-weight':'800',
+                'color':'data(label_color)',
+                'text-margin-y':-12,
+                'text-background-color':'#ffffff',
+                'text-background-opacity':0.85,
+                'text-background-padding':'6px',
+                'text-background-shape':'roundrectangle',
+                'min-width':180,
+                'min-height':120,
+                'z-index':0,
+                'text-outline-width':0
+            }}
+        }},
+
+        {{
+            selector:'node[parent]',
+            style:{{
+                'z-index':10
             }}
         }},
 
@@ -5404,6 +5637,18 @@ if st.session_state.get("report_ready") and st.session_state.get("last_graph_dat
 
     st.session_state.selected_graph_components = selected_components
 
+    modular_view = st.checkbox(
+        "📦 Modular hierarchy view (compound boxes as in the organic screenshot)",
+        value=st.session_state.get("modular_hierarchy_view", False),
+        key="modular_hierarchy_view",
+        help=(
+            "Splits the graph into visual modules (Environmental Foundation, "
+            "Informational Hierarchy, Mechanical Hierarchy, Biochemical Hierarchy, "
+            "Systemic Core …) using Cytoscape compound nodes – identical visual "
+            "language to the attached hierarchograph image."
+        ),
+    )
+
     # Build the innovation-centric presentation layer without changing
     # the underlying integrated IMA → MA knowledge graph.
     blueprint_graph = build_innovation_blueprint_graph(
@@ -5447,6 +5692,7 @@ if st.session_state.get("report_ready") and st.session_state.get("last_graph_dat
         container_id="primary_graph",
         max_nodes=None,
         show_additional_relations=show_additional_relations,
+        modular_view=modular_view,
     )
 
 
@@ -5526,6 +5772,7 @@ if (
                 show_additional_relations=st.session_state.get(
                     "show_additional_graph_relations", False
                 ),
+                modular_view=st.session_state.get("modular_hierarchy_view", False),
             )
 
 
