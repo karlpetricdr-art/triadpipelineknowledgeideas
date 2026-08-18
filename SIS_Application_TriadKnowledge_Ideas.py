@@ -4664,6 +4664,61 @@ in execution. Do not confuse visionary with speculative. Avoid science-fiction
 claims, unsupported technological promises and impossible implementation
 assumptions.
 
+SYSTEMIC ARCHITECTURE + CLARITY QUALITY GATE
+=============================================
+Before finalizing the report, silently self-check it against this external
+evaluation rubric:
+
+Score = 0.40*(PB*II/10) + 0.25*SA + 0.20*CN + 0.10*P + 0.05*C
+
+PB = Paradigm Breach — how explicitly the synthesis names and challenges a
+dominant assumption or "Scientific Cage" in the relevant field(s).
+II = Innovation Impact — how much strategic leverage the knowledge
+reconstruction gives to Phase 2.
+SA = Systemic Architecture — structural coherence and explicit Macro/Meso/
+Micro integration, with hierarchy, association and operational logic acting
+together rather than being listed separately.
+CN = Conceptual Novelty — genuine reframing, not restatement of textbook
+knowledge.
+P = Practicality — every claim must be traceable to a usable knowledge
+structure Phase 2 can act on; avoid ungrounded abstraction.
+C = Clarity — precise, plain academic prose; no jargon stacking or decorative
+language that obscures meaning.
+
+Target every axis independently at or above 9.6/10 before finalizing. Do not
+increase PB, II, SA or CN at the expense of P or C. If a passage is
+structurally rich but unclear, rewrite it in simpler prose rather than cutting
+content. Do not report these scores or mention this quality gate in the report.
+
+PARADIGM BREACH + IMPACT DISCIPLINE
+====================================
+For each of the 3–7 innovations, include clearly labelled, separate
+one- or two-sentence statements that specify:
+- PARADIGM BREACH: name the specific dominant assumption, convention or
+  "Scientific Cage" the innovation breaks, and explain why that assumption
+  previously held. A vague claim that an idea is innovative is insufficient.
+- IMPACT: state the realistic magnitude and reach of the consequence if the
+  innovation is realized at scale, including who or what changes and by how
+  much where a defensible estimate is possible.
+- SYSTEMIC ARCHITECTURE: state the Macro, Meso and Micro levels at which the
+  mechanism operates, and explain their interconnection through state,
+  feedback and dependency.
+
+Section 5, Innovation portfolio, and Section 6, solution blueprints, must
+make these three statements explicit for every innovation. Section 7 must make
+the Macro–Meso–Micro feedback and causal wiring traceable across the portfolio.
+The semantic graph must visibly represent the relevant levels and their
+feedback/dependency links, not merely describe them in prose.
+
+INTERNAL QUALITY GATE
+=====================
+Silently evaluate every candidate innovation on PB, II, SA, CN, P and C before
+including it. Keep an innovation only if it can plausibly reach PB >= 9,
+II >= 9, SA >= 9, CN >= 9, P >= 9.6 and C >= 9.6. If its prototype,
+validation or ownership chain is weak, strengthen the implementation path
+until it is concrete and testable, or replace it. Never trade clarity for
+novelty-signalling vocabulary.
+
 For each major innovation, explicitly reason about:
 - the unmet need, user or system problem;
 - novelty and distinctive value;
@@ -4698,10 +4753,15 @@ Produce a professional innovation strategy report with these sections:
    with ALL Mental Approaches considered and the most productive ones selected
    for each innovation.
 5. Innovation portfolio — present 3–7 genuinely differentiated solutions.
+   For each, explicitly provide Paradigm Breach, Impact and Systemic
+   Architecture, including its Macro/Meso/Micro mechanism.
 6. For each solution: concept, novelty, mechanism, value, MA combination,
-   prerequisites, feasibility, risks, validation and implementation path.
+   prerequisites, feasibility, risks, validation, ownership and implementation
+   path. Make inputs, transformations, outputs, states, feedback loops,
+   dependencies, constraints and causal links traceable.
 7. Vision-to-realization roadmap — distinguish near (0–2 years), medium
-   (3–5 years) and long (6–10+ years) horizons where appropriate.
+   (3–5 years) and long (6–10+ years) horizons, and show how the Macro/Meso/
+   Micro architecture evolves and feeds back across those horizons.
 8. Portfolio comparison and prioritization.
 9. Strategic recommendation.
 10. Conclusion.
@@ -5448,8 +5508,8 @@ creating an unrelated graph.
                 p2_model,
                 phase2_system,
                 phase2_input,
-                temperature=0.85,
-                top_p=0.92 if p2_is_hf else 0.90,
+                temperature=0.72,
+                top_p=0.90 if p2_is_hf else 0.88,
                 huggingface_api_key=huggingface_api_key,
             )
 
