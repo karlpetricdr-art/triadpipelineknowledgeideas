@@ -390,7 +390,9 @@ def fetch_author_bibliographies(author_input):
     headers = {"Accept": "application/json"}
     for auth in author_list:
         try:
-            s_res = requests.get(f"https://pub.orcid.org/v3.0/search/?q={auth}", headers=headers, timeout=6).json()
+            # FIX: URL-encode the author name so non-ASCII characters (č, š, ž, ...)
+            # don't break the request ('ascii' codec can't encode character error).
+            s_res = requests.get(f"https://pub.orcid.org/v3.0/search/?q={urllib.parse.quote(auth)}", headers=headers, timeout=6).json()
             if s_res.get('result'):
                 orcid_id = s_res['result'][0]['orcid-identifier']['path']
                 r_res = requests.get(f"https://pub.orcid.org/v3.0/{orcid_id}/record", headers=headers, timeout=6).json()
