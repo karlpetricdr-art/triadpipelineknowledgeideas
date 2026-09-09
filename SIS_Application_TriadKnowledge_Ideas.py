@@ -1115,8 +1115,13 @@ with col_inq3:
 # 5. SYNERGY EXECUTION ENGINE (GOOGLE GEMINI / GEMMA ONLY)
 # =============================================================================
 
-def google_generate(client, model_id, system_prompt, user_content, temperature):
-    """Single Google GenAI gateway. No third-party LLM providers."""
+def google_generate(client, model_id, system_prompt, user_content, temperature, max_retries=4):
+    """Single Google GenAI gateway. No third-party LLM providers.
+
+    Includes automatic retry with exponential backoff for transient server-side
+    errors (e.g. 503 UNAVAILABLE / high demand), which are temporary on Google's
+    side and usually succeed on the next attempt.
+    """
     if client is None:
         raise RuntimeError("Google Gemini client is not initialized.")
 
@@ -1131,18 +1136,34 @@ def google_generate(client, model_id, system_prompt, user_content, temperature):
             pass
 
     config = types.GenerateContentConfig(**config_kwargs)
-    response = client.models.generate_content(
-        model=model_id,
-        contents=user_content,
-        config=config,
-    )
-    text_out = getattr(response, "text", None)
-    if text_out:
-        return text_out
-    try:
-        return response.candidates[0].content.parts[0].text
-    except Exception as exc:
-        raise RuntimeError(f"Google returned no usable text response: {exc}") from exc
+
+    last_exc = None
+    for attempt in range(max_retries):
+        try:
+            response = client.models.generate_content(
+                model=model_id,
+                contents=user_content,
+                config=config,
+            )
+            text_out = getattr(response, "text", None)
+            if text_out:
+                return text_out
+            try:
+                return response.candidates[0].content.parts[0].text
+            except Exception as exc:
+                raise RuntimeError(f"Google returned no usable text response: {exc}") from exc
+        except Exception as exc:
+            last_exc = exc
+            error_str = str(exc)
+            is_transient = any(code in error_str for code in ["503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED", "500", "INTERNAL"])
+            if is_transient and attempt < max_retries - 1:
+                wait_time = (2 ** attempt) + 1  # 2s, 3s, 5s, 9s...
+                st.toast(f"⏳ Google API trenutno preobremenjen (poskus {attempt + 1}/{max_retries}). Ponovni poskus čez {wait_time}s...")
+                time.sleep(wait_time)
+                continue
+            raise
+
+    raise RuntimeError(f"Google Gemini API ni na voljo po {max_retries} poskusih: {last_exc}")
 
 
 if st.button("🚀 EXECUTE MULTI-DIMENSIONAL GOOGLE GEMINI PIPELINE", use_container_width=True, key="exec_pipeline_v2026"):
