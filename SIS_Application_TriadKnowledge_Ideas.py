@@ -19,7 +19,7 @@ import streamlit.components.v1 as components
 # =============================================================================
 
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v24.3.0-STREAMLINED-TWO-CALL-SPARSE"
+VERSION_CODE = "v24.4.0-STREAMLINED-GEMINI-400-FIX"
 
 # =============================================================================
 # MODEL CATALOG
@@ -1233,7 +1233,16 @@ def gemini_generate(
     huggingface_api_key=None,
     response_schema=None,
 ):
-    """Single model-call gateway. Gemini uses structured JSON and low thinking."""
+    """
+    Reliable Google/HF gateway.
+
+    Gemini 3.x supports structured output, but a malformed/overly restrictive
+    response schema can produce the unhelpful HTTP 400 INVALID_ARGUMENT.  The
+    normal path therefore uses the schema, while the recovery path retries once
+    without structured-output parameters and relies on the JSON instruction in
+    the system prompt. This keeps the normal request efficient without allowing
+    a schema incompatibility to crash the whole pipeline.
+    """
     if model_id.startswith("hf:"):
         return huggingface_generate(
             huggingface_api_key,
@@ -1247,31 +1256,59 @@ def gemini_generate(
     if client is None:
         raise RuntimeError("Google GenAI client is not initialized.")
 
-    config_kwargs = {}
-    if system_prompt:
-        config_kwargs["system_instruction"] = system_prompt
+    def _call(use_schema=True, use_thinking=True):
+        config_kwargs = {}
+        if system_prompt:
+            config_kwargs["system_instruction"] = system_prompt
 
-    # Gemini 3 guidance: use low thinking for this extraction/synthesis workload.
-    try:
-        config_kwargs["thinking_config"] = genai_types.ThinkingConfig(
-            thinking_level="low"
+        if use_thinking:
+            try:
+                config_kwargs["thinking_config"] = genai_types.ThinkingConfig(
+                    thinking_level="low"
+                )
+            except Exception:
+                pass
+
+        if use_schema and response_schema:
+            config_kwargs["response_mime_type"] = "application/json"
+            config_kwargs["response_schema"] = response_schema
+
+        config = genai_types.GenerateContentConfig(**config_kwargs)
+        response = client.models.generate_content(
+            model=model_id,
+            contents=user_content,
+            config=config,
         )
-    except Exception:
-        pass
+        if not response or not response.text:
+            raise RuntimeError("Google model returned an empty response.")
+        return response.text
 
-    if response_schema:
-        config_kwargs["response_mime_type"] = "application/json"
-        config_kwargs["response_schema"] = response_schema
+    try:
+        return _call(use_schema=True, use_thinking=True)
+    except Exception as first_error:
+        error_text = str(first_error)
+        invalid_argument = (
+            "INVALID_ARGUMENT" in error_text
+            or "invalid argument" in error_text.lower()
+        )
+        if not invalid_argument:
+            raise
 
-    config = genai_types.GenerateContentConfig(**config_kwargs)
-    response = client.models.generate_content(
-        model=model_id,
-        contents=user_content,
-        config=config,
-    )
-    if not response or not response.text:
-        raise RuntimeError("Google model returned an empty response.")
-    return response.text
+        # Recovery 1: remove only structured-output constraints.
+        try:
+            return _call(use_schema=False, use_thinking=True)
+        except Exception as second_error:
+            second_text = str(second_error)
+            still_invalid = (
+                "INVALID_ARGUMENT" in second_text
+                or "invalid argument" in second_text.lower()
+            )
+            if not still_invalid:
+                raise
+
+            # Recovery 2: remove thinking configuration as well. This protects
+            # deployments running an older google-genai SDK/model combination.
+            return _call(use_schema=False, use_thinking=False)
 
 
 
@@ -3785,7 +3822,6 @@ PHASE_OUTPUT_SCHEMA = {
         "report": {"type": "string"},
         "nodes": {
             "type": "array",
-            "maxItems": 35,
             "items": {
                 "type": "object",
                 "properties": {
@@ -3799,13 +3835,14 @@ PHASE_OUTPUT_SCHEMA = {
                     "state": {"type": "string"},
                     "source_phase": {"type": "string"},
                 },
-                "required": ["id", "label", "shape", "description", "layer", "level",
-                             "semantic_type", "state", "source_phase"],
+                "required": [
+                    "id", "label", "shape", "description", "layer", "level",
+                    "semantic_type", "state", "source_phase"
+                ],
             },
         },
         "edges": {
             "type": "array",
-            "maxItems": 55,
             "items": {
                 "type": "object",
                 "properties": {
@@ -3813,10 +3850,12 @@ PHASE_OUTPUT_SCHEMA = {
                     "source": {"type": "string"},
                     "target": {"type": "string"},
                     "rel_type": {"type": "string", "enum": GRAPH_RELATION_ENUM},
-                    "weight": {"type": "number", "minimum": 0.1, "maximum": 2.0},
+                    "weight": {"type": "number"},
                     "direction": {"type": "string", "enum": ["directed", "undirected"]},
                 },
-                "required": ["id", "source", "target", "rel_type", "weight", "direction"],
+                "required": [
+                    "id", "source", "target", "rel_type", "weight", "direction"
+                ],
             },
         },
     },
