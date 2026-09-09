@@ -14,7 +14,7 @@ import streamlit.components.v1 as components
 # 0. GLOBAL CONFIGURATION & SESSION DATE (FEBRUARY 24, 2026)
 # =============================================================================
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v24.5.0-GOOGLE-GEMINI-ONLY"
+VERSION_CODE = "v24.6.0-GOOGLE-GEMINI-ONLY-FIXED"
 
 # =============================================================================
 # INITIALIZATION FIX: Preprečuje AttributeError pri zagonu in resetiranju
@@ -229,7 +229,7 @@ SVG_3D_RELIEF = """
 # 1. CORE RENDERING ENGINES & DATA FETCHING
 # =============================================================================
 
-def render_cytoscape_network(elements, layout_type="organic", container_id="cy_canvas"):
+def render_cytoscape_network(elements, layout_type="hierarchical", container_id="cy_canvas"):
     """
     Posodobljen motor z več perspektivami (Multi-Perspective Layout Engine).
     Vključuje UML, ISO Thesaurus in Logične konektorje (AND, OR, XOR, NOT, IF-THEN).
@@ -278,7 +278,7 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
         }"""
     }
 
-    selected_layout = layout_configs.get(layout_type, layout_configs["organic"])
+    selected_layout = layout_configs.get(layout_type, layout_configs["hierarchical"])
 
     cyto_html = f"""
     <div style="position: relative; width: 100%;">
@@ -919,29 +919,39 @@ with st.sidebar:
         help="Google AI Studio / Gemini API key."
     )
 
+    # Google-only language-model catalog.  The list intentionally contains
+    # current Gemini 3.x models plus the established Gemini 2.5 family and
+    # Google's Gemma instruction-tuned models. No third-party provider is used.
     GOOGLE_MODELS = {
-        "Gemini 3.5 Flash-Lite — free/cost-efficient": "gemini-3.5-flash-lite",
-        "Gemini 3.1 Flash-Lite — free/cost-efficient": "gemini-3.1-flash-lite",
-        "Gemini 3.7 Flash — advanced": "gemini-3.7-flash",
+        # Current Gemini 3.x
         "Gemini 3.8 Flash — latest": "gemini-3.8-flash",
+        "Gemini 3.7 Flash — advanced": "gemini-3.7-flash",
         "Gemini 3.6 Flash": "gemini-3.6-flash",
         "Gemini 3.5 Flash": "gemini-3.5-flash",
+        "Gemini 3.5 Flash-Lite — free/cost-efficient": "gemini-3.5-flash-lite",
+        "Gemini 3.1 Flash-Lite — free/cost-efficient": "gemini-3.1-flash-lite",
         "Gemini 3.1 Pro Preview": "gemini-3.1-pro-preview",
+        "Gemini 3 Flash Preview": "gemini-3-flash-preview",
+        # Gemini 2.5 family
+        "Gemini 2.5 Pro": "gemini-2.5-pro",
+        "Gemini 2.5 Flash": "gemini-2.5-flash",
+        "Gemini 2.5 Flash-Lite": "gemini-2.5-flash-lite",
+        # Gemma 4
         "Gemma 4 31B IT — free": "gemma-4-31b-it",
-        "Gemma 4 26B MoE IT — free": "gemma-4-26b-a4b-it",
+        "Gemma 4 26B A4B IT — free": "gemma-4-26b-a4b-it",
     }
 
     st.subheader("🤖 Sequential Google Model Selection")
     p1_model_label = st.selectbox(
         "Phase 1 Model (IMA Structure):",
-        list(GOOGLE_MODELS.keys()), index=0,
-        help="Recommended: Gemini 3.5 Flash-Lite or Gemini 3.1 Flash-Lite."
+        list(GOOGLE_MODELS.keys()), index=4,
+        help="Recommended default: Gemini 3.5 Flash-Lite for efficient IMA synthesis."
     )
     p1_model = GOOGLE_MODELS[p1_model_label]
     p2_model_label = st.selectbox(
         "Phase 2 Model (MA Innovation):",
-        list(GOOGLE_MODELS.keys()), index=1,
-        help="Recommended: Gemini 3.1 Flash-Lite; Gemini 3.7/3.8 Flash for stronger innovation."
+        list(GOOGLE_MODELS.keys()), index=5,
+        help="Recommended default: Gemini 3.1 Flash-Lite; choose Gemini 3.7/3.8 for stronger innovation."
     )
     p2_model = GOOGLE_MODELS[p2_model_label]
 
@@ -951,10 +961,10 @@ with st.sidebar:
     st.subheader("🎨 GRAPH PERSPECTIVE")
     graph_perspective = st.selectbox(
         "Select Visual Layout Engine:",
-        options=["organic", "hierarchical", "circular", "concentric", "grid"],
+        options=["hierarchical", "concentric", "circular", "grid"],
         index=0,
         format_func=lambda x: x.capitalize() + " View",
-        help="Organic: Naravno grupiranje | Hierarchical: Drevesna struktura | Circular: Relacije | Concentric: Centralnost",
+        help="Hierarchical: drevesna struktura | Concentric: Macro-Meso-Micro | Circular: relacije | Grid: pregled",
         key="side_graph_layout_v2026"
     )
 
@@ -1331,7 +1341,12 @@ Do not place explanatory text after the JSON object.
                 )
 
             # --- 4. PROCESS RESULTS ---
-            g_data = {"nodes": [], "edges": []}
+            # Always initialize these containers before any conditional JSON parsing.
+            # The previous version could reach the highlighter with undefined
+            # nodes_to_link/final_elements, causing Pipeline Failure.
+            g_data = {"nodes": [], "edges": [], "system_metrics": {}}
+            nodes_to_link = []
+            final_elements = []
 
             if "### SEMANTIC_GRAPH_JSON" in google_innovation:
                 parts = google_innovation.split("### SEMANTIC_GRAPH_JSON", 1)
@@ -1342,6 +1357,32 @@ Do not place explanatory text after the JSON object.
                 json_raw = ""
 
             innovation_text = re.sub(r'```json|```', '', innovation_text)
+
+            # Parse the model-generated semantic graph.  Do this before any
+            # node/edge rendering; the previous version extracted json_raw but
+            # never assigned it to g_data.
+            if json_raw.strip():
+                try:
+                    cleaned_json = json_raw.strip()
+                    cleaned_json = re.sub(r'^```(?:json)?\s*', '', cleaned_json, flags=re.I)
+                    cleaned_json = re.sub(r'\s*```$', '', cleaned_json)
+                    match = re.search(r'\{.*\}', cleaned_json, re.DOTALL)
+                    if match:
+                        cleaned_json = match.group(0)
+                    cleaned_json = re.sub(r',\s*([}\]])', r'\1', cleaned_json)
+                    parsed = json.loads(cleaned_json)
+                    if isinstance(parsed, dict):
+                        g_data = parsed
+                except Exception as parse_exc:
+                    # Keep the textual report usable even if the model emitted
+                    # malformed JSON. The graph simply remains empty.
+                    st.warning(f"⚠️ Semantic graph JSON could not be parsed; report retained. ({parse_exc})")
+
+            # Validate graph structure defensively.
+            if not isinstance(g_data.get("nodes"), list):
+                g_data["nodes"] = []
+            if not isinstance(g_data.get("edges"), list):
+                g_data["edges"] = []
 
             full_report = (
                 f"## 📚 Phase 1: IMA Structural Foundation (Google {p1_model_label})\n\n"
@@ -1420,10 +1461,13 @@ Do not place explanatory text after the JSON object.
 
                     final_elements.append({
                         "data": {
-                            "source": e.get("source"), 
-                            "target": e.get("target"), 
-                            "rel_type": rel, 
-                            "color": e_color
+                            "id": e.get("id", f"e{len(final_elements)}"),
+                            "source": e.get("source"),
+                            "target": e.get("target"),
+                            "rel_type": rel,
+                            "color": e_color,
+                            "weight": e.get("weight", 1.0),
+                            "label": e.get("label", rel)
                         }
                     })
 
@@ -1603,28 +1647,24 @@ if st.session_state.get('report_ready') and 'final_graph_elements' in st.session
     st.markdown('<h2 style="color: #1d3557; text-align: center;">🖼️ MULTI-PERSPECTIVE GRAPH GALLERY</h2>', unsafe_allow_html=True)
     st.info("💡 **SEQUENTIAL SAVING INSTRUCTIONS:** Below are tabs featuring different visual perspectives of the same knowledge synthesis. Please open each tab individually and click the **EXPORT PNG** button to save all 5 architectural versions to your local drive.")
 
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
-        "🌿 ORGANIC", "🌲 HIERARCHICAL", "⭕ CIRCULAR", "🎯 CONCENTRIC", "🔲 GRID"
+    tab1, tab2, tab3, tab4 = st.tabs([
+        "🌲 HIERARCHICAL", "🎯 CONCENTRIC", "⭕ CIRCULAR", "🔲 GRID"
     ])
 
     with tab1:
-        st.markdown("**Organic View:** Best for discovering natural thematic clusters and emergent semantic patterns.")
-        render_cytoscape_network(st.session_state.final_graph_elements, layout_type="organic", container_id="gal_organic")
-
-    with tab2:
-        st.markdown("**Hierarchical View:** A logical tree structure mapping knowledge from general axioms down to specific innovations.")
+        st.markdown("**Hierarchical View:** Primary IMA → MA structure and semantic dependencies.")
         render_cytoscape_network(st.session_state.final_graph_elements, layout_type="hierarchical", container_id="gal_hierarchical")
 
+    with tab2:
+        st.markdown("**Concentric View:** Macro–Meso–Micro systemic organization.")
+        render_cytoscape_network(st.session_state.final_graph_elements, layout_type="concentric", container_id="gal_concentric")
+
     with tab3:
-        st.markdown("**Circular View:** Focused on relational density and the circular interdependence of system nodes.")
+        st.markdown("**Circular View:** Relational interdependence without an organic force layout.")
         render_cytoscape_network(st.session_state.final_graph_elements, layout_type="circular", container_id="gal_circular")
 
     with tab4:
-        st.markdown("**Concentric View:** Arranges elements by systemic priority, placing core strategic goals at the center.")
-        render_cytoscape_network(st.session_state.final_graph_elements, layout_type="concentric", container_id="gal_concentric")
-
-    with tab5:
-        st.markdown("**Grid View:** A clean, orthogonal alignment of all elements for structured data review.")
+        st.markdown("**Grid View:** Structured inspection of the same semantic architecture.")
         render_cytoscape_network(st.session_state.final_graph_elements, layout_type="grid", container_id="gal_grid")
 
 # =============================================================================
