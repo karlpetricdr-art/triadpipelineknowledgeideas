@@ -1309,16 +1309,17 @@ with r2c2: sel_models = st.multiselect("5. Structural Models:", list(KNOWLEDGE_B
 with r2c3: goal_context = st.selectbox("6. Strategic Project Goal:", ["Scientific Research", "Problem Solving", "Educational", "Policy Making"])
 
 # --- METHODOLOGY & TOOLS UI (ACTIVATED BEFORE INNOVATION STRATEGY) ---
-available_methods = sorted({
-    method
-    for science in sel_sciences
-    for method in KNOWLEDGE_BASE["Science fields"].get(science, {}).get("methods", [])
-})
-available_tools = sorted({
-    tool
-    for science in sel_sciences
-    for tool in KNOWLEDGE_BASE["Science fields"].get(science, {}).get("tools", [])
-})
+_methods_set = set()
+for science in sel_sciences:
+    for method in KNOWLEDGE_BASE["Science fields"].get(science, {}).get("methods", []):
+        _methods_set.add(str(method))
+available_methods = sorted(_methods_set)
+
+_tools_set = set()
+for science in sel_sciences:
+    for tool in KNOWLEDGE_BASE["Science fields"].get(science, {}).get("tools", []):
+        _tools_set.add(str(tool))
+available_tools = sorted(_tools_set)
 
 r3c1, r3c2 = st.columns(2)
 with r3c1:
@@ -1905,7 +1906,10 @@ Do not place explanatory text after the JSON object.
                 st.session_state.report_ready = True
 
         except Exception as e:
+            import traceback
             st.error(f"❌ Pipeline Failure: {str(e)}")
+            with st.expander("🛠️ Full technical traceback (for diagnosis)"):
+                st.code(traceback.format_exc())
 
 # =============================================================================
 # 6. MULTI-PERSPECTIVE GALLERY (SEQUENTIAL EXPORT)
