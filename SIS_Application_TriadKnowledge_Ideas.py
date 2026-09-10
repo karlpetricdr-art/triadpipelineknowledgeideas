@@ -1690,15 +1690,34 @@ Do not place explanatory text after the JSON object.
 
             # --- NODE COUNT CONTROL (10–80) ---
             # Preserve the selected maximum number of nodes and remove orphaned edges.
+            # FIX: build valid_node_ids with a safe loop instead of a set-comprehension
+            # that could receive a non-dict / unhashable element from malformed model
+            # JSON (this was the source of "unhashable type: 'dict'" pipeline failures).
             if isinstance(g_data.get("nodes"), list):
                 g_data["nodes"] = g_data["nodes"][:graph_node_count]
-                valid_node_ids = {
-                    str(n.get("id", f"n{i}"))
-                    for i, n in enumerate(g_data["nodes"])
-                }
+
+                # Keep only well-formed dict nodes; anything else is dropped
+                # defensively so it can never be used where a hashable value
+                # (like a set element or dict key) is required.
+                sanitized_nodes = []
+                for i, n in enumerate(g_data["nodes"]):
+                    if isinstance(n, dict):
+                        sanitized_nodes.append(n)
+                    # non-dict entries (e.g. stray strings/lists from malformed
+                    # LLM JSON) are silently skipped rather than crashing the pipeline
+                g_data["nodes"] = sanitized_nodes
+
+                valid_node_ids = set()
+                for i, n in enumerate(g_data["nodes"]):
+                    raw_id = n.get("id", f"n{i}")
+                    # raw_id could itself be a nested dict/list if the model
+                    # produced malformed JSON; str() guarantees a hashable value.
+                    valid_node_ids.add(str(raw_id))
+
                 g_data["edges"] = [
                     e for e in g_data.get("edges", [])
-                    if str(e.get("source")) in valid_node_ids
+                    if isinstance(e, dict)
+                    and str(e.get("source")) in valid_node_ids
                     and str(e.get("target")) in valid_node_ids
                 ]
 
