@@ -5,7 +5,6 @@ import requests
 import urllib.parse
 import re
 import time
-import io
 import html
 from datetime import datetime
 from google import genai
@@ -1091,104 +1090,190 @@ def _report_plain_text(markdown_text):
     return html.unescape(cleaned)
 
 def build_html_report(report_text, graph_elements, perspective):
-    """Build a self-contained HTML report with an interactive Cytoscape graph."""
+    """Build a polished HTML report containing the complete report and an interactive graph."""
     graph_json = json.dumps(graph_elements, ensure_ascii=False)
-    report_html = report_text or ""
+    report_html = report_text or "<p>No report content available.</p>"
+
+    layout_names = {
+        "organic": "cose",
+        "hierarchical": "breadthfirst",
+        "concentric": "concentric",
+        "circular": "circle",
+        "grid": "grid"
+    }
+    selected_layout_name = layout_names.get(perspective, "cose")
+
     return f"""<!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8">
-<title>SIS Universal Knowledge Synthesizer Report</title>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SIS Universal Knowledge Synthesizer — Complete Report</title>
 <style>
-body{{font-family:Arial,Helvetica,sans-serif;margin:40px;color:#1d3557;line-height:1.6}}
-.report{{max-width:1200px;margin:auto}}
-.graph{{width:100%;height:850px;border:1px solid #ddd;border-radius:16px;margin-top:25px}}
-h1,h2,h3{{color:#1d3557}}
-</style></head><body><div class="report">
-<h1>SIS Universal Knowledge Synthesizer Report</h1>
-<div>{report_html}</div>
-<h2>Hybrid Semantic System Map — {html.escape(perspective.upper())} VIEW</h2>
-<div id="cy" class="graph"></div>
+:root {{
+    --navy:#1d3557;
+    --blue:#457b9d;
+    --teal:#2a9d8f;
+    --light:#f5f7fa;
+    --border:#dfe5eb;
+    --text:#263238;
+    --muted:#667085;
+}}
+* {{ box-sizing:border-box; }}
+body {{
+    margin:0;
+    background:linear-gradient(135deg,#eef3f7 0%,#ffffff 45%,#f5f8fa 100%);
+    color:var(--text);
+    font-family:"Segoe UI",Arial,Helvetica,sans-serif;
+    line-height:1.7;
+}}
+.page {{ max-width:1400px; margin:0 auto; padding:36px 28px 60px; }}
+.hero {{
+    background:linear-gradient(135deg,var(--navy),var(--blue));
+    color:white;
+    border-radius:24px;
+    padding:38px 42px;
+    box-shadow:0 18px 45px rgba(29,53,87,.20);
+    margin-bottom:28px;
+}}
+.hero h1 {{ margin:0 0 8px; font-size:2.35rem; letter-spacing:-.5px; }}
+.hero p {{ margin:0; opacity:.92; font-size:1.05rem; }}
+.meta {{ display:flex; flex-wrap:wrap; gap:10px; margin-top:22px; }}
+.badge {{
+    display:inline-flex; align-items:center; gap:6px;
+    padding:7px 13px; border-radius:999px;
+    background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.24);
+    font-size:.86rem; font-weight:700;
+}}
+.card {{
+    background:white; border:1px solid var(--border); border-radius:20px;
+    box-shadow:0 8px 30px rgba(29,53,87,.08); padding:30px;
+    margin-bottom:28px;
+}}
+.card h2 {{ margin:0 0 18px; color:var(--navy); font-size:1.45rem; }}
+.report-content {{ font-size:1rem; }}
+.report-content h1,.report-content h2,.report-content h3 {{ color:var(--navy); margin-top:1.4em; }}
+.report-content hr {{ border:0; border-top:1px solid var(--border); margin:26px 0; }}
+.report-content a {{ color:var(--blue); font-weight:700; }}
+.graph-toolbar {{
+    display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+    margin-bottom:14px; padding:12px; background:var(--light);
+    border:1px solid var(--border); border-radius:14px;
+}}
+.graph-toolbar button {{
+    border:0; border-radius:9px; padding:9px 14px; cursor:pointer;
+    background:var(--navy); color:white; font-weight:700;
+}}
+.graph-toolbar button.secondary {{ background:var(--blue); }}
+.graph-toolbar button.teal {{ background:var(--teal); }}
+.graph-toolbar span {{ margin-left:auto; color:var(--muted); font-size:.9rem; font-weight:600; }}
+#cy {{
+    width:100%; height:850px; background:#fff; border:1px solid var(--border);
+    border-radius:18px; box-shadow:inset 0 0 0 1px rgba(255,255,255,.6);
+}}
+.legend {{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+    gap:10px; margin-top:16px;
+}}
+.legend-item {{ padding:11px 13px; border-radius:11px; background:var(--light); border:1px solid var(--border); font-size:.9rem; }}
+.footer {{ text-align:center; color:var(--muted); font-size:.85rem; margin-top:30px; }}
+@media print {{
+    body {{ background:#fff; }}
+    .page {{ max-width:none; padding:10px; }}
+    .graph-toolbar {{ display:none; }}
+    #cy {{ height:700px; }}
+    .card,.hero {{ box-shadow:none; }}
+}}
+</style>
+</head>
+<body>
+<div class="page">
+    <section class="hero">
+        <h1>🧱 SIS Universal Knowledge Synthesizer</h1>
+        <p>Complete integrated research report with interactive semantic system map</p>
+        <div class="meta">
+            <span class="badge">📊 Complete Report + Graph</span>
+            <span class="badge">🎨 {html.escape(perspective.capitalize())} View</span>
+            <span class="badge">🔢 {len([e for e in graph_elements if 'source' not in e.get('data', {{}})])} Nodes</span>
+            <span class="badge">🔗 {len([e for e in graph_elements if 'source' in e.get('data', {{}})])} Relations</span>
+            <span class="badge">🕒 {datetime.now().strftime('%Y-%m-%d %H:%M')}</span>
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>📚 Integrated Hierarchological Report</h2>
+        <div class="report-content">{report_html}</div>
+    </section>
+
+    <section class="card">
+        <h2>🕸️ Hybrid Semantic System Map</h2>
+        <div class="graph-toolbar">
+            <button onclick="zoomIn()">＋ Zoom In</button>
+            <button class="secondary" onclick="zoomOut()">− Zoom Out</button>
+            <button class="teal" onclick="fitGraph()">⛶ Fit</button>
+            <button onclick="downloadPNG()">💾 Export PNG</button>
+            <button class="secondary" onclick="window.print()">🖨️ Print</button>
+            <span>Interactive graph · Mouse wheel / trackpad supported</span>
+        </div>
+        <div id="cy"></div>
+        <div class="legend">
+            <div class="legend-item">⭐ <b>Goal</b> — strategic objective</div>
+            <div class="legend-item">⬢ <b>Domain</b> — science field</div>
+            <div class="legend-item">💠 <b>Innovation</b> — generated breakthrough</div>
+            <div class="legend-item">△ <b>Process</b> — transformation or method</div>
+            <div class="legend-item">▭ <b>Data</b> — fact or component</div>
+            <div class="legend-item">⬣ <b>Rule</b> — constraint or principle</div>
+        </div>
+    </section>
+
+    <div class="footer">SIS Universal Knowledge Synthesizer · Interactive HTML export · Generated {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</div>
 </div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
 <script>
 const elements = {graph_json};
 const cy = cytoscape({{
- container: document.getElementById('cy'),
- elements: elements,
- style: [
- {{selector:'node',style:{{'label':'data(label)','text-valign':'center','text-halign':'center','color':'#1d3557','background-color':'data(color)','width':'data(size)','height':'data(size)','shape':'data(shape)','font-size':'12px','font-weight':'bold','text-wrap':'wrap','text-max-width':'80px','border-width':3,'border-color':'#fff','text-outline-color':'#fff','text-outline-width':2}}}},
- {{selector:'edge',style:{{'width':2,'line-color':'data(color)','label':'data(rel_type)','font-size':'9px','font-weight':'bold','color':'#2a9d8f','curve-style':'unbundled-bezier','target-arrow-color':'data(color)','target-arrow-shape':'vee','text-background-opacity':1,'text-background-color':'#fff','text-background-padding':'3px'}}}},
- {{selector:'edge[rel_type="Generalization"]',style:{{'target-arrow-shape':'triangle','target-arrow-fill':'hollow','width':3}}}},
- {{selector:'edge[rel_type="Realization"]',style:{{'line-style':'dashed','target-arrow-shape':'triangle','target-arrow-fill':'hollow'}}}},
- {{selector:'edge[rel_type="Composition"]',style:{{'source-arrow-shape':'diamond','source-arrow-fill':'filled','width':4}}}},
- {{selector:'edge[rel_type="Aggregation"]',style:{{'source-arrow-shape':'diamond','source-arrow-fill':'hollow','width':3}}}},
- {{selector:'edge[rel_type="Dependency"]',style:{{'line-style':'dashed','target-arrow-shape':'vee'}}}},
- {{selector:'edge[rel_type="Conflict"]',style:{{'width':6,'line-color':'#b91d1d'}}}},
- {{selector:'edge[rel_type="Specialization"]',style:{{'line-style':'dashed','target-arrow-shape':'triangle'}}}},
- {{selector:'edge[rel_type="Containment"]',style:{{'target-arrow-shape':'circle','width':4}}}},
- {{selector:'edge[rel_type="TT"]',style:{{'width':6}}}},
- {{selector:'edge[rel_type="BT"]',style:{{'width':4}}}},
- {{selector:'edge[rel_type="NT"]',style:{{'width':4}}}},
- {{selector:'edge[rel_type="EQ"]',style:{{'width':5}}}},
- {{selector:'edge[rel_type="AND"]',style:{{'width':5}}}},
- {{selector:'edge[rel_type="OR"]',style:{{'width':3,'line-style':'dashed'}}}},
- {{selector:'edge[rel_type="XOR"]',style:{{'width':4,'line-style':'double'}}}},
- {{selector:'edge[rel_type="NOT"]',style:{{'width':4,'line-style':'dashed'}}}},
- {{selector:'edge[rel_type="IF-THEN"]',style:{{'width':4}}}}
- ],
- layout: {json.dumps({"name":"cose","fit":True,"padding":50})}
+    container: document.getElementById('cy'),
+    elements: elements,
+    style: [
+        {{selector:'node',style:{{'label':'data(label)','text-valign':'center','text-halign':'center','color':'#1d3557','background-color':'data(color)','width':'data(size)','height':'data(size)','shape':'data(shape)','font-size':'12px','font-weight':'bold','text-wrap':'wrap','text-max-width':'80px','border-width':3,'border-color':'#fff','text-outline-color':'#fff','text-outline-width':2}}}},
+        {{selector:'edge',style:{{'width':2,'line-color':'data(color)','label':'data(rel_type)','font-size':'9px','font-weight':'bold','color':'#2a9d8f','curve-style':'unbundled-bezier','target-arrow-color':'data(color)','target-arrow-shape':'vee','text-background-opacity':1,'text-background-color':'#fff','text-background-padding':'3px'}}}},
+        {{selector:'edge[rel_type="Generalization"]',style:{{'target-arrow-shape':'triangle','target-arrow-fill':'hollow','width':3}}}},
+        {{selector:'edge[rel_type="Realization"]',style:{{'line-style':'dashed','target-arrow-shape':'triangle','target-arrow-fill':'hollow'}}}},
+        {{selector:'edge[rel_type="Composition"]',style:{{'source-arrow-shape':'diamond','source-arrow-fill':'filled','width':4}}}},
+        {{selector:'edge[rel_type="Aggregation"]',style:{{'source-arrow-shape':'diamond','source-arrow-fill':'hollow','width':3}}}},
+        {{selector:'edge[rel_type="Dependency"]',style:{{'line-style':'dashed','target-arrow-shape':'vee'}}}},
+        {{selector:'edge[rel_type="Conflict"]',style:{{'width':6,'line-color':'#b91d1d','target-arrow-color':'#b91d1d'}}}},
+        {{selector:'edge[rel_type="Specialization"]',style:{{'line-style':'dashed','target-arrow-shape':'triangle'}}}},
+        {{selector:'edge[rel_type="Containment"]',style:{{'target-arrow-shape':'circle','width':4}}}},
+        {{selector:'edge[rel_type="TT"]',style:{{'width':6}}}},
+        {{selector:'edge[rel_type="BT"]',style:{{'width':4}}}},
+        {{selector:'edge[rel_type="NT"]',style:{{'width':4}}}},
+        {{selector:'edge[rel_type="EQ"]',style:{{'width':5}}}},
+        {{selector:'edge[rel_type="RT"]',style:{{'line-style':'dotted','target-arrow-shape':'none'}}}},
+        {{selector:'edge[rel_type="AS"]',style:{{'line-style':'dashed'}}}},
+        {{selector:'edge[rel_type="IN"]',style:{{'target-arrow-shape':'triangle'}}}},
+        {{selector:'edge[rel_type="AND"]',style:{{'width':5}}}},
+        {{selector:'edge[rel_type="OR"]',style:{{'width':3,'line-style':'dashed'}}}},
+        {{selector:'edge[rel_type="XOR"]',style:{{'width':4,'line-style':'double'}}}},
+        {{selector:'edge[rel_type="NOT"]',style:{{'width':4,'line-style':'dashed'}}}},
+        {{selector:'edge[rel_type="IF-THEN"]',style:{{'width':4}}}}
+    ],
+    layout: {{name:{json.dumps(selected_layout_name)}, fit:true, padding:60}}
 }});
-</script></body></html>"""
-
-def build_pdf_report(report_text, graph_elements, perspective):
-    """Generate a PDF containing the textual report and a graph visualization."""
-    from reportlab.lib.pagesizes import A4, landscape
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib.units import cm
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
-    from reportlab.pdfbase.ttfonts import TTFont
-    from reportlab.pdfbase import pdfmetrics
-    from reportlab.lib.utils import ImageReader
-    import matplotlib.pyplot as plt
-    import networkx as nx
-
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=1.5*cm, leftMargin=1.5*cm,
-                            topMargin=1.5*cm, bottomMargin=1.5*cm)
-    styles = getSampleStyleSheet()
-    styles.add(ParagraphStyle(name="SmallReport", parent=styles["BodyText"], fontSize=8.5, leading=12))
-    story = [Paragraph("SIS Universal Knowledge Synthesizer Report", styles["Title"])]
-    plain = _report_plain_text(report_text)
-    for block in re.split(r'\n\s*\n', plain):
-        if block.strip():
-            safe = html.escape(block.strip()).replace("\n", "<br/>")
-            story.append(Paragraph(safe, styles["SmallReport"]))
-            story.append(Spacer(1, 0.18*cm))
-
-    story.append(PageBreak())
-    story.append(Paragraph(f"Hybrid Semantic System Map — {perspective.upper()} VIEW", styles["Heading2"]))
-    G = nx.DiGraph()
-    nodes = [e["data"] for e in graph_elements if "source" not in e.get("data", {})]
-    edges = [e["data"] for e in graph_elements if "source" in e.get("data", {})]
-    for n in nodes: G.add_node(n.get("id"), label=n.get("label","Node"))
-    for e in edges:
-        if e.get("source") in G and e.get("target") in G: G.add_edge(e["source"], e["target"], label=e.get("rel_type",""))
-    fig, ax = plt.subplots(figsize=(10,7))
-    if len(G):
-        pos = nx.spring_layout(G, seed=42, k=max(0.4, 2.0/(len(G)**0.5)), iterations=80)
-        nx.draw_networkx_nodes(G, pos, node_size=850, ax=ax)
-        nx.draw_networkx_edges(G, pos, arrows=True, alpha=0.6, ax=ax)
-        nx.draw_networkx_labels(G, pos, labels=nx.get_node_attributes(G,"label"), font_size=6, ax=ax)
-    ax.set_axis_off()
-    img = io.BytesIO()
-    fig.savefig(img, format="png", dpi=180, bbox_inches="tight", facecolor="white")
-    plt.close(fig)
-    img.seek(0)
-    story.append(Spacer(1, 0.2*cm))
-    from reportlab.platypus import Image
-    story.append(Image(img, width=17*cm, height=11.5*cm))
-    doc.build(story)
-    buffer.seek(0)
-    return buffer.getvalue()
+function zoomIn() {{ cy.zoom({{level:Math.min(cy.zoom()*1.25,4), renderedPosition:{{x:cy.width()/2,y:cy.height()/2}}}}); }}
+function zoomOut() {{ cy.zoom({{level:Math.max(cy.zoom()/1.25,.15), renderedPosition:{{x:cy.width()/2,y:cy.height()/2}}}}); }}
+function fitGraph() {{ cy.fit(undefined,60); }}
+function downloadPNG() {{
+    const png64=cy.png({{full:true,bg:'white',scale:2}});
+    const link=document.createElement('a');
+    link.href=png64;
+    link.download='SIS_Semantic_System_Map.png';
+    link.click();
+}}
+</script>
+</body>
+</html>"""
 
 # --- MAIN PAGE CONTENT ---
 st.markdown('<h1 class="main-header-gradient">🧱 SIS Universal Knowledge Synthesizer</h1>', unsafe_allow_html=True)
@@ -1785,31 +1870,16 @@ Do not place explanatory text after the JSON object.
                     container_id=f"cy_{int(time.time())}"
                 )
 
-                # --- REPORT EXPORT: COMPLETE REPORT + GRAPH ---
+                # --- REPORT EXPORT: COMPLETE REPORT + INTERACTIVE GRAPH (HTML) ---
                 export_html = build_html_report(final_interactive_report, final_elements, graph_perspective)
-                export_col1, export_col2 = st.columns(2)
-                with export_col1:
-                    st.download_button(
-                        "🌐 EXPORT COMPLETE REPORT + GRAPH (HTML)",
-                        data=export_html,
-                        file_name=f"SIS_Universal_Knowledge_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html",
-                        mime="text/html",
-                        use_container_width=True,
-                        key="export_complete_html"
-                    )
-                with export_col2:
-                    try:
-                        export_pdf = build_pdf_report(final_interactive_report, final_elements, graph_perspective)
-                        st.download_button(
-                            "📄 EXPORT COMPLETE REPORT + GRAPH (PDF)",
-                            data=export_pdf,
-                            file_name=f"SIS_Universal_Knowledge_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
-                            mime="application/pdf",
-                            use_container_width=True,
-                            key="export_complete_pdf"
-                        )
-                    except Exception as export_exc:
-                        st.warning(f"⚠️ PDF export is unavailable in this environment: {export_exc}")
+                st.download_button(
+                    "🌐 EXPORT COMPLETE REPORT + INTERACTIVE GRAPH (HTML)",
+                    data=export_html,
+                    file_name=f"SIS_Universal_Knowledge_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html",
+                    mime="text/html",
+                    use_container_width=True,
+                    key="export_complete_html"
+                )
 
                 # --- NOVO: SHRANJEVANJE ZA GALERIJO (DODANO NA KONEC POROČILA) ---
                 st.session_state.final_graph_elements = final_elements
