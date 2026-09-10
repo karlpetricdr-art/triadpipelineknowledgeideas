@@ -5,6 +5,8 @@ import requests
 import urllib.parse
 import re
 import time
+import io
+import html
 from datetime import datetime
 from google import genai
 from google.genai import types
@@ -282,7 +284,12 @@ def render_cytoscape_network(elements, layout_type="hierarchical", container_id=
 
     cyto_html = f"""
     <div style="position: relative; width: 100%;">
-        <button id="save_btn" style="position: absolute; top: 15px; right: 15px; z-index: 1000; padding: 10px 15px; background: #1d3557; color: white; border: none; border-radius: 8px; cursor: pointer; font-family: sans-serif; font-size: 12px; font-weight: 800; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">💾 EXPORT {layout_type.upper()} PNG</button>
+        <div style="position: absolute; top: 15px; right: 15px; z-index: 1000; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end;">
+            <button id="zoom_in_{container_id}" style="padding: 8px 11px; background: #1d3557; color: white; border: none; border-radius: 7px; cursor: pointer; font-weight: 800;">＋ Zoom In</button>
+            <button id="zoom_out_{container_id}" style="padding: 8px 11px; background: #457b9d; color: white; border: none; border-radius: 7px; cursor: pointer; font-weight: 800;">− Zoom Out</button>
+            <button id="zoom_fit_{container_id}" style="padding: 8px 11px; background: #2a9d8f; color: white; border: none; border-radius: 7px; cursor: pointer; font-weight: 800;">⛶ Fit</button>
+            <button id="save_btn_{container_id}" style="padding: 8px 11px; background: #1d3557; color: white; border: none; border-radius: 7px; cursor: pointer; font-weight: 800;">💾 PNG</button>
+        </div>
         <div id="{container_id}" style="width: 100%; height: 850px; background: #ffffff; border-radius: 20px; border: 1px solid #e0e0e0; box-shadow: 0 10px 40px rgba(0,0,0,0.08);"></div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
@@ -368,11 +375,20 @@ def render_cytoscape_network(elements, layout_type="hierarchical", container_id=
                 layout: {selected_layout}
             }});
 
-            document.getElementById('save_btn').addEventListener('click', function() {{
+            document.getElementById('zoom_in_{container_id}').addEventListener('click', function() {{
+                cy.zoom({{ level: Math.min(cy.zoom() * 1.25, 4), renderedPosition: {{ x: cy.width()/2, y: cy.height()/2 }} }});
+            }});
+            document.getElementById('zoom_out_{container_id}').addEventListener('click', function() {{
+                cy.zoom({{ level: Math.max(cy.zoom() / 1.25, 0.15), renderedPosition: {{ x: cy.width()/2, y: cy.height()/2 }} }});
+            }});
+            document.getElementById('zoom_fit_{container_id}').addEventListener('click', function() {{
+                cy.fit(undefined, 50);
+            }});
+            document.getElementById('save_btn_{container_id}').addEventListener('click', function() {{
                 var png64 = cy.png({{full: true, bg: 'white', scale: 2}});
                 var link = document.createElement('a');
                 var timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-                link.href = png64; 
+                link.href = png64;
                 link.download = 'hierarchograph_{layout_type}_' + timestamp + '.png';
                 link.click();
             }});
@@ -986,6 +1002,15 @@ with st.sidebar:
         key="side_graph_layout_v2026"
     )
 
+    graph_node_count = st.slider(
+        "🔢 Number of Graph Nodes:",
+        min_value=10,
+        max_value=80,
+        value=50,
+        step=1,
+        help="Set the maximum number of nodes displayed in the semantic graph."
+    )
+
     st.divider()
 
     # 5. Reset in Guide Gumbi (Dodani unikatni ključi)
@@ -1054,6 +1079,116 @@ with st.sidebar:
     with st.expander("🏗️ Structural Model Context", expanded=False):
         for m, d in KNOWLEDGE_BASE["Structural models"].items(): 
             st.markdown(f"**{m}**: {d}")
+
+# =============================================================================
+# 3.9 REPORT EXPORT HELPERS
+# =============================================================================
+def _report_plain_text(markdown_text):
+    """Create readable plain text from the generated Markdown/HTML report."""
+    cleaned = re.sub(r'<[^>]+>', '', markdown_text or '')
+    cleaned = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', cleaned)
+    cleaned = re.sub(r'[#*_`]', '', cleaned)
+    return html.unescape(cleaned)
+
+def build_html_report(report_text, graph_elements, perspective):
+    """Build a self-contained HTML report with an interactive Cytoscape graph."""
+    graph_json = json.dumps(graph_elements, ensure_ascii=False)
+    report_html = report_text or ""
+    return f"""<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<title>SIS Universal Knowledge Synthesizer Report</title>
+<style>
+body{{font-family:Arial,Helvetica,sans-serif;margin:40px;color:#1d3557;line-height:1.6}}
+.report{{max-width:1200px;margin:auto}}
+.graph{{width:100%;height:850px;border:1px solid #ddd;border-radius:16px;margin-top:25px}}
+h1,h2,h3{{color:#1d3557}}
+</style></head><body><div class="report">
+<h1>SIS Universal Knowledge Synthesizer Report</h1>
+<div>{report_html}</div>
+<h2>Hybrid Semantic System Map — {html.escape(perspective.upper())} VIEW</h2>
+<div id="cy" class="graph"></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
+<script>
+const elements = {graph_json};
+const cy = cytoscape({{
+ container: document.getElementById('cy'),
+ elements: elements,
+ style: [
+ {{selector:'node',style:{{'label':'data(label)','text-valign':'center','text-halign':'center','color':'#1d3557','background-color':'data(color)','width':'data(size)','height':'data(size)','shape':'data(shape)','font-size':'12px','font-weight':'bold','text-wrap':'wrap','text-max-width':'80px','border-width':3,'border-color':'#fff','text-outline-color':'#fff','text-outline-width':2}}}},
+ {{selector:'edge',style:{{'width':2,'line-color':'data(color)','label':'data(rel_type)','font-size':'9px','font-weight':'bold','color':'#2a9d8f','curve-style':'unbundled-bezier','target-arrow-color':'data(color)','target-arrow-shape':'vee','text-background-opacity':1,'text-background-color':'#fff','text-background-padding':'3px'}}}},
+ {{selector:'edge[rel_type="Generalization"]',style:{{'target-arrow-shape':'triangle','target-arrow-fill':'hollow','width':3}}}},
+ {{selector:'edge[rel_type="Realization"]',style:{{'line-style':'dashed','target-arrow-shape':'triangle','target-arrow-fill':'hollow'}}}},
+ {{selector:'edge[rel_type="Composition"]',style:{{'source-arrow-shape':'diamond','source-arrow-fill':'filled','width':4}}}},
+ {{selector:'edge[rel_type="Aggregation"]',style:{{'source-arrow-shape':'diamond','source-arrow-fill':'hollow','width':3}}}},
+ {{selector:'edge[rel_type="Dependency"]',style:{{'line-style':'dashed','target-arrow-shape':'vee'}}}},
+ {{selector:'edge[rel_type="Conflict"]',style:{{'width':6,'line-color':'#b91d1d'}}}},
+ {{selector:'edge[rel_type="Specialization"]',style:{{'line-style':'dashed','target-arrow-shape':'triangle'}}}},
+ {{selector:'edge[rel_type="Containment"]',style:{{'target-arrow-shape':'circle','width':4}}}},
+ {{selector:'edge[rel_type="TT"]',style:{{'width':6}}}},
+ {{selector:'edge[rel_type="BT"]',style:{{'width':4}}}},
+ {{selector:'edge[rel_type="NT"]',style:{{'width':4}}}},
+ {{selector:'edge[rel_type="EQ"]',style:{{'width':5}}}},
+ {{selector:'edge[rel_type="AND"]',style:{{'width':5}}}},
+ {{selector:'edge[rel_type="OR"]',style:{{'width':3,'line-style':'dashed'}}}},
+ {{selector:'edge[rel_type="XOR"]',style:{{'width':4,'line-style':'double'}}}},
+ {{selector:'edge[rel_type="NOT"]',style:{{'width':4,'line-style':'dashed'}}}},
+ {{selector:'edge[rel_type="IF-THEN"]',style:{{'width':4}}}}
+ ],
+ layout: {json.dumps({"name":"cose","fit":True,"padding":50})}
+}});
+</script></body></html>"""
+
+def build_pdf_report(report_text, graph_elements, perspective):
+    """Generate a PDF containing the textual report and a graph visualization."""
+    from reportlab.lib.pagesizes import A4, landscape
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import cm
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
+    from reportlab.pdfbase.ttfonts import TTFont
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.lib.utils import ImageReader
+    import matplotlib.pyplot as plt
+    import networkx as nx
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=1.5*cm, leftMargin=1.5*cm,
+                            topMargin=1.5*cm, bottomMargin=1.5*cm)
+    styles = getSampleStyleSheet()
+    styles.add(ParagraphStyle(name="SmallReport", parent=styles["BodyText"], fontSize=8.5, leading=12))
+    story = [Paragraph("SIS Universal Knowledge Synthesizer Report", styles["Title"])]
+    plain = _report_plain_text(report_text)
+    for block in re.split(r'\n\s*\n', plain):
+        if block.strip():
+            safe = html.escape(block.strip()).replace("\n", "<br/>")
+            story.append(Paragraph(safe, styles["SmallReport"]))
+            story.append(Spacer(1, 0.18*cm))
+
+    story.append(PageBreak())
+    story.append(Paragraph(f"Hybrid Semantic System Map — {perspective.upper()} VIEW", styles["Heading2"]))
+    G = nx.DiGraph()
+    nodes = [e["data"] for e in graph_elements if "source" not in e.get("data", {})]
+    edges = [e["data"] for e in graph_elements if "source" in e.get("data", {})]
+    for n in nodes: G.add_node(n.get("id"), label=n.get("label","Node"))
+    for e in edges:
+        if e.get("source") in G and e.get("target") in G: G.add_edge(e["source"], e["target"], label=e.get("rel_type",""))
+    fig, ax = plt.subplots(figsize=(10,7))
+    if len(G):
+        pos = nx.spring_layout(G, seed=42, k=max(0.4, 2.0/(len(G)**0.5)), iterations=80)
+        nx.draw_networkx_nodes(G, pos, node_size=850, ax=ax)
+        nx.draw_networkx_edges(G, pos, arrows=True, alpha=0.6, ax=ax)
+        nx.draw_networkx_labels(G, pos, labels=nx.get_node_attributes(G,"label"), font_size=6, ax=ax)
+    ax.set_axis_off()
+    img = io.BytesIO()
+    fig.savefig(img, format="png", dpi=180, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+    img.seek(0)
+    story.append(Spacer(1, 0.2*cm))
+    from reportlab.platypus import Image
+    story.append(Image(img, width=17*cm, height=11.5*cm))
+    doc.build(story)
+    buffer.seek(0)
+    return buffer.getvalue()
 
 # --- MAIN PAGE CONTENT ---
 st.markdown('<h1 class="main-header-gradient">🧱 SIS Universal Knowledge Synthesizer</h1>', unsafe_allow_html=True)
@@ -1468,6 +1603,20 @@ Do not place explanatory text after the JSON object.
                 f"{innovation_text}"
             )
 
+            # --- NODE COUNT CONTROL (10–80) ---
+            # Preserve the selected maximum number of nodes and remove orphaned edges.
+            if isinstance(g_data.get("nodes"), list):
+                g_data["nodes"] = g_data["nodes"][:graph_node_count]
+                valid_node_ids = {
+                    str(n.get("id", f"n{i}"))
+                    for i, n in enumerate(g_data["nodes"])
+                }
+                g_data["edges"] = [
+                    e for e in g_data.get("edges", [])
+                    if str(e.get("source")) in valid_node_ids
+                    and str(e.get("target")) in valid_node_ids
+                ]
+
             # --- PROCESIRANJE VOZLIŠČ Z DINAMIČNO VELIKOSTJO ---
             if g_data.get("nodes"):
                 for n in g_data.get("nodes", []):
@@ -1635,6 +1784,32 @@ Do not place explanatory text after the JSON object.
                     layout_type=graph_perspective, 
                     container_id=f"cy_{int(time.time())}"
                 )
+
+                # --- REPORT EXPORT: COMPLETE REPORT + GRAPH ---
+                export_html = build_html_report(final_interactive_report, final_elements, graph_perspective)
+                export_col1, export_col2 = st.columns(2)
+                with export_col1:
+                    st.download_button(
+                        "🌐 EXPORT COMPLETE REPORT + GRAPH (HTML)",
+                        data=export_html,
+                        file_name=f"SIS_Universal_Knowledge_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html",
+                        mime="text/html",
+                        use_container_width=True,
+                        key="export_complete_html"
+                    )
+                with export_col2:
+                    try:
+                        export_pdf = build_pdf_report(final_interactive_report, final_elements, graph_perspective)
+                        st.download_button(
+                            "📄 EXPORT COMPLETE REPORT + GRAPH (PDF)",
+                            data=export_pdf,
+                            file_name=f"SIS_Universal_Knowledge_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+                            mime="application/pdf",
+                            use_container_width=True,
+                            key="export_complete_pdf"
+                        )
+                    except Exception as export_exc:
+                        st.warning(f"⚠️ PDF export is unavailable in this environment: {export_exc}")
 
                 # --- NOVO: SHRANJEVANJE ZA GALERIJO (DODANO NA KONEC POROČILA) ---
                 st.session_state.final_graph_elements = final_elements
