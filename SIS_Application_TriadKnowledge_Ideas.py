@@ -694,7 +694,17 @@ KNOWLEDGE_BASE = {
         "Hermeneutics": "Theory and methodology of interpretation, especially of texts and human actions.",
         "Relativism": "The view that truth and falsity, right and wrong, are products of social and historical contexts.",
         "Structuralism": "Elements of human culture must be understood in terms of their relationship to a broader system.",
-        "Post-Structuralism": "Critique of structuralism, emphasizing the instability of meaning and systems."
+        "Post-Structuralism": "Critique of structuralism, emphasizing the instability of meaning and systems.",
+        "Scientific Realism": "The view that scientific theories can provide approximately true descriptions of a mind-independent reality, including entities not directly observable.",
+        "Critical Realism": "A stratified view of reality distinguishing observable events, underlying mechanisms, and generative structures while recognizing limits of observation.",
+        "Postpositivism": "A fallibilist approach to science recognizing that observations and theories are theory-laden, while retaining systematic empirical testing and critical evaluation.",
+        "Bayesianism": "An inferential framework in which hypotheses are updated by evidence through probabilistic reasoning and explicit prior assumptions.",
+        "Mechanistic Explanation": "Explaining phenomena by identifying entities, activities, organization, and interactions that generate observable outcomes.",
+        "Evolutionary Paradigm": "Understanding change through variation, selection, inheritance, adaptation, and historical processes across biological and social systems.",
+        "Complexity and Emergence": "Explaining system-level patterns as emergent outcomes of nonlinear interactions among interconnected components.",
+        "Cybernetics": "The study of feedback, regulation, communication, control, and adaptive behavior in complex systems.",
+        "Computational Paradigm": "Treating computation, algorithms, information processing, and simulation as fundamental means for representing and investigating phenomena.",
+        "Process Philosophy": "Understanding reality primarily in terms of processes, relations, transformation, and becoming rather than static entities alone."
     },
     "Structural models": {
         "Causal Connections": "Chains of cause and effect mapping systemic causality.",
