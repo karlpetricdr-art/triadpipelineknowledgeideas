@@ -718,6 +718,12 @@ KNOWLEDGE_BASE = {
             "tools": ["Accelerator", "Spectrometer", "Oscilloscopes", "Cryostats"], 
             "facets": ["Relativity", "Quantum Mechanics", "Thermodynamics", "Optics"]
         },
+        "Astronomy": {
+            "cat": "Natural", 
+            "methods": ["Observational Astronomy", "Astrophysical Modeling", "Spectroscopy", "Astrometry"], 
+            "tools": ["Telescopes", "Spectrographs", "Radio Interferometers", "Space Observatories"], 
+            "facets": ["Planetary Science", "Stellar Astronomy", "Galactic Astronomy", "Cosmology"]
+        },
         "Chemistry": {
             "cat": "Natural", 
             "methods": ["Organic Synthesis", "Chromatography", "NMR Spectroscopy", "Titration"], 
@@ -963,10 +969,10 @@ with st.sidebar:
     st.subheader("🎨 GRAPH PERSPECTIVE")
     graph_perspective = st.selectbox(
         "Select Visual Layout Engine:",
-        options=["hierarchical", "concentric", "circular", "grid"],
+        options=["organic", "hierarchical", "concentric", "circular", "grid"],
         index=0,
         format_func=lambda x: x.capitalize() + " View",
-        help="Hierarchical: drevesna struktura | Concentric: Macro-Meso-Micro | Circular: relacije | Grid: pregled",
+        help="Organic: naravna tematska struktura | Hierarchical: drevesna struktura | Concentric: Macro-Meso-Micro | Circular: relacije | Grid: pregled",
         key="side_graph_layout_v2026"
     )
 
