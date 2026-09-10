@@ -1088,6 +1088,34 @@ with r2c1: sel_paradigms = st.multiselect("4. Scientific Paradigms:", list(KNOWL
 with r2c2: sel_models = st.multiselect("5. Structural Models:", list(KNOWLEDGE_BASE["Structural models"].keys()), default=["Concepts"])
 with r2c3: goal_context = st.selectbox("6. Strategic Project Goal:", ["Scientific Research", "Problem Solving", "Educational", "Policy Making"])
 
+# --- METHODOLOGY & TOOLS UI (ACTIVATED BEFORE INNOVATION STRATEGY) ---
+available_methods = sorted({
+    method
+    for science in sel_sciences
+    for method in KNOWLEDGE_BASE["Science fields"].get(science, {}).get("methods", [])
+})
+available_tools = sorted({
+    tool
+    for science in sel_sciences
+    for tool in KNOWLEDGE_BASE["Science fields"].get(science, {}).get("tools", [])
+})
+
+r3c1, r3c2 = st.columns(2)
+with r3c1:
+    sel_methods = st.multiselect(
+        "7. Methodology:",
+        available_methods,
+        default=available_methods,
+        help="Select the scientific methods relevant to the selected science fields."
+    )
+with r3c2:
+    sel_tools = st.multiselect(
+        "8. Tools:",
+        available_tools,
+        default=available_tools,
+        help="Select the scientific tools relevant to the selected science fields."
+    )
+
 st.divider()
 # --- ADVANCED MULTI-IDEATION UI ---
 st.markdown("### 🧬 INNOVATION STRATEGY")
@@ -1235,6 +1263,8 @@ INTERFACE PARAMETERS:
 - Target Science Fields: {', '.join(sel_sciences)}
 - Scientific Paradigms: {', '.join(sel_paradigms)}
 - Structural Models: {', '.join(sel_models)}
+- Methodology: {', '.join(sel_methods)}
+- Tools: {', '.join(sel_tools)}
 - Innovation Frameworks: {', '.join(selected_techniques)}
 - Expertise Level: {expertise}
 - Strategic Goal: {goal_context}
@@ -1270,6 +1300,8 @@ Requirements:
 Selected sciences: {', '.join(sel_sciences)}
 Selected paradigms: {', '.join(sel_paradigms)}
 Selected structural models: {', '.join(sel_models)}
+Selected methodology: {', '.join(sel_methods)}
+Selected tools: {', '.join(sel_tools)}
 Expertise: {expertise}
 Strategic goal: {goal_context}
 
@@ -1313,6 +1345,12 @@ AVAILABLE MA NAMES:
 
 SELECTED IDEATION FRAMEWORKS:
 {', '.join(selected_techniques)}
+
+SELECTED METHODOLOGY:
+{', '.join(sel_methods)}
+
+SELECTED TOOLS:
+{', '.join(sel_tools)}
 
 For each of 3–4 innovations explicitly state:
 - IMA finding
