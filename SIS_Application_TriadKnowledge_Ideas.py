@@ -168,7 +168,8 @@ st.markdown("""
         font-size: 2.8rem;
     }
 
-    .date-badge {
+    .date-badge,
+    .date-badge * {
         background: #12345b !important;
         color: #ffffff !important;
         padding: 10px 14px;
@@ -185,7 +186,6 @@ st.markdown("""
         line-height: 1.25;
         box-shadow: 0 4px 15px rgba(29, 53, 87, 0.3);
         letter-spacing: 1px;
-        color: #ffffff !important;
     }
 
     .sidebar-logo-container {
@@ -858,6 +858,14 @@ QUALITY_DIMENSIONS = [
     "practicality",
     "clarity",
 ]
+QUALITY_WEIGHTS = {
+    "conceptual_novelty": 0.22,
+    "systemic_architecture": 0.24,
+    "interdisciplinary_integration": 0.18,
+    "practicality": 0.22,
+    "clarity": 0.14,
+}
+MIN_QUALITY_IMPROVEMENT = 0.10
 
 RELATION_TYPES = [
     "TT", "BT", "NT", "RT", "EQ", "AS", "IN",
@@ -1487,24 +1495,26 @@ with st.sidebar:
     st.subheader("🧠 QUALITY CRITIC / REFINER")
     enable_quality = st.checkbox(
         "Enable Quality Critic / Refiner",
-        value=False,
-        help="OFF by default. When OFF, no critic/refiner model call is made. When ON, the system scores and optionally refines the result."
+        value=True,
+        help="Recommended. The system audits every draft, applies evidence-based repairs, and keeps a revision only when its independently recomputed score improves."
     )
     if enable_quality:
         critic_model_label = st.selectbox(
             "Critic / Refiner model:", list(GOOGLE_MODELS.keys()),
-            index=min(1, len(GOOGLE_MODELS)-1), key="critic_model_v252"
+            index=list(GOOGLE_MODELS.keys()).index("Gemini 2.5 Pro"),
+            key="critic_model_v252"
         )
         critic_model = GOOGLE_MODELS[critic_model_label]
         optimization_rounds = st.slider(
-            "Refinement rounds:", 0, 2, 1,
-            help="Only used when Quality Critic / Refiner is enabled."
+            "Refinement rounds:", 1, 3, 2,
+            help="Each round is re-audited. A revision is retained only if it improves the independently recomputed quality score."
         )
         target_score = st.number_input(
-            "Target overall score:", min_value=9.0, max_value=10.0,
-            value=9.9, step=0.05
+            "Target overall score:", min_value=7.0, max_value=10.0,
+            value=9.0, step=0.05,
+            help="Use a demanding but attainable target. Scores are evidence-gated rather than treated as a promise."
         )
-        st.caption("Target dimensions: novelty · systemic architecture · interdisciplinarity · practicality · clarity")
+        st.caption("Evidence-gated dimensions: novelty · systemic architecture · interdisciplinarity · practicality · clarity")
     else:
         critic_model_label = "Disabled"
         critic_model = None
@@ -1569,7 +1579,6 @@ with st.sidebar:
 # Main UI
 # -------------------------------------------------------------------------
 st.markdown('<h1 class="main-header-gradient">🧱 SIS Universal Knowledge Synthesizer</h1>', unsafe_allow_html=True)
-st.markdown(f'<div class="date-badge" style="max-width:520px;margin:0 auto 18px auto;">CURRENT DATE — {SYSTEM_DATE.upper()}</div>', unsafe_allow_html=True)
 st.markdown(
     f"**Adaptive multi-stage architecture v25.2** | "
     f"Quality Critic: **{'ON' if enable_quality else 'OFF'}**" +
@@ -1716,6 +1725,60 @@ def google_generate(client, model_id, system_prompt, user_content, temperature, 
             raise
     raise RuntimeError(f"Google API unavailable: {last_exc}")
 
+def normalize_quality_evaluation(raw_evaluation):
+    """Validate audit output and calculate the overall score from the five rubric scores.
+ 
+    The model is allowed to assess dimensions, but it cannot self-declare an inflated
+    overall score. Missing dimensions or missing evidence make an audit invalid.
+    """
+    if not isinstance(raw_evaluation, dict):
+        return {}
+ 
+    raw_scores = raw_evaluation.get("scores", {})
+    if not isinstance(raw_scores, dict):
+        return {}
+ 
+    normalized_scores = {}
+    for dimension in QUALITY_DIMENSIONS:
+        value = raw_scores.get(dimension)
+        if not isinstance(value, (int, float)):
+            return {}
+        normalized_scores[dimension] = round(max(0.0, min(float(value), 10.0)), 2)
+ 
+    evidence = raw_evaluation.get("evidence", {})
+    evidence_is_complete = (
+        isinstance(evidence, dict)
+        and all(str(evidence.get(dimension, "")).strip() for dimension in QUALITY_DIMENSIONS)
+    )
+    overall_score = round(
+        sum(normalized_scores[dimension] * QUALITY_WEIGHTS[dimension]
+            for dimension in QUALITY_DIMENSIONS),
+        2,
+    )
+    raw_evaluation["scores"] = normalized_scores
+    raw_evaluation["overall_score"] = overall_score
+    raw_evaluation["evidence_complete"] = evidence_is_complete
+    raw_evaluation["audit_valid"] = evidence_is_complete
+    for field_name in ("strengths", "gaps", "repair_actions"):
+        if not isinstance(raw_evaluation.get(field_name), list):
+            raw_evaluation[field_name] = []
+    if not evidence_is_complete:
+        raw_evaluation["gaps"].append(
+            "Audit is incomplete: each rubric score must cite concrete supporting evidence or a specific absence."
+        )
+    return raw_evaluation
+ 
+ 
+def quality_score(evaluation):
+    """Return a usable score only for a complete, validated audit."""
+    if not isinstance(evaluation, dict):
+        return None
+    score = evaluation.get("overall_score")
+    if evaluation.get("audit_valid") and isinstance(score, (int, float)):
+        return float(score)
+    return None
+ 
+ 
 def evaluate_quality(client, model_id, synthesis, innovation, objective, target):
     prompt = f"""
 You are the independent SIS Quality Auditor. Evaluate the proposed synthesis and
@@ -1727,12 +1790,21 @@ innovation architecture against EXACTLY five dimensions, each from 0.00 to 10.00
 4 practicality
 5 clarity
 
-Do not reward verbosity. Reward explicit mechanisms, non-obvious but defensible
-conceptual combinations, coherent architecture, cross-field transfer, implementability,
-and clear communication. Detect generic brainstorming, unsupported claims, logical gaps,
-circular reasoning, and decorative graph concepts.
-
-Target: {target:.2f}+.
+Do not reward verbosity or claimed confidence. Score only what is present in the supplied
+IMA and MA text. Reward explicit mechanisms, non-obvious but defensible conceptual
+combinations, coherent architecture, cross-field mechanism transfer, implementability,
+and clear communication. Penalize generic brainstorming, unsupported claims, logical
+gaps, circular reasoning, decorative graph concepts, and innovations without a
+test/falsification condition.
+ 
+The target of {target:.2f} is a stopping threshold, NOT evidence of quality and must not
+influence any individual score. Be demanding: a score above 9 requires unusually strong,
+concrete and testable support.
+ 
+For every dimension, provide a short evidence statement that cites a concrete mechanism,
+claim, or a specific absence from the supplied text. If there is no evidence, state that
+explicitly and score conservatively.
+ 
 Return JSON ONLY:
 {{
   "scores": {{
@@ -1742,7 +1814,13 @@ Return JSON ONLY:
     "practicality": 0.0,
     "clarity": 0.0
   }},
-  "overall_score": 0.0,
+  "evidence": {{
+    "conceptual_novelty": "",
+    "systemic_architecture": "",
+    "interdisciplinary_integration": "",
+    "practicality": "",
+    "clarity": ""
+  }},
   "strengths": [],
   "gaps": [],
   "repair_actions": []
@@ -1758,7 +1836,7 @@ MA INNOVATION:
 {innovation}
 """
     raw = google_generate(client, model_id, prompt, objective, temperature=0.15)
-    return extract_json_object(raw) or {}
+    return normalize_quality_evaluation(extract_json_object(raw) or {})
 
 def build_architecture_context():
     ima = "\n".join(
@@ -1906,34 +1984,42 @@ No duplicate edges, no orphan edges, no decorative bridges.
                 phase2_raw = google_generate(
                     client, p2_model, phase2_prompt,
                     f"IMA FOUNDATION:\n{phase1}\n\nINNOVATION OBJECTIVE:\n{idea_query}{file_context}",
-                    temperature=0.80
+                    temperature=0.65
                 )
             innovation_text, graph_data = parse_graph_payload(phase2_raw)
             graph_data = normalize_graph(graph_data, max_nodes=graph_node_count, max_edges=80)
             graph_data = ensure_graph_backbone(graph_data, sel_sciences, graph_node_count)
 
-            # Quality Critic / Refiner is strictly opt-in.
+            # Quality Critic / Refiner: audit first, then retain only measured improvements.
             evaluation = {}
+            quality_history = []
             if enable_quality:
                 with st.spinner(f"QUALITY AUDIT — {critic_model_label}"):
                     evaluation = evaluate_quality(
                         client, critic_model, phase1, innovation_text,
                         idea_query or user_query, target_score
                     )
-
-            # Adaptive repair loop — only when explicitly enabled.
+                quality_history.append({
+                    "round": 0,
+                    "score": quality_score(evaluation),
+                    "accepted": True,
+                    "status": "Baseline audit",
+                })
+ 
+            # Adaptive repair loop. It never replaces a better baseline with a weaker draft.
             for round_no in range(optimization_rounds if enable_quality else 0):
-                overall = evaluation.get("overall_score")
-                if isinstance(overall, (int, float)) and overall >= target_score:
+                baseline_score = quality_score(evaluation)
+                if baseline_score is not None and baseline_score >= target_score:
                     break
-
+ 
                 repair_actions = evaluation.get("repair_actions", [])
                 repair_prompt = f"""
 You are the SIS Senior Refinement Architect.
-
-Improve the existing synthesis ONLY where the audit identifies weaknesses.
-Do not merely rewrite. Perform structural repair.
-
+ 
+Improve the existing synthesis ONLY where the evidence-based audit identifies weaknesses.
+Do not merely rewrite, add fashionable terminology, or claim unsupported facts. Perform
+the smallest structural repair that directly resolves the stated gaps.
+ 
 AUDIT:
 {json.dumps(evaluation, ensure_ascii=False, indent=2)}
 
@@ -1953,32 +2039,54 @@ Return:
 {{"nodes":[...],"edges":[...],"system_metrics":{{}}}}
 
 Every innovation must remain traceable to an IMA finding and an MA transformation.
-Increase novelty without sacrificing feasibility. Increase interdisciplinarity by
-showing explicit mechanism transfer, not by listing disciplines.
-Increase systemic architecture by showing dependencies, feedbacks, constraints and
-logical conditions.
-Increase clarity by removing redundancy.
+For each repair action, make the causal mechanism, affected system elements, measurable
+implementation step, and test/falsification condition explicit. Increase novelty without
+sacrificing feasibility. Increase interdisciplinarity by showing mechanism transfer, not
+by listing disciplines. Increase systemic architecture by showing dependencies, feedbacks,
+constraints and logical conditions. Increase clarity by removing redundancy.
 """
                 with st.spinner(f"ADAPTIVE REFINEMENT ROUND {round_no+1}"):
                     refined_raw = google_generate(
                         client, critic_model, repair_prompt,
                         f"REPAIR ACTIONS:\n{json.dumps(repair_actions, ensure_ascii=False)}",
-                        temperature=0.55
+                        temperature=0.35
                     )
                 refined_text, refined_graph = parse_graph_payload(refined_raw)
-                if refined_text.strip():
-                    innovation_text = refined_text
+                candidate_text = refined_text.strip() or innovation_text
+                candidate_graph = graph_data
                 if refined_graph.get("nodes"):
-                    graph_data = normalize_graph(
+                    candidate_graph = normalize_graph(
                         refined_graph, max_nodes=graph_node_count, max_edges=80
                     )
-                    graph_data = ensure_graph_backbone(graph_data, sel_sciences, graph_node_count)
+                    candidate_graph = ensure_graph_backbone(
+                        candidate_graph, sel_sciences, graph_node_count
+                    )
                 with st.spinner(f"RE-AUDIT ROUND {round_no+1}"):
-                    evaluation = evaluate_quality(
-                        client, critic_model, phase1, innovation_text,
+                    candidate_evaluation = evaluate_quality(
+                        client, critic_model, phase1, candidate_text,
                         idea_query or user_query, target_score
                     )
-
+                candidate_score = quality_score(candidate_evaluation)
+                accepted = (
+                    candidate_score is not None
+                    and (baseline_score is None
+                         or candidate_score >= baseline_score + MIN_QUALITY_IMPROVEMENT)
+                )
+                quality_history.append({
+                    "round": round_no + 1,
+                    "score": candidate_score,
+                    "accepted": accepted,
+                    "status": (
+                        "Accepted: measurable improvement"
+                        if accepted else
+                        "Rejected: no validated improvement over the best draft"
+                    ),
+                })
+                if accepted:
+                    innovation_text = candidate_text
+                    graph_data = candidate_graph
+                    evaluation = candidate_evaluation
+ 
             # Optional equation engine
             equations = None
             calc_active = calculation_requested(user_query, idea_query, explicit_calculation)
@@ -2049,6 +2157,7 @@ Increase clarity by removing redundancy.
             st.session_state.final_graph_data = graph_data
             st.session_state.report_ready = True
             st.session_state.last_evaluation = evaluation
+            st.session_state.quality_history = quality_history
             st.session_state.last_equations = equations
 
             # -----------------------------------------------------------------
@@ -2057,14 +2166,14 @@ Increase clarity by removing redundancy.
             st.divider()
             st.subheader("🧠 ADAPTIVE SIS SYNTHESIS REPORT")
             if enable_quality:
-                score = evaluation.get("overall_score")
+                score = quality_score(evaluation)
                 if isinstance(score, (int, float)):
                     if score >= target_score:
                         st.success(f"🎯 Optimization target reached: {score:.2f} / 10.00")
                     else:
                         st.warning(f"Optimization target not yet reached: {score:.2f} / 10.00")
                 else:
-                    st.info("Quality auditor did not return a valid numeric overall score.")
+                    st.warning("Quality audit was incomplete, so no score was accepted. The original synthesis was preserved.")
 
                 scores = evaluation.get("scores", {})
                 if scores:
@@ -2080,6 +2189,8 @@ Increase clarity by removing redundancy.
                     st.write(evaluation.get("gaps", []))
                     st.write("**Repair actions**")
                     st.write(evaluation.get("repair_actions", []))
+                    st.write("**Refinement decision log**")
+                    st.dataframe(quality_history, use_container_width=True, hide_index=True)
             else:
                 st.info("Quality Critic / Refiner is OFF for this inquiry. No quality-audit model call was made.")
 
