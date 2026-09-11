@@ -855,8 +855,15 @@ QUALITY_DIMENSIONS = [
 
 RELATION_TYPES = [
     "TT", "BT", "NT", "RT", "EQ", "AS", "IN",
-    "Generalization", "Specialization", "Containment", "Realization",
-    "Composition", "Aggregation", "Dependency", "Conflict",
+    # UML structural relations
+    "Association", "Generalization", "Specialization", "Containment", "Realization",
+    "Composition", "Aggregation", "Dependency",
+    # Constraint semantics (kept distinct from the Constraint node type)
+    "Constraint", "Satisfies", "Violates", "Constrains",
+    "Conflict",
+    # Thesaurus relations
+    "TT", "BT", "NT", "RT", "EQ", "AS", "IN",
+    # Logical relations/operators
     "AND", "OR", "XOR", "NOT", "IF-THEN"
 ]
 
@@ -1263,9 +1270,9 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
 
     style_edges = "\n".join(
         f"""{{selector:'edge[rel_type="{rel}"]',style:{{'width':{max(2, int(2+5*0.7))},
-        'line-style':'{("dashed" if rel in ["Dependency","Realization","OR","NOT","Specialization"] else "solid")}',
-        'target-arrow-shape':'{("triangle" if rel in ["Generalization","Realization","Specialization","AND","IF-THEN"] else "vee")}',
-        'source-arrow-shape':'{("diamond" if rel in ["Composition","Aggregation"] else "none")}',
+        'line-style':'{("dashed" if rel in ["Dependency","Realization","OR","NOT","Specialization","Constraint","Constrains","Violates"] else "solid")}',
+        'target-arrow-shape':'{("triangle" if rel in ["Generalization","Realization","Specialization"] else ("tee" if rel in ["Constraint","Constrains"] else "vee"))}',
+        'source-arrow-shape':'{("diamond" if rel in ["Composition","Aggregation"] else ("circle" if rel == "Association" else "none"))}',
         'line-color':'{("#d63384" if rel in ["AND","OR","XOR","NOT","IF-THEN"] else "#6c757d")}'}}}}"""
         for rel in RELATION_TYPES
     )
@@ -1282,7 +1289,7 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
         border:1px solid #dfe5ec;border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.07);"></div>
       <div style="font:12px Arial;color:#495057;margin:7px 4px;">
         Unified network: lexical → category → hierarchy → semantic → network → analytical → energetic,
-        connected with IMA, MA, science and logic relations. Click a node to emphasize its neighborhood.
+        connected with IMA, MA, science, UML (including Association) and explicit constraint relations. Click a node to emphasize its neighborhood.
       </div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
@@ -1794,11 +1801,19 @@ clarity.
 
 The final graph must be ONE network, not separate graphs. Use only key nodes and key
 relations. Relations may come from ISO-thesaurus-style TT/BT/NT/RT/EQ/AS/IN, UML
-Generalization/Specialization/Composition/Aggregation/Dependency/Realization/Containment,
-and logical AND/OR/XOR/NOT/IF-THEN.
+Association/Generalization/Specialization/Composition/Aggregation/Dependency/Realization/Containment,
+and explicit constraint semantics (Constraint, Constrains, Satisfies, Violates), plus
+logical AND/OR/XOR/NOT/IF-THEN. Association is a first-class UML relation and must be
+used whenever two model elements have a meaningful structural relationship that is not
+better represented by composition, aggregation, dependency, generalization or realization.
+Constraints are first-class model semantics: identify them, connect them to the elements
+they restrict, and preserve whether a constraint is satisfied, violated or merely imposed.
+Do not manufacture constraints without evidence or a clear design requirement.
 
 Use node fields: id, label, shape, color, description, layer, module, importance.
-Use edge fields: source, target, rel_type, weight, evidence.
+Use edge fields: source, target, rel_type, weight, evidence. For UML Association/constraints,
+you may additionally use multiplicity_source, multiplicity_target, source_role, target_role,
+navigability, and constraint_expression when these are supported by the source or design.
 
 Required layers when semantically relevant:
 Lexical, Category, Hierarchy, Semantic, Network, Analytical, Energetic,
