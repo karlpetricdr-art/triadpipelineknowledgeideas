@@ -22,7 +22,7 @@ import streamlit.components.v1 as components
 # 0. GLOBAL CONFIGURATION & SESSION DATE (FEBRUARY 24, 2026)
 # =============================================================================
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v25.0.0-ADAPTIVE-SYNTHESIS-ARCHITECTURE"
+VERSION_CODE = "v25.2.0-RELIABLE-GRAPH-OPTIONAL-QUALITY"
 
 # =============================================================================
 # INITIALIZATION FIX: Preprečuje AttributeError pri zagonu in resetiranju
@@ -169,8 +169,8 @@ st.markdown("""
     }
 
     .date-badge {
-        background-color: #1d3557;
-        color: white;
+        background-color: #1d3557 !important;
+        color: #ffffff !important;
         padding: 12px 20px;
         border-radius: 50px;
         font-size: 1em;
@@ -180,6 +180,7 @@ st.markdown("""
         text-align: center;
         box-shadow: 0 4px 15px rgba(29, 53, 87, 0.3);
         letter-spacing: 1px;
+        color: #ffffff !important;
     }
 
     .sidebar-logo-container {
@@ -1184,7 +1185,10 @@ def normalize_graph(g_data: Dict[str, Any], max_nodes: int = 50, max_edges: int 
             continue
         seen_ids.add(nid)
         label = str(n.get("label") or f"Node {idx+1}").strip()
-        shape = str(n.get("shape") or "rectangle").strip()
+        shape = str(n.get("shape") or "rectangle").strip().lower()
+        valid_shapes = {"star", "diamond", "octagon", "hexagon", "triangle", "ellipse", "rectangle", "roundrectangle", "vee", "tag", "barrel"}
+        if shape not in valid_shapes:
+            shape = "rectangle"
         layer = str(n.get("layer") or "Semantic").strip()
         importance = float(n.get("importance", 0.5) or 0.5)
         clean_nodes.append({
@@ -1225,6 +1229,12 @@ def normalize_graph(g_data: Dict[str, Any], max_nodes: int = 50, max_edges: int 
             "weight": max(0.0, min(1.0, weight)),
             "label": str(e.get("label") or rel)[:60],
             "evidence": str(e.get("evidence") or "")[:300],
+            "multiplicity_source": str(e.get("multiplicity_source") or "")[:30],
+            "multiplicity_target": str(e.get("multiplicity_target") or "")[:30],
+            "source_role": str(e.get("source_role") or "")[:60],
+            "target_role": str(e.get("target_role") or "")[:60],
+            "navigability": str(e.get("navigability") or "")[:20],
+            "constraint_expression": str(e.get("constraint_expression") or "")[:300],
         })
     clean_edges.sort(key=lambda x: (-x["weight"], x["rel_type"]))
     clean_edges = clean_edges[:max_edges]
@@ -1234,6 +1244,42 @@ def normalize_graph(g_data: Dict[str, Any], max_nodes: int = 50, max_edges: int 
         "nodes": clean_nodes,
         "edges": clean_edges,
     }
+
+def ensure_graph_backbone(g_data: Dict[str, Any], selected_science=None, max_nodes=40):
+    """Guarantee a renderable, meaningful graph even when the LLM omits/invalidates JSON.
+
+    The fallback is deliberately small: inquiry, problem, system, constraint, solution,
+    evidence, selected science fields, plus explicit UML Association/Constraint semantics.
+    It is a safety net, not a substitute for the model-generated graph.
+    """
+    selected_science = selected_science or []
+    if isinstance(g_data, dict) and g_data.get("nodes"):
+        return g_data
+
+    nodes = [
+        {"id":"fb_problem","label":"Research problem","shape":"star","color":"#e8590c","description":"Fallback anchor for the research inquiry.","layer":"Metamodel","module":"Metamodel","importance":1.0},
+        {"id":"fb_system","label":"System architecture","shape":"rectangle","color":"#495057","description":"Integrated system structure reconstructed from the inquiry.","layer":"Metamodel","module":"Metamodel","importance":0.95},
+        {"id":"fb_semantic","label":"Key semantic concepts","shape":"ellipse","color":"#198754","description":"Central concepts and associations extracted from the inquiry.","layer":"Semantic","module":"Semantic","importance":0.9},
+        {"id":"fb_constraint","label":"Constraint","shape":"octagon","color":"#c92a2a","description":"A limiting condition or explicit design requirement.","layer":"Metamodel","module":"Metamodel","importance":0.88},
+        {"id":"fb_innovation","label":"Innovation configuration","shape":"diamond","color":"#e8590c","description":"Candidate transformed configuration produced by MA reasoning.","layer":"Innovation","module":"Innovation","importance":0.92},
+        {"id":"fb_evidence","label":"Evidence / source","shape":"rectangle","color":"#2b8a3e","description":"Source-supported evidence or observation.","layer":"Lexical","module":"Semantic","importance":0.82},
+    ]
+    for i, science in enumerate(selected_science[:6], 1):
+        nodes.append({"id":f"fb_science_{i}","label":str(science),"shape":"hexagon","color":"#00838f","description":"Selected scientific field contributing to interdisciplinary integration.","layer":"Science","module":"Science","importance":0.72})
+
+    edges = [
+        {"id":"fb_e1","source":"fb_problem","target":"fb_system","rel_type":"Association","weight":0.95,"label":"Association","evidence":"Fallback structural relation"},
+        {"id":"fb_system_constraint","source":"fb_system","target":"fb_constraint","rel_type":"Constrains","weight":0.94,"label":"Constrains","evidence":"Explicit constraint semantics"},
+        {"id":"fb_e2","source":"fb_system","target":"fb_semantic","rel_type":"Composition","weight":0.86,"label":"Composition","evidence":"System contains semantic components"},
+        {"id":"fb_e3","source":"fb_evidence","target":"fb_semantic","rel_type":"Association","weight":0.78,"label":"Association","evidence":"Evidence linked to semantic concepts"},
+        {"id":"fb_e4","source":"fb_constraint","target":"fb_innovation","rel_type":"Constraint","weight":0.84,"label":"Constraint","evidence":"Innovation must respect constraint"},
+        {"id":"fb_e5","source":"fb_system","target":"fb_innovation","rel_type":"Realization","weight":0.82,"label":"Realization","evidence":"Innovation realizes a changed configuration"},
+    ]
+    for i in range(1, len(nodes)):
+        if nodes[i]["layer"] == "Science":
+            edges.append({"id":f"fb_s{i}","source":nodes[i]["id"],"target":"fb_semantic","rel_type":"Association","weight":0.68,"label":"Association","evidence":"Interdisciplinary connection"})
+    return normalize_graph({"system_metrics":{},"nodes":nodes,"edges":edges}, max_nodes=max_nodes, max_edges=80)
+
 
 def graph_to_cytoscape(g_data: Dict[str, Any]) -> List[Dict[str, Any]]:
     elements = []
@@ -1253,86 +1299,96 @@ def graph_to_cytoscape(g_data: Dict[str, Any]) -> List[Dict[str, Any]]:
 
 def render_cytoscape_network(elements, layout_type="organic", container_id="cy_canvas",
                              title="Unified Semantic Network"):
-    """High-clarity Cytoscape renderer with unified layers and modular organic mode."""
+    """Reliable Cytoscape renderer. Uses a CDN fallback and waits for DOM/load readiness."""
+    safe_elements = elements if isinstance(elements, list) else []
+    graph_json = json.dumps(safe_elements, ensure_ascii=False, allow_nan=False)
     layout_configs = {
-        "organic": """{name:'cose', idealEdgeLength:150, nodeRepulsion:180000,
-            edgeElasticity:90, nestingFactor:1.0, numIter:1800, fit:true, padding:70}""",
-        "hierarchical": """{name:'breadthfirst', directed:true, padding:70,
-            spacingFactor:1.45, maximal:true, fit:true}""",
-        "concentric": """{name:'concentric', minNodeSpacing:65, padding:70,
-            concentric:function(node){return node.data('importance')*10;},
-            levelWidth:function(){return 2;}, fit:true}""",
-        "circular": """{name:'circle', padding:70, spacingFactor:1.1, fit:true}""",
-        "grid": """{name:'grid', padding:70, spacingFactor:1.25, fit:true}""",
+        "organic": "{name:'cose', idealEdgeLength:145, nodeRepulsion:160000, edgeElasticity:85, numIter:1200, fit:true, padding:60}",
+        "hierarchical": "{name:'breadthfirst', directed:true, padding:60, spacingFactor:1.35, maximal:true, fit:true}",
+        "concentric": "{name:'concentric', minNodeSpacing:55, padding:60, concentric:function(n){return Math.round((n.data('importance')||0.5)*10);}, levelWidth:function(){return 2;}, fit:true}",
+        "circular": "{name:'circle', padding:60, spacingFactor:1.0, fit:true}",
+        "grid": "{name:'grid', padding:60, spacingFactor:1.15, fit:true}",
     }
     selected_layout = layout_configs.get(layout_type, layout_configs["organic"])
-    graph_json = json.dumps(elements, ensure_ascii=False)
-
-    style_edges = "\n".join(
-        f"""{{selector:'edge[rel_type="{rel}"]',style:{{'width':{max(2, int(2+5*0.7))},
-        'line-style':'{("dashed" if rel in ["Dependency","Realization","OR","NOT","Specialization","Constraint","Constrains","Violates"] else "solid")}',
-        'target-arrow-shape':'{("triangle" if rel in ["Generalization","Realization","Specialization"] else ("tee" if rel in ["Constraint","Constrains"] else "vee"))}',
-        'source-arrow-shape':'{("diamond" if rel in ["Composition","Aggregation"] else ("circle" if rel == "Association" else "none"))}',
-        'line-color':'{("#d63384" if rel in ["AND","OR","XOR","NOT","IF-THEN"] else "#6c757d")}'}}}}"""
-        for rel in RELATION_TYPES
-    )
 
     html_block = f"""
-    <div style="position:relative;width:100%;">
+    <div style="position:relative;width:100%;font-family:Arial,Helvetica,sans-serif;">
       <div style="font:700 18px Arial;color:#1d3557;margin:4px 0 10px 4px;">{html.escape(title)}</div>
-      <div style="position:absolute;right:10px;top:0;z-index:20;display:flex;gap:6px;flex-wrap:wrap;">
+      <div id="status_{container_id}" style="font:600 12px Arial;color:#6c757d;margin:0 0 6px 4px;">Loading unified network…</div>
+      <div style="position:absolute;right:10px;top:0;z-index:20;display:flex;gap:6px;">
         <button id="zin_{container_id}">＋</button>
         <button id="zout_{container_id}">−</button>
         <button id="zfit_{container_id}">⛶ Fit</button>
       </div>
-      <div id="{container_id}" style="width:100%;height:820px;background:#fbfcfe;
-        border:1px solid #dfe5ec;border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.07);"></div>
-      <div style="font:12px Arial;color:#495057;margin:7px 4px;">
-        Unified network: lexical → category → hierarchy → semantic → network → analytical → energetic,
-        connected with IMA, MA, science, UML (including Association) and explicit constraint relations. Click a node to emphasize its neighborhood.
-      </div>
+      <div id="{container_id}" style="width:100%;height:820px;background:#fbfcfe;border:1px solid #dfe5ec;border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.07);"></div>
+      <div style="font:12px Arial;color:#495057;margin:7px 4px;">Unified network: key semantic, hierarchical, UML, constraint, logical, scientific and innovation relations. Click a node to emphasize its neighborhood.</div>
     </div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
     <script>
     (function(){{
-      const cy=cytoscape({{
-        container:document.getElementById('{container_id}'),
-        elements:{graph_json},
-        style:[
-          {{selector:'node',style:{{
-            'label':'data(label)','text-valign':'center','text-halign':'center',
-            'background-color':'data(color)','width':'data(size)','height':'data(size)',
-            'shape':'data(shape)','font-size':'11px','font-weight':'bold',
-            'text-wrap':'wrap','text-max-width':'95px','color':'#17202a',
-            'border-width':function(n){{return 2+3*n.data('importance');}},
-            'border-color':'#ffffff','text-outline-color':'#ffffff','text-outline-width':2
-          }}}},
-          {{selector:'edge',style:{{
-            'width':2,'line-color':'#adb5bd','target-arrow-color':'#adb5bd',
-            'target-arrow-shape':'vee','curve-style':'bezier','opacity':0.55,
-            'label':'data(rel_type)','font-size':'8px','color':'#495057',
-            'text-background-color':'#ffffff','text-background-opacity':0.9,
-            'text-background-padding':'2px'
-          }}}},
-          {style_edges},
-          {{selector:'node:selected',style:{{'border-width':6,'border-color':'#111827','z-index':999}}}},
-          {{selector:'edge:selected',style:{{'width':5,'opacity':1,'z-index':998}}}}
-        ],
-        layout:{selected_layout}
-      }});
-      cy.on('tap','node',function(evt){{
-        const n=evt.target;
-        cy.elements().removeClass('focus');
-        n.closedNeighborhood().addClass('focus');
-      }});
-      cy.style().selector('.focus').style({{'opacity':1}}).update();
-      document.getElementById('zin_{container_id}').onclick=()=>cy.zoom({{level:Math.min(cy.zoom()*1.25,4),renderedPosition:{{x:cy.width()/2,y:cy.height()/2}}}});
-      document.getElementById('zout_{container_id}').onclick=()=>cy.zoom({{level:Math.max(cy.zoom()/1.25,.15),renderedPosition:{{x:cy.width()/2,y:cy.height()/2}}}});
-      document.getElementById('zfit_{container_id}').onclick=()=>cy.fit(undefined,70);
+      const elements={graph_json};
+      const container=document.getElementById('{container_id}');
+      const status=document.getElementById('status_{container_id}');
+      function startGraph(){{
+        if(!window.cytoscape){{
+          status.textContent='Graph engine could not be loaded.';
+          status.style.color='#c92a2a';
+          return;
+        }}
+        try{{
+          const cy=window.cytoscape({{
+            container:container,
+            elements:elements,
+            style:[
+              {{selector:'node',style:{{
+                'label':'data(label)','text-valign':'center','text-halign':'center',
+                'background-color':'data(color)','width':'data(size)','height':'data(size)',
+                'shape':'data(shape)','font-size':'11px','font-weight':'bold',
+                'text-wrap':'wrap','text-max-width':'105px','color':'#17202a',
+                'border-width':function(n){{return 2+3*(Number(n.data('importance'))||0.5);}},
+                'border-color':'#ffffff','text-outline-color':'#ffffff','text-outline-width':2
+              }}}},
+              {{selector:'edge',style:{{
+                'width':2,'line-color':'#8d99ae','target-arrow-color':'#8d99ae',
+                'target-arrow-shape':'vee','curve-style':'bezier','opacity':0.62,
+                'label':'data(rel_type)','font-size':'8px','color':'#495057',
+                'text-background-color':'#ffffff','text-background-opacity':0.92,'text-background-padding':'2px'
+              }}}},
+              {{selector:'edge[rel_type="Association"]',style:{{'line-style':'solid','target-arrow-shape':'vee','source-arrow-shape':'none','width':3}}}},
+              {{selector:'edge[rel_type="Generalization"]',style:{{'target-arrow-shape':'triangle','target-arrow-fill':'hollow','width':3}}}},
+              {{selector:'edge[rel_type="Specialization"]',style:{{'target-arrow-shape':'triangle','target-arrow-fill':'hollow','line-style':'dashed','width':3}}}},
+              {{selector:'edge[rel_type="Realization"]',style:{{'target-arrow-shape':'triangle','target-arrow-fill':'hollow','line-style':'dashed','width':3}}}},
+              {{selector:'edge[rel_type="Composition"]',style:{{'source-arrow-shape':'diamond','source-arrow-fill':'filled','width':4}}}},
+              {{selector:'edge[rel_type="Aggregation"]',style:{{'source-arrow-shape':'diamond','source-arrow-fill':'hollow','width':3}}}},
+              {{selector:'edge[rel_type="Dependency"]',style:{{'line-style':'dashed','target-arrow-shape':'vee'}}}},
+              {{selector:'edge[rel_type="Constraint"],edge[rel_type="Constrains"]',style:{{'line-style':'dashed','target-arrow-shape':'tee','width':3}}}},
+              {{selector:'edge[rel_type="Satisfies"]',style:{{'target-arrow-shape':'vee','width':3}}}},
+              {{selector:'edge[rel_type="Violates"]',style:{{'line-style':'dashed','target-arrow-shape':'tee','width':4}}}},
+              {{selector:'edge[rel_type="AND"],edge[rel_type="OR"],edge[rel_type="XOR"],edge[rel_type="NOT"],edge[rel_type="IF-THEN"]',style:{{'line-color':'#d63384','target-arrow-color':'#d63384','width':3}}}},
+              {{selector:'node:selected',style:{{'border-width':6,'border-color':'#111827','z-index':999}}}},
+              {{selector:'edge:selected',style:{{'width':5,'opacity':1,'z-index':998}}}}
+            ],
+            layout:{selected_layout}
+          }});
+          cy.ready(function(){{ cy.fit(undefined,60); status.textContent='Graph ready — '+cy.nodes().length+' key nodes, '+cy.edges().length+' key relations.'; status.style.color='#2b8a3e'; }});
+          cy.on('tap','node',function(evt){{ const n=evt.target; cy.elements().removeClass('focus'); n.closedNeighborhood().addClass('focus'); }});
+          cy.style().selector('.focus').style({{'opacity':1}}).update();
+          document.getElementById('zin_{container_id}').onclick=()=>cy.zoom({{level:Math.min(cy.zoom()*1.25,4),renderedPosition:{{x:cy.width()/2,y:cy.height()/2}}}});
+          document.getElementById('zout_{container_id}').onclick=()=>cy.zoom({{level:Math.max(cy.zoom()/1.25,.15),renderedPosition:{{x:cy.width()/2,y:cy.height()/2}}}});
+          document.getElementById('zfit_{container_id}').onclick=()=>cy.fit(undefined,60);
+        }}catch(err){{ status.textContent='Graph rendering error: '+err.message; status.style.color='#c92a2a'; console.error(err); }}
+      }}
+      function loadScript(src, fallback){{
+        const s=document.createElement('script'); s.src=src;
+        s.onload=startGraph;
+        s.onerror=function(){{ if(fallback){{ const f=document.createElement('script'); f.src=fallback; f.onload=startGraph; f.onerror=startGraph; document.head.appendChild(f); }} else startGraph(); }};
+        document.head.appendChild(s);
+      }}
+      if(window.cytoscape) startGraph();
+      else loadScript('https://cdn.jsdelivr.net/npm/cytoscape@3.31.2/dist/cytoscape.min.js','https://unpkg.com/cytoscape@3.31.2/dist/cytoscape.min.js');
     }})();
     </script>
     """
-    components.html(html_block, height=875)
+    components.html(html_block, height=890, scrolling=False)
 
 def build_html_report(report_text, graph_elements, perspective, evaluation=None, equations=None):
     graph_json = json.dumps(graph_elements, ensure_ascii=False)
@@ -1356,7 +1412,7 @@ def build_html_report(report_text, graph_elements, perspective, evaluation=None,
     .graph{{height:820px;background:#fff;border:1px solid #ddd;border-radius:18px}}
     table{{border-collapse:collapse;width:100%;margin-top:12px}} th,td{{border:1px solid #ddd;padding:8px;text-align:left}}
     </style></head><body><div class="wrap">
-    <h1>SIS Universal Knowledge Synthesizer v25.0</h1>
+    <h1>SIS Universal Knowledge Synthesizer v25.2</h1>
     <div class="report">{report_text}</div>
     {score_html}{eq_html}
     <h2>Unified semantic system map — {html.escape(perspective.upper())}</h2>
@@ -1417,27 +1473,39 @@ with st.sidebar:
         "Phase 2 — MA Innovation:", list(GOOGLE_MODELS.keys()),
         index=min(1, len(GOOGLE_MODELS)-1)
     )
-    critic_model_label = st.selectbox(
-        "Quality Critic / Refiner:", list(GOOGLE_MODELS.keys()),
-        index=min(1, len(GOOGLE_MODELS)-1)
-    )
-    p1_model, p2_model, critic_model = (
+    p1_model, p2_model = (
         GOOGLE_MODELS[p1_model_label],
         GOOGLE_MODELS[p2_model_label],
-        GOOGLE_MODELS[critic_model_label],
     )
 
     st.divider()
-    st.subheader("🧠 ADAPTIVE QUALITY ENGINE")
-    optimization_rounds = st.slider(
-        "Refinement rounds:", 0, 2, 1,
-        help="After independent scoring, the system can refine weak dimensions."
+    st.subheader("🧠 QUALITY CRITIC / REFINER")
+    enable_quality = st.checkbox(
+        "Enable Quality Critic / Refiner",
+        value=False,
+        help="OFF by default. When OFF, no critic/refiner model call is made. When ON, the system scores and optionally refines the result."
     )
-    target_score = st.number_input(
-        "Target overall score:", min_value=9.0, max_value=10.0,
-        value=9.9, step=0.05
-    )
-    st.caption("Target dimensions: novelty · systemic architecture · interdisciplinarity · practicality · clarity")
+    if enable_quality:
+        critic_model_label = st.selectbox(
+            "Critic / Refiner model:", list(GOOGLE_MODELS.keys()),
+            index=min(1, len(GOOGLE_MODELS)-1), key="critic_model_v252"
+        )
+        critic_model = GOOGLE_MODELS[critic_model_label]
+        optimization_rounds = st.slider(
+            "Refinement rounds:", 0, 2, 1,
+            help="Only used when Quality Critic / Refiner is enabled."
+        )
+        target_score = st.number_input(
+            "Target overall score:", min_value=9.0, max_value=10.0,
+            value=9.9, step=0.05
+        )
+        st.caption("Target dimensions: novelty · systemic architecture · interdisciplinarity · practicality · clarity")
+    else:
+        critic_model_label = "Disabled"
+        critic_model = None
+        optimization_rounds = 0
+        target_score = 9.90
+        st.caption("Quality Critic / Refiner is OFF — synthesis runs without scoring or refinement.")
 
     st.divider()
     st.subheader("🕸️ UNIFIED GRAPH")
@@ -1496,9 +1564,11 @@ with st.sidebar:
 # Main UI
 # -------------------------------------------------------------------------
 st.markdown('<h1 class="main-header-gradient">🧱 SIS Universal Knowledge Synthesizer</h1>', unsafe_allow_html=True)
+st.markdown(f'<div class="date-badge" style="max-width:520px;margin:0 auto 18px auto;">CURRENT DATE — {SYSTEM_DATE.upper()}</div>', unsafe_allow_html=True)
 st.markdown(
-    f"**Adaptive multi-stage architecture v25.0** | {SYSTEM_DATE} | "
-    f"Optimization target: **{target_score:.2f}+ / 10.00**"
+    f"**Adaptive multi-stage architecture v25.2** | "
+    f"Quality Critic: **{'ON' if enable_quality else 'OFF'}**" +
+    (f" | Optimization target: **{target_score:.2f}+ / 10.00**" if enable_quality else "")
 )
 
 if st.session_state.get("show_user_guide"):
@@ -1700,7 +1770,7 @@ def build_architecture_context():
     )
     return ima, ma, science
 
-if st.button("🚀 EXECUTE ADAPTIVE SIS SYNTHESIS", use_container_width=True, key="exec_pipeline_v250"):
+if st.button("🚀 EXECUTE SIS SYNTHESIS", use_container_width=True, key="exec_pipeline_v250"):
     if not google_api_key:
         st.error("❌ Google Gemini API key is required.")
     elif not user_query:
@@ -1835,16 +1905,19 @@ No duplicate edges, no orphan edges, no decorative bridges.
                 )
             innovation_text, graph_data = parse_graph_payload(phase2_raw)
             graph_data = normalize_graph(graph_data, max_nodes=graph_node_count, max_edges=80)
+            graph_data = ensure_graph_backbone(graph_data, sel_sciences, graph_node_count)
 
-            # Independent audit
-            with st.spinner(f"QUALITY AUDIT — {critic_model_label}"):
-                evaluation = evaluate_quality(
-                    client, critic_model, phase1, innovation_text,
-                    idea_query or user_query, target_score
-                )
+            # Quality Critic / Refiner is strictly opt-in.
+            evaluation = {}
+            if enable_quality:
+                with st.spinner(f"QUALITY AUDIT — {critic_model_label}"):
+                    evaluation = evaluate_quality(
+                        client, critic_model, phase1, innovation_text,
+                        idea_query or user_query, target_score
+                    )
 
-            # Adaptive repair loop
-            for round_no in range(optimization_rounds):
+            # Adaptive repair loop — only when explicitly enabled.
+            for round_no in range(optimization_rounds if enable_quality else 0):
                 overall = evaluation.get("overall_score")
                 if isinstance(overall, (int, float)) and overall >= target_score:
                     break
@@ -1894,6 +1967,7 @@ Increase clarity by removing redundancy.
                     graph_data = normalize_graph(
                         refined_graph, max_nodes=graph_node_count, max_edges=80
                     )
+                    graph_data = ensure_graph_backbone(graph_data, sel_sciences, graph_node_count)
                 with st.spinner(f"RE-AUDIT ROUND {round_no+1}"):
                     evaluation = evaluate_quality(
                         client, critic_model, phase1, innovation_text,
@@ -1977,29 +2051,32 @@ Increase clarity by removing redundancy.
             # -----------------------------------------------------------------
             st.divider()
             st.subheader("🧠 ADAPTIVE SIS SYNTHESIS REPORT")
-            score = evaluation.get("overall_score")
-            if isinstance(score, (int, float)):
-                if score >= target_score:
-                    st.success(f"🎯 Optimization target reached: {score:.2f} / 10.00")
+            if enable_quality:
+                score = evaluation.get("overall_score")
+                if isinstance(score, (int, float)):
+                    if score >= target_score:
+                        st.success(f"🎯 Optimization target reached: {score:.2f} / 10.00")
+                    else:
+                        st.warning(f"Optimization target not yet reached: {score:.2f} / 10.00")
                 else:
-                    st.warning(f"Optimization target not yet reached: {score:.2f} / 10.00")
+                    st.info("Quality auditor did not return a valid numeric overall score.")
+
+                scores = evaluation.get("scores", {})
+                if scores:
+                    metric_cols = st.columns(5)
+                    for col, dim in zip(metric_cols, QUALITY_DIMENSIONS):
+                        val = scores.get(dim)
+                        col.metric(dim.replace("_", " ").title(), f"{float(val):.2f}" if isinstance(val,(int,float)) else "—")
+
+                with st.expander("🔎 Audit strengths, gaps and repair actions", expanded=False):
+                    st.write("**Strengths**")
+                    st.write(evaluation.get("strengths", []))
+                    st.write("**Gaps**")
+                    st.write(evaluation.get("gaps", []))
+                    st.write("**Repair actions**")
+                    st.write(evaluation.get("repair_actions", []))
             else:
-                st.info("Quality auditor did not return a valid numeric overall score.")
-
-            scores = evaluation.get("scores", {})
-            if scores:
-                metric_cols = st.columns(5)
-                for col, dim in zip(metric_cols, QUALITY_DIMENSIONS):
-                    val = scores.get(dim)
-                    col.metric(dim.replace("_", " ").title(), f"{float(val):.2f}" if isinstance(val,(int,float)) else "—")
-
-            with st.expander("🔎 Audit strengths, gaps and repair actions", expanded=False):
-                st.write("**Strengths**")
-                st.write(evaluation.get("strengths", []))
-                st.write("**Gaps**")
-                st.write(evaluation.get("gaps", []))
-                st.write("**Repair actions**")
-                st.write(evaluation.get("repair_actions", []))
+                st.info("Quality Critic / Refiner is OFF for this inquiry. No quality-audit model call was made.")
 
             st.markdown(
                 f"### Phase 1 — IMA Structural Foundation ({p1_model_label})\n\n{phase1}"
