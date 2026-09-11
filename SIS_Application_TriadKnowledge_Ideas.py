@@ -17,20 +17,20 @@ from datetime import datetime
 from google import genai
 from google.genai import types
 import streamlit.components.v1 as components
+import math
 
 # =============================================================================
-# 0. GLOBAL CONFIGURATION & SESSION DATE (FEBRUARY 24, 2026)
+# 0. GLOBAL CONFIGURATION & SESSION DATE
 # =============================================================================
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
 VERSION_CODE = "v25.2.0-RELIABLE-GRAPH-OPTIONAL-QUALITY"
 
 # =============================================================================
-# INITIALIZATION FIX: Preprečuje AttributeError pri zagonu in resetiranju
+# INITIALIZATION FIX
 # =============================================================================
 if 'show_user_guide' not in st.session_state:
     st.session_state.show_user_guide = False
 
-# Zagotovimo, da so vsi ključi prisotni v session_state pred prvo uporabo
 if 'phase1_synthesis' not in st.session_state:
     st.session_state.phase1_synthesis = ""
 
@@ -41,13 +41,10 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- NUCLEAR CSS OVERRIDE: OBLITERATING SIDEBAR ARTIFACTS & FIXING VISIBILITY ---
-# Targets the 'keyboard_double_arrow_right' artifact and forced navy-black contrast.
-# This section ensures the Knowledge Explorer is perfectly visible.
+# --- NUCLEAR CSS OVERRIDE ---
 st.markdown("""
 <style>
     /* 1. OBLITERATE ARROW ARTIFACTS & SIDEBAR ICONS */
-    /* Hides the specific Streamlit containers where "keyboard_double_arrow_right" appears as text */
     [data-testid="stSidebar"] [data-testid="stIcon"],
     [data-testid="stSidebar"] button[data-testid="stSidebarCollapseButton"],
     [data-testid="stSidebar"] .st-emotion-cache-16idsys,
@@ -68,7 +65,6 @@ st.markdown("""
         min-width: 380px !important;
     }
 
-    /* Force all sidebar text to be deep black/navy for perfect visibility */
     [data-testid="stSidebar"] .stMarkdown p, 
     [data-testid="stSidebar"] .stMarkdown li,
     [data-testid="stSidebar"] label,
@@ -76,14 +72,14 @@ st.markdown("""
     [data-testid="stSidebar"] .stExpander li,
     [data-testid="stSidebar"] .stMarkdown span,
     [data-testid="stSidebar"] .stMarkdown div {
-        color: #1d3557 !important; /* Maximum Contrast */
+        color: #1d3557 !important;
         font-size: 0.98em !important;
         font-weight: 500 !important;
         line-height: 1.6 !important;
         opacity: 1 !important;
     }
 
-    /* 3. RE-STYLE EXPANDERS FOR PROFESSIONAL DENSITY */
+    /* 3. RE-STYLE EXPANDERS */
     .stExpander {
         background-color: #f5f7fa !important;
         border: 1px solid #d8e2dc !important;
@@ -168,10 +164,11 @@ st.markdown("""
         font-size: 2.8rem;
     }
 
+    /* 6. DATE BADGE — TUKAJ SPREMENIŠ BARVO PISAVE (color) */
     .date-badge,
     .date-badge * {
         background: #12345b !important;
-        color: #ffd166 !important;
+        color: #ffffff !important;  /* ← SPREMENI TO BARVO PO ŽELJI */
         padding: 10px 14px;
         border-radius: 6px;
         border: 1px solid rgba(255,255,255,0.18);
@@ -246,8 +243,6 @@ def fetch_author_bibliographies(author_input):
     headers = {"Accept": "application/json"}
     for auth in author_list:
         try:
-            # FIX: URL-encode the author name so non-ASCII characters (č, š, ž, ...)
-            # don't break the request ('ascii' codec can't encode character error).
             s_res = requests.get(f"https://pub.orcid.org/v3.0/search/?q={urllib.parse.quote(auth)}", headers=headers, timeout=6).json()
             if s_res.get('result'):
                 orcid_id = s_res['result'][0]['orcid-identifier']['path']
@@ -262,65 +257,35 @@ def fetch_author_bibliographies(author_input):
                     comprehensive_biblio += f"- **{year}**: {title}\n"
                 comprehensive_biblio += "\n---\n"
         except Exception: 
-            pass # Ignore API errors to keep the app running
+            pass
     return comprehensive_biblio
 
-import math
-
 def calculate_systemic_stress(f_pf, f_sf, f_pr):
-    """
-    Implements Dr. Petrič's Stress Intensity formula (Page 60).
-    σ0SF = arcsin(sqrt((FSF * FPR) / FPF))
-    """
     try:
-        # Convert to float and ensure f_pf (Positive Factors) isn't zero to avoid crash
         pf = float(f_pf)
         sf = float(f_sf)
         pr = float(f_pr)
-        
         if pf <= 0: pf = 0.001 
-        
-        # Calculate the ratio
         ratio = (sf * pr) / pf
-        
-        # MATH SAFETY: sqrt() needs positive, arcsin() needs value between -1 and 1
         clamped_ratio = max(0.0, min(ratio, 1.0))
-        
         stress_rad = math.asin(math.sqrt(clamped_ratio))
-        
-        # Returns the result in "Stress Degrees" (°S) as defined in the book
         return math.degrees(stress_rad)
     except Exception:
         return 0.0
 
 def calculate_effective_energy(stress_intensity, initial_potential=2500):
-    """
-    Implements the Energy Loss Index (W_EP) from Page 61 of the book.
-    W_EP = Initial_Energy - (Initial_Energy * (Stress_Intensity / 90))
-    2500 Kcal is the default baseline used in Dr. Petrič's example.
-    """
     try:
-        # The book defines 90°S as the theoretical maximum stress
         max_stress = 90.0
-        
-        # Calculate the proportion of energy lost
         loss_ratio = stress_intensity / max_stress
-        
-        # Ensure ratio stays within logical bounds [0, 1]
         loss_ratio = max(0.0, min(loss_ratio, 1.0))
-        
-        # Calculate remaining (effective) energy
         effective_energy = initial_potential - (initial_potential * loss_ratio)
-        
-        # Efficiency percentage
         efficiency_pct = (effective_energy / initial_potential) * 100
-        
         return round(effective_energy, 2), round(efficiency_pct, 1)
     except Exception:
         return 0.0, 0.0
 
 # =============================================================================
-# 2. ARCHITECTURAL ONTOLOGIES (IMA & MA) - EXHAUSTIVE EXPANSION
+# 2. ARCHITECTURAL ONTOLOGIES (IMA & MA)
 # =============================================================================
 
 HUMAN_THINKING_METAMODEL = {
@@ -494,9 +459,6 @@ MENTAL_APPROACHES_ONTOLOGY = {
         }
     }
 }
-# =============================================================================
-# 2.1 HIERARCHOLOGY & HIERARCHOGRAPHY ONTOLOGY
-# =============================================================================
 
 HIERARCHOLOGY_ONTOLOGY = {
     "core_definitions": {
@@ -518,15 +480,11 @@ HIERARCHOLOGY_ONTOLOGY = {
     ]
 }
 
-# Add Hierarchology-specific nodes to your existing Metamodel
 HUMAN_THINKING_METAMODEL["nodes"].update({
     "Hierarchical Associative System": {"color": "#fd7e14", "shape": "ellipse", "desc": "The primary cognitive framework defined by hierarchology."},
     "Scientific Cage": {"color": "#6c757d", "shape": "rectangle", "desc": "The boundary of human mental perspective."},
     "Hierarchography": {"color": "#e63946", "shape": "diamond", "desc": "The visual description of hierarchical structures."}
 })
-# =============================================================================
-# 3. KNOWLEDGE BASE (EXHAUSTIVE 18D SCIENCE FIELDS & ONTOLOGIES)
-# =============================================================================
 
 KNOWLEDGE_BASE = {
     "User profiles": {
@@ -545,7 +503,7 @@ KNOWLEDGE_BASE = {
         "Holism": "Systems should be viewed as wholes, not just as a collection of parts.",
         "Systems Theory": "Interdisciplinary study of systems where the focus is on relationships and patterns.",
         "Phenomenology": "Study of structures of consciousness as experienced from the first-person point of view.",
-        "Falsificationism": "Popper’s principle that scientific theories must be inherently testable and refutable.",
+        "Falsificationism": "Popper's principle that scientific theories must be inherently testable and refutable.",
         "Critical Theory": "Social theory oriented toward critiquing and changing society as a whole.",
         "Hermeneutics": "Theory and methodology of interpretation, especially of texts and human actions.",
         "Relativism": "The view that truth and falsity, right and wrong, are products of social and historical contexts.",
@@ -657,7 +615,7 @@ KNOWLEDGE_BASE = {
             "facets": ["Genomics", "Immunology", "Oncology", "Internal Medicine"]
         },
         "Psychiatry": {
-            "cat": "Applied/Medical", 
+            "cat": "Applied/Medical",
             "methods": ["Clinical Trials", "Diagnostic Interviewing", "Case Formulation", "Psychopharmacological Modeling", "Neuroimaging Analysis"], 
             "tools": ["DSM-5-TR", "ICD-11", "EEG", "fMRI", "Standardized Rating Scales"], 
             "facets": ["Clinical Psychiatry", "Neuropsychiatry", "Forensic Psychiatry", "Geriatric Psychiatry"]
@@ -760,9 +718,7 @@ KNOWLEDGE_BASE = {
         }
     }
 }
-# =============================================================================
-# 3.1 ADVANCED IDEATION TECHNIQUES LIBRARY
-# =============================================================================
+
 IDEATION_TECHNIQUES = {
     "Six Thinking Hats": "Process the problem through 6 perspectives: White (Data), Red (Emotion), Black (Risk), Yellow (Value), Green (Creativity), and Blue (Control/Planning).",
     "SCAMPER": "Apply the following filters: Substitute, Combine, Adapt, Modify, Put to another use, Eliminate, and Reverse.",
@@ -773,8 +729,6 @@ IDEATION_TECHNIQUES = {
     "Synectics": "Use direct, personal, and symbolic analogies to make the strange familiar and the familiar strange."
 }
 
-# v25 architecture expansion: the original IMA/MA vocabulary remains compatible,
-# but the reasoning kernel is strengthened with explicit system-design constructs.
 HUMAN_THINKING_METAMODEL["nodes"].update({
     "System boundary": {"color": "#495057", "shape": "rectangle",
                         "desc": "Explicit boundary separating the modeled system from its environment."},
@@ -803,6 +757,7 @@ HUMAN_THINKING_METAMODEL["nodes"].update({
     "Outcome": {"color": "#2f9e44", "shape": "star",
                 "desc": "Observable or intended result used to assess a transformation."},
 })
+
 HUMAN_THINKING_METAMODEL["relations"].extend([
     ("Problem", "System boundary", "Dependency"),
     ("System boundary", "Constraint", "Containment"),
@@ -840,16 +795,6 @@ MENTAL_APPROACHES_ONTOLOGY["nodes"].update({
                        "desc": "Partition a system into coherent modules with explicit interfaces and dependencies."},
 })
 
-
-# =============================================================================
-# SIS v25.0 — ADAPTIVE SYNTHESIS / INNOVATION / EQUATION ARCHITECTURE
-# =============================================================================
-
-# The original ontologies and science taxonomy are intentionally preserved above.
-# v25 adds an adaptive quality loop, a unified graph model, modular organic views,
-# and an opt-in equation engine. Calculation is NEVER performed unless explicitly
-# requested by the user through the UI.
-
 TARGET_SCORE = 9.90
 QUALITY_DIMENSIONS = [
     "conceptual_novelty",
@@ -869,15 +814,10 @@ MIN_QUALITY_IMPROVEMENT = 0.10
 
 RELATION_TYPES = [
     "TT", "BT", "NT", "RT", "EQ", "AS", "IN",
-    # UML structural relations
     "Association", "Generalization", "Specialization", "Containment", "Realization",
     "Composition", "Aggregation", "Dependency",
-    # Constraint semantics (kept distinct from the Constraint node type)
     "Constraint", "Satisfies", "Violates", "Constrains",
     "Conflict",
-    # Thesaurus relations
-    "TT", "BT", "NT", "RT", "EQ", "AS", "IN",
-    # Logical relations/operators
     "AND", "OR", "XOR", "NOT", "IF-THEN"
 ]
 
@@ -897,9 +837,6 @@ GRAPH_LAYER_COLORS = {
     "Equation": "#f08c00",
 }
 
-# -------------------------------------------------------------------------
-# Connected equation system — inspired by the seven-layer globe model.
-# -------------------------------------------------------------------------
 EQUATION_SYSTEM = {
     "Observed Frequency": {
         "symbol": "f",
@@ -1067,7 +1004,6 @@ SAFE_FUNCS = {
 }
 
 def _safe_eval(expr: str, variables: Dict[str, float]) -> float:
-    """Evaluate only arithmetic expressions and whitelisted math functions."""
     tree = ast.parse(expr, mode="eval")
     allowed_nodes = (
         ast.Expression, ast.BinOp, ast.UnaryOp, ast.Add, ast.Sub, ast.Mult,
@@ -1087,7 +1023,6 @@ def _safe_eval(expr: str, variables: Dict[str, float]) -> float:
     return float(eval(compile(tree, "<equation>", "eval"), {"__builtins__": {}}, env))
 
 def calculate_equation_chain(inputs: Dict[str, Any]) -> Dict[str, Any]:
-    """Calculate only equations whose dependencies are explicitly available."""
     values = {}
     for key, value in (inputs or {}).items():
         try:
@@ -1099,8 +1034,6 @@ def calculate_equation_chain(inputs: Dict[str, Any]) -> Dict[str, Any]:
     symbol_values = {}
     pending = dict(EQUATION_SYSTEM)
 
-    # Fixed-point evaluation. Dependencies are expressed with equation symbols,
-    # while results remain keyed by human-readable equation names.
     for _ in range(len(EQUATION_SYSTEM) + 2):
         progress = False
         for name, spec in pending.items():
@@ -1137,11 +1070,7 @@ def calculation_requested(user_query: str, idea_query: str, explicit_toggle: boo
     ]
     return any(t in textq for t in triggers)
 
-# -------------------------------------------------------------------------
-# Adaptive scoring / refinement
-# -------------------------------------------------------------------------
 def extract_json_object(raw: str) -> Optional[Dict[str, Any]]:
-    """Extract the first balanced JSON object from an LLM response."""
     if not raw:
         return None
     text0 = re.sub(r"```(?:json)?", "", raw, flags=re.I).replace("```", "").strip()
@@ -1184,7 +1113,6 @@ def parse_graph_payload(raw: str) -> Tuple[str, Dict[str, Any]]:
     return report.strip(), graph
 
 def normalize_graph(g_data: Dict[str, Any], max_nodes: int = 50, max_edges: int = 80) -> Dict[str, Any]:
-    """Normalize, deduplicate and rank graph content; never allow orphan edges."""
     nodes_raw = g_data.get("nodes", []) if isinstance(g_data, dict) else []
     edges_raw = g_data.get("edges", []) if isinstance(g_data, dict) else []
 
@@ -1259,12 +1187,6 @@ def normalize_graph(g_data: Dict[str, Any], max_nodes: int = 50, max_edges: int 
     }
 
 def ensure_graph_backbone(g_data: Dict[str, Any], selected_science=None, max_nodes=40):
-    """Guarantee a renderable, meaningful graph even when the LLM omits/invalidates JSON.
-
-    The fallback is deliberately small: inquiry, problem, system, constraint, solution,
-    evidence, selected science fields, plus explicit UML Association/Constraint semantics.
-    It is a safety net, not a substitute for the model-generated graph.
-    """
     selected_science = selected_science or []
     if isinstance(g_data, dict) and g_data.get("nodes"):
         return g_data
@@ -1293,7 +1215,6 @@ def ensure_graph_backbone(g_data: Dict[str, Any], selected_science=None, max_nod
             edges.append({"id":f"fb_s{i}","source":nodes[i]["id"],"target":"fb_semantic","rel_type":"Association","weight":0.68,"label":"Association","evidence":"Interdisciplinary connection"})
     return normalize_graph({"system_metrics":{},"nodes":nodes,"edges":edges}, max_nodes=max_nodes, max_edges=80)
 
-
 def graph_to_cytoscape(g_data: Dict[str, Any]) -> List[Dict[str, Any]]:
     elements = []
     for n in g_data.get("nodes", []):
@@ -1312,7 +1233,6 @@ def graph_to_cytoscape(g_data: Dict[str, Any]) -> List[Dict[str, Any]]:
 
 def render_cytoscape_network(elements, layout_type="organic", container_id="cy_canvas",
                              title="Unified Semantic Network"):
-    """Reliable Cytoscape renderer. Uses a CDN fallback and waits for DOM/load readiness."""
     safe_elements = elements if isinstance(elements, list) else []
     graph_json = json.dumps(safe_elements, ensure_ascii=False, allow_nan=False)
     layout_configs = {
@@ -1581,7 +1501,7 @@ with st.sidebar:
 st.markdown('<h1 class="main-header-gradient">🧱 SIS Universal Knowledge Synthesizer</h1>', unsafe_allow_html=True)
 st.markdown(
     f"**Adaptive multi-stage architecture v25.2** | "
-    f"Quality Critic: **{'ON' if enable_quality else 'OFF'}**" +
+    f"Quality Critic: **{'ON' if enable_quality else 'OFF'}" +
     (f" | Optimization target: **{target_score:.2f}+ / 10.00**" if enable_quality else "")
 )
 
@@ -1692,7 +1612,6 @@ with col_inq3:
             st.error(f"Error reading file: {exc}")
 
 def google_generate(client, model_id, system_prompt, user_content, temperature, max_retries=4):
-    """Robust Google GenAI gateway with transient-error retry."""
     if client is None:
         raise RuntimeError("Google client is not initialized.")
     kwargs = {"system_instruction": system_prompt, "temperature": temperature}
@@ -1726,11 +1645,6 @@ def google_generate(client, model_id, system_prompt, user_content, temperature, 
     raise RuntimeError(f"Google API unavailable: {last_exc}")
 
 def normalize_quality_evaluation(raw_evaluation):
-    """Validate audit output and calculate the overall score from the five rubric scores.
- 
-    The model is allowed to assess dimensions, but it cannot self-declare an inflated
-    overall score. Missing dimensions or missing evidence make an audit invalid.
-    """
     if not isinstance(raw_evaluation, dict):
         return {}
  
@@ -1770,7 +1684,6 @@ def normalize_quality_evaluation(raw_evaluation):
  
  
 def quality_score(evaluation):
-    """Return a usable score only for a complete, validated audit."""
     if not isinstance(evaluation, dict):
         return None
     score = evaluation.get("overall_score")
@@ -1990,7 +1903,6 @@ No duplicate edges, no orphan edges, no decorative bridges.
             graph_data = normalize_graph(graph_data, max_nodes=graph_node_count, max_edges=80)
             graph_data = ensure_graph_backbone(graph_data, sel_sciences, graph_node_count)
 
-            # Quality Critic / Refiner: audit first, then retain only measured improvements.
             evaluation = {}
             quality_history = []
             if enable_quality:
@@ -2006,7 +1918,6 @@ No duplicate edges, no orphan edges, no decorative bridges.
                     "status": "Baseline audit",
                 })
  
-            # Adaptive repair loop. It never replaces a better baseline with a weaker draft.
             for round_no in range(optimization_rounds if enable_quality else 0):
                 baseline_score = quality_score(evaluation)
                 if baseline_score is not None and baseline_score >= target_score:
@@ -2087,7 +1998,6 @@ constraints and logical conditions. Increase clarity by removing redundancy.
                     graph_data = candidate_graph
                     evaluation = candidate_evaluation
  
-            # Optional equation engine
             equations = None
             calc_active = calculation_requested(user_query, idea_query, explicit_calculation)
             if calc_active:
@@ -2113,7 +2023,6 @@ constraints and logical conditions. Increase clarity by removing redundancy.
                     "sum_cij": eq_sum_cij,
                 })
 
-            # Add equation backbone only when calculation was explicitly requested.
             if equations and equations.get("results"):
                 eq_nodes = []
                 existing_ids = {n["id"] for n in graph_data["nodes"]}
@@ -2160,9 +2069,6 @@ constraints and logical conditions. Increase clarity by removing redundancy.
             st.session_state.quality_history = quality_history
             st.session_state.last_equations = equations
 
-            # -----------------------------------------------------------------
-            # Report
-            # -----------------------------------------------------------------
             st.divider()
             st.subheader("🧠 ADAPTIVE SIS SYNTHESIS REPORT")
             if enable_quality:
@@ -2175,39 +2081,13 @@ constraints and logical conditions. Increase clarity by removing redundancy.
                 else:
                     st.warning("Quality audit was incomplete, so no score was accepted. The original synthesis was preserved.")
 
-                scores = evaluation.get("scores", {})
-                if scores:
-                    metric_cols = st.columns(5)
-                    for col, dim in zip(metric_cols, QUALITY_DIMENSIONS):
-                        val = scores.get(dim)
-                        col.metric(dim.replace("_", " ").title(), f"{float(val):.2f}" if isinstance(val,(int,float)) else "—")
-
-                with st.expander("🔎 Audit strengths, gaps and repair actions", expanded=False):
-                    st.write("**Strengths**")
-                    st.write(evaluation.get("strengths", []))
-                    st.write("**Gaps**")
-                    st.write(evaluation.get("gaps", []))
-                    st.write("**Repair actions**")
-                    st.write(evaluation.get("repair_actions", []))
-                    st.write("**Refinement decision log**")
-                    st.dataframe(quality_history, use_container_width=True, hide_index=True)
-            else:
-                st.info("Quality Critic / Refiner is OFF for this inquiry. No quality-audit model call was made.")
-
-            st.markdown(
-                f"### Phase 1 — IMA Structural Foundation ({p1_model_label})\n\n{phase1}"
-            )
-            st.markdown(
-                f"### Phase 2 — MA Innovation Architecture ({p2_model_label})\n\n{innovation_text}"
-            )
-
             if biblio_data:
-                with st.expander("📚 AUTHOR RESEARCH BACKGROUND"):
+                with st.expander("AUTHOR RESEARCH BACKGROUND"):
                     st.markdown(biblio_data)
 
             if equations and equations.get("results"):
                 st.divider()
-                st.subheader("🧮 CONNECTED EQUATION CALCULATION")
+                st.subheader("CONNECTED EQUATION CALCULATION")
                 st.caption("Calculation was activated explicitly for this inquiry.")
                 eq_rows = []
                 for name, value in equations["results"].items():
@@ -2221,18 +2101,14 @@ constraints and logical conditions. Increase clarity by removing redundancy.
                 st.dataframe(eq_rows, use_container_width=True, hide_index=True)
 
             st.divider()
-            st.subheader(
-                f"🕸️ UNIFIED HIERARCHOGRAPHIC NETWORK — {graph_perspective.upper()} / {graph_module.upper()}"
-            )
-
+            st.subheader(f"UNIFIED HIERARCHOGRAPHIC NETWORK — {graph_perspective.upper()} ({graph_module.upper()})")
             visible_elements = final_elements
             if graph_module != "Unified":
-                allowed = {graph_module}
+                allowed_module = graph_module
                 visible_node_ids = {
                     e["data"]["id"] for e in final_elements
-                    if "source" not in e["data"] and e["data"].get("module") == graph_module
+                    if "source" not in e["data"] and e["data"].get("module") == allowed_module
                 }
-                # For a module view, keep direct neighbors to preserve structural readability.
                 neighbor_ids = set(visible_node_ids)
                 for e in final_elements:
                     d = e["data"]
@@ -2245,68 +2121,29 @@ constraints and logical conditions. Increase clarity by removing redundancy.
                 ]
 
             render_cytoscape_network(
-                visible_elements, graph_perspective,
-                f"cy_{int(time.time()*1000)}",
+                visible_elements,
+                graph_perspective,
+                f"cy_int_{time.time():.0f}",
                 "Unified cross-layer semantic network"
             )
 
             export_html = build_html_report(
                 f"<h2>Phase 1 — IMA</h2>{html.escape(phase1).replace(chr(10), '<br>')}"
                 f"<h2>Phase 2 — MA</h2>{html.escape(innovation_text).replace(chr(10), '<br>')}",
-                final_elements, graph_perspective, evaluation, equations
+                visible_elements,
+                graph_perspective,
+                evaluation,
+                equations,
             )
             st.download_button(
-                "🌐 EXPORT COMPLETE REPORT + UNIFIED GRAPH (HTML)",
+                "EXPORT COMPLETE REPORT (UNIFIED GRAPH, HTML)",
                 data=export_html,
                 file_name=f"SIS_v25_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html",
                 mime="text/html",
                 use_container_width=True,
-                key="export_complete_html_v250"
+                key="export_complete_html_v250",
             )
 
         except Exception as exc:
-            st.error(f"❌ Pipeline Failure: {exc}")
+            st.error(f"Pipeline Failure: {exc}")
             st.exception(exc)
-
-# -------------------------------------------------------------------------
-# Persistent gallery
-# -------------------------------------------------------------------------
-if st.session_state.get("report_ready") and st.session_state.get("final_graph_elements"):
-    st.divider()
-    st.subheader("🖼️ MODULAR GRAPH GALLERY")
-    gallery_tabs = st.tabs(["🌐 Unified Organic", "🏛️ IMA", "🧠 MA", "🔬 Science", "🧮 Equations"])
-    graph_all = st.session_state.final_graph_elements
-
-    with gallery_tabs[0]:
-        render_cytoscape_network(graph_all, "organic", "gallery_unified_v250", "Unified Organic View")
-    with gallery_tabs[1]:
-        ids = {e["data"]["id"] for e in graph_all if "source" not in e["data"] and e["data"].get("module") == "Metamodel"}
-        els = [e for e in graph_all if ("source" not in e["data"] and e["data"]["id"] in ids) or
-               ("source" in e["data"] and e["data"].get("source") in ids and e["data"].get("target") in ids)]
-        render_cytoscape_network(els or graph_all, "hierarchical", "gallery_ima_v250", "IMA Module")
-    with gallery_tabs[2]:
-        ids = {e["data"]["id"] for e in graph_all if "source" not in e["data"] and e["data"].get("module") == "Mental Approach"}
-        els = [e for e in graph_all if ("source" not in e["data"] and e["data"]["id"] in ids) or
-               ("source" in e["data"] and e["data"].get("source") in ids and e["data"].get("target") in ids)]
-        render_cytoscape_network(els or graph_all, "organic", "gallery_ma_v250", "Mental Approach Module")
-    with gallery_tabs[3]:
-        ids = {e["data"]["id"] for e in graph_all if "source" not in e["data"] and e["data"].get("module") == "Science"}
-        els = [e for e in graph_all if ("source" not in e["data"] and e["data"]["id"] in ids) or
-               ("source" in e["data"] and e["data"].get("source") in ids and e["data"].get("target") in ids)]
-        render_cytoscape_network(els or graph_all, "concentric", "gallery_science_v250", "Science Integration Module")
-    with gallery_tabs[4]:
-        eqs = st.session_state.get("last_equations")
-        if eqs and eqs.get("results"):
-            st.dataframe([
-                {"Equation": k, "Symbol": EQUATION_SYSTEM[k]["symbol"],
-                 "Formula": EQUATION_SYSTEM[k]["formula"], "Value": round(v, 8)}
-                for k,v in eqs["results"].items()
-            ], use_container_width=True, hide_index=True)
-        else:
-            st.info("No equation calculation was explicitly requested in the last run.")
-
-st.divider()
-st.caption(
-    f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | "
-    f"Adaptive target {TARGET_SCORE:.2f}+ | Unified semantic + logical + equation architecture"
-)
