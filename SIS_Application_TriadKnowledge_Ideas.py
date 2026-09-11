@@ -7,30 +7,24 @@ import re
 import time
 import io
 import html
-import ast
-import operator as _operator
-import statistics
-from collections import Counter, defaultdict
-from itertools import combinations
-from typing import Any, Dict, List, Tuple, Optional
 from datetime import datetime
 from google import genai
 from google.genai import types
 import streamlit.components.v1 as components
-import math
 
 # =============================================================================
-# 0. GLOBAL CONFIGURATION & SESSION DATE
+# 0. GLOBAL CONFIGURATION & SESSION DATE (FEBRUARY 24, 2026)
 # =============================================================================
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v25.2.0-RELIABLE-GRAPH-OPTIONAL-QUALITY"
+VERSION_CODE = "v24.6.0-GOOGLE-GEMINI-ONLY-FIXED"
 
 # =============================================================================
-# INITIALIZATION FIX
+# INITIALIZATION FIX: Preprečuje AttributeError pri zagonu in resetiranju
 # =============================================================================
 if 'show_user_guide' not in st.session_state:
     st.session_state.show_user_guide = False
 
+# Zagotovimo, da so vsi ključi prisotni v session_state pred prvo uporabo
 if 'phase1_synthesis' not in st.session_state:
     st.session_state.phase1_synthesis = ""
 
@@ -41,10 +35,13 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- NUCLEAR CSS OVERRIDE ---
+# --- NUCLEAR CSS OVERRIDE: OBLITERATING SIDEBAR ARTIFACTS & FIXING VISIBILITY ---
+# Targets the 'keyboard_double_arrow_right' artifact and forced navy-black contrast.
+# This section ensures the Knowledge Explorer is perfectly visible.
 st.markdown("""
 <style>
     /* 1. OBLITERATE ARROW ARTIFACTS & SIDEBAR ICONS */
+    /* Hides the specific Streamlit containers where "keyboard_double_arrow_right" appears as text */
     [data-testid="stSidebar"] [data-testid="stIcon"],
     [data-testid="stSidebar"] button[data-testid="stSidebarCollapseButton"],
     [data-testid="stSidebar"] .st-emotion-cache-16idsys,
@@ -65,6 +62,7 @@ st.markdown("""
         min-width: 380px !important;
     }
 
+    /* Force all sidebar text to be deep black/navy for perfect visibility */
     [data-testid="stSidebar"] .stMarkdown p, 
     [data-testid="stSidebar"] .stMarkdown li,
     [data-testid="stSidebar"] label,
@@ -72,16 +70,16 @@ st.markdown("""
     [data-testid="stSidebar"] .stExpander li,
     [data-testid="stSidebar"] .stMarkdown span,
     [data-testid="stSidebar"] .stMarkdown div {
-        color: #1d3557 !important;
+        color: #ffffff !important; /* Maximum Contrast */
         font-size: 0.98em !important;
         font-weight: 500 !important;
         line-height: 1.6 !important;
         opacity: 1 !important;
     }
 
-    /* 3. RE-STYLE EXPANDERS */
+    /* 3. RE-STYLE EXPANDERS FOR PROFESSIONAL DENSITY */
     .stExpander {
-        background-color: #f5f7fa !important;
+        background-color: #A9A9A9 !important;
         border: 1px solid #d8e2dc !important;
         border-radius: 12px !important;
         margin-bottom: 12px !important;
@@ -164,23 +162,16 @@ st.markdown("""
         font-size: 2.8rem;
     }
 
-    /* 6. DATE BADGE — TUKAJ SPREMENIŠ BARVO PISAVE (color) */
-    .date-badge,
-    .date-badge * {
-        background: #12345b !important;
-        color: #ffffff !important;  /* ← SPREMENI TO BARVO PO ŽELJI */
-        padding: 10px 14px;
-        border-radius: 6px;
-        border: 1px solid rgba(255,255,255,0.18);
-        font-size: 0.88em;
+    .date-badge {
+        background-color: #1d3557;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 50px;
+        font-size: 1em;
         font-weight: 800;
-        margin: 8px 0 22px 0;
+        margin-bottom: 30px;
         display: block;
-        width: 100%;
-        box-sizing: border-box;
         text-align: center;
-        letter-spacing: 0.03em;
-        line-height: 1.25;
         box-shadow: 0 4px 15px rgba(29, 53, 87, 0.3);
         letter-spacing: 1px;
     }
@@ -236,6 +227,178 @@ SVG_3D_RELIEF = """
 </svg>
 """
 
+# =============================================================================
+# 1. CORE RENDERING ENGINES & DATA FETCHING
+# =============================================================================
+
+def render_cytoscape_network(elements, layout_type="hierarchical", container_id="cy_canvas"):
+    """
+    Posodobljen motor z več perspektivami (Multi-Perspective Layout Engine).
+    Vključuje UML, ISO Thesaurus in Logične konektorje (AND, OR, XOR, NOT, IF-THEN).
+    """
+
+    # Mapiranje Python izbire v Cytoscape JS konfiguracije
+    layout_configs = {
+        "organic": """{ 
+            name: 'cose', 
+            idealEdgeLength: 120, 
+            nodeOverlap: 50, 
+            refresh: 20, 
+            fit: true, 
+            padding: 50, 
+            nodeRepulsion: 1000000,
+            edgeElasticity: 100,
+            nestingFactor: 1.2,
+            numIter: 1500
+        }""",
+        "hierarchical": """{ 
+            name: 'breadthfirst', 
+            directed: true, 
+            padding: 50, 
+            circle: false, 
+            spacingFactor: 1.75,
+            maximal: true
+        }""",
+        "circular": """{ 
+            name: 'circle', 
+            padding: 50, 
+            radius: 400,
+            spacingFactor: 0.8
+        }""",
+        "concentric": """{ 
+            name: 'concentric', 
+            minNodeSpacing: 60, 
+            concentric: function(node){ return node.data('size'); },
+            levelWidth: function(nodes){ return 10; },
+            padding: 50
+        }""",
+        "grid": """{ 
+            name: 'grid', 
+            rows: 5, 
+            padding: 50, 
+            spacingFactor: 1.2 
+        }"""
+    }
+
+    selected_layout = layout_configs.get(layout_type, layout_configs["hierarchical"])
+
+    cyto_html = f"""
+    <div style="position: relative; width: 100%;">
+        <div style="position: absolute; top: 15px; right: 15px; z-index: 1000; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end;">
+            <button id="zoom_in_{container_id}" style="padding: 8px 11px; background: #1d3557; color: white; border: none; border-radius: 7px; cursor: pointer; font-weight: 800;">＋ Zoom In</button>
+            <button id="zoom_out_{container_id}" style="padding: 8px 11px; background: #457b9d; color: white; border: none; border-radius: 7px; cursor: pointer; font-weight: 800;">− Zoom Out</button>
+            <button id="zoom_fit_{container_id}" style="padding: 8px 11px; background: #2a9d8f; color: white; border: none; border-radius: 7px; cursor: pointer; font-weight: 800;">⛶ Fit</button>
+            <button id="save_btn_{container_id}" style="padding: 8px 11px; background: #1d3557; color: white; border: none; border-radius: 7px; cursor: pointer; font-weight: 800;">💾 PNG</button>
+        </div>
+        <div id="{container_id}" style="width: 100%; height: 850px; background: #ffffff; border-radius: 20px; border: 1px solid #e0e0e0; box-shadow: 0 10px 40px rgba(0,0,0,0.08);"></div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {{
+            var cy = cytoscape({{
+                container: document.getElementById('{container_id}'),
+                elements: {json.dumps(elements)},
+                style: [
+                    {{
+                        selector: 'node',
+                        style: {{
+                            'label': 'data(label)',
+                            'text-valign': 'center',
+                            'text-halign': 'center',
+                            'color': '#1d3557',
+                            'background-color': 'data(color)',
+                            'width': 'data(size)',
+                            'height': 'data(size)',
+                            'shape': 'data(shape)',
+                            'font-size': '12px',
+                            'font-weight': 'bold',
+                            'text-wrap': 'wrap',
+                            'text-max-width': '80px',
+                            'border-width': 3,
+                            'border-color': '#ffffff',
+                            'border-opacity': 0.8,
+                            'text-outline-color': '#ffffff',
+                            'text-outline-width': 2,
+                            'box-shadow': '0 4px 10px rgba(0,0,0,0.2)'
+                        }}
+                    }},
+                    {{
+                        selector: 'edge',
+                        style: {{
+                            'width': 2,
+                            'line-color': 'data(color)',
+                            'label': 'data(rel_type)',
+                            'font-size': '9px',
+                            'font-weight': 'bold',
+                            'color': '#2a9d8f',
+                            'curve-style': 'unbundled-bezier',
+                            'control-point-step-size': 40,
+                            'target-arrow-color': 'data(color)',
+                            'target-arrow-shape': 'vee',
+                            'text-background-opacity': 1,
+                            'text-background-color': '#ffffff',
+                            'text-background-padding': '3px',
+                            'text-background-shape': 'roundrectangle',
+                            'edge-distances': 'node-position',
+                            'opacity': 0.8
+                        }}
+                    }},
+                    /* --- UML NOTACIJA --- */
+                    {{ selector: 'edge[rel_type="Generalization"]', style: {{ 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow', 'width': 3 }} }},
+                    {{ selector: 'edge[rel_type="Realization"]', style: {{ 'line-style': 'dashed', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' }} }},
+                    {{ selector: 'edge[rel_type="Composition"]', style: {{ 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'filled', 'width': 4 }} }},
+                    {{ selector: 'edge[rel_type="Aggregation"]', style: {{ 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'hollow', 'width': 3 }} }},
+                    {{ selector: 'edge[rel_type="Dependency"]', style: {{ 'line-style': 'dashed', 'target-arrow-shape': 'vee' }} }},
+                    {{ selector: 'edge[rel_type="Conflict"]', style: {{ 'width': 6, 'line-color': '#b91d1d', 'line-style': 'solid', 'target-arrow-color': '#b91d1d', 'target-arrow-shape': 'triangle-cross', 'source-arrow-shape': 'triangle-cross', 'source-arrow-color': '#b91d1d' }} }},
+                    {{ selector: 'edge[rel_type="Specialization"]', style: {{ 'line-style': 'dashed', 'line-color': '#000000', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'filled', 'target-arrow-color': '#000000', 'width': 2 }} }},
+                    {{ selector: 'edge[rel_type="Containment"]', style: {{ 'line-color': '#1d3557', 'target-arrow-shape': 'circle', 'target-arrow-color': '#1d3557', 'target-arrow-fill': 'hollow', 'width': 4 }} }},
+                    
+                    /* --- ISO THESAURUS --- */
+                    {{ selector: 'edge[rel_type="TT"]', style: {{ 'width': 6, 'line-color': '#1d3557' }} }},
+                    {{ selector: 'edge[rel_type="BT"]', style: {{ 'width': 4, 'line-color': '#1d3557' }} }},
+                    {{ selector: 'edge[rel_type="NT"]', style: {{ 'width': 4, 'line-color': '#1d3557' }} }},
+                    {{ selector: 'edge[rel_type="EQ"]', style: {{ 'line-style': 'double', 'width': 5, 'line-color': '#f1c40f' }} }},
+                    {{ selector: 'edge[rel_type="RT"]', style: {{ 'line-style': 'dotted', 'width': 2, 'line-color': '#2a9d8f', 'target-arrow-shape': 'none' }} }},
+                    {{ selector: 'edge[rel_type="AS"]', style: {{ 'line-style': 'dashed', 'width': 2, 'line-color': '#7b2cb1' }} }},
+                    {{ selector: 'edge[rel_type="IN"]', style: {{ 'line-style': 'dotted', 'width': 3, 'line-color': '#0077b6', 'target-arrow-shape': 'triangle' }} }},
+                    
+                    /* --- LOGIČNI KONEKTORJI (Decision Logic) --- */
+                    {{ selector: 'edge[rel_type="AND"]', style: {{ 'width': 5, 'line-color': '#00FF00', 'target-arrow-color': '#00FF00', 'target-arrow-shape': 'triangle' }} }},
+                    {{ selector: 'edge[rel_type="OR"]', style: {{ 'width': 3, 'line-color': '#00BFFF', 'line-style': 'dashed', 'target-arrow-color': '#00BFFF', 'target-arrow-shape': 'vee' }} }},
+                    {{ selector: 'edge[rel_type="XOR"]', style: {{ 'width': 4, 'line-color': '#FF8C00', 'line-style': 'double', 'target-arrow-color': '#FF8C00', 'target-arrow-shape': 'diamond' }} }},
+                    {{ selector: 'edge[rel_type="NOT"]', style: {{ 'width': 4, 'line-color': '#FF0000', 'line-style': 'dashed', 'target-arrow-color': '#FF0000', 'target-arrow-shape': 'tee' }} }},
+                    {{ selector: 'edge[rel_type="IF-THEN"]', style: {{ 'width': 4, 'line-color': '#FFD700', 'target-arrow-color': '#FFD700', 'target-arrow-shape': 'triangle', 'arrow-scale': 1.3 }} }},
+
+                    /* Poudarek na zvezdah (Macro cilji) */
+                    {{ selector: 'node[shape="star"]', style: {{ 'font-size': '16px', 'width': 130, 'height': 130, 'border-width': 5, 'border-color': '#FFD700' }} }}
+                ],
+                layout: {selected_layout}
+            }});
+
+            document.getElementById('zoom_in_{container_id}').addEventListener('click', function() {{
+                cy.zoom({{ level: Math.min(cy.zoom() * 1.25, 4), renderedPosition: {{ x: cy.width()/2, y: cy.height()/2 }} }});
+            }});
+            document.getElementById('zoom_out_{container_id}').addEventListener('click', function() {{
+                cy.zoom({{ level: Math.max(cy.zoom() / 1.25, 0.15), renderedPosition: {{ x: cy.width()/2, y: cy.height()/2 }} }});
+            }});
+            document.getElementById('zoom_fit_{container_id}').addEventListener('click', function() {{
+                cy.fit(undefined, 50);
+            }});
+            document.getElementById('save_btn_{container_id}').addEventListener('click', function() {{
+                var png64 = cy.png({{full: true, bg: 'white', scale: 2}});
+                var link = document.createElement('a');
+                var timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+                link.href = png64;
+                link.download = 'hierarchograph_{layout_type}_' + timestamp + '.png';
+                link.click();
+            }});
+        }});
+    </script>
+    """
+    components.html(cyto_html, height=900)
+
+import math # Move all imports to the top of your script if possible
+
 def fetch_author_bibliographies(author_input):
     if not author_input: return ""
     author_list = [a.strip() for a in author_input.split(",")]
@@ -243,6 +406,8 @@ def fetch_author_bibliographies(author_input):
     headers = {"Accept": "application/json"}
     for auth in author_list:
         try:
+            # FIX: URL-encode the author name so non-ASCII characters (č, š, ž, ...)
+            # don't break the request ('ascii' codec can't encode character error).
             s_res = requests.get(f"https://pub.orcid.org/v3.0/search/?q={urllib.parse.quote(auth)}", headers=headers, timeout=6).json()
             if s_res.get('result'):
                 orcid_id = s_res['result'][0]['orcid-identifier']['path']
@@ -257,35 +422,65 @@ def fetch_author_bibliographies(author_input):
                     comprehensive_biblio += f"- **{year}**: {title}\n"
                 comprehensive_biblio += "\n---\n"
         except Exception: 
-            pass
+            pass # Ignore API errors to keep the app running
     return comprehensive_biblio
 
+import math
+
 def calculate_systemic_stress(f_pf, f_sf, f_pr):
+    """
+    Implements Dr. Petrič's Stress Intensity formula (Page 60).
+    σ0SF = arcsin(sqrt((FSF * FPR) / FPF))
+    """
     try:
+        # Convert to float and ensure f_pf (Positive Factors) isn't zero to avoid crash
         pf = float(f_pf)
         sf = float(f_sf)
         pr = float(f_pr)
+        
         if pf <= 0: pf = 0.001 
+        
+        # Calculate the ratio
         ratio = (sf * pr) / pf
+        
+        # MATH SAFETY: sqrt() needs positive, arcsin() needs value between -1 and 1
         clamped_ratio = max(0.0, min(ratio, 1.0))
+        
         stress_rad = math.asin(math.sqrt(clamped_ratio))
+        
+        # Returns the result in "Stress Degrees" (°S) as defined in the book
         return math.degrees(stress_rad)
     except Exception:
         return 0.0
 
 def calculate_effective_energy(stress_intensity, initial_potential=2500):
+    """
+    Implements the Energy Loss Index (W_EP) from Page 61 of the book.
+    W_EP = Initial_Energy - (Initial_Energy * (Stress_Intensity / 90))
+    2500 Kcal is the default baseline used in Dr. Petrič's example.
+    """
     try:
+        # The book defines 90°S as the theoretical maximum stress
         max_stress = 90.0
+        
+        # Calculate the proportion of energy lost
         loss_ratio = stress_intensity / max_stress
+        
+        # Ensure ratio stays within logical bounds [0, 1]
         loss_ratio = max(0.0, min(loss_ratio, 1.0))
+        
+        # Calculate remaining (effective) energy
         effective_energy = initial_potential - (initial_potential * loss_ratio)
+        
+        # Efficiency percentage
         efficiency_pct = (effective_energy / initial_potential) * 100
+        
         return round(effective_energy, 2), round(efficiency_pct, 1)
     except Exception:
         return 0.0, 0.0
 
 # =============================================================================
-# 2. ARCHITECTURAL ONTOLOGIES (IMA & MA)
+# 2. ARCHITECTURAL ONTOLOGIES (IMA & MA) - EXHAUSTIVE EXPANSION
 # =============================================================================
 
 HUMAN_THINKING_METAMODEL = {
@@ -459,6 +654,9 @@ MENTAL_APPROACHES_ONTOLOGY = {
         }
     }
 }
+# =============================================================================
+# 2.1 HIERARCHOLOGY & HIERARCHOGRAPHY ONTOLOGY
+# =============================================================================
 
 HIERARCHOLOGY_ONTOLOGY = {
     "core_definitions": {
@@ -480,11 +678,15 @@ HIERARCHOLOGY_ONTOLOGY = {
     ]
 }
 
+# Add Hierarchology-specific nodes to your existing Metamodel
 HUMAN_THINKING_METAMODEL["nodes"].update({
     "Hierarchical Associative System": {"color": "#fd7e14", "shape": "ellipse", "desc": "The primary cognitive framework defined by hierarchology."},
     "Scientific Cage": {"color": "#6c757d", "shape": "rectangle", "desc": "The boundary of human mental perspective."},
     "Hierarchography": {"color": "#e63946", "shape": "diamond", "desc": "The visual description of hierarchical structures."}
 })
+# =============================================================================
+# 3. KNOWLEDGE BASE (EXHAUSTIVE 18D SCIENCE FIELDS & ONTOLOGIES)
+# =============================================================================
 
 KNOWLEDGE_BASE = {
     "User profiles": {
@@ -503,7 +705,7 @@ KNOWLEDGE_BASE = {
         "Holism": "Systems should be viewed as wholes, not just as a collection of parts.",
         "Systems Theory": "Interdisciplinary study of systems where the focus is on relationships and patterns.",
         "Phenomenology": "Study of structures of consciousness as experienced from the first-person point of view.",
-        "Falsificationism": "Popper's principle that scientific theories must be inherently testable and refutable.",
+        "Falsificationism": "Popper’s principle that scientific theories must be inherently testable and refutable.",
         "Critical Theory": "Social theory oriented toward critiquing and changing society as a whole.",
         "Hermeneutics": "Theory and methodology of interpretation, especially of texts and human actions.",
         "Relativism": "The view that truth and falsity, right and wrong, are products of social and historical contexts.",
@@ -615,7 +817,7 @@ KNOWLEDGE_BASE = {
             "facets": ["Genomics", "Immunology", "Oncology", "Internal Medicine"]
         },
         "Psychiatry": {
-            "cat": "Applied/Medical",
+            "cat": "Applied/Medical", 
             "methods": ["Clinical Trials", "Diagnostic Interviewing", "Case Formulation", "Psychopharmacological Modeling", "Neuroimaging Analysis"], 
             "tools": ["DSM-5-TR", "ICD-11", "EEG", "fMRI", "Standardized Rating Scales"], 
             "facets": ["Clinical Psychiatry", "Neuropsychiatry", "Forensic Psychiatry", "Geriatric Psychiatry"]
@@ -718,7 +920,9 @@ KNOWLEDGE_BASE = {
         }
     }
 }
-
+# =============================================================================
+# 3.1 ADVANCED IDEATION TECHNIQUES LIBRARY
+# =============================================================================
 IDEATION_TECHNIQUES = {
     "Six Thinking Hats": "Process the problem through 6 perspectives: White (Data), Red (Emotion), Black (Risk), Yellow (Value), Green (Creativity), and Blue (Control/Planning).",
     "SCAMPER": "Apply the following filters: Substitute, Combine, Adapt, Modify, Put to another use, Eliminate, and Reverse.",
@@ -728,1422 +932,923 @@ IDEATION_TECHNIQUES = {
     "Blue Ocean Strategy": "Identify ways to make the competition irrelevant by creating a new value space through 'Eliminate-Reduce-Raise-Create' logic.",
     "Synectics": "Use direct, personal, and symbolic analogies to make the strange familiar and the familiar strange."
 }
-
-HUMAN_THINKING_METAMODEL["nodes"].update({
-    "System boundary": {"color": "#495057", "shape": "rectangle",
-                        "desc": "Explicit boundary separating the modeled system from its environment."},
-    "Causal mechanism": {"color": "#e8590c", "shape": "rectangle",
-                         "desc": "Mechanism that explains how a condition produces a change or outcome."},
-    "Feedback loop": {"color": "#0ca678", "shape": "rectangle",
-                      "desc": "Circular influence in which an output modifies a later system state."},
-    "Invariant": {"color": "#7048e8", "shape": "rectangle",
-                  "desc": "Property or relation intended to remain stable under transformation."},
-    "Scenario": {"color": "#1971c2", "shape": "rectangle",
-                 "desc": "Explicit future or counterfactual configuration used for testing an idea."},
-    "Evidence": {"color": "#2b8a3e", "shape": "rectangle",
-                 "desc": "Source-supported observation, measurement, document or reproducible result."},
-    "Hypothesis": {"color": "#ae3ec9", "shape": "octagon",
-                   "desc": "Provisional explanatory proposition that can be tested or challenged."},
-    "Constraint": {"color": "#c92a2a", "shape": "octagon",
-                   "desc": "Condition limiting feasible states, actions or transformations."},
-    "Intervention": {"color": "#d9480f", "shape": "triangle",
-                     "desc": "Deliberate change introduced into a system to alter its trajectory."},
-    "Evaluation criterion": {"color": "#364fc7", "shape": "octagon",
-                             "desc": "Explicit criterion used to compare solution quality."},
-    "Architecture pattern": {"color": "#087f5b", "shape": "diamond",
-                             "desc": "Reusable structural arrangement connecting components and behavior."},
-    "Emergence": {"color": "#5f3dc4", "shape": "ellipse",
-                  "desc": "System-level property arising from interactions among components."},
-    "Outcome": {"color": "#2f9e44", "shape": "star",
-                "desc": "Observable or intended result used to assess a transformation."},
-})
-
-HUMAN_THINKING_METAMODEL["relations"].extend([
-    ("Problem", "System boundary", "Dependency"),
-    ("System boundary", "Constraint", "Containment"),
-    ("Evidence", "Hypothesis", "supports"),
-    ("Hypothesis", "Causal mechanism", "explains"),
-    ("Causal mechanism", "Outcome", "causes"),
-    ("Intervention", "Causal mechanism", "modifies"),
-    ("Causal mechanism", "Feedback loop", "forms"),
-    ("Feedback loop", "Emergence", "produces"),
-    ("Scenario", "Hypothesis", "tests"),
-    ("Evaluation criterion", "Goal", "measures"),
-    ("Architecture pattern", "Intervention", "realizes"),
-])
-
-MENTAL_APPROACHES_ONTOLOGY["nodes"].update({
-    "Recombination": {"color": "#ff922b", "shape": "diamond",
-                      "desc": "Recombine useful components from different domains into a new configuration."},
-    "Inversion": {"color": "#e03131", "shape": "diamond",
-                  "desc": "Reverse an assumed direction, role, dependency or objective to expose alternatives."},
-    "Scale shifting": {"color": "#1c7ed6", "shape": "diamond",
-                       "desc": "Move deliberately between Micro, Meso and Macro levels to reveal hidden structure."},
-    "Boundary crossing": {"color": "#0ca678", "shape": "diamond",
-                          "desc": "Transfer a mechanism across a system, disciplinary or organizational boundary."},
-    "Counterfactual reasoning": {"color": "#7048e8", "shape": "diamond",
-                                 "desc": "Test an idea by changing a critical assumption and examining consequences."},
-    "Abstraction ladder": {"color": "#4263eb", "shape": "diamond",
-                           "desc": "Move between concrete instances and abstract principles without losing traceability."},
-    "Constraint relaxation": {"color": "#f08c00", "shape": "diamond",
-                              "desc": "Temporarily relax a constraint to discover otherwise hidden configurations."},
-    "Feedback reframing": {"color": "#12b886", "shape": "diamond",
-                           "desc": "Reinterpret a feedback loop as a design resource rather than only a problem."},
-    "Mechanism transfer": {"color": "#7950f2", "shape": "diamond",
-                          "desc": "Transfer a causal mechanism, not merely an analogy, between domains."},
-    "Modularization": {"color": "#087f5b", "shape": "diamond",
-                       "desc": "Partition a system into coherent modules with explicit interfaces and dependencies."},
-})
-
-TARGET_SCORE = 9.90
-QUALITY_DIMENSIONS = [
-    "conceptual_novelty",
-    "systemic_architecture",
-    "interdisciplinary_integration",
-    "practicality",
-    "clarity",
-]
-QUALITY_WEIGHTS = {
-    "conceptual_novelty": 0.22,
-    "systemic_architecture": 0.24,
-    "interdisciplinary_integration": 0.18,
-    "practicality": 0.22,
-    "clarity": 0.14,
-}
-MIN_QUALITY_IMPROVEMENT = 0.10
-
-RELATION_TYPES = [
-    "TT", "BT", "NT", "RT", "EQ", "AS", "IN",
-    "Association", "Generalization", "Specialization", "Containment", "Realization",
-    "Composition", "Aggregation", "Dependency",
-    "Constraint", "Satisfies", "Violates", "Constrains",
-    "Conflict",
-    "AND", "OR", "XOR", "NOT", "IF-THEN"
-]
-
-GRAPH_LAYER_COLORS = {
-    "Lexical": "#6f42c1",
-    "Category": "#0d6efd",
-    "Hierarchy": "#20c997",
-    "Semantic": "#198754",
-    "Network": "#fd7e14",
-    "Analytical": "#dc3545",
-    "Energetic": "#7b2cbf",
-    "Metamodel": "#495057",
-    "Mental Approach": "#6366f1",
-    "Science": "#00838f",
-    "Innovation": "#e8590c",
-    "Logic": "#d63384",
-    "Equation": "#f08c00",
-}
-
-EQUATION_SYSTEM = {
-    "Observed Frequency": {
-        "symbol": "f",
-        "formula": "f",
-        "requires": ["f"],
-        "layer": "Lexical",
-        "description": "Observed frequency of a term/event.",
-    },
-    "Distinct Frequency": {
-        "symbol": "v",
-        "formula": "v",
-        "requires": ["v"],
-        "layer": "Lexical",
-        "description": "Number of distinct observed terms/events.",
-    },
-    "Total Observations": {
-        "symbol": "N",
-        "formula": "N",
-        "requires": ["N"],
-        "layer": "Lexical",
-        "description": "Total number of observations/tokens.",
-    },
-    "Type-Token Ratio": {
-        "symbol": "TTR",
-        "formula": "v / N",
-        "requires": ["v", "N"],
-        "layer": "Lexical",
-        "description": "Lexical diversity.",
-    },
-    "Category Frequency": {
-        "symbol": "CF",
-        "formula": "fc / N",
-        "requires": ["fc", "N"],
-        "layer": "Category",
-        "description": "Relative frequency of a category.",
-    },
-    "Category Concentration": {
-        "symbol": "CC",
-        "formula": "sum_f2 / N",
-        "requires": ["sum_f2", "N"],
-        "layer": "Category",
-        "description": "Concentration of observations across categories.",
-    },
-    "Category Factor": {
-        "symbol": "Kc",
-        "formula": "CF * CC / N",
-        "requires": ["CF", "CC", "N"],
-        "layer": "Category",
-        "description": "Combined category-frequency/concentration factor.",
-    },
-    "Hierarchical Depth": {
-        "symbol": "d",
-        "formula": "log(N, base)",
-        "requires": ["N", "base"],
-        "layer": "Hierarchy",
-        "description": "Logarithmic hierarchy depth.",
-    },
-    "Hierarchical Linguistic Power": {
-        "symbol": "HLP",
-        "formula": "I * A * C * w * (1 + alpha * d)",
-        "requires": ["I", "A", "C", "w", "alpha", "d"],
-        "layer": "Hierarchy",
-        "description": "Composite hierarchical-linguistic power.",
-    },
-    "PMI": {
-        "symbol": "PMI",
-        "formula": "log2(Pxy / (Px * Py))",
-        "requires": ["Pxy", "Px", "Py"],
-        "layer": "Semantic",
-        "description": "Pointwise mutual information.",
-    },
-    "Associative Strength": {
-        "symbol": "AS",
-        "formula": "PMI",
-        "requires": ["PMI"],
-        "layer": "Semantic",
-        "description": "Associative strength derived from PMI.",
-    },
-    "Semantic Centrality": {
-        "symbol": "SC",
-        "formula": "sum_AS / n",
-        "requires": ["sum_AS", "n"],
-        "layer": "Semantic",
-        "description": "Mean associative strength across a semantic neighborhood.",
-    },
-    "Degree": {
-        "symbol": "D",
-        "formula": "k / (n - 1)",
-        "requires": ["k", "n"],
-        "layer": "Network",
-        "description": "Normalized node degree.",
-    },
-    "Network Density": {
-        "symbol": "ND",
-        "formula": "2 * E / (n * (n - 1))",
-        "requires": ["E", "n"],
-        "layer": "Network",
-        "description": "Density of an undirected simple graph.",
-    },
-    "Co-occurrence": {
-        "symbol": "CCo",
-        "formula": "sum_cij / N",
-        "requires": ["sum_cij", "N"],
-        "layer": "Network",
-        "description": "Normalized co-occurrence.",
-    },
-    "Network Criticality": {
-        "symbol": "Ck",
-        "formula": "(BC + EC + D) / 3",
-        "requires": ["BC", "EC", "D"],
-        "layer": "Analytical",
-        "description": "Composite network criticality.",
-    },
-    "Stress Argument": {
-        "symbol": "Ag",
-        "formula": "(FSF * FPR) / FPF",
-        "requires": ["FSF", "FPR", "FPF"],
-        "layer": "Analytical",
-        "description": "Argument of the stress-intensity relation.",
-    },
-    "Stress Intensity": {
-        "symbol": "sigma",
-        "formula": "degrees(asin(sqrt(clamp(Ag, 0, 1))))",
-        "requires": ["Ag"],
-        "layer": "Analytical",
-        "description": "Stress intensity in degrees (°S).",
-    },
-    "Useful Energy": {
-        "symbol": "WEU",
-        "formula": "WI * (1 - sigma / 90)",
-        "requires": ["WI", "sigma"],
-        "layer": "Energetic",
-        "description": "Useful energy remaining after stress loss.",
-    },
-    "Energy Loss": {
-        "symbol": "WL",
-        "formula": "WI - WEU",
-        "requires": ["WI", "WEU"],
-        "layer": "Energetic",
-        "description": "Energy lost to the modeled stress load.",
-    },
-    "Efficiency": {
-        "symbol": "eta",
-        "formula": "100 * WEU / WI",
-        "requires": ["WEU", "WI"],
-        "layer": "Energetic",
-        "description": "Useful-energy efficiency percentage.",
-    },
-}
-
-SAFE_FUNCS = {
-    "log": math.log,
-    "log2": math.log2,
-    "sqrt": math.sqrt,
-    "asin": math.asin,
-    "sin": math.sin,
-    "cos": math.cos,
-    "tan": math.tan,
-    "degrees": math.degrees,
-    "radians": math.radians,
-    "abs": abs,
-    "min": min,
-    "max": max,
-    "clamp": lambda x, lo, hi: max(lo, min(x, hi)),
-}
-
-def _safe_eval(expr: str, variables: Dict[str, float]) -> float:
-    tree = ast.parse(expr, mode="eval")
-    allowed_nodes = (
-        ast.Expression, ast.BinOp, ast.UnaryOp, ast.Add, ast.Sub, ast.Mult,
-        ast.Div, ast.Pow, ast.Mod, ast.USub, ast.UAdd, ast.Constant,
-        ast.Name, ast.Call, ast.Load, ast.Tuple,
-    )
-    for node in ast.walk(tree):
-        if not isinstance(node, allowed_nodes):
-            raise ValueError(f"Unsupported expression element: {type(node).__name__}")
-        if isinstance(node, ast.Name) and node.id not in variables and node.id not in SAFE_FUNCS:
-            raise ValueError(f"Unknown variable: {node.id}")
-        if isinstance(node, ast.Call):
-            if not isinstance(node.func, ast.Name) or node.func.id not in SAFE_FUNCS:
-                raise ValueError("Function is not allowed")
-    env = dict(SAFE_FUNCS)
-    env.update({k: float(v) for k, v in variables.items()})
-    return float(eval(compile(tree, "<equation>", "eval"), {"__builtins__": {}}, env))
-
-def calculate_equation_chain(inputs: Dict[str, Any]) -> Dict[str, Any]:
-    values = {}
-    for key, value in (inputs or {}).items():
-        try:
-            values[key] = float(value)
-        except (TypeError, ValueError):
-            pass
-
-    results = {}
-    symbol_values = {}
-    pending = dict(EQUATION_SYSTEM)
-
-    for _ in range(len(EQUATION_SYSTEM) + 2):
-        progress = False
-        for name, spec in pending.items():
-            if name in results:
-                continue
-            if all(dep in values or dep in symbol_values for dep in spec["requires"]):
-                local = dict(values)
-                local.update(symbol_values)
-                try:
-                    value = _safe_eval(spec["formula"], local)
-                    results[name] = value
-                    symbol_values[spec["symbol"]] = value
-                    progress = True
-                except Exception:
-                    continue
-        if not progress:
-            break
-
-    return {
-        "inputs": values,
-        "results": results,
-        "symbol_values": symbol_values,
-        "equations": EQUATION_SYSTEM,
-    }
-
-def calculation_requested(user_query: str, idea_query: str, explicit_toggle: bool) -> bool:
-    if explicit_toggle:
-        return True
-    textq = f"{user_query or ''} {idea_query or ''}".lower()
-    triggers = [
-        "[calculate]", "[calculation]", "[calculate equations]", "[izračunaj]",
-        "izračun", "kalkul", "calculate", "calculation", "compute", "equation",
-        "formula", "mathematical calculation", "numeric result",
-    ]
-    return any(t in textq for t in triggers)
-
-def extract_json_object(raw: str) -> Optional[Dict[str, Any]]:
-    if not raw:
-        return None
-    text0 = re.sub(r"```(?:json)?", "", raw, flags=re.I).replace("```", "").strip()
-    start = text0.find("{")
-    if start < 0:
-        return None
-    depth = 0
-    in_string = False
-    escaped = False
-    for i in range(start, len(text0)):
-        ch = text0[i]
-        if in_string:
-            if escaped:
-                escaped = False
-            elif ch == "\\":
-                escaped = True
-            elif ch == '"':
-                in_string = False
-            continue
-        if ch == '"':
-            in_string = True
-        elif ch == "{":
-            depth += 1
-        elif ch == "}":
-            depth -= 1
-            if depth == 0:
-                try:
-                    obj = json.loads(text0[start:i + 1])
-                    return obj if isinstance(obj, dict) else None
-                except Exception:
-                    return None
-    return None
-
-def parse_graph_payload(raw: str) -> Tuple[str, Dict[str, Any]]:
-    marker = "### SEMANTIC_GRAPH_JSON"
-    if marker not in raw:
-        return raw, {"system_metrics": {}, "nodes": [], "edges": []}
-    report, json_part = raw.split(marker, 1)
-    graph = extract_json_object(json_part) or {"system_metrics": {}, "nodes": [], "edges": []}
-    return report.strip(), graph
-
-def normalize_graph(g_data: Dict[str, Any], max_nodes: int = 50, max_edges: int = 80) -> Dict[str, Any]:
-    nodes_raw = g_data.get("nodes", []) if isinstance(g_data, dict) else []
-    edges_raw = g_data.get("edges", []) if isinstance(g_data, dict) else []
-
-    clean_nodes = []
-    seen_ids = set()
-    for idx, n in enumerate(nodes_raw):
-        if not isinstance(n, dict):
-            continue
-        nid = str(n.get("id") or f"n{idx+1}")
-        if nid in seen_ids:
-            continue
-        seen_ids.add(nid)
-        label = str(n.get("label") or f"Node {idx+1}").strip()
-        shape = str(n.get("shape") or "rectangle").strip().lower()
-        valid_shapes = {"star", "diamond", "octagon", "hexagon", "triangle", "ellipse", "rectangle", "roundrectangle", "vee", "tag", "barrel"}
-        if shape not in valid_shapes:
-            shape = "rectangle"
-        layer = str(n.get("layer") or "Semantic").strip()
-        importance = float(n.get("importance", 0.5) or 0.5)
-        clean_nodes.append({
-            "id": nid,
-            "label": label[:120],
-            "shape": shape,
-            "color": n.get("color") or GRAPH_LAYER_COLORS.get(layer, "#6c757d"),
-            "description": str(n.get("description") or "")[:700],
-            "layer": layer,
-            "importance": max(0.0, min(1.0, importance)),
-            "module": str(n.get("module") or layer),
-        })
-
-    clean_nodes.sort(key=lambda x: (-x["importance"], x["label"].lower()))
-    clean_nodes = clean_nodes[:max_nodes]
-    valid_ids = {n["id"] for n in clean_nodes}
-
-    clean_edges = []
-    seen_edges = set()
-    for idx, e in enumerate(edges_raw):
-        if not isinstance(e, dict):
-            continue
-        s = str(e.get("source", ""))
-        t = str(e.get("target", ""))
-        rel = str(e.get("rel_type") or "RT")
-        if s not in valid_ids or t not in valid_ids or s == t or rel not in RELATION_TYPES:
-            continue
-        key = (s, t, rel)
-        if key in seen_edges:
-            continue
-        seen_edges.add(key)
-        weight = float(e.get("weight", e.get("importance", 0.5)) or 0.5)
-        clean_edges.append({
-            "id": str(e.get("id") or f"e{idx+1}"),
-            "source": s,
-            "target": t,
-            "rel_type": rel,
-            "weight": max(0.0, min(1.0, weight)),
-            "label": str(e.get("label") or rel)[:60],
-            "evidence": str(e.get("evidence") or "")[:300],
-            "multiplicity_source": str(e.get("multiplicity_source") or "")[:30],
-            "multiplicity_target": str(e.get("multiplicity_target") or "")[:30],
-            "source_role": str(e.get("source_role") or "")[:60],
-            "target_role": str(e.get("target_role") or "")[:60],
-            "navigability": str(e.get("navigability") or "")[:20],
-            "constraint_expression": str(e.get("constraint_expression") or "")[:300],
-        })
-    clean_edges.sort(key=lambda x: (-x["weight"], x["rel_type"]))
-    clean_edges = clean_edges[:max_edges]
-
-    return {
-        "system_metrics": g_data.get("system_metrics", {}) if isinstance(g_data, dict) else {},
-        "nodes": clean_nodes,
-        "edges": clean_edges,
-    }
-
-def ensure_graph_backbone(g_data: Dict[str, Any], selected_science=None, max_nodes=40):
-    selected_science = selected_science or []
-    if isinstance(g_data, dict) and g_data.get("nodes"):
-        return g_data
-
-    nodes = [
-        {"id":"fb_problem","label":"Research problem","shape":"star","color":"#e8590c","description":"Fallback anchor for the research inquiry.","layer":"Metamodel","module":"Metamodel","importance":1.0},
-        {"id":"fb_system","label":"System architecture","shape":"rectangle","color":"#495057","description":"Integrated system structure reconstructed from the inquiry.","layer":"Metamodel","module":"Metamodel","importance":0.95},
-        {"id":"fb_semantic","label":"Key semantic concepts","shape":"ellipse","color":"#198754","description":"Central concepts and associations extracted from the inquiry.","layer":"Semantic","module":"Semantic","importance":0.9},
-        {"id":"fb_constraint","label":"Constraint","shape":"octagon","color":"#c92a2a","description":"A limiting condition or explicit design requirement.","layer":"Metamodel","module":"Metamodel","importance":0.88},
-        {"id":"fb_innovation","label":"Innovation configuration","shape":"diamond","color":"#e8590c","description":"Candidate transformed configuration produced by MA reasoning.","layer":"Innovation","module":"Innovation","importance":0.92},
-        {"id":"fb_evidence","label":"Evidence / source","shape":"rectangle","color":"#2b8a3e","description":"Source-supported evidence or observation.","layer":"Lexical","module":"Semantic","importance":0.82},
-    ]
-    for i, science in enumerate(selected_science[:6], 1):
-        nodes.append({"id":f"fb_science_{i}","label":str(science),"shape":"hexagon","color":"#00838f","description":"Selected scientific field contributing to interdisciplinary integration.","layer":"Science","module":"Science","importance":0.72})
-
-    edges = [
-        {"id":"fb_e1","source":"fb_problem","target":"fb_system","rel_type":"Association","weight":0.95,"label":"Association","evidence":"Fallback structural relation"},
-        {"id":"fb_system_constraint","source":"fb_system","target":"fb_constraint","rel_type":"Constrains","weight":0.94,"label":"Constrains","evidence":"Explicit constraint semantics"},
-        {"id":"fb_e2","source":"fb_system","target":"fb_semantic","rel_type":"Composition","weight":0.86,"label":"Composition","evidence":"System contains semantic components"},
-        {"id":"fb_e3","source":"fb_evidence","target":"fb_semantic","rel_type":"Association","weight":0.78,"label":"Association","evidence":"Evidence linked to semantic concepts"},
-        {"id":"fb_e4","source":"fb_constraint","target":"fb_innovation","rel_type":"Constraint","weight":0.84,"label":"Constraint","evidence":"Innovation must respect constraint"},
-        {"id":"fb_e5","source":"fb_system","target":"fb_innovation","rel_type":"Realization","weight":0.82,"label":"Realization","evidence":"Innovation realizes a changed configuration"},
-    ]
-    for i in range(1, len(nodes)):
-        if nodes[i]["layer"] == "Science":
-            edges.append({"id":f"fb_s{i}","source":nodes[i]["id"],"target":"fb_semantic","rel_type":"Association","weight":0.68,"label":"Association","evidence":"Interdisciplinary connection"})
-    return normalize_graph({"system_metrics":{},"nodes":nodes,"edges":edges}, max_nodes=max_nodes, max_edges=80)
-
-def graph_to_cytoscape(g_data: Dict[str, Any]) -> List[Dict[str, Any]]:
-    elements = []
-    for n in g_data.get("nodes", []):
-        shape = n.get("shape", "rectangle")
-        sizes = {
-            "star": 135, "diamond": 118, "octagon": 110, "hexagon": 105,
-            "triangle": 100, "ellipse": 92, "rectangle": 86,
-        }
-        elements.append({"data": {
-            **n,
-            "size": sizes.get(shape, 86),
-        }})
-    for e in g_data.get("edges", []):
-        elements.append({"data": e})
-    return elements
-
-def render_cytoscape_network(elements, layout_type="organic", container_id="cy_canvas",
-                             title="Unified Semantic Network"):
-    safe_elements = elements if isinstance(elements, list) else []
-    graph_json = json.dumps(safe_elements, ensure_ascii=False, allow_nan=False)
-    layout_configs = {
-        "organic": "{name:'cose', idealEdgeLength:145, nodeRepulsion:160000, edgeElasticity:85, numIter:1200, fit:true, padding:60}",
-        "hierarchical": "{name:'breadthfirst', directed:true, padding:60, spacingFactor:1.35, maximal:true, fit:true}",
-        "concentric": "{name:'concentric', minNodeSpacing:55, padding:60, concentric:function(n){return Math.round((n.data('importance')||0.5)*10);}, levelWidth:function(){return 2;}, fit:true}",
-        "circular": "{name:'circle', padding:60, spacingFactor:1.0, fit:true}",
-        "grid": "{name:'grid', padding:60, spacingFactor:1.15, fit:true}",
-    }
-    selected_layout = layout_configs.get(layout_type, layout_configs["organic"])
-
-    html_block = f"""
-    <div style="position:relative;width:100%;font-family:Arial,Helvetica,sans-serif;">
-      <div style="font:700 18px Arial;color:#1d3557;margin:4px 0 10px 4px;">{html.escape(title)}</div>
-      <div id="status_{container_id}" style="font:600 12px Arial;color:#6c757d;margin:0 0 6px 4px;">Loading unified network…</div>
-      <div style="position:absolute;right:10px;top:0;z-index:20;display:flex;gap:6px;">
-        <button id="zin_{container_id}">＋</button>
-        <button id="zout_{container_id}">−</button>
-        <button id="zfit_{container_id}">⛶ Fit</button>
-      </div>
-      <div id="{container_id}" style="width:100%;height:820px;background:#fbfcfe;border:1px solid #dfe5ec;border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.07);"></div>
-      <div style="font:12px Arial;color:#495057;margin:7px 4px;">Unified network: key semantic, hierarchical, UML, constraint, logical, scientific and innovation relations. Click a node to emphasize its neighborhood.</div>
-    </div>
-    <script>
-    (function(){{
-      const elements={graph_json};
-      const container=document.getElementById('{container_id}');
-      const status=document.getElementById('status_{container_id}');
-      function startGraph(){{
-        if(!window.cytoscape){{
-          status.textContent='Graph engine could not be loaded.';
-          status.style.color='#c92a2a';
-          return;
-        }}
-        try{{
-          const cy=window.cytoscape({{
-            container:container,
-            elements:elements,
-            style:[
-              {{selector:'node',style:{{
-                'label':'data(label)','text-valign':'center','text-halign':'center',
-                'background-color':'data(color)','width':'data(size)','height':'data(size)',
-                'shape':'data(shape)','font-size':'11px','font-weight':'bold',
-                'text-wrap':'wrap','text-max-width':'105px','color':'#17202a',
-                'border-width':function(n){{return 2+3*(Number(n.data('importance'))||0.5);}},
-                'border-color':'#ffffff','text-outline-color':'#ffffff','text-outline-width':2
-              }}}},
-              {{selector:'edge',style:{{
-                'width':2,'line-color':'#8d99ae','target-arrow-color':'#8d99ae',
-                'target-arrow-shape':'vee','curve-style':'bezier','opacity':0.62,
-                'label':'data(rel_type)','font-size':'8px','color':'#495057',
-                'text-background-color':'#ffffff','text-background-opacity':0.92,'text-background-padding':'2px'
-              }}}},
-              {{selector:'edge[rel_type="Association"]',style:{{'line-style':'solid','target-arrow-shape':'vee','source-arrow-shape':'none','width':3}}}},
-              {{selector:'edge[rel_type="Generalization"]',style:{{'target-arrow-shape':'triangle','target-arrow-fill':'hollow','width':3}}}},
-              {{selector:'edge[rel_type="Specialization"]',style:{{'target-arrow-shape':'triangle','target-arrow-fill':'hollow','line-style':'dashed','width':3}}}},
-              {{selector:'edge[rel_type="Realization"]',style:{{'target-arrow-shape':'triangle','target-arrow-fill':'hollow','line-style':'dashed','width':3}}}},
-              {{selector:'edge[rel_type="Composition"]',style:{{'source-arrow-shape':'diamond','source-arrow-fill':'filled','width':4}}}},
-              {{selector:'edge[rel_type="Aggregation"]',style:{{'source-arrow-shape':'diamond','source-arrow-fill':'hollow','width':3}}}},
-              {{selector:'edge[rel_type="Dependency"]',style:{{'line-style':'dashed','target-arrow-shape':'vee'}}}},
-              {{selector:'edge[rel_type="Constraint"],edge[rel_type="Constrains"]',style:{{'line-style':'dashed','target-arrow-shape':'tee','width':3}}}},
-              {{selector:'edge[rel_type="Satisfies"]',style:{{'target-arrow-shape':'vee','width':3}}}},
-              {{selector:'edge[rel_type="Violates"]',style:{{'line-style':'dashed','target-arrow-shape':'tee','width':4}}}},
-              {{selector:'edge[rel_type="AND"],edge[rel_type="OR"],edge[rel_type="XOR"],edge[rel_type="NOT"],edge[rel_type="IF-THEN"]',style:{{'line-color':'#d63384','target-arrow-color':'#d63384','width':3}}}},
-              {{selector:'node:selected',style:{{'border-width':6,'border-color':'#111827','z-index':999}}}},
-              {{selector:'edge:selected',style:{{'width':5,'opacity':1,'z-index':998}}}}
-            ],
-            layout:{selected_layout}
-          }});
-          cy.ready(function(){{ cy.fit(undefined,60); status.textContent='Graph ready — '+cy.nodes().length+' key nodes, '+cy.edges().length+' key relations.'; status.style.color='#2b8a3e'; }});
-          cy.on('tap','node',function(evt){{ const n=evt.target; cy.elements().removeClass('focus'); n.closedNeighborhood().addClass('focus'); }});
-          cy.style().selector('.focus').style({{'opacity':1}}).update();
-          document.getElementById('zin_{container_id}').onclick=()=>cy.zoom({{level:Math.min(cy.zoom()*1.25,4),renderedPosition:{{x:cy.width()/2,y:cy.height()/2}}}});
-          document.getElementById('zout_{container_id}').onclick=()=>cy.zoom({{level:Math.max(cy.zoom()/1.25,.15),renderedPosition:{{x:cy.width()/2,y:cy.height()/2}}}});
-          document.getElementById('zfit_{container_id}').onclick=()=>cy.fit(undefined,60);
-        }}catch(err){{ status.textContent='Graph rendering error: '+err.message; status.style.color='#c92a2a'; console.error(err); }}
-      }}
-      function loadScript(src, fallback){{
-        const s=document.createElement('script'); s.src=src;
-        s.onload=startGraph;
-        s.onerror=function(){{ if(fallback){{ const f=document.createElement('script'); f.src=fallback; f.onload=startGraph; f.onerror=startGraph; document.head.appendChild(f); }} else startGraph(); }};
-        document.head.appendChild(s);
-      }}
-      if(window.cytoscape) startGraph();
-      else loadScript('https://cdn.jsdelivr.net/npm/cytoscape@3.31.2/dist/cytoscape.min.js','https://unpkg.com/cytoscape@3.31.2/dist/cytoscape.min.js');
-    }})();
-    </script>
-    """
-    components.html(html_block, height=890, scrolling=False)
-
-def build_html_report(report_text, graph_elements, perspective, evaluation=None, equations=None):
-    graph_json = json.dumps(graph_elements, ensure_ascii=False)
-    score_html = ""
-    if evaluation:
-        score = evaluation.get("overall_score")
-        score_html = f"<h2>Quality optimization</h2><p><b>Overall:</b> {score if score is not None else 'not returned'} / 10.00; target {TARGET_SCORE:.2f}+.</p>"
-    eq_html = ""
-    if equations and equations.get("results"):
-        rows = "".join(
-            f"<tr><td>{html.escape(k)}</td><td>{v:.6g}</td><td>{html.escape(EQUATION_SYSTEM[k]['symbol'])}</td></tr>"
-            for k,v in equations["results"].items()
-        )
-        eq_html = f"<h2>Equation chain</h2><table><tr><th>Equation</th><th>Value</th><th>Symbol</th></tr>{rows}</table>"
-    return f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
-    <title>SIS Universal Knowledge Synthesizer v25</title>
-    <style>
-    body{{font-family:Arial,Helvetica,sans-serif;background:#f6f8fb;color:#17202a;margin:0}}
-    .wrap{{max-width:1400px;margin:auto;padding:32px}} h1,h2{{color:#1d3557}}
-    .report{{background:#fff;padding:30px;border-radius:18px;box-shadow:0 6px 24px rgba(0,0,0,.06)}}
-    .graph{{height:820px;background:#fff;border:1px solid #ddd;border-radius:18px}}
-    table{{border-collapse:collapse;width:100%;margin-top:12px}} th,td{{border:1px solid #ddd;padding:8px;text-align:left}}
-    </style></head><body><div class="wrap">
-    <h1>SIS Universal Knowledge Synthesizer v25.2</h1>
-    <div class="report">{report_text}</div>
-    {score_html}{eq_html}
-    <h2>Unified semantic system map — {html.escape(perspective.upper())}</h2>
-    <div id="cy" class="graph"></div>
-    </div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
-    <script>
-    const elements={graph_json};
-    cytoscape({{container:document.getElementById('cy'),elements:elements,
-      style:[
-        {{selector:'node',style:{{'label':'data(label)','background-color':'data(color)',
-        'width':'data(size)','height':'data(size)','shape':'data(shape)','text-wrap':'wrap',
-        'text-max-width':'90px','font-size':'11px','font-weight':'bold','text-valign':'center',
-        'text-halign':'center','color':'#17202a','border-width':3,'border-color':'#fff'}}}},
-        {{selector:'edge',style:{{'width':2,'line-color':'#adb5bd','target-arrow-color':'#adb5bd',
-        'target-arrow-shape':'vee','curve-style':'bezier','label':'data(rel_type)','font-size':'8px'}}}}
-      ],
-      layout:{{name:'cose',fit:true,padding:70}}}});
-    </script></body></html>"""
-
-# -------------------------------------------------------------------------
-# Sidebar
-# -------------------------------------------------------------------------
+# =============================================================================
+# 4. KONČNI POPRAVLJEN SIDEBAR (Z SAMBANOVO IN UNIKATNIMI KLJUČI)
+# =============================================================================
 with st.sidebar:
-    st.markdown(
-        f'<div class="sidebar-logo-container"><img src="data:image/svg+xml;base64,{get_svg_base64(SVG_3D_RELIEF)}" width="220"></div>',
-        unsafe_allow_html=True
-    )
+    # 1. Original 3D Relief Logo
+    st.markdown(f'<div class="sidebar-logo-container"><img src="data:image/svg+xml;base64,{get_svg_base64(SVG_3D_RELIEF)}" width="220"></div>', unsafe_allow_html=True)
+
+    # 2. Date Badge
     st.markdown(f'<div class="date-badge">{SYSTEM_DATE.upper()}</div>', unsafe_allow_html=True)
+
     st.header("⚙️ SYSTEM CONTROL")
 
+    # 3. GOOGLE GEMINI SYSTEM CONTROL
+    st.header("⚙️ GOOGLE GEMINI SYSTEM CONTROL")
     google_api_key = st.text_input(
-        "Google Gemini API Key:", type="password",
-        key="side_google_gemini_v250"
+        "Google Gemini API Key:",
+        type="password",
+        key="side_google_gemini_v2026",
+        help="Google AI Studio / Gemini API key."
     )
 
+    # Google-only language-model catalog.  The list intentionally contains
+    # current Gemini 3.x models plus the established Gemini 2.5 family and
+    # Google's Gemma instruction-tuned models. No third-party provider is used.
     GOOGLE_MODELS = {
+        # Current Gemini 3.x
         "Gemini 3.8 Flash — latest": "gemini-3.8-flash",
         "Gemini 3.7 Flash — advanced": "gemini-3.7-flash",
         "Gemini 3.6 Flash": "gemini-3.6-flash",
         "Gemini 3.5 Flash": "gemini-3.5-flash",
-        "Gemini 3.5 Flash-Lite": "gemini-3.5-flash-lite",
-        "Gemini 3.1 Flash-Lite": "gemini-3.1-flash-lite",
+        "Gemini 3.5 Flash-Lite — free/cost-efficient": "gemini-3.5-flash-lite",
+        "Gemini 3.1 Flash-Lite — free/cost-efficient": "gemini-3.1-flash-lite",
         "Gemini 3.1 Pro Preview": "gemini-3.1-pro-preview",
         "Gemini 3 Flash Preview": "gemini-3-flash-preview",
+        # Gemini 2.5 family
         "Gemini 2.5 Pro": "gemini-2.5-pro",
         "Gemini 2.5 Flash": "gemini-2.5-flash",
         "Gemini 2.5 Flash-Lite": "gemini-2.5-flash-lite",
-        "Gemma 4 31B IT": "gemma-4-31b-it",
-        "Gemma 4 26B A4B IT": "gemma-4-26b-a4b-it",
+        # Gemma 4
+        "Gemma 4 31B IT — free": "gemma-4-31b-it",
+        "Gemma 4 26B A4B IT — free": "gemma-4-26b-a4b-it",
     }
 
+    st.subheader("🤖 Sequential Google Model Selection")
     p1_model_label = st.selectbox(
-        "Phase 1 — IMA Foundation:", list(GOOGLE_MODELS.keys()),
-        index=min(5, len(GOOGLE_MODELS)-1)
+        "Phase 1 Model (IMA Structure):",
+        list(GOOGLE_MODELS.keys()), index=4,
+        help="Recommended default: Gemini 3.5 Flash-Lite for efficient IMA synthesis."
     )
+    p1_model = GOOGLE_MODELS[p1_model_label]
     p2_model_label = st.selectbox(
-        "Phase 2 — MA Innovation:", list(GOOGLE_MODELS.keys()),
-        index=min(1, len(GOOGLE_MODELS)-1)
+        "Phase 2 Model (MA Innovation):",
+        list(GOOGLE_MODELS.keys()), index=5,
+        help="Recommended default: Gemini 3.1 Flash-Lite; choose Gemini 3.7/3.8 for stronger innovation."
     )
-    p1_model, p2_model = (
-        GOOGLE_MODELS[p1_model_label],
-        GOOGLE_MODELS[p2_model_label],
-    )
+    p2_model = GOOGLE_MODELS[p2_model_label]
 
     st.divider()
-    st.subheader("🧠 QUALITY CRITIC / REFINER")
-    enable_quality = st.checkbox(
-        "Enable Quality Critic / Refiner",
-        value=True,
-        help="Recommended. The system audits every draft, applies evidence-based repairs, and keeps a revision only when its independently recomputed score improves."
-    )
-    if enable_quality:
-        critic_model_label = st.selectbox(
-            "Critic / Refiner model:", list(GOOGLE_MODELS.keys()),
-            index=list(GOOGLE_MODELS.keys()).index("Gemini 2.5 Pro"),
-            key="critic_model_v252"
-        )
-        critic_model = GOOGLE_MODELS[critic_model_label]
-        optimization_rounds = st.slider(
-            "Refinement rounds:", 1, 3, 2,
-            help="Each round is re-audited. A revision is retained only if it improves the independently recomputed quality score."
-        )
-        target_score = st.number_input(
-            "Target overall score:", min_value=7.0, max_value=10.0,
-            value=9.0, step=0.05,
-            help="Use a demanding but attainable target. Scores are evidence-gated rather than treated as a promise."
-        )
-        st.caption("Evidence-gated dimensions: novelty · systemic architecture · interdisciplinarity · practicality · clarity")
-    else:
-        critic_model_label = "Disabled"
-        critic_model = None
-        optimization_rounds = 0
-        target_score = 9.90
-        st.caption("Quality Critic / Refiner is OFF — synthesis runs without scoring or refinement.")
 
-    st.divider()
-    st.subheader("🕸️ UNIFIED GRAPH")
+    # --- NOVO: IZBIRA PERSPEKTIVE GRAFA ---
+    st.subheader("🎨 GRAPH PERSPECTIVE")
     graph_perspective = st.selectbox(
-        "Graph view:", ["organic", "hierarchical", "concentric", "circular", "grid"],
-        index=0, format_func=lambda x: x.title()
+        "Select Visual Layout Engine:",
+        options=["organic", "hierarchical", "concentric", "circular", "grid"],
+        index=0,
+        format_func=lambda x: x.capitalize() + " View",
+        help="Organic: naravna tematska struktura | Hierarchical: drevesna struktura | Concentric: Macro-Meso-Micro | Circular: relacije | Grid: pregled",
+        key="side_graph_layout_v2026"
     )
-    graph_module = st.selectbox(
-        "Organic module:", ["Unified", "Metamodel", "Mental Approach", "Science",
-                            "Semantic", "Network", "Analytical", "Energetic", "Innovation"],
-        index=0
+
+    graph_node_count = st.slider(
+        "🔢 Number of Graph Nodes:",
+        min_value=10,
+        max_value=80,
+        value=50,
+        step=1,
+        help="Set the maximum number of nodes displayed in the semantic graph."
     )
-    graph_node_count = st.slider("Key nodes:", 15, 60, 40, 1)
 
     st.divider()
-    st.subheader("🧮 EQUATION SYSTEM")
-    explicit_calculation = st.checkbox(
-        "Enable calculation for this inquiry",
-        value=False,
-        help="Off by default. Equations are calculated only when explicitly requested."
-    )
-    initial_energy = st.number_input("WI — initial energy", 1.0, 100000.0, 2500.0, 100.0)
-    f_pf = st.number_input("FPF — positive factors", 0.001, 100.0, 0.70, 0.01)
-    f_sf = st.number_input("FSF — stress factors", 0.0, 100.0, 0.40, 0.01)
-    f_pr = st.number_input("FPR — prevalence", 0.0, 100.0, 0.30, 0.01)
 
-    with st.expander("Advanced equation inputs", expanded=False):
-        eq_N = st.number_input("N — total observations", 1.0, 1000000.0, 100.0, 1.0)
-        eq_v = st.number_input("v — distinct observations", 0.0, 1000000.0, 25.0, 1.0)
-        eq_fc = st.number_input("fc — category frequency", 0.0, 1000000.0, 20.0, 1.0)
-        eq_sum_f2 = st.number_input("Σf² — category concentration numerator", 0.0, 1e12, 500.0, 10.0)
-        eq_Pxy = st.number_input("Pxy — joint probability", 0.000001, 1.0, 0.05, 0.01, format="%.6f")
-        eq_Px = st.number_input("Px — probability x", 0.000001, 1.0, 0.20, 0.01, format="%.6f")
-        eq_Py = st.number_input("Py — probability y", 0.000001, 1.0, 0.20, 0.01, format="%.6f")
-        eq_k = st.number_input("k — node degree", 0.0, 1000000.0, 5.0, 1.0)
-        eq_n = st.number_input("n — graph nodes", 2.0, 100000.0, 20.0, 1.0)
-        eq_E = st.number_input("E — graph edges", 0.0, 1000000.0, 30.0, 1.0)
-        eq_BC = st.number_input("BC — betweenness centrality", 0.0, 1.0, 0.20, 0.01)
-        eq_EC = st.number_input("EC — eigenvector centrality", 0.0, 1.0, 0.30, 0.01)
-        eq_sum_AS = st.number_input("ΣAS — associative strengths", -1000000.0, 1000000.0, 4.0, 0.1)
-        eq_sum_cij = st.number_input("Σcij — co-occurrences", 0.0, 1000000.0, 40.0, 1.0)
-
-    st.divider()
+    # 5. Reset in Guide Gumbi (Dodani unikatni ključi)
     col_res, col_gui = st.columns(2)
     with col_res:
-        if st.button("♻️ RESET", key="sidebar_reset_btn_v250"):
+        if st.button("♻️ RESET", key="sidebar_reset_btn_unique"):
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
             st.rerun()
     with col_gui:
-        if st.button("📖 GUIDE", key="sidebar_guide_btn_v250"):
-            st.session_state.show_user_guide = not st.session_state.get("show_user_guide", False)
+        if st.button("📖 GUIDE", key="sidebar_guide_btn_unique"):
+            st.session_state.show_user_guide = not st.session_state.show_user_guide
             st.rerun()
 
-# -------------------------------------------------------------------------
-# Main UI
-# -------------------------------------------------------------------------
-st.markdown('<h1 class="main-header-gradient">🧱 SIS Universal Knowledge Synthesizer</h1>', unsafe_allow_html=True)
-st.markdown(
-    f"**Adaptive multi-stage architecture v25.2** | "
-    f"Quality Critic: **{'ON' if enable_quality else 'OFF'}" +
-    (f" | Optimization target: **{target_score:.2f}+ / 10.00**" if enable_quality else "")
-)
+    st.divider()
+    st.subheader("🌐 EXTERNAL CONNECTORS")
+    st.link_button("📂 GitHub Repository", "https://github.com/", use_container_width=True, key="side_git_link")
+    st.link_button("🆔 ORCID Registry", "https://orcid.org/", use_container_width=True, key="side_orcid_link")
+    st.link_button("🎓 Google Scholar", "https://scholar.google.com/", use_container_width=True, key="side_scholar_link")
 
-if st.session_state.get("show_user_guide"):
-    st.info("""
-    **v25 architecture:** IMA builds the structural knowledge foundation; MA transforms
-    contradictions into innovations; an independent critic scores five dimensions; an
-    adaptive refinement pass repairs weak dimensions. The graph is a single unified
-    network spanning lexical, category, hierarchy, semantic, network, analytical and
-    energetic layers plus IMA, MA, science and logical relations. The equation engine is
-    opt-in and calculates only when explicitly requested.
+    # 6. KNOWLEDGE EXPLORER (POSODOBLJENA RAZŠIRJENA RAZLIČICA)
+    st.divider()
+    st.subheader("📚 KNOWLEDGE EXPLORER")
+
+    with st.expander("👤 User Profile Ontologies", expanded=False):
+        for p, d in KNOWLEDGE_BASE["User profiles"].items(): 
+            st.markdown(f"**{p}**: {d['description']}")
+
+    with st.expander("🧠 Mental Approach (MA) Map", expanded=False):
+        for m, d in MENTAL_APPROACHES_ONTOLOGY["nodes"].items(): 
+            st.markdown(f"• **{m}**: {d['desc']}")
+
+    with st.expander("🏛️ Metamodel (IMA) Structures", expanded=False):
+        for n, d in HUMAN_THINKING_METAMODEL["nodes"].items(): 
+            st.markdown(f"• **{n}**: {d['desc']}")
+
+    with st.expander("📐 Hierarchology & Hierarchography", expanded=False):
+        st.markdown("**Core Concepts:**")
+        for key, val in HIERARCHOLOGY_ONTOLOGY["core_definitions"].items():
+            st.markdown(f"• **{key}**: {val}")
+
+        st.markdown("---")
+        st.markdown("**Advanced Mapping Connectors:**")
+        st.markdown("• ⬛ ┄ ➤ **Specialization**: Deduktivna izpeljava iz splošnega zakona v specifičen primer (nasprotje generalizacije).")
+        st.markdown("• 🟦 — ◯ **Containment**: Močna strukturna vsebovanost; označuje elemente, ujetne znotraj 'znanstvene kletke'.")
+
+    with st.expander("🔬 Science Taxonomy & Levels", expanded=False):
+        st.markdown("**Field Domains:**")
+        for s in sorted(KNOWLEDGE_BASE["Science fields"].keys()): 
+            st.markdown(f"• **{s}**")
+
+        st.markdown("---")
+        st.markdown("**Hierarchical Levels:**")
+        for level, desc in HIERARCHOLOGY_ONTOLOGY["hierarchical_levels"].items():
+            st.markdown(f"• **{level}**: {desc}")
+
+        st.markdown("---")
+        st.markdown("**Logic Flows:**")
+        st.markdown(f"• *Internal (Inductive):* {HIERARCHOLOGY_ONTOLOGY['operational_logic']['Internal Processes']}")
+        st.markdown(f"• *External (Deductive):* {HIERARCHOLOGY_ONTOLOGY['operational_logic']['External Functioning']}")
+
+        st.markdown("---")
+        st.markdown("**Hierarchography Methods:**")
+        st.write(", ".join(HIERARCHOLOGY_ONTOLOGY["hierarchography_tools"]))
+
+    with st.expander("🏗️ Structural Model Context", expanded=False):
+        for m, d in KNOWLEDGE_BASE["Structural models"].items(): 
+            st.markdown(f"**{m}**: {d}")
+
+# =============================================================================
+# 3.9 REPORT EXPORT HELPERS
+# =============================================================================
+def _report_plain_text(markdown_text):
+    """Create readable plain text from the generated Markdown/HTML report."""
+    cleaned = re.sub(r'<[^>]+>', '', markdown_text or '')
+    cleaned = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', cleaned)
+    cleaned = re.sub(r'[#*_`]', '', cleaned)
+    return html.unescape(cleaned)
+
+def build_html_report(report_text, graph_elements, perspective):
+    """Build a self-contained HTML report with an interactive Cytoscape graph."""
+    graph_json = json.dumps(graph_elements, ensure_ascii=False)
+    report_html = report_text or ""
+    return f"""<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<title>SIS Universal Knowledge Synthesizer Report</title>
+<style>
+body{{font-family:Arial,Helvetica,sans-serif;margin:40px;color:#1d3557;line-height:1.6}}
+.report{{max-width:1200px;margin:auto}}
+.graph{{width:100%;height:850px;border:1px solid #ddd;border-radius:16px;margin-top:25px}}
+h1,h2,h3{{color:#1d3557}}
+</style></head><body><div class="report">
+<h1>SIS Universal Knowledge Synthesizer Report</h1>
+<div>{report_html}</div>
+<h2>Hybrid Semantic System Map — {html.escape(perspective.upper())} VIEW</h2>
+<div id="cy" class="graph"></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
+<script>
+const elements = {graph_json};
+const cy = cytoscape({{
+ container: document.getElementById('cy'),
+ elements: elements,
+ style: [
+ {{selector:'node',style:{{'label':'data(label)','text-valign':'center','text-halign':'center','color':'#1d3557','background-color':'data(color)','width':'data(size)','height':'data(size)','shape':'data(shape)','font-size':'12px','font-weight':'bold','text-wrap':'wrap','text-max-width':'80px','border-width':3,'border-color':'#fff','text-outline-color':'#fff','text-outline-width':2}}}},
+ {{selector:'edge',style:{{'width':2,'line-color':'data(color)','label':'data(rel_type)','font-size':'9px','font-weight':'bold','color':'#2a9d8f','curve-style':'unbundled-bezier','target-arrow-color':'data(color)','target-arrow-shape':'vee','text-background-opacity':1,'text-background-color':'#fff','text-background-padding':'3px'}}}},
+ {{selector:'edge[rel_type="Generalization"]',style:{{'target-arrow-shape':'triangle','target-arrow-fill':'hollow','width':3}}}},
+ {{selector:'edge[rel_type="Realization"]',style:{{'line-style':'dashed','target-arrow-shape':'triangle','target-arrow-fill':'hollow'}}}},
+ {{selector:'edge[rel_type="Composition"]',style:{{'source-arrow-shape':'diamond','source-arrow-fill':'filled','width':4}}}},
+ {{selector:'edge[rel_type="Aggregation"]',style:{{'source-arrow-shape':'diamond','source-arrow-fill':'hollow','width':3}}}},
+ {{selector:'edge[rel_type="Dependency"]',style:{{'line-style':'dashed','target-arrow-shape':'vee'}}}},
+ {{selector:'edge[rel_type="Conflict"]',style:{{'width':6,'line-color':'#b91d1d'}}}},
+ {{selector:'edge[rel_type="Specialization"]',style:{{'line-style':'dashed','target-arrow-shape':'triangle'}}}},
+ {{selector:'edge[rel_type="Containment"]',style:{{'target-arrow-shape':'circle','width':4}}}},
+ {{selector:'edge[rel_type="TT"]',style:{{'width':6}}}},
+ {{selector:'edge[rel_type="BT"]',style:{{'width':4}}}},
+ {{selector:'edge[rel_type="NT"]',style:{{'width':4}}}},
+ {{selector:'edge[rel_type="EQ"]',style:{{'width':5}}}},
+ {{selector:'edge[rel_type="AND"]',style:{{'width':5}}}},
+ {{selector:'edge[rel_type="OR"]',style:{{'width':3,'line-style':'dashed'}}}},
+ {{selector:'edge[rel_type="XOR"]',style:{{'width':4,'line-style':'double'}}}},
+ {{selector:'edge[rel_type="NOT"]',style:{{'width':4,'line-style':'dashed'}}}},
+ {{selector:'edge[rel_type="IF-THEN"]',style:{{'width':4}}}}
+ ],
+ layout: {json.dumps({"name":"cose","fit":True,"padding":50})}
+}});
+</script></body></html>"""
+
+def build_pdf_report(report_text, graph_elements, perspective):
+    """Generate a PDF containing the textual report and a graph visualization."""
+    from reportlab.lib.pagesizes import A4, landscape
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import cm
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
+    from reportlab.pdfbase.ttfonts import TTFont
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.lib.utils import ImageReader
+    import matplotlib.pyplot as plt
+    import networkx as nx
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=1.5*cm, leftMargin=1.5*cm,
+                            topMargin=1.5*cm, bottomMargin=1.5*cm)
+    styles = getSampleStyleSheet()
+    styles.add(ParagraphStyle(name="SmallReport", parent=styles["BodyText"], fontSize=8.5, leading=12))
+    story = [Paragraph("SIS Universal Knowledge Synthesizer Report", styles["Title"])]
+    plain = _report_plain_text(report_text)
+    for block in re.split(r'\n\s*\n', plain):
+        if block.strip():
+            safe = html.escape(block.strip()).replace("\n", "<br/>")
+            story.append(Paragraph(safe, styles["SmallReport"]))
+            story.append(Spacer(1, 0.18*cm))
+
+    story.append(PageBreak())
+    story.append(Paragraph(f"Hybrid Semantic System Map — {perspective.upper()} VIEW", styles["Heading2"]))
+    G = nx.DiGraph()
+    nodes = [e["data"] for e in graph_elements if "source" not in e.get("data", {})]
+    edges = [e["data"] for e in graph_elements if "source" in e.get("data", {})]
+    for n in nodes: G.add_node(n.get("id"), label=n.get("label","Node"))
+    for e in edges:
+        if e.get("source") in G and e.get("target") in G: G.add_edge(e["source"], e["target"], label=e.get("rel_type",""))
+    fig, ax = plt.subplots(figsize=(10,7))
+    if len(G):
+        pos = nx.spring_layout(G, seed=42, k=max(0.4, 2.0/(len(G)**0.5)), iterations=80)
+        nx.draw_networkx_nodes(G, pos, node_size=850, ax=ax)
+        nx.draw_networkx_edges(G, pos, arrows=True, alpha=0.6, ax=ax)
+        nx.draw_networkx_labels(G, pos, labels=nx.get_node_attributes(G,"label"), font_size=6, ax=ax)
+    ax.set_axis_off()
+    img = io.BytesIO()
+    fig.savefig(img, format="png", dpi=180, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+    img.seek(0)
+    story.append(Spacer(1, 0.2*cm))
+    from reportlab.platypus import Image
+    story.append(Image(img, width=17*cm, height=11.5*cm))
+    doc.build(story)
+    buffer.seek(0)
+    return buffer.getvalue()
+
+# --- MAIN PAGE CONTENT ---
+st.markdown('<h1 class="main-header-gradient">🧱 SIS Universal Knowledge Synthesizer</h1>', unsafe_allow_html=True)
+st.markdown(f"**Sequential Multi-Engine Pipeline** | Current Operating Date: **{SYSTEM_DATE}**")
+
+if st.session_state.show_user_guide:
+    st.info(f"""
+    **Sequential Synergy Pipeline Workflow (Updated Feb 24, 2026):**
+    1. **Key Input**: Enter your Google Gemini API key and select Google models for Phase 1 and Phase 2.
+    2. **Research Foundation (Step 1)**: Google Gemini performs structural synthesis using Integrated Metamodel Architecture (IMA).
+    3. **Innovation Prompt (Step 2)**: Google Gemini takes the Phase 1 foundation and generates useful innovative ideas using Mental Approaches (MA) logic.
+    4. **Visualization**: The interactive 18D graph maps structural facts against generative ideas.
     """)
 
+# REFERENCE ARCHITECTURE BOXES
 col_ref1, col_ref2 = st.columns(2)
 with col_ref1:
-    st.markdown(
-        '<div class="metamodel-box"><b>🏛️ IMA — Structural intelligence</b><br>'
-        'Problem → context → hierarchy → evidence → system architecture → constraints.</div>',
-        unsafe_allow_html=True
-    )
+    st.markdown("""<div class="metamodel-box"><b>🏛️ Phase 1: Google Gemini (IMA Architecture)</b><br>Structural reasoning building the factual foundation. Focus: Identity, Mission, Problem. </div>""", unsafe_allow_html=True)
 with col_ref2:
-    st.markdown(
-        '<div class="mental-approach-box"><b>🧠 MA — Generative intelligence</b><br>'
-        'Contradiction → mental approach → transformation → new configuration → innovation → effect.</div>',
-        unsafe_allow_html=True
-    )
+    st.markdown("""<div class="mental-approach-box"><b>🧠 Phase 2: Google Gemini (MA Architecture)</b><br>Cognitive transformation generating innovative solutions. Focus: Dialectics, Perspective, Induction.</div>""", unsafe_allow_html=True)
 
-st.markdown("### 🛠️ CONFIGURE SYNTHESIS")
+st.markdown("### 🛠️ CONFIGURE SYNERGY PIPELINE")
 
-r1c1, r1c2, r1c3 = st.columns([1.4, 2.2, 1])
-with r1c1:
-    target_authors = st.text_input("👤 Authors for ORCID Analysis:", placeholder="Optional")
-with r1c2:
-    sel_sciences = st.multiselect(
-        "Science fields:",
-        sorted(KNOWLEDGE_BASE["Science fields"].keys()),
-        default=["Physics", "Psychology", "Sociology", "Computer Science", "Philosophy"]
-    )
-with r1c3:
-    expertise = st.select_slider("Expertise:", ["Novice", "Intermediate", "Expert"], value="Expert")
+# Entry Rows
+r1c1, r1c2, r1c3 = st.columns([1.5, 2, 1])
+with r1c1: target_authors = st.text_input("👤 Authors for ORCID Analysis:", placeholder="Karl Petrič, Samo Kralj, Teodor Petrič")
+with r1c2: sel_sciences = st.multiselect("2. Select Science Fields:", sorted(list(KNOWLEDGE_BASE["Science fields"].keys())), default=["Physics", "Psychology", "Sociology"])
+with r1c3: expertise = st.select_slider("3. Expertise Level:", ["Novice", "Intermediate", "Expert"], value="Expert")
 
 r2c1, r2c2, r2c3 = st.columns(3)
-with r2c1:
-    sel_paradigms = st.multiselect(
-        "Scientific paradigms:",
-        list(KNOWLEDGE_BASE["Scientific paradigms"].keys()),
-        default=["Systems Theory", "Holism", "Pragmatism", "Computational Paradigm"]
-    )
-with r2c2:
-    sel_models = st.multiselect(
-        "Structural models:",
-        list(KNOWLEDGE_BASE["Structural models"].keys()),
-        default=["Concepts", "Principles & Relations", "Causal Connections", "Generalizations"]
-    )
-with r2c3:
-    goal_context = st.selectbox(
-        "Strategic goal:",
-        ["Scientific Research", "Problem Solving", "Educational", "Policy Making", "Innovation Design"]
-    )
+with r2c1: sel_paradigms = st.multiselect("4. Scientific Paradigms:", list(KNOWLEDGE_BASE["Scientific paradigms"].keys()), default=["Rationalism"])
+with r2c2: sel_models = st.multiselect("5. Structural Models:", list(KNOWLEDGE_BASE["Structural models"].keys()), default=["Concepts"])
+with r2c3: goal_context = st.selectbox("6. Strategic Project Goal:", ["Scientific Research", "Problem Solving", "Educational", "Policy Making"])
 
+# --- METHODOLOGY & TOOLS UI (ACTIVATED BEFORE INNOVATION STRATEGY) ---
 available_methods = sorted({
-    method for science in sel_sciences
+    method
+    for science in sel_sciences
     for method in KNOWLEDGE_BASE["Science fields"].get(science, {}).get("methods", [])
 })
 available_tools = sorted({
-    tool for science in sel_sciences
+    tool
+    for science in sel_sciences
     for tool in KNOWLEDGE_BASE["Science fields"].get(science, {}).get("tools", [])
 })
 
 r3c1, r3c2 = st.columns(2)
 with r3c1:
-    sel_methods = st.multiselect("Methodology:", available_methods, default=available_methods)
+    sel_methods = st.multiselect(
+        "7. Methodology:",
+        available_methods,
+        default=available_methods,
+        help="Select the scientific methods relevant to the selected science fields."
+    )
 with r3c2:
-    sel_tools = st.multiselect("Tools:", available_tools, default=available_tools)
+    sel_tools = st.multiselect(
+        "8. Tools:",
+        available_tools,
+        default=available_tools,
+        help="Select the scientific tools relevant to the selected science fields."
+    )
 
 st.divider()
+# --- ADVANCED MULTI-IDEATION UI ---
 st.markdown("### 🧬 INNOVATION STRATEGY")
 selected_techniques = st.multiselect(
-    "Ideation frameworks:",
-    list(IDEATION_TECHNIQUES.keys()),
-    default=["First Principles", "TRIZ (Simplified)", "SCAMPER", "Lateral Thinking"]
+    "Select Strategic Ideation Frameworks (Pick one or more):", 
+    options=list(IDEATION_TECHNIQUES.keys()), 
+    default=["Six Thinking Hats"],
+    help="If you select multiple, the AI will synthesize them into a hybrid innovation strategy."
 )
 
+if not selected_techniques:
+    st.warning("⚠️ Please select at least one technique for Phase 2.")
+else:
+    # Build a combined description for the info box
+    combined_desc = " | ".join([f"**{t}**: {IDEATION_TECHNIQUES[t]}" for t in selected_techniques])
+    st.info(f"**Active Hybrid Strategy:** {combined_desc}")
 st.divider()
+
+# DUAL INQUIRY INTERFACE
 col_inq1, col_inq2, col_inq3 = st.columns([2, 2, 1])
 with col_inq1:
-    user_query = st.text_area(
-        "❓ STEP 1 — Research inquiry:",
-        placeholder="Describe the knowledge problem, evidence or system to analyze.",
-        height=220
-    )
+    user_query = st.text_area("❓ STEP 1: Research Inquiry (for GOOGLE GEMINI):", placeholder="Fact-based Foundational Inquiry...", height=200)
 with col_inq2:
-    idea_query = st.text_area(
-        "💡 STEP 2 — Innovation objective:",
-        placeholder="Describe what should become more novel, systemic, interdisciplinary and practical.",
-        height=220
-    )
+    idea_query = st.text_area("💡 STEP 2: Innovation Prompt (for GOOGLE GEMINI):", placeholder="Targets for innovative idea production...", height=200)
+# --- POPRAVEK KORAK 1: Branje vsebine datoteke ---
+# --- KORAK 1: File Upload with English Translation ---
 with col_inq3:
-    uploaded_file = st.file_uploader("📂 ATTACH TEXT DATA:", type=["txt"], key="final_file_uploader_v250")
-    file_content = ""
+    uploaded_file = st.file_uploader("📂 ATTACH DATA (.txt only):", type=['txt'], key="final_file_uploader_v2")
+    file_content = "" 
     if uploaded_file is not None:
         try:
             file_content = uploaded_file.read().decode("utf-8")
-            st.success(f"📎 {uploaded_file.name}")
-            with st.expander("Preview"):
-                st.text(file_content[:600] + ("..." if len(file_content) > 600 else ""))
-        except Exception as exc:
-            st.error(f"Error reading file: {exc}")
+            st.success(f"📎 {uploaded_file.name} uploaded!")
+            # Prevedeno v angleščino:
+            with st.expander("File Preview"):
+                st.text(file_content[:300] + "...")
+        except Exception as e:
+            st.error(f"Error reading file: {e}")
+
+# =============================================================================
+# 5. SYNERGY EXECUTION ENGINE (GOOGLE GEMINI / GEMMA ONLY)
+# =============================================================================
 
 def google_generate(client, model_id, system_prompt, user_content, temperature, max_retries=4):
+    """Single Google GenAI gateway. No third-party LLM providers.
+
+    Includes automatic retry with exponential backoff for transient server-side
+    errors (e.g. 503 UNAVAILABLE / high demand), which are temporary on Google's
+    side and usually succeed on the next attempt.
+    """
     if client is None:
-        raise RuntimeError("Google client is not initialized.")
-    kwargs = {"system_instruction": system_prompt, "temperature": temperature}
+        raise RuntimeError("Google Gemini client is not initialized.")
+
+    config_kwargs = {
+        "system_instruction": system_prompt,
+        "temperature": temperature,
+    }
     if model_id.startswith("gemini-3"):
         try:
-            kwargs["thinking_config"] = types.ThinkingConfig(thinking_level="medium")
+            config_kwargs["thinking_config"] = types.ThinkingConfig(thinking_level="low")
         except Exception:
             pass
-    config = types.GenerateContentConfig(**kwargs)
+
+    config = types.GenerateContentConfig(**config_kwargs)
+
     last_exc = None
     for attempt in range(max_retries):
         try:
             response = client.models.generate_content(
-                model=model_id, contents=user_content, config=config
+                model=model_id,
+                contents=user_content,
+                config=config,
             )
             text_out = getattr(response, "text", None)
             if text_out:
                 return text_out
-            return response.candidates[0].content.parts[0].text
+            try:
+                return response.candidates[0].content.parts[0].text
+            except Exception as exc:
+                raise RuntimeError(f"Google returned no usable text response: {exc}") from exc
         except Exception as exc:
             last_exc = exc
-            s = str(exc)
-            transient = any(code in s for code in ["503", "UNAVAILABLE", "429",
-                                                    "RESOURCE_EXHAUSTED", "500", "INTERNAL"])
-            if transient and attempt < max_retries - 1:
-                wait = 2 ** attempt + 1
-                st.toast(f"Google API retry {attempt+1}/{max_retries} in {wait}s")
-                time.sleep(wait)
+            error_str = str(exc)
+            is_transient = any(code in error_str for code in ["503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED", "500", "INTERNAL"])
+            if is_transient and attempt < max_retries - 1:
+                wait_time = (2 ** attempt) + 1  # 2s, 3s, 5s, 9s...
+                st.toast(f"⏳ Google API trenutno preobremenjen (poskus {attempt + 1}/{max_retries}). Ponovni poskus čez {wait_time}s...")
+                time.sleep(wait_time)
                 continue
             raise
-    raise RuntimeError(f"Google API unavailable: {last_exc}")
 
-def normalize_quality_evaluation(raw_evaluation):
-    if not isinstance(raw_evaluation, dict):
-        return {}
- 
-    raw_scores = raw_evaluation.get("scores", {})
-    if not isinstance(raw_scores, dict):
-        return {}
- 
-    normalized_scores = {}
-    for dimension in QUALITY_DIMENSIONS:
-        value = raw_scores.get(dimension)
-        if not isinstance(value, (int, float)):
-            return {}
-        normalized_scores[dimension] = round(max(0.0, min(float(value), 10.0)), 2)
- 
-    evidence = raw_evaluation.get("evidence", {})
-    evidence_is_complete = (
-        isinstance(evidence, dict)
-        and all(str(evidence.get(dimension, "")).strip() for dimension in QUALITY_DIMENSIONS)
-    )
-    overall_score = round(
-        sum(normalized_scores[dimension] * QUALITY_WEIGHTS[dimension]
-            for dimension in QUALITY_DIMENSIONS),
-        2,
-    )
-    raw_evaluation["scores"] = normalized_scores
-    raw_evaluation["overall_score"] = overall_score
-    raw_evaluation["evidence_complete"] = evidence_is_complete
-    raw_evaluation["audit_valid"] = evidence_is_complete
-    for field_name in ("strengths", "gaps", "repair_actions"):
-        if not isinstance(raw_evaluation.get(field_name), list):
-            raw_evaluation[field_name] = []
-    if not evidence_is_complete:
-        raw_evaluation["gaps"].append(
-            "Audit is incomplete: each rubric score must cite concrete supporting evidence or a specific absence."
-        )
-    return raw_evaluation
- 
- 
-def quality_score(evaluation):
-    if not isinstance(evaluation, dict):
-        return None
-    score = evaluation.get("overall_score")
-    if evaluation.get("audit_valid") and isinstance(score, (int, float)):
-        return float(score)
-    return None
- 
- 
-def evaluate_quality(client, model_id, synthesis, innovation, objective, target):
-    prompt = f"""
-You are the independent SIS Quality Auditor. Evaluate the proposed synthesis and
-innovation architecture against EXACTLY five dimensions, each from 0.00 to 10.00:
+    raise RuntimeError(f"Google Gemini API ni na voljo po {max_retries} poskusih: {last_exc}")
 
-1 conceptual_novelty
-2 systemic_architecture
-3 interdisciplinary_integration
-4 practicality
-5 clarity
 
-Do not reward verbosity or claimed confidence. Score only what is present in the supplied
-IMA and MA text. Reward explicit mechanisms, non-obvious but defensible conceptual
-combinations, coherent architecture, cross-field mechanism transfer, implementability,
-and clear communication. Penalize generic brainstorming, unsupported claims, logical
-gaps, circular reasoning, decorative graph concepts, and innovations without a
-test/falsification condition.
- 
-The target of {target:.2f} is a stopping threshold, NOT evidence of quality and must not
-influence any individual score. Be demanding: a score above 9 requires unusually strong,
-concrete and testable support.
- 
-For every dimension, provide a short evidence statement that cites a concrete mechanism,
-claim, or a specific absence from the supplied text. If there is no evidence, state that
-explicitly and score conservatively.
- 
-Return JSON ONLY:
-{{
-  "scores": {{
-    "conceptual_novelty": 0.0,
-    "systemic_architecture": 0.0,
-    "interdisciplinary_integration": 0.0,
-    "practicality": 0.0,
-    "clarity": 0.0
-  }},
-  "evidence": {{
-    "conceptual_novelty": "",
-    "systemic_architecture": "",
-    "interdisciplinary_integration": "",
-    "practicality": "",
-    "clarity": ""
-  }},
-  "strengths": [],
-  "gaps": [],
-  "repair_actions": []
-}}
-
-OBJECTIVE:
-{objective}
-
-IMA:
-{synthesis}
-
-MA INNOVATION:
-{innovation}
-"""
-    raw = google_generate(client, model_id, prompt, objective, temperature=0.15)
-    return normalize_quality_evaluation(extract_json_object(raw) or {})
-
-def build_architecture_context():
-    ima = "\n".join(
-        f"- {n}: {d['desc']}" for n,d in HUMAN_THINKING_METAMODEL["nodes"].items()
-    )
-    ma = "\n".join(
-        f"- {n}: {d['desc']}" for n,d in MENTAL_APPROACHES_ONTOLOGY["nodes"].items()
-    )
-    science = "\n".join(
-        f"- {s}: {KNOWLEDGE_BASE['Science fields'][s]['cat']}; "
-        f"methods={', '.join(KNOWLEDGE_BASE['Science fields'][s]['methods'][:4])}; "
-        f"facets={', '.join(KNOWLEDGE_BASE['Science fields'][s]['facets'][:4])}"
-        for s in sel_sciences if s in KNOWLEDGE_BASE["Science fields"]
-    )
-    return ima, ma, science
-
-if st.button("🚀 EXECUTE SIS SYNTHESIS", use_container_width=True, key="exec_pipeline_v250"):
+if st.button("🚀 EXECUTE MULTI-DIMENSIONAL GOOGLE GEMINI PIPELINE", use_container_width=True, key="exec_pipeline_v2026"):
     if not google_api_key:
-        st.error("❌ Google Gemini API key is required.")
+        st.error("❌ Google Gemini API key is required to proceed.")
     elif not user_query:
-        st.warning("⚠️ Research inquiry is required.")
+        st.warning("⚠️ Phase 1 Research Inquiry is required.")
     elif not selected_techniques:
-        st.warning("⚠️ Select at least one innovation framework.")
+        st.warning("⚠️ Please select at least one innovation technique for Phase 2.")
     else:
         try:
-            ima_defs, ma_defs, science_defs = build_architecture_context()
-            file_context = f"\nSOURCE FILE:\n{file_content}" if file_content else ""
-            biblio_data = fetch_author_bibliographies(target_authors) if target_authors else ""
+            ima_nodes_list = "\n".join(
+                [f"   • {node.upper()}: {data['desc']}" for node, data in HUMAN_THINKING_METAMODEL["nodes"].items()]
+            )
+            hier_core = "\n".join(
+                [f"   • {k}: {v}" for k, v in HIERARCHOLOGY_ONTOLOGY["core_definitions"].items()]
+            )
+            hier_levels = "\n".join(
+                [f"   • {level}: {desc}" for level, desc in HIERARCHOLOGY_ONTOLOGY["hierarchical_levels"].items()]
+            )
+            hier_logic = (
+                f"   • Internal (Inductive): {HIERARCHOLOGY_ONTOLOGY['operational_logic']['Internal Processes']}\n"
+                f"   • External (Deductive): {HIERARCHOLOGY_ONTOLOGY['operational_logic']['External Functioning']}"
+            )
+            ma_definitions = "\n".join(
+                [f"   • {ma}: {d['desc']}" for ma, d in MENTAL_APPROACHES_ONTOLOGY["nodes"].items()]
+            )
 
-            base_context = f"""
-SIS v25 ARCHITECTURE KERNEL
-IMA:
-{ima_defs}
+            active_context = ""
+            if "[ACTIVATE]" in user_query or ("[ACTIVATE]" in idea_query if idea_query else False):
+                active_context = f"""
+### MANDATORY SIS METAMODEL ACTIVATION
+Analyze the inquiry through the following structures, but activate only elements
+that are semantically relevant. Do not manufacture relationships merely to use
+the ontology.
 
-MENTAL APPROACHES:
-{ma_defs}
+IMA NODES:
+{ima_nodes_list}
 
-SCIENCE FIELDS:
-{science_defs}
+HIERARCHOLOGY:
+{hier_core}
 
 HIERARCHICAL LEVELS:
-{json.dumps(HIERARCHOLOGY_ONTOLOGY['hierarchical_levels'], ensure_ascii=False, indent=2)}
+{hier_levels}
 
-SCIENTIFIC PARADIGMS:
-{', '.join(sel_paradigms)}
+OPERATIONAL LOGIC:
+{hier_logic}
 
-STRUCTURAL MODELS:
-{', '.join(sel_models)}
+MENTAL APPROACHES:
+{ma_definitions}
 
-METHODS:
-{', '.join(sel_methods)}
-
-TOOLS:
-{', '.join(sel_tools)}
-
-INNOVATION FRAMEWORKS:
-{', '.join(selected_techniques)}
-
-EXPERTISE:
-{expertise}
-
-GOAL:
-{goal_context}
+INTERFACE PARAMETERS:
+- Target Science Fields: {', '.join(sel_sciences)}
+- Scientific Paradigms: {', '.join(sel_paradigms)}
+- Structural Models: {', '.join(sel_models)}
+- Methodology: {', '.join(sel_methods)}
+- Tools: {', '.join(sel_tools)}
+- Innovation Frameworks: {', '.join(selected_techniques)}
+- Expertise Level: {expertise}
+- Strategic Goal: {goal_context}
 """
 
-            client = genai.Client(api_key=google_api_key)
+            with st.spinner('🔍 Accessing ORCID research background...'):
+                biblio_data = fetch_author_bibliographies(target_authors) if target_authors else ""
 
-            phase1_prompt = f"""
-You are the SIS Lead Hierarchologist and systems architect.
+            file_context_str = f"\n\n[FILE CONTEXT]:\n{file_content}" if file_content else ""
+            biblio_context = f"\n\n[AUTHOR RESEARCH BACKGROUND]:\n{biblio_data}" if biblio_data else ""
+            full_ai_input = f"{active_context}\nUSER RESEARCH INQUIRY:\n{user_query}{file_context_str}{biblio_context}"
 
-Build a high-information IMA foundation. The purpose is NOT to brainstorm. Reconstruct
-the problem as a system of concepts, actors, mechanisms, constraints, levels and evidence.
+            google_client = genai.Client(api_key=google_api_key)
 
-Mandatory quality architecture:
-- distinguish evidence from inference;
-- identify causal and structural dependencies;
-- use Macro–Meso–Micro where justified;
-- integrate selected scientific paradigms, explicitly including Holism when relevant;
-- expose contradictions and bottlenecks;
-- identify what must change for an innovation to be meaningful;
-- identify transferable principles across disciplines;
-- end with a compact "Innovation Opportunity Matrix".
+            # ---------------- PHASE 1: IMA ----------------
+            phase1_system_prompt = f"""
+You are the SIS Lead Hierarchologist and Knowledge Architect.
 
-Do not invent unsupported facts or named theories.
+Perform a rigorous Phase 1 IMA knowledge synthesis. Do not solve the innovation
+problem yet. Build the factual and conceptual foundation for Phase 2.
 
-{base_context}
-"""
-            with st.spinner(f"PHASE 1 — IMA with {p1_model_label}"):
-                phase1 = google_generate(
-                    client, p1_model, phase1_prompt,
-                    f"{base_context}\nRESEARCH INQUIRY:\n{user_query}{file_context}",
-                    temperature=0.35
-                )
+Requirements:
+1. Identify the actual problem, goal, relevant actors/concepts and constraints.
+2. Map only relevant IMA elements; do not force all ontology nodes.
+3. Distinguish Macro, Meso and Micro levels where the source supports them.
+4. Identify important concepts, relations, dependencies and contradictions.
+5. Distinguish source-supported information from interpretation.
+6. Do not invent named theories, concepts, mechanisms or terminology absent from
+   the supplied material unless clearly marked as interpretation.
+7. Do not introduce 'Scientific Cage' unless the supplied material supports it.
+8. Produce a structured foundation, not generic commentary.
 
-            phase2_prompt = f"""
-You are the SIS Strategic Innovation Architect.
-
-Transform the IMA foundation into 4–6 high-value innovations. Avoid generic ideas.
-Every innovation must follow this chain:
-
-IMA finding
-→ bottleneck / contradiction
-→ selected Mental Approach
-→ transformation operation
-→ changed system architecture
-→ innovation
-→ interdisciplinary transfer
-→ practical implementation
-→ test / falsification condition
-→ expected benefit
-
-Optimize for the five dimensions:
-conceptual novelty, systemic architecture, interdisciplinary integration, practicality,
-clarity.
-
-The final graph must be ONE network, not separate graphs. Use only key nodes and key
-relations. Relations may come from ISO-thesaurus-style TT/BT/NT/RT/EQ/AS/IN, UML
-Association/Generalization/Specialization/Composition/Aggregation/Dependency/Realization/Containment,
-and explicit constraint semantics (Constraint, Constrains, Satisfies, Violates), plus
-logical AND/OR/XOR/NOT/IF-THEN. Association is a first-class UML relation and must be
-used whenever two model elements have a meaningful structural relationship that is not
-better represented by composition, aggregation, dependency, generalization or realization.
-Constraints are first-class model semantics: identify them, connect them to the elements
-they restrict, and preserve whether a constraint is satisfied, violated or merely imposed.
-Do not manufacture constraints without evidence or a clear design requirement.
-
-Use node fields: id, label, shape, color, description, layer, module, importance.
-Use edge fields: source, target, rel_type, weight, evidence. For UML Association/constraints,
-you may additionally use multiplicity_source, multiplicity_target, source_role, target_role,
-navigability, and constraint_expression when these are supported by the source or design.
-
-Required layers when semantically relevant:
-Lexical, Category, Hierarchy, Semantic, Network, Analytical, Energetic,
-Metamodel, Mental Approach, Science, Innovation, Logic, Equation.
-
-Return a readable report followed by:
-### SEMANTIC_GRAPH_JSON
-Then JSON only.
-
-Graph limits: {graph_node_count} nodes maximum, 80 edges maximum.
-No duplicate edges, no orphan edges, no decorative bridges.
-{base_context}
-"""
-            with st.spinner(f"PHASE 2 — MA innovation with {p2_model_label}"):
-                phase2_raw = google_generate(
-                    client, p2_model, phase2_prompt,
-                    f"IMA FOUNDATION:\n{phase1}\n\nINNOVATION OBJECTIVE:\n{idea_query}{file_context}",
-                    temperature=0.65
-                )
-            innovation_text, graph_data = parse_graph_payload(phase2_raw)
-            graph_data = normalize_graph(graph_data, max_nodes=graph_node_count, max_edges=80)
-            graph_data = ensure_graph_backbone(graph_data, sel_sciences, graph_node_count)
-
-            evaluation = {}
-            quality_history = []
-            if enable_quality:
-                with st.spinner(f"QUALITY AUDIT — {critic_model_label}"):
-                    evaluation = evaluate_quality(
-                        client, critic_model, phase1, innovation_text,
-                        idea_query or user_query, target_score
-                    )
-                quality_history.append({
-                    "round": 0,
-                    "score": quality_score(evaluation),
-                    "accepted": True,
-                    "status": "Baseline audit",
-                })
- 
-            for round_no in range(optimization_rounds if enable_quality else 0):
-                baseline_score = quality_score(evaluation)
-                if baseline_score is not None and baseline_score >= target_score:
-                    break
- 
-                repair_actions = evaluation.get("repair_actions", [])
-                repair_prompt = f"""
-You are the SIS Senior Refinement Architect.
- 
-Improve the existing synthesis ONLY where the evidence-based audit identifies weaknesses.
-Do not merely rewrite, add fashionable terminology, or claim unsupported facts. Perform
-the smallest structural repair that directly resolves the stated gaps.
- 
-AUDIT:
-{json.dumps(evaluation, ensure_ascii=False, indent=2)}
-
-CURRENT IMA:
-{phase1}
-
-CURRENT INNOVATION:
-{innovation_text}
-
-OBJECTIVE:
-{idea_query or user_query}
+Selected sciences: {', '.join(sel_sciences)}
+Selected paradigms: {', '.join(sel_paradigms)}
+Selected structural models: {', '.join(sel_models)}
+Selected methodology: {', '.join(sel_methods)}
+Selected tools: {', '.join(sel_tools)}
+Expertise: {expertise}
+Strategic goal: {goal_context}
 
 Return:
-1. Revised synthesis/innovation report.
-2. A single unified graph in the exact marker format:
-### SEMANTIC_GRAPH_JSON
-{{"nodes":[...],"edges":[...],"system_metrics":{{}}}}
+- IMA Problem Definition
+- Relevant Knowledge Structure
+- Macro–Meso–Micro Analysis
+- Constraints and Contradictions
+- Evidence / Interpretation Boundary
+- Key Findings for Phase 2
 
-Every innovation must remain traceable to an IMA finding and an MA transformation.
-For each repair action, make the causal mechanism, affected system elements, measurable
-implementation step, and test/falsification condition explicit. Increase novelty without
-sacrificing feasibility. Increase interdisciplinarity by showing mechanism transfer, not
-by listing disciplines. Increase systemic architecture by showing dependencies, feedbacks,
-constraints and logical conditions. Increase clarity by removing redundancy.
+Do not generate innovations in Phase 1.
 """
-                with st.spinner(f"ADAPTIVE REFINEMENT ROUND {round_no+1}"):
-                    refined_raw = google_generate(
-                        client, critic_model, repair_prompt,
-                        f"REPAIR ACTIONS:\n{json.dumps(repair_actions, ensure_ascii=False)}",
-                        temperature=0.35
-                    )
-                refined_text, refined_graph = parse_graph_payload(refined_raw)
-                candidate_text = refined_text.strip() or innovation_text
-                candidate_graph = graph_data
-                if refined_graph.get("nodes"):
-                    candidate_graph = normalize_graph(
-                        refined_graph, max_nodes=graph_node_count, max_edges=80
-                    )
-                    candidate_graph = ensure_graph_backbone(
-                        candidate_graph, sel_sciences, graph_node_count
-                    )
-                with st.spinner(f"RE-AUDIT ROUND {round_no+1}"):
-                    candidate_evaluation = evaluate_quality(
-                        client, critic_model, phase1, candidate_text,
-                        idea_query or user_query, target_score
-                    )
-                candidate_score = quality_score(candidate_evaluation)
-                accepted = (
-                    candidate_score is not None
-                    and (baseline_score is None
-                         or candidate_score >= baseline_score + MIN_QUALITY_IMPROVEMENT)
+
+            with st.spinner(f'PHASE 1: IMA synthesis with {p1_model_label}...'):
+                phase1_synthesis = google_generate(
+                    google_client, p1_model, phase1_system_prompt,
+                    full_ai_input, temperature=0.40
                 )
-                quality_history.append({
-                    "round": round_no + 1,
-                    "score": candidate_score,
-                    "accepted": accepted,
-                    "status": (
-                        "Accepted: measurable improvement"
-                        if accepted else
-                        "Rejected: no validated improvement over the best draft"
-                    ),
-                })
-                if accepted:
-                    innovation_text = candidate_text
-                    graph_data = candidate_graph
-                    evaluation = candidate_evaluation
- 
-            equations = None
-            calc_active = calculation_requested(user_query, idea_query, explicit_calculation)
-            if calc_active:
-                equations = calculate_equation_chain({
-                    "WI": initial_energy,
-                    "FPF": f_pf,
-                    "FSF": f_sf,
-                    "FPR": f_pr,
-                    "base": 2,
-                    "N": eq_N,
-                    "v": eq_v,
-                    "fc": eq_fc,
-                    "sum_f2": eq_sum_f2,
-                    "Pxy": eq_Pxy,
-                    "Px": eq_Px,
-                    "Py": eq_Py,
-                    "k": eq_k,
-                    "n": eq_n,
-                    "E": eq_E,
-                    "BC": eq_BC,
-                    "EC": eq_EC,
-                    "sum_AS": eq_sum_AS,
-                    "sum_cij": eq_sum_cij,
-                })
+                st.session_state.phase1_synthesis = phase1_synthesis
 
-            if equations and equations.get("results"):
-                eq_nodes = []
-                existing_ids = {n["id"] for n in graph_data["nodes"]}
-                last_id = len(existing_ids) + 1
-                previous = None
-                for eq_name, spec in EQUATION_SYSTEM.items():
-                    if eq_name not in equations["results"]:
-                        continue
-                    nid = f"eq{last_id}"
-                    while nid in existing_ids:
-                        last_id += 1
-                        nid = f"eq{last_id}"
-                    existing_ids.add(nid)
-                    eq_nodes.append({
-                        "id": nid,
-                        "label": f"{spec['symbol']} — {eq_name}",
-                        "shape": "rectangle",
-                        "color": GRAPH_LAYER_COLORS.get("Equation", "#f08c00"),
-                        "description": f"{spec['formula']} | {spec['description']}",
-                        "layer": "Equation",
-                        "module": "Equation",
-                        "importance": 0.72,
-                    })
-                    if previous:
-                        graph_data["edges"].append({
-                            "id": f"eqe{last_id}",
-                            "source": previous,
-                            "target": nid,
-                            "rel_type": "Dependency",
-                            "weight": 0.85,
-                            "label": "feeds",
-                            "evidence": "Connected equation chain",
-                        })
-                    previous = nid
-                    last_id += 1
-                graph_data["nodes"].extend(eq_nodes)
-                graph_data = normalize_graph(graph_data, max_nodes=graph_node_count, max_edges=80)
+            # ---------------- PHASE 2: MA ----------------
+            ma_list_for_ai = ", ".join(MENTAL_APPROACHES_ONTOLOGY["nodes"].keys())
+            phase2_system_prompt = f"""
+You are the SIS Lead Strategic Innovation Architect and Hierarchographist.
 
-            final_elements = graph_to_cytoscape(graph_data)
-            st.session_state.final_graph_elements = final_elements
-            st.session_state.final_graph_data = graph_data
-            st.session_state.report_ready = True
-            st.session_state.last_evaluation = evaluation
-            st.session_state.quality_history = quality_history
-            st.session_state.last_equations = equations
+Transform the Phase 1 IMA foundation into traceable innovations using Mental
+Approaches (MA). Do NOT produce generic brainstorming.
 
-            st.divider()
-            st.subheader("🧠 ADAPTIVE SIS SYNTHESIS REPORT")
-            if enable_quality:
-                score = quality_score(evaluation)
-                if isinstance(score, (int, float)):
-                    if score >= target_score:
-                        st.success(f"🎯 Optimization target reached: {score:.2f} / 10.00")
-                    else:
-                        st.warning(f"Optimization target not yet reached: {score:.2f} / 10.00")
-                else:
-                    st.warning("Quality audit was incomplete, so no score was accepted. The original synthesis was preserved.")
+CORE TRANSFORMATION CHAIN:
+IMA finding -> limitation/contradiction -> selected MA -> transformation
+operation -> changed configuration -> innovation -> expected effect.
 
-            if biblio_data:
-                with st.expander("AUTHOR RESEARCH BACKGROUND"):
-                    st.markdown(biblio_data)
+Use only genuinely useful MAs. You are NOT required to use all 20.
 
-            if equations and equations.get("results"):
-                st.divider()
-                st.subheader("CONNECTED EQUATION CALCULATION")
-                st.caption("Calculation was activated explicitly for this inquiry.")
-                eq_rows = []
-                for name, value in equations["results"].items():
-                    eq_rows.append({
-                        "Equation": name,
-                        "Symbol": EQUATION_SYSTEM[name]["symbol"],
-                        "Formula": EQUATION_SYSTEM[name]["formula"],
-                        "Value": round(value, 8),
-                        "Layer": EQUATION_SYSTEM[name]["layer"],
-                    })
-                st.dataframe(eq_rows, use_container_width=True, hide_index=True)
+AVAILABLE MENTAL APPROACHES:
+{ma_definitions}
 
-            st.divider()
-            st.subheader(f"UNIFIED HIERARCHOGRAPHIC NETWORK — {graph_perspective.upper()} ({graph_module.upper()})")
-            visible_elements = final_elements
-            if graph_module != "Unified":
-                allowed_module = graph_module
-                visible_node_ids = {
-                    e["data"]["id"] for e in final_elements
-                    if "source" not in e["data"] and e["data"].get("module") == allowed_module
+AVAILABLE MA NAMES:
+{ma_list_for_ai}
+
+SELECTED IDEATION FRAMEWORKS:
+{', '.join(selected_techniques)}
+
+SELECTED METHODOLOGY:
+{', '.join(sel_methods)}
+
+SELECTED TOOLS:
+{', '.join(sel_tools)}
+
+For each of 3–4 innovations explicitly state:
+- IMA finding
+- limitation or contradiction
+- MA used
+- transformation operation
+- resulting new configuration
+- innovation
+- expected cross-disciplinary effect
+
+Avoid unsupported claims and invented terminology.
+Build a sparse semantic graph. Prefer meaningful relations over graph density.
+
+RELATION TYPES:
+TT, BT, NT, RT, EQ, AS, IN,
+Generalization, Specialization, Containment, Realization, Composition,
+Aggregation, Dependency, Conflict, AND, OR, XOR, NOT, IF-THEN
+
+GRAPH LIMITS:
+- Maximum 30 nodes.
+- Maximum 45 edges.
+- Every edge must connect existing node IDs.
+- No artificial bridge edges.
+- No duplicate or semantically redundant edges.
+
+GEOMETRY:
+star=Goals, hexagon=Science Fields, diamond=Innovations,
+triangle=Processes, octagon=Rules, ellipse=Human/Biological entities,
+rectangle=Facts/Components.
+
+The graph must represent the same reasoning as the report.
+
+At the end output:
+### SEMANTIC_GRAPH_JSON
+
+Then valid JSON only:
+{{
+  "system_metrics": {{"f_pf": 0.70, "f_sf": 0.40, "f_pr": 0.30}},
+  "nodes": [
+    {{
+      "id": "n1",
+      "label": "Example",
+      "shape": "diamond",
+      "color": "#fd7e14",
+      "description": "Short semantic description"
+    }}
+  ],
+  "edges": [
+    {{"source": "n1", "target": "n2", "rel_type": "Realization"}}
+  ]
+}}
+
+Use standard JSON with double quotes. Escape internal quotes correctly.
+Do not place explanatory text after the JSON object.
+"""
+
+            with st.spinner(f'PHASE 2: MA innovation with {p2_model_label}...'):
+                phase2_user_content = (
+                    f"PHASE 1 IMA FOUNDATION:\n{phase1_synthesis}\n\n"
+                    f"USER INNOVATION OBJECTIVE:\n{idea_query}{file_context_str}"
+                )
+                google_innovation = google_generate(
+                    google_client, p2_model, phase2_system_prompt,
+                    phase2_user_content, temperature=0.85
+                )
+
+            # --- 4. PROCESS RESULTS ---
+            # Always initialize these containers before any conditional JSON parsing.
+            # The previous version could reach the highlighter with undefined
+            # nodes_to_link/final_elements, causing Pipeline Failure.
+            g_data = {"nodes": [], "edges": [], "system_metrics": {}}
+            nodes_to_link = []
+            final_elements = []
+
+            if "### SEMANTIC_GRAPH_JSON" in google_innovation:
+                parts = google_innovation.split("### SEMANTIC_GRAPH_JSON", 1)
+                innovation_text = parts[0]
+                json_raw = parts[1]
+            else:
+                innovation_text = google_innovation
+                json_raw = ""
+
+            innovation_text = re.sub(r'```json|```', '', innovation_text)
+
+            # Parse the model-generated semantic graph.  Do this before any
+            # node/edge rendering; the previous version extracted json_raw but
+            # never assigned it to g_data.
+            if json_raw.strip():
+                try:
+                    cleaned_json = json_raw.strip()
+                    cleaned_json = re.sub(r'^```(?:json)?\s*', '', cleaned_json, flags=re.I)
+                    cleaned_json = re.sub(r'\s*```$', '', cleaned_json)
+                    match = re.search(r'\{.*\}', cleaned_json, re.DOTALL)
+                    if match:
+                        cleaned_json = match.group(0)
+                    cleaned_json = re.sub(r',\s*([}\]])', r'\1', cleaned_json)
+                    parsed = json.loads(cleaned_json)
+                    if isinstance(parsed, dict):
+                        g_data = parsed
+                except Exception as parse_exc:
+                    # Keep the textual report usable even if the model emitted
+                    # malformed JSON. The graph simply remains empty.
+                    st.warning(f"⚠️ Semantic graph JSON could not be parsed; report retained. ({parse_exc})")
+
+            # Validate graph structure defensively.
+            if not isinstance(g_data.get("nodes"), list):
+                g_data["nodes"] = []
+            if not isinstance(g_data.get("edges"), list):
+                g_data["edges"] = []
+
+            full_report = (
+                f"## 📚 Phase 1: IMA Structural Foundation (Google {p1_model_label})\n\n"
+                f"{phase1_synthesis}\n\n---\n"
+                f"## 💡 Phase 2: MA Strategic Innovations (Google {p2_model_label})\n\n"
+                f"{innovation_text}"
+            )
+
+            # --- NODE COUNT CONTROL (10–80) ---
+            # Preserve the selected maximum number of nodes and remove orphaned edges.
+            if isinstance(g_data.get("nodes"), list):
+                g_data["nodes"] = g_data["nodes"][:graph_node_count]
+                valid_node_ids = {
+                    str(n.get("id", f"n{i}"))
+                    for i, n in enumerate(g_data["nodes"])
                 }
-                neighbor_ids = set(visible_node_ids)
-                for e in final_elements:
-                    d = e["data"]
-                    if "source" in d and (d.get("source") in visible_node_ids or d.get("target") in visible_node_ids):
-                        neighbor_ids.update([d.get("source"), d.get("target")])
-                visible_elements = [
-                    e for e in final_elements
-                    if ("source" not in e["data"] and e["data"]["id"] in neighbor_ids)
-                    or ("source" in e["data"] and e["data"].get("source") in neighbor_ids and e["data"].get("target") in neighbor_ids)
+                g_data["edges"] = [
+                    e for e in g_data.get("edges", [])
+                    if str(e.get("source")) in valid_node_ids
+                    and str(e.get("target")) in valid_node_ids
                 ]
 
-            render_cytoscape_network(
-                visible_elements,
-                graph_perspective,
-                f"cy_int_{time.time():.0f}",
-                "Unified cross-layer semantic network"
-            )
+            # --- PROCESIRANJE VOZLIŠČ Z DINAMIČNO VELIKOSTJO ---
+            if g_data.get("nodes"):
+                for n in g_data.get("nodes", []):
+                    lbl = n.get("label", "Node")
+                    nid = n.get("id", f"n{lbl}")
+                    n_color = n.get("color", "#DDEBF7")
+                    n_shape = n.get("shape", "rectangle")
 
-            export_html = build_html_report(
-                f"<h2>Phase 1 — IMA</h2>{html.escape(phase1).replace(chr(10), '<br>')}"
-                f"<h2>Phase 2 — MA</h2>{html.escape(innovation_text).replace(chr(10), '<br>')}",
-                visible_elements,
-                graph_perspective,
-                evaluation,
-                equations,
-            )
-            st.download_button(
-                "EXPORT COMPLETE REPORT (UNIFIED GRAPH, HTML)",
-                data=export_html,
-                file_name=f"SIS_v25_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html",
-                mime="text/html",
-                use_container_width=True,
-                key="export_complete_html_v250",
-            )
+                    # Velikostna hierarhija glede na obliko
+                    if n_shape == 'star': n_size = 125
+                    elif n_shape == 'diamond': n_size = 110
+                    elif n_shape == 'octagon': n_size = 105
+                    elif n_shape == 'hexagon': n_size = 100
+                    elif n_shape == 'triangle': n_size = 95
+                    elif n_shape == 'ellipse': n_size = 90
+                    else: n_size = 85
 
-        except Exception as exc:
-            st.error(f"Pipeline Failure: {exc}")
-            st.exception(exc)
+                    nodes_to_link.append({"id": nid, "label": lbl})
+                    final_elements.append({
+                        "data": {"id": nid, "label": lbl, "color": n_color, "shape": n_shape, "size": n_size, "description": n.get("description", "Detail breakdown in report.")}
+                    })
+
+                # --- PROCESIRANJE POVEZAV (UML + THESAURUS + LOGIC) ---
+                for e in g_data.get("edges", []):
+                    rel = e.get("rel_type", "Association")
+
+                    # A) UML IN STRUKTURNA LOGIKA (Rdeča/Črna/Modra skala)
+                    if rel in ["Generalization", "Realization", "Composition", "Aggregation", "Dependency", "Specialization", "Containment", "Conflict"]:
+                        if rel == "Conflict":
+                            e_color = "#b91d1d"  # Temno rdeča za trčenje/spor
+                        elif rel == "Specialization":
+                            e_color = "#000000"  # Črna za dedukcijo
+                        elif rel == "Containment":
+                            e_color = "#1D3557"  # Temno modra za "Scientific Cage"
+                        elif rel == "Generalization":
+                            e_color = "#E63946"  # UML rdeča
+                        elif rel == "Realization":
+                            e_color = "#E63946"  # UML rdeča
+                        else:
+                            e_color = "#E63946"  # Privzeta UML rdeča (Dependency, Aggregation...)
+
+                    # B) ISO THESAURUS (Hierarhologija - Modra/Vijolična skala)
+                    elif rel in ["BT", "NT", "TT"]:
+                        e_color = "#1D3557"  # Temno modra (Nivoji)
+                    elif rel == "IN":
+                        e_color = "#0077B6"  # Svetlo modra (Instanca)
+                    elif rel == "AS":
+                        e_color = "#7B2CB1"  # Vijolična (Asociativna)
+                    elif rel == "EQ":
+                        e_color = "#F1C40F"  # Rumena (Ekvivalenca)
+                    elif rel == "RT":
+                        e_color = "#2A9D8F"  # Zelena (Povezano)
+
+                    # C) LOGIČNI KONEKTORJI (Decision Logic - Neon skala)
+                    elif rel == "AND":
+                        e_color = "#00FF00"  # Neon zelena
+                    elif rel == "OR":
+                        e_color = "#00BFFF"  # Svetlo modra
+                    elif rel == "XOR":
+                        e_color = "#FF8C00"  # Oranžna
+                    elif rel == "NOT":
+                        e_color = "#FF0000"  # Rdeča
+                    elif rel == "IF-THEN":
+                        e_color = "#FFD700"  # Zlata
+
+                    else:
+                        e_color = "#ADB5BD"  # Če tipa ne pozna = Siva
+
+                    final_elements.append({
+                        "data": {
+                            "id": e.get("id", f"e{len(final_elements)}"),
+                            "source": e.get("source"),
+                            "target": e.get("target"),
+                            "rel_type": rel,
+                            "color": e_color,
+                            "weight": e.get("weight", 1.0),
+                            "label": e.get("label", rel)
+                        }
+                    })
+
+            # --- 5. FINAL DISPLAY: SEQUENTIAL INTERACTIVE SYNERGY REPORT ---
+
+            # 5a. GLOBAL SEMANTIC HIGHLIGHTER (Regex Highlighter)
+            final_interactive_report = full_report
+            if nodes_to_link:
+                # Razvrstimo ključne besede po dolžini (daljše prej), da se krajše ne vmešavajo
+                sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
+                for item in sorted_keywords:
+                    lbl = item['label']
+                    if len(lbl) > 2:
+                        g_url = urllib.parse.quote(lbl)
+                        # The link style ensures high visibility
+                        link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
+
+                        # Unicode-safe regex to catch terms in report
+                        pattern = re.compile(rf'(?<!\w){re.escape(lbl)}(?!\w)', re.IGNORECASE | re.UNICODE)
+
+                        # Linkamo le PRVO pojavitev besede za čistočo
+                        final_interactive_report = pattern.sub(link_html, final_interactive_report, count=1)
+# 5b. RENDERING THE INTERACTIVE REPORT
+            st.subheader("🧱 INTEGRATED HIERARCHOLOGICAL REPORT")
+            if biblio_data:
+                with st.expander("📚 EXTRACTED AUTHOR BACKGROUND", expanded=False):
+                    st.markdown(biblio_data)
+
+            # Display the full linked report (P1 + P2)
+            # Display the full linked report (P1 + P2) - Sedaj brez surovega JSON kosa
+            st.markdown(final_interactive_report, unsafe_allow_html=True)
+
+            # 5c. INNOVATION DEEP-DIVE: DETAILED BREAKTHROUGH CATALOG
+            if final_elements:
+                st.divider()
+                st.markdown("### 🚀 STRATEGIC INNOVATION DEEP-DIVE")
+                st.info("The following strategic breakthroughs have been synthesized from the multi-dimensional analysis above.")
+
+                # Extract innovations (diamonds) for detailed report-style display
+                innovations = [n['data'] for n in final_elements if n['data'].get('shape') == 'diamond']
+
+                if innovations:
+                    for inv in innovations:
+                        g_url = urllib.parse.quote(inv['label'])
+                        # Fetch the precise description generated by the model
+                        detailed_desc = inv.get('description', "Detailed strategic analysis is available in the integrated report above.")
+
+                        # High-End Report Style Card
+                        st.markdown(f"""
+                        <div style="background-color: #ffffff; border-left: 6px solid #fd7e14; padding: 25px; border-radius: 15px; box-shadow: 0 6px 15px rgba(0,0,0,0.1); border: 1px solid #eee; margin-bottom: 25px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <span style="background-color: #fff4ed; color: #fd7e14; padding: 5px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; border: 1px solid #fd7e14;">Strategic Breakthrough</span>
+                                <a href="https://www.google.com/search?q={g_url}" target="_blank" style="text-decoration: none; color: #457b9d; font-size: 0.85em; font-weight: 600;">Technical Search ↗</a>
+                            </div>
+                            <h2 style="margin: 0 0 15px 0; color: #1d3557; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">{inv['label']}</h2>
+                            <div style="color: #333; font-size: 1.05em; line-height: 1.7; border-top: 1px solid #f0f0f0; padding-top: 15px;">
+                                {detailed_desc}
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                else:
+                    st.warning("No specific 'Diamond' innovations were found. Review the structural graph for implicit breakthroughs.")
+
+                # 5d. MINIMALIST SYSTEM LEGEND (FINAL ARCHITECTURE)
+                st.markdown("""
+                <div style="font-size: 0.78em; color: #444; background: #ffffff; padding: 15px 25px; border-radius: 15px; border: 1px solid #e9ecef; margin-top: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                        <div>
+                            <b style="color: #1d3557; text-transform: uppercase; letter-spacing: 1px;">Nodes (Geometry):</b><br>
+                            ⭐ Goal | ⬢ Domain | 💠 Innovation | △ Process | ▭ Data | ⬣ Rule | ⭔ Bio
+                        </div>
+                        <div style="height: 30px; width: 1px; background: #dee2e6; display: block;"></div>
+                        <div>
+                            <b style="color: #1d3557; text-transform: uppercase; letter-spacing: 1px;">Semantic Layers:</b><br>
+                            <span style="color:#1d3557;">⬤ Hierarchical (ISO)</span> | 
+                            <span style="color:#7b2cb1;">⬤ Associative</span> | 
+                            <span style="color:#2a9d8f;">⬤ Related</span> | 
+                            <span style="color:#f1c40f;">⬤ Equivalence</span>
+                        </div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+                # 5e. FINAL GRAPH RENDERING (Z DINAMIČNO PERSPEKTIVO)
+                st.subheader(f"🕸️ HYBRID SEMANTIC SYSTEM MAP ({graph_perspective.upper()} VIEW)")
+                render_cytoscape_network(
+                    final_elements, 
+                    layout_type=graph_perspective, 
+                    container_id=f"cy_{int(time.time())}"
+                )
+
+                # --- REPORT EXPORT: COMPLETE REPORT + GRAPH ---
+                export_html = build_html_report(final_interactive_report, final_elements, graph_perspective)
+                export_col1, export_col2 = st.columns(2)
+                with export_col1:
+                    st.download_button(
+                        "🌐 EXPORT COMPLETE REPORT + GRAPH (HTML)",
+                        data=export_html,
+                        file_name=f"SIS_Universal_Knowledge_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html",
+                        mime="text/html",
+                        use_container_width=True,
+                        key="export_complete_html"
+                    )
+                with export_col2:
+                    try:
+                        export_pdf = build_pdf_report(final_interactive_report, final_elements, graph_perspective)
+                        st.download_button(
+                            "📄 EXPORT COMPLETE REPORT + GRAPH (PDF)",
+                            data=export_pdf,
+                            file_name=f"SIS_Universal_Knowledge_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+                            mime="application/pdf",
+                            use_container_width=True,
+                            key="export_complete_pdf"
+                        )
+                    except Exception as export_exc:
+                        st.warning(f"⚠️ PDF export is unavailable in this environment: {export_exc}")
+
+                # --- NOVO: SHRANJEVANJE ZA GALERIJO (DODANO NA KONEC POROČILA) ---
+                st.session_state.final_graph_elements = final_elements
+                st.session_state.report_ready = True
+
+        except Exception as e:
+            st.error(f"❌ Pipeline Failure: {str(e)}")
+
+# =============================================================================
+# 6. MULTI-PERSPECTIVE GALLERY (SEQUENTIAL EXPORT)
+# =============================================================================
+
+if st.session_state.get('report_ready') and 'final_graph_elements' in st.session_state:
+    st.divider()
+    st.markdown('<h2 style="color: #1d3557; text-align: center;">🖼️ MULTI-PERSPECTIVE GRAPH GALLERY</h2>', unsafe_allow_html=True)
+    st.info("💡 **SEQUENTIAL SAVING INSTRUCTIONS:** Below are tabs featuring different visual perspectives of the same knowledge synthesis. Please open each tab individually and click the **EXPORT PNG** button to save all 5 architectural versions to your local drive.")
+
+    tab1, tab2, tab3, tab4 = st.tabs([
+        "🌲 HIERARCHICAL", "🎯 CONCENTRIC", "⭕ CIRCULAR", "🔲 GRID"
+    ])
+
+    with tab1:
+        st.markdown("**Hierarchical View:** Primary IMA → MA structure and semantic dependencies.")
+        render_cytoscape_network(st.session_state.final_graph_elements, layout_type="hierarchical", container_id="gal_hierarchical")
+
+    with tab2:
+        st.markdown("**Concentric View:** Macro–Meso–Micro systemic organization.")
+        render_cytoscape_network(st.session_state.final_graph_elements, layout_type="concentric", container_id="gal_concentric")
+
+    with tab3:
+        st.markdown("**Circular View:** Relational interdependence without an organic force layout.")
+        render_cytoscape_network(st.session_state.final_graph_elements, layout_type="circular", container_id="gal_circular")
+
+    with tab4:
+        st.markdown("**Grid View:** Structured inspection of the same semantic architecture.")
+        render_cytoscape_network(st.session_state.final_graph_elements, layout_type="grid", container_id="gal_grid")
+
+# =============================================================================
+# 7. FOOTER
+# =============================================================================
+st.divider()
+st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | {SYSTEM_DATE}")
