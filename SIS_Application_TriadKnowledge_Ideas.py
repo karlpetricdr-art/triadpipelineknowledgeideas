@@ -169,15 +169,20 @@ st.markdown("""
     }
 
     .date-badge {
-        background-color: #1d3557 !important;
+        background: #12345b !important;
         color: #ffffff !important;
-        padding: 12px 20px;
-        border-radius: 50px;
-        font-size: 1em;
+        padding: 10px 14px;
+        border-radius: 6px;
+        border: 1px solid rgba(255,255,255,0.18);
+        font-size: 0.88em;
         font-weight: 800;
-        margin-bottom: 30px;
+        margin: 8px 0 22px 0;
         display: block;
+        width: 100%;
+        box-sizing: border-box;
         text-align: center;
+        letter-spacing: 0.03em;
+        line-height: 1.25;
         box-shadow: 0 4px 15px rgba(29, 53, 87, 0.3);
         letter-spacing: 1px;
         color: #ffffff !important;
