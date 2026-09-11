@@ -19,7 +19,7 @@ import streamlit.components.v1 as components
 # =============================================================================
 
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v24.0.0-IMA-MA-TWO-PHASE-PRO"
+VERSION_CODE = "v24.2.0-IMA-MA-INNOVATION-BLUEPRINT-CLEAR"
 
 # =============================================================================
 # MODEL CATALOG
@@ -59,17 +59,11 @@ DEFAULT_SESSION = {
     "selected_graph_components": [
         "Innovations",
         "Science Fields",
-        "Scientific Paradigms",
-        "Structural Models",
+        "Goals / Vision",
         "Human Thinking Metamodel",
         "Mental Approaches",
         "Processes",
-        "Goals / Vision",
-        "Constraints / Rules",
-        "Entities",
         "Facts / Concepts",
-        "System States",
-        "Data / Evidence",
     ],
 }
 
@@ -1166,7 +1160,11 @@ def filter_graph_by_components(graph, selected_components):
         if e.get("source") in kept_ids and e.get("target") in kept_ids
     ]
 
-    return {"nodes": filtered_nodes, "edges": filtered_edges}
+    return {
+        "nodes": filtered_nodes,
+        "edges": filtered_edges,
+        "blueprint_mode": graph.get("blueprint_mode", False),
+    }
 
 
 # =============================================================================
@@ -2081,6 +2079,13 @@ def enrich_graph_with_architecture(graph, selected_sciences):
         if len(state_nodes) >= 3:
             add_edge(state_nodes[2]["id"], state_nodes[0]["id"], "NEGATIVE-FEEDBACK", 0.7)
             add_edge(state_nodes[0]["id"], state_nodes[1]["id"], "POSITIVE-FEEDBACK", 0.65)
+
+    # Explicit innovation ↔ science bridges are represented as thesaurus
+    # RT relations so they remain visible in the simplified blueprint.
+    for innovation in innovation_nodes[:20]:
+        for domain in domain_nodes[:15]:
+            if semantic_related(innovation, domain, threshold=0.24):
+                add_edge(innovation["id"], domain["id"], "RT", 0.8)
 
     return {
         "nodes": nodes,
@@ -3042,6 +3047,235 @@ def limit_graph_nodes(graph, max_nodes=80):
 
 
 # =============================================================================
+# INNOVATION BLUEPRINT GRAPH
+# =============================================================================
+
+def build_innovation_blueprint_graph(graph, max_nodes=80):
+    """Create a deliberately sparse, innovation-centred blueprint projection.
+
+    The complete IMA/MA graph is preserved in the underlying architecture.
+    This function changes only the presentation layer: innovations and involved
+    sciences become the primary visual elements, while the relation vocabulary
+    is restricted to thesaurus, UML and IF-THEN / AND / OR / XOR / NOT.
+
+    The most important readability rule is edge sparsity: each innovation is
+    connected to at most two strongest science fields. This prevents the visual
+    result from becoming a dense semantic network or "hairball".
+    """
+    graph = rank_integrated_graph(normalize_graph_data(graph))
+    nodes = graph.get("nodes", [])
+    edges = graph.get("edges", [])
+    if not nodes:
+        return {"nodes": [], "edges": [], "blueprint_mode": True}
+
+    node_map = {n["id"]: n for n in nodes}
+
+    def is_innovation(n):
+        return (
+            n.get("layer") == "innovation"
+            or n.get("semantic_type") == "innovation"
+            or n.get("shape") == "diamond"
+        )
+
+    def is_science(n):
+        return (
+            n.get("layer") == "domain"
+            or n.get("semantic_type") == "science-domain"
+            or n.get("shape") == "hexagon"
+        )
+
+    def is_goal(n):
+        return n.get("layer") == "goal" or n.get("shape") == "star"
+
+    innovations = sorted(
+        [n for n in nodes if is_innovation(n)],
+        key=lambda x: float(x.get("importance", 0) or 0),
+        reverse=True,
+    )
+    sciences = sorted(
+        [n for n in nodes if is_science(n)],
+        key=lambda x: float(x.get("importance", 0) or 0),
+        reverse=True,
+    )
+    goals = sorted(
+        [n for n in nodes if is_goal(n)],
+        key=lambda x: float(x.get("importance", 0) or 0),
+        reverse=True,
+    )
+
+    # Keep the number of innovation ideas compact and readable.
+    innovation_cap = min(8, max(3, max_nodes // 3))
+    selected_innovations = innovations[:innovation_cap]
+
+    primary_edges = [
+        e for e in edges
+        if e.get("rel_type") in PRIMARY_GRAPH_RELATIONS
+    ]
+
+    adjacency = {n["id"]: [] for n in nodes}
+    for e in primary_edges:
+        s, t = e.get("source"), e.get("target")
+        if s in adjacency and t in adjacency:
+            adjacency[s].append((t, float(e.get("weight", 1.0) or 1.0), e))
+            adjacency[t].append((s, float(e.get("weight", 1.0) or 1.0), e))
+
+    selected_science_ids = set()
+    innovation_science_pairs = []
+
+    # One or two science fields per innovation: existing semantic links first,
+    # semantic similarity only as a controlled fallback.
+    for innovation in selected_innovations:
+        iid = innovation["id"]
+        candidates = []
+
+        for sid, weight, edge in adjacency.get(iid, []):
+            science = node_map.get(sid)
+            if not science or not is_science(science):
+                continue
+            relation = edge.get("rel_type", "RT")
+            bonus = 50 if relation in THESAURUS_GRAPH_RELATIONS else 30
+            bonus += 20 if relation in UML_GRAPH_RELATIONS else 0
+            score = bonus + weight * 25 + float(science.get("importance", 0) or 0)
+            candidates.append((score, sid, edge))
+
+        if len(candidates) < 2:
+            for science in sciences:
+                sid = science["id"]
+                if any(c[1] == sid for c in candidates):
+                    continue
+                similarity = semantic_similarity(innovation, science)
+                if similarity <= 0:
+                    continue
+                score = 35 * similarity + float(science.get("importance", 0) or 0) * 0.25
+                candidates.append((score, sid, None))
+
+        candidates.sort(key=lambda x: x[0], reverse=True)
+        for score, sid, existing_edge in candidates[:2]:
+            selected_science_ids.add(sid)
+            innovation_science_pairs.append((iid, sid, score, existing_edge))
+
+    # Guarantee a small scientific foundation even when the generated concepts
+    # contain no usable lexical overlap with the selected science vocabulary.
+    if not selected_science_ids and sciences:
+        for science in sciences[:min(4, max(1, max_nodes - len(selected_innovations)))]:
+            selected_science_ids.add(science["id"])
+
+    selected_sciences = [
+        node_map[sid] for sid in selected_science_ids if sid in node_map
+    ]
+
+    selected_goal = goals[0] if goals else None
+    selected_ids = {n["id"] for n in selected_innovations}
+    selected_ids.update(n["id"] for n in selected_sciences)
+    if selected_goal:
+        selected_ids.add(selected_goal["id"])
+
+    # Rebuild only the edges that belong to the blueprint. This is the decisive
+    # simplification: unrelated entities, processes, states and data cannot
+    # create visual noise in this view.
+    blueprint_edges = []
+    edge_keys = set()
+
+    def add_edge(source, target, relation, weight=1.0, full_label=None):
+        if source not in selected_ids or target not in selected_ids or source == target:
+            return
+        key = (source, target, relation)
+        reverse_key = (target, source, relation)
+        if key in edge_keys or reverse_key in edge_keys:
+            return
+        edge_keys.add(key)
+        blueprint_edges.append({
+            "id": f"blueprint_{len(blueprint_edges) + 1}",
+            "source": source,
+            "target": target,
+            "rel_type": relation,
+            "label": relation,
+            "full_label": full_label or RELATION_DEFINITIONS.get(relation, relation),
+            "weight": float(weight or 1.0),
+            "direction": "directed",
+        })
+
+    # Preserve genuine thesaurus/UML/logical relations among the selected nodes.
+    for edge in primary_edges:
+        source = edge.get("source")
+        target = edge.get("target")
+        if source in selected_ids and target in selected_ids:
+            add_edge(
+                source,
+                target,
+                edge.get("rel_type", "RT"),
+                edge.get("weight", 1.0),
+                edge.get("full_label"),
+            )
+
+    # Explicitly show the strongest innovation ↔ science associations. RT is a
+    # thesaurus association and therefore remains inside the requested language.
+    for iid, sid, score, existing_edge in innovation_science_pairs:
+        relation = "RT"
+        if existing_edge and existing_edge.get("rel_type") in PRIMARY_GRAPH_RELATIONS:
+            relation = existing_edge.get("rel_type")
+        add_edge(iid, sid, relation, min(1.5, max(0.7, score / 60.0)))
+
+    # The strategic goal is included only when a real primary relation already
+    # connects it with an innovation. No artificial edge is created.
+    if selected_goal:
+        gid = selected_goal["id"]
+        innovation_ids = {n["id"] for n in selected_innovations}
+        for edge in primary_edges:
+            source = edge.get("source")
+            target = edge.get("target")
+            if gid in {source, target}:
+                other = target if source == gid else source
+                if other in innovation_ids:
+                    add_edge(
+                        source,
+                        target,
+                        edge.get("rel_type", "RT"),
+                        edge.get("weight", 1.0),
+                        edge.get("full_label"),
+                    )
+
+    # Presentation metadata for the deterministic three-band blueprint layout.
+    blueprint_nodes = []
+    if selected_goal:
+        goal_node = dict(selected_goal)
+        goal_node["blueprint_role"] = "goal"
+        goal_node["blueprint_rank"] = 0
+        blueprint_nodes.append(goal_node)
+
+    for rank, node in enumerate(selected_innovations):
+        innovation_node = dict(node)
+        innovation_node["blueprint_role"] = "innovation"
+        innovation_node["blueprint_rank"] = rank
+        blueprint_nodes.append(innovation_node)
+
+    connection_count = {n["id"]: 0 for n in selected_sciences}
+    for _, sid, _, _ in innovation_science_pairs:
+        if sid in connection_count:
+            connection_count[sid] += 1
+
+    selected_sciences.sort(
+        key=lambda n: (
+            connection_count.get(n["id"], 0),
+            float(n.get("importance", 0) or 0),
+        ),
+        reverse=True,
+    )
+
+    for rank, node in enumerate(selected_sciences):
+        science_node = dict(node)
+        science_node["blueprint_role"] = "science"
+        science_node["blueprint_rank"] = rank
+        blueprint_nodes.append(science_node)
+
+    return {
+        "nodes": blueprint_nodes,
+        "edges": blueprint_edges,
+        "blueprint_mode": True,
+    }
+
+
+# =============================================================================
 # GRAPH RELATION VISIBILITY
 # =============================================================================
 
@@ -3091,6 +3325,177 @@ def filter_graph_relations_for_display(graph, show_additional_relations=False):
     return {
         "nodes": graph["nodes"],
         "edges": edges,
+        "blueprint_mode": graph.get("blueprint_mode", False),
+    }
+
+
+
+# =============================================================================
+# MODULAR HIERARCHY PARTITIONING (compound nodes – visual boxes as in the image)
+# =============================================================================
+
+MODULE_VISUALS = {
+    "Environmental Foundation": {
+        "color": "#e0e7ff",
+        "border": "#6366f1",
+        "label_color": "#312e81",
+    },
+    "Informational Hierarchy": {
+        "color": "#ccfbf1",
+        "border": "#0d9488",
+        "label_color": "#134e4a",
+    },
+    "Mechanical Hierarchy": {
+        "color": "#dbeafe",
+        "border": "#2563eb",
+        "label_color": "#1e3a8a",
+    },
+    "Biochemical Hierarchy": {
+        "color": "#ffedd5",
+        "border": "#ea580c",
+        "label_color": "#9a3412",
+    },
+    "Hierarchical Operating System": {
+        "color": "#1e293b",
+        "border": "#0f172a",
+        "label_color": "#f8fafc",
+    },
+    "Systemic Core": {
+        "color": "#fef9c3",
+        "border": "#ca8a04",
+        "label_color": "#713f12",
+    },
+    "Default Module": {
+        "color": "#f1f5f9",
+        "border": "#64748b",
+        "label_color": "#1e293b",
+    },
+}
+
+
+def _infer_module_name(node):
+    """Heuristic that maps nodes to the same modules visible in the organic screenshot."""
+    label = (node.get("label") or "").lower()
+    layer = (node.get("layer") or "").lower()
+    semantic = (node.get("semantic_type") or "").lower()
+    shape = (node.get("shape") or "").lower()
+
+    # Explicit overrides from description / state (matches the attached image)
+    if "co2" in label or "environmental" in label or "450ppm" in label:
+        return "Environmental Foundation"
+    if "prestige" in label or "status drive" in label or "cognitive dream" in label or "neuroscience" in label:
+        return "Informational Hierarchy"
+    if "leakage" in label or "respiratory" in label or "mechanical" in label:
+        return "Mechanical Hierarchy"
+    if "ph" in label or "tds" in label or "metabolic" in label or "biochemical" in label or "acidosis" in label:
+        return "Biochemical Hierarchy"
+    if "hierarchical operating" in label or (shape == "rectangle" and "operating" in label):
+        return "Hierarchical Operating System"
+    if shape == "star" or "systemic stability" in label or "ω-st" in label or "omega-st" in label:
+        return "Systemic Core"
+
+    # Layer / semantic fallbacks
+    if layer in {"domain", "science"} or semantic in {"science-domain"}:
+        if any(k in label for k in ("neuro", "cognitive", "psych")):
+            return "Informational Hierarchy"
+        if any(k in label for k in ("respiratory", "mechanical", "engineer")):
+            return "Mechanical Hierarchy"
+        if any(k in label for k in ("metabolic", "physiol", "biochem", "chemistry")):
+            return "Biochemical Hierarchy"
+        return "Environmental Foundation"
+
+    if layer == "innovation" or shape == "diamond":
+        if any(k in label for k in ("co2", "environmental")):
+            return "Environmental Foundation"
+        if any(k in label for k in ("dream", "cognitive", "prestige", "status")):
+            return "Informational Hierarchy"
+        if any(k in label for k in ("leakage", "adaptive")):
+            return "Mechanical Hierarchy"
+        if any(k in label for k in ("ph", "modulation", "biochem")):
+            return "Biochemical Hierarchy"
+
+    if layer == "process" or shape == "triangle":
+        if "leakage" in label:
+            return "Mechanical Hierarchy"
+        if "ph" in label or "tds" in label:
+            return "Biochemical Hierarchy"
+
+    if layer == "constraint" or shape == "octagon":
+        if "co2" in label:
+            return "Environmental Foundation"
+        if "prestige" in label or "status" in label:
+            return "Informational Hierarchy"
+
+    return "Default Module"
+
+
+def partition_graph_into_modules(graph, force_modules=None):
+    """
+    Split the graph into visual modules (compound parent nodes) exactly as shown
+    in the organic hierarchograph screenshot.
+
+    Returns a new graph dict that contains both the original nodes and extra
+    parent nodes. Child nodes receive a 'parent' key that Cytoscape understands.
+    """
+    graph = normalize_graph_data(graph)
+    nodes = [dict(n) for n in graph["nodes"]]
+    edges = [dict(e) for e in graph["edges"]]
+
+    if not nodes:
+        return graph
+
+    # 1. Assign every node to a module
+    module_of = {}
+    for n in nodes:
+        if force_modules and n["id"] in force_modules:
+            module_of[n["id"]] = force_modules[n["id"]]
+        else:
+            module_of[n["id"]] = _infer_module_name(n)
+
+    # 2. Collect unique modules that actually contain nodes
+    used_modules = sorted(set(module_of.values()))
+    if not used_modules:
+        return graph
+
+    # 3. Create parent (compound) nodes
+    parent_nodes = []
+    for mod_name in used_modules:
+        visual = MODULE_VISUALS.get(mod_name, MODULE_VISUALS["Default Module"])
+        parent_id = f"module_{mod_name.replace(' ', '_').lower()}"
+        parent_nodes.append({
+            "id": parent_id,
+            "label": mod_name,
+            "shape": "round-rectangle",
+            "color": visual["color"],
+            "description": f"Hierarchy module: {mod_name}",
+            "layer": "module",
+            "level": "Macro",
+            "semantic_type": "hierarchy-module",
+            "state": "",
+            "source_phase": "modular",
+            "importance": 10.0,
+            "innovation_score": 0.0,
+            "feasibility_score": 0.0,
+            "size": 220,
+            "is_parent": True,
+            "border_color": visual["border"],
+            "label_color": visual["label_color"],
+        })
+
+    # 4. Attach parent reference to every child
+    for n in nodes:
+        mod = module_of[n["id"]]
+        parent_id = f"module_{mod.replace(' ', '_').lower()}"
+        n["parent"] = parent_id
+
+    # 5. Merge (parents first so they exist before children)
+    all_nodes = parent_nodes + nodes
+
+    return {
+        "nodes": all_nodes,
+        "edges": edges,
+        "blueprint_mode": graph.get("blueprint_mode", False),
+        "modular": True,
     }
 
 
@@ -3104,32 +3509,48 @@ def render_cytoscape_network(
     container_id="cy_canvas",
     max_nodes=None,
     show_additional_relations=False,
+    modular_view=False,
 ):
-    graph = limit_graph_nodes(graph, max_nodes=max_nodes)
+    blueprint_mode = bool(graph.get("blueprint_mode", False))
+    if not (blueprint_mode and max_nodes is None):
+        graph = limit_graph_nodes(graph, max_nodes=max_nodes)
     graph = filter_graph_relations_for_display(
         graph,
         show_additional_relations=show_additional_relations,
     )
+    graph["blueprint_mode"] = blueprint_mode
+
+    # Modular hierarchy view – compound boxes like the attached organic screenshot
+    if modular_view:
+        graph = partition_graph_into_modules(graph)
 
     elements = []
 
     for node in graph["nodes"]:
-        elements.append({
-            "data": {
-                "id": node["id"],
-                "label": node["label"],
-                "color": node["color"],
-                "shape": node["shape"],
-                "size": node["size"],
-                "description": node["description"],
-                "layer": node["layer"],
-                "level": node["level"],
-                "semantic_type": node["semantic_type"],
-                "state": node["state"],
-                "source_phase": node.get("source_phase", ""),
-                "importance": node.get("importance", 0.0),
-            }
-        })
+        data = {
+            "id": node["id"],
+            "label": node["label"],
+            "color": node["color"],
+            "shape": node["shape"],
+            "size": node["size"],
+            "description": node["description"],
+            "layer": node["layer"],
+            "level": node["level"],
+            "semantic_type": node["semantic_type"],
+            "state": node["state"],
+            "source_phase": node.get("source_phase", ""),
+            "importance": node.get("importance", 0.0),
+            "blueprint_role": node.get("blueprint_role", ""),
+            "blueprint_rank": node.get("blueprint_rank", -1),
+        }
+        # Compound / parent support for modular view
+        if node.get("parent"):
+            data["parent"] = node["parent"]
+        if node.get("is_parent"):
+            data["is_parent"] = True
+            data["border_color"] = node.get("border_color", "#64748b")
+            data["label_color"] = node.get("label_color", "#1e293b")
+        elements.append({"data": data})
 
     for edge in graph["edges"]:
         color = RELATION_COLORS.get(
@@ -3223,10 +3644,73 @@ def render_cytoscape_network(
         """,
     }
 
-    selected_layout = layout_configs.get(
-        layout_type,
-        layout_configs["hierarchical"],
-    )
+    if graph.get("modular"):
+        # Compound / modular hierarchy view needs a force-directed layout
+        # so parent boxes can expand around their children.
+        selected_layout = """
+        {
+            name:'cose',
+            animate:false,
+            fit:true,
+            padding:70,
+            nodeRepulsion:120000,
+            idealEdgeLength:140,
+            edgeElasticity:90,
+            nestingFactor:1.8,
+            gravity:0.3,
+            numIter:1600,
+            componentSpacing:80
+        }
+        """
+    elif graph.get("blueprint_mode"):
+        # Deterministic three-band layout:
+        # strategic goal (optional) -> innovation ideas -> science foundations.
+        goal_nodes = [n for n in graph["nodes"] if n.get("blueprint_role") == "goal"]
+        innovation_nodes = [n for n in graph["nodes"] if n.get("blueprint_role") == "innovation"]
+        science_nodes = [n for n in graph["nodes"] if n.get("blueprint_role") == "science"]
+
+        canvas_width = 1200
+        x_center = canvas_width / 2
+        positions = {}
+
+        if goal_nodes:
+            positions[goal_nodes[0]["id"]] = {"x": x_center, "y": 110}
+
+        def spread(row_nodes, y):
+            if not row_nodes:
+                return
+            count = len(row_nodes)
+            side_margin = 120
+            usable = canvas_width - 2 * side_margin
+            if count == 1:
+                xs = [x_center]
+            else:
+                step = usable / (count - 1)
+                xs = [side_margin + i * step for i in range(count)]
+            for node, x in zip(row_nodes, xs):
+                positions[node["id"]] = {"x": x, "y": y}
+
+        spread(innovation_nodes, 350)
+        spread(science_nodes, 625)
+
+        for element in elements:
+            node_id = element["data"]["id"]
+            if node_id in positions:
+                element["position"] = positions[node_id]
+
+        selected_layout = """
+        {
+            name:'preset',
+            fit:true,
+            padding:85,
+            animate:false
+        }
+        """
+    else:
+        selected_layout = layout_configs.get(
+            layout_type,
+            layout_configs["hierarchical"],
+        )
 
     safe_elements = json.dumps(
         elements,
@@ -3334,8 +3818,8 @@ Facts · entities · states<br><br>
 <b>Vertical:</b> hierarchy / taxonomy<br>
 <b>Horizontal:</b> association / relation<br>
 <b>Operational:</b> transformation / process<br>
+<b>Blueprint:</b> innovations + science fields are primary anchors<br>
 <b>Cross-phase:</b> IMA ↔ MA bridge concepts are prioritized<br>
-<b>Feedback:</b> cyclic system regulation<br>
 <b>Primary edges:</b> thesaurus · UML · IF-THEN / AND / OR / XOR / NOT<br>
 <b>Additional edges:</b> optional operational relations
 </div>
@@ -3428,6 +3912,45 @@ const cy = cytoscape({{
         }},
 
         {{
+            selector:'node[blueprint_role="goal"]',
+            style:{{
+                'width':170,
+                'height':100,
+                'font-size':'16px',
+                'font-weight':'bold',
+                'text-max-width':'145px',
+                'border-width':6,
+                'border-color':'#e9b949'
+            }}
+        }},
+
+        {{
+            selector:'node[blueprint_role="innovation"]',
+            style:{{
+                'width':175,
+                'height':125,
+                'font-size':'13px',
+                'font-weight':'bold',
+                'text-max-width':'140px',
+                'border-width':4,
+                'border-color':'#d97706'
+            }}
+        }},
+
+        {{
+            selector:'node[blueprint_role="science"]',
+            style:{{
+                'width':125,
+                'height':105,
+                'font-size':'11px',
+                'font-weight':'bold',
+                'text-max-width':'105px',
+                'border-width':4,
+                'border-color':'#167d70'
+            }}
+        }},
+
+        {{
             selector:'node[shape="diamond"]',
             style:{{
                 'border-width':4,
@@ -3460,7 +3983,7 @@ const cy = cytoscape({{
                 'target-arrow-shape':'vee',
                 'curve-style':'bezier',
                 'label':'data(label)',
-                'font-size':'9px',
+                'font-size':'8px',
                 'font-weight':'bold',
                 'color':'#1a1a1a',
                 'text-background-color':'#ffffff',
@@ -3502,10 +4025,11 @@ const cy = cytoscape({{
         {{
             selector:'edge[rel_type="RT"]',
             style:{{
-                'width':2,
-                'line-style':'dotted',
-                'target-arrow-shape':'none',
-                'line-color':'#2a9d8f'
+                'width':2.5,
+                'line-style':'dashed',
+                'target-arrow-shape':'vee',
+                'line-color':'#2a9d8f',
+                'curve-style':'straight'
             }}
         }},
 
@@ -3805,6 +4329,40 @@ const cy = cytoscape({{
         }},
 
         {{
+            selector:'node[is_parent]',
+            style:{{
+                'shape':'round-rectangle',
+                'background-color':'data(color)',
+                'background-opacity':0.18,
+                'border-width':3,
+                'border-color':'data(border_color)',
+                'border-opacity':0.85,
+                'padding':28,
+                'text-valign':'top',
+                'text-halign':'center',
+                'font-size':'15px',
+                'font-weight':'800',
+                'color':'data(label_color)',
+                'text-margin-y':-12,
+                'text-background-color':'#ffffff',
+                'text-background-opacity':0.85,
+                'text-background-padding':'6px',
+                'text-background-shape':'roundrectangle',
+                'min-width':180,
+                'min-height':120,
+                'z-index':0,
+                'text-outline-width':0
+            }}
+        }},
+
+        {{
+            selector:'node[parent]',
+            style:{{
+                'z-index':10
+            }}
+        }},
+
+        {{
             selector:':selected',
             style:{{
                 'border-color':'#000000',
@@ -3985,9 +4543,28 @@ contain, in this order:
    selected sciences, paradigms and structural models.
 8. Critical assessment — expose contradictions, gaps, assumptions and
    scientific/operational limitations.
-9. Strategic knowledge implications — identify the knowledge structures that
-   Phase 2 should transform, without proposing the innovations themselves.
-10. Conclusion.
+9. Knowledge integration and synthesis — explicitly distinguish the most
+   important convergences, complementarities and tensions among concepts,
+   scientific fields, paradigms, structural models and the IMA architecture.
+10. Evidence, limitations and unresolved questions — identify what is well
+    supported, what is inferential, what remains uncertain and what should be
+    validated in subsequent work.
+11. Strategic knowledge implications — identify the knowledge structures,
+    relationships and mechanisms that Phase 2 should transform, without
+    proposing the innovations themselves.
+12. Conclusion — provide a substantive synthesis of the inquiry, including
+    the most important implications for subsequent innovation work.
+
+REPORT DEPTH
+===========
+The report should be somewhat more exhaustive than a conventional summary.
+Develop the reasoning behind the major relationships instead of merely naming
+them. Explain why the central concepts belong together, how the selected
+sciences complement one another, how the IMA elements interact, and where
+the architecture reveals important gaps or opportunities. Prefer analytical
+depth and meaningful synthesis over repetition. The final report should give
+the reader a coherent intellectual model of the inquiry, not merely a list of
+components.
 
 Do NOT solve the innovation objective in Phase 1. Phase 1 creates the
 knowledge substrate from which Phase 2 will innovate.
@@ -4072,29 +4649,43 @@ and transform it exclusively in response to the explicit Innovation Objective.
 Do not repeat Phase 1 as background. Find what can be invented, recombined,
 reframed, improved, operationalized or implemented.
 
-VISIONARY BUT REALISTIC INNOVATION
-==================================
-Every proposed innovation must satisfy BOTH criteria:
-1. VISIONARY: it should create a meaningful new configuration, capability,
-   relationship, service, process, technology or conceptual architecture.
-2. REALIZABLE: it must remain within a defensible path of technical,
-   organizational, economic, ethical/legal and temporal feasibility.
+VISIONARY + PRACTICAL INNOVATION DISCIPLINE
+=============================================
+Every proposed innovation must satisfy BOTH criteria simultaneously:
+1. VISIONARY: it should create a genuinely new configuration, capability,
+relationship, service, process, technology, organizational arrangement or
+conceptual architecture that could have meaningful long-term impact.
+2. PRACTICAL: it must have a credible path from the present situation to a
+working prototype, pilot, service, process or deployable capability.
 
-Do not confuse visionary with speculative. Avoid science-fiction claims,
-unsupported technological promises and impossible implementation assumptions.
+The objective is NOT to choose between visionary and practical ideas. The
+strongest innovations should be both: ambitious in destination and concrete
+in execution. Do not confuse visionary with speculative. Avoid science-fiction
+claims, unsupported technological promises and impossible implementation
+assumptions.
 
 For each major innovation, explicitly reason about:
-- novelty and value;
-- the problem/gap it addresses;
-- mechanism of action;
-- the Mental Approaches that generated it;
-- required knowledge, technology and organizational capabilities;
-- feasibility across technical, organizational, economic, ethical/legal and
-  temporal dimensions;
+- the unmet need, user or system problem;
+- novelty and distinctive value;
+- the mechanism of action;
+- the Mental Approaches that generated and shaped it;
+- the sciences and Phase 1 concepts it recombines;
+- required knowledge, technology, data and organizational capabilities;
+- a concrete first prototype, pilot or proof-of-concept;
+- implementation dependencies and prerequisites;
+- technical, organizational, economic, ethical/legal and temporal feasibility;
 - principal risks and failure modes;
-- validation or pilot strategy;
-- first practical implementation step;
-- expected near-term, medium-term and long-term horizon.
+- measurable success criteria and validation method;
+- responsible actor, team or organizational owner where identifiable;
+- first executable next step;
+- near-term (0–2 years), medium-term (3–5 years) and long-term (6–10+ years)
+development path;
+- the visionary end-state if the innovation succeeds at scale.
+
+Each innovation should therefore be readable as a mini blueprint: WHAT is
+being created, WHY it matters, HOW it works, WHAT is needed to build it,
+HOW it can first be tested, HOW success is measured, and WHAT larger future
+state it could enable.
 
 PROFESSIONAL PHASE 2 REPORT
 ===========================
@@ -5018,7 +5609,7 @@ if st.session_state.get("report_ready") and st.session_state.get("last_graph_dat
     st.divider()
 
     st.subheader(
-        "🕸️ INTEGRATED IMA → MA PRIMARY HIERARCHOGRAPH"
+        "🧭 IMA → MA INNOVATION BLUEPRINT HIERARCHOGRAPH"
     )
 
     # -------------------------------------------------------------------------
@@ -5046,9 +5637,27 @@ if st.session_state.get("report_ready") and st.session_state.get("last_graph_dat
 
     st.session_state.selected_graph_components = selected_components
 
-    # Apply component filter
-    filtered_graph = filter_graph_by_components(
+    modular_view = st.checkbox(
+        "📦 Modular hierarchy view (compound boxes as in the organic screenshot)",
+        value=st.session_state.get("modular_hierarchy_view", False),
+        key="modular_hierarchy_view",
+        help=(
+            "Splits the graph into visual modules (Environmental Foundation, "
+            "Informational Hierarchy, Mechanical Hierarchy, Biochemical Hierarchy, "
+            "Systemic Core …) using Cytoscape compound nodes – identical visual "
+            "language to the attached hierarchograph image."
+        ),
+    )
+
+    # Build the innovation-centric presentation layer without changing
+    # the underlying integrated IMA → MA knowledge graph.
+    blueprint_graph = build_innovation_blueprint_graph(
         graph_data,
+        max_nodes=graph_node_limit,
+    )
+
+    filtered_graph = filter_graph_by_components(
+        blueprint_graph,
         selected_components,
     )
 
@@ -5065,11 +5674,14 @@ if st.session_state.get("report_ready") and st.session_state.get("last_graph_dat
     )
 
     st.caption(
-        "The hierarchograph is used as an operational design substrate for the "
-        "innovation phase. To keep it understandable, the default view emphasises "
-        "thesaurus hierarchy/association, UML structure and explicit logical "
-        "relations. Additional operational relations remain available on demand. "
-        f"Displayed nodes: up to {graph_node_limit}. "
+        "The hierarchograph is presented as a deliberately sparse **innovation blueprint**. "
+        "Innovation ideas are the central design elements and involved science fields "
+        "form their interdisciplinary foundation. Only the strongest one or two science "
+        "connections per innovation are shown, preventing the graph from becoming a "
+        "dense semantic network. The default visual language is limited to thesaurus "
+        "relations, UML relations and IF-THEN / AND / OR / XOR / NOT. "
+        "Additional operational relations remain available on demand. "
+        f"Blueprint capacity: up to {graph_node_limit} nodes. "
         f"Currently showing {len(filtered_graph['nodes'])} nodes after component filter. "
         "Use the ➕/➖ ZOOM buttons or the mouse wheel to zoom in and out."
     )
@@ -5078,8 +5690,9 @@ if st.session_state.get("report_ready") and st.session_state.get("last_graph_dat
         filtered_graph,
         layout_type=graph_perspective,
         container_id="primary_graph",
-        max_nodes=graph_node_limit,
+        max_nodes=None,
         show_additional_relations=show_additional_relations,
+        modular_view=modular_view,
     )
 
 
@@ -5102,16 +5715,21 @@ if (
     )
 
     st.info(
-        "The same knowledge architecture is displayed through different "
-        "visual grammars. The data model remains identical. Every view "
-        "supports mouse-wheel zoom and the ➕/➖ ZOOM buttons. "
-        "Relation types are always shown on edges. "
+        "The same innovation blueprint is displayed through different visual "
+        "grammars. The complete underlying knowledge model remains unchanged. "
+        "Innovations and science fields remain the principal anchors, while "
+        "thesaurus, UML and basic logical relations keep the blueprint readable. "
+        "Every view supports mouse-wheel zoom and the ➕/➖ ZOOM buttons. "
         "The component filter selected above also applies to the gallery."
     )
 
-    # Re-use the same filter for the gallery
-    gallery_base = filter_graph_by_components(
+    # Re-use the same innovation-blueprint layer for the gallery.
+    gallery_blueprint = build_innovation_blueprint_graph(
         st.session_state.final_graph_elements,
+        max_nodes=graph_node_limit,
+    )
+    gallery_base = filter_graph_by_components(
+        gallery_blueprint,
         st.session_state.get("selected_graph_components", GRAPH_COMPONENT_OPTIONS),
     )
 
@@ -5150,10 +5768,11 @@ if (
                 gallery_base,
                 layout_type=view,
                 container_id=f"gallery_{view}",
-                max_nodes=graph_node_limit,
+                max_nodes=None,
                 show_additional_relations=st.session_state.get(
                     "show_additional_graph_relations", False
                 ),
+                modular_view=st.session_state.get("modular_hierarchy_view", False),
             )
 
 
