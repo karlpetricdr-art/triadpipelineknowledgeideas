@@ -171,7 +171,7 @@ st.markdown("""
     .date-badge,
     .date-badge * {
         background: #12345b !important;
-        color: #ffffff !important;
+        color: #ffd166 !important;
         padding: 10px 14px;
         border-radius: 6px;
         border: 1px solid rgba(255,255,255,0.18);
