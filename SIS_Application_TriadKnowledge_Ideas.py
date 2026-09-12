@@ -3335,9 +3335,18 @@ def filter_graph_relations_for_display(graph, show_additional_relations=False):
     if show_additional_relations:
         return graph
 
+    # The default view is intentionally selective: keep the semantic hierarchy
+    # plus the five relations that make the IMA→MA implementation pipeline
+    # legible. Causal/feedback/measurement detail remains available on demand.
+    default_relations = (
+        THESAURUS_GRAPH_RELATIONS
+        | UML_GRAPH_RELATIONS
+        | LOGICAL_GRAPH_RELATIONS
+        | {"ENABLES", "TRANSFORMS", "PRODUCES", "CONSTRAINS", "VALIDATES"}
+    )
     edges = [
         e for e in graph["edges"]
-        if e.get("rel_type") in PRIMARY_GRAPH_RELATIONS
+        if e.get("rel_type") in default_relations
     ]
     return {
         "nodes": graph["nodes"],
@@ -5804,6 +5813,206 @@ creating an unrelated graph.
         st.exception(exc)
 
 
+
+# =============================================================================
+# FINAL GRAPH ARCHITECTURE OVERRIDE — CONNECTED IMA → MA PIPELINE
+# =============================================================================
+
+def build_innovation_blueprint_graph(graph, max_nodes=80):
+    """Create the final readable IMA→MA system hierarchograph.
+
+    Unlike the previous blueprint projection, this view does not throw away the
+    knowledge substrate or reduce the graph to innovation↔science pairs. It
+    preserves the architecture needed to explain how an idea is derived:
+
+        Goal/Problem → IMA Knowledge → Mental Approach → Mechanism/Process
+        → Innovation → Constraint → Validation → Evidence/State
+
+    Existing AI relations are retained. A small number of *architectural bridge*
+    relations are derived only from explicit semantic roles already present in
+    the graph; they are not generated to inflate density. This makes the
+    implementation pipeline visible while preventing hub-and-spoke topology.
+    """
+    g = rank_integrated_graph(normalize_graph_data(graph))
+    nodes = g.get("nodes", [])
+    edges = g.get("edges", [])
+    if not nodes:
+        return {"nodes": [], "edges": [], "blueprint_mode": False}
+
+    nm = {n["id"]: n for n in nodes}
+
+    def role(n):
+        st = str(n.get("semantic_type", "")).lower()
+        ly = str(n.get("layer", "")).lower()
+        sh = str(n.get("shape", "")).lower()
+        label = str(n.get("label", "")).lower()
+        if st == "root" or n.get("id") == "knowledge_root": return "root"
+        if ly == "goal" or st == "goal" or sh == "star": return "goal"
+        if ly == "innovation" or st == "innovation" or sh == "diamond": return "innovation"
+        if st in {"human-thinking-metamodel", "ima", "metamodel"} or "ima" in label and "metamodel" in label:
+            return "ima"
+        if st in {"mental-approach", "mental-approaches-hub", "ma"} or ly in {"mental-approach", "ma"}:
+            return "ma"
+        if st in {"process", "method", "mechanism"} or ly in {"process", "mechanism"} or sh == "triangle": return "process"
+        if st in {"constraint", "rule"} or ly == "constraint" or sh == "octagon": return "constraint"
+        if ly in {"domain", "science"} or st in {"science-domain", "science", "domain"} or sh == "hexagon": return "science"
+        if ly in {"data", "evidence"} or st in {"data", "evidence", "fact"} or sh == "barrel": return "evidence"
+        if ly == "state" or st == "state" or sh == "round-rectangle": return "state"
+        return "concept"
+
+    groups = {r: [] for r in ["root","goal","innovation","ima","ma","process","constraint","science","evidence","state","concept"]}
+    for n in nodes:
+        groups.setdefault(role(n), []).append(n)
+
+    # Keep the important portfolio visible; normally 3–5 innovations.
+    def node_score(n):
+        deg = sum(1 for e in edges if n["id"] in (e["source"], e["target"]))
+        return float(n.get("importance", 0) or 0) + min(deg, 6) * 2
+
+    for k in groups:
+        groups[k].sort(key=node_score, reverse=True)
+
+    selected = []
+    selected_ids = set()
+    caps = {
+        "root": 1, "goal": 2, "innovation": min(5, max(3, max_nodes // 12)),
+        "ima": 5, "ma": 5, "process": 6, "constraint": 4,
+        "science": 5, "evidence": 5, "state": 3, "concept": 8,
+    }
+    for r, cap in caps.items():
+        for n in groups.get(r, [])[:cap]:
+            if len(selected) >= max_nodes: break
+            selected.append(n); selected_ids.add(n["id"])
+
+    # Build adjacency from the genuine graph.
+    adj = {n["id"]: [] for n in nodes}
+    for e in edges:
+        if e["source"] in adj and e["target"] in adj:
+            adj[e["source"]].append((e["target"], e))
+            adj[e["target"]].append((e["source"], e))
+
+    # Expand locally around innovations, preferring genuine edges and cross-role bridges.
+    frontier = []
+    for iid_node in groups["innovation"][:caps["innovation"]]:
+        for other, e in adj.get(iid_node["id"], []):
+            if other in selected_ids: continue
+            on = nm[other]
+            cross = 20 if role(on) != "innovation" else 0
+            frontier.append((node_score(on) + cross + float(e.get("weight", 1) or 1) * 8, other))
+    while frontier and len(selected) < min(max_nodes, 65):
+        frontier.sort(reverse=True)
+        _, nid = frontier.pop(0)
+        if nid in selected_ids: continue
+        selected_ids.add(nid); selected.append(nm[nid])
+        for other, e in adj.get(nid, []):
+            if other not in selected_ids:
+                frontier.append((node_score(nm[other]) + float(e.get("weight",1) or 1)*6, other))
+
+    # Add a small number of explicit architectural bridge relations. These are
+    # role-based system semantics, not arbitrary pairwise density generation.
+    out_edges = []
+    seen_pairs = set()
+
+    def add_edge(source, target, rel, weight=1.0, inferred=False):
+        if source == target or source not in selected_ids or target not in selected_ids:
+            return
+        pair = (source, target)
+        undirected = tuple(sorted((source, target)))
+        if undirected in seen_pairs:
+            return
+        seen_pairs.add(undirected)
+        out_edges.append({
+            "id": f"arch_{len(out_edges)+1}",
+            "source": source, "target": target,
+            "rel_type": rel, "label": rel,
+            "full_label": RELATION_DEFINITIONS.get(rel, rel),
+            "weight": float(weight), "direction": "directed",
+            "architectural_inference": bool(inferred),
+        })
+
+    # Preserve all genuine edges among selected nodes first.
+    for e in sorted(edges, key=lambda x: float(x.get("weight",1) or 1), reverse=True):
+        if e["source"] in selected_ids and e["target"] in selected_ids:
+            add_edge(e["source"], e["target"], e.get("rel_type","Association"), e.get("weight",1), False)
+
+    # For every innovation, establish a compact traceable chain from the best
+    # available semantic roles. Only existing nodes are used.
+    innovations = groups["innovation"][:caps["innovation"]]
+    for inv in innovations:
+        iid = inv["id"]
+        def best(role_name, preferred_relations=()):
+            candidates = []
+            for nid in selected_ids:
+                if role(nm[nid]) != role_name or nid == iid: continue
+                existing = [e for _,e in adj.get(iid, []) if e["source"] == nid or e["target"] == nid]
+                rel_bonus = 0
+                for e in existing:
+                    if e.get("rel_type") in preferred_relations: rel_bonus = max(rel_bonus, 30)
+                # lexical overlap is only a tie-breaker; relation evidence wins.
+                sim = semantic_similarity(inv, nm[nid])
+                candidates.append((rel_bonus + sim*20 + node_score(nm[nid])*0.05, nid))
+            return max(candidates)[1] if candidates else None
+
+        process = best("process", ("PRODUCES","TRANSFORMS","PRECEDES","ENABLES"))
+        ma = best("ma", ("TRANSFORMS","ENABLES","Realization","Realization"))
+        ima = best("ima", ("BT","NT","Association","TRANSFORMS","ENABLES"))
+        goal = best("goal", ("IF-THEN","ENABLES","CAUSES"))
+        constraint = best("constraint", ("CONSTRAINS","Constraint"))
+        validation = best("evidence", ("VALIDATES","MEASURES")) or best("state", ("VALIDATES","MEASURES"))
+
+        if goal: add_edge(goal, iid, "ENABLES", 0.82, True)
+        if ima and ma: add_edge(ima, ma, "TRANSFORMS", 0.90, True)
+        if ma and process: add_edge(ma, process, "ENABLES", 0.88, True)
+        if process: add_edge(process, iid, "PRODUCES", 0.92, True)
+        if constraint: add_edge(constraint, iid, "CONSTRAINS", 0.86, True)
+        if validation: add_edge(iid, validation, "VALIDATES", 0.84, True)
+
+    # Connect the root only to the principal strategic goal, never to everything.
+    root = groups["root"][0] if groups["root"] else None
+    goal = groups["goal"][0] if groups["goal"] else None
+    if root and goal and root["id"] in selected_ids and goal["id"] in selected_ids:
+        add_edge(root["id"], goal["id"], "ENABLES", 0.75, True)
+
+    # Scientific foundations are connected to innovations through existing edges;
+    # if an innovation has no such edge, use the best already-selected science
+    # node only when lexical/semantic similarity is positive.
+    for inv in innovations:
+        science_candidates = []
+        for sci in groups["science"]:
+            if sci["id"] not in selected_ids: continue
+            sim = semantic_similarity(inv, sci)
+            if sim > 0:
+                science_candidates.append((sim + node_score(sci)*0.01, sci))
+        if science_candidates:
+            _, sci = max(science_candidates, key=lambda x:x[0])
+            add_edge(sci["id"], inv["id"], "Association", 0.65, True)
+
+    # Ensure the display is not an edge hairball: max 6 relations/node.
+    deg = {nid: 0 for nid in selected_ids}
+    sparse = []
+    # Prioritize non-inferred genuine relations, then the architectural backbone.
+    out_edges.sort(key=lambda e: (0 if e.get("architectural_inference") else -1,
+                                  -float(e.get("weight",1) or 1)))
+    # Always preserve the backbone edges first.
+    backbone = [e for e in out_edges if e.get("architectural_inference") and e["rel_type"] in
+                {"ENABLES","TRANSFORMS","PRODUCES","CONSTRAINS","VALIDATES"}]
+    remainder = [e for e in out_edges if e not in backbone]
+    ordered = backbone + remainder
+    for e in ordered:
+        s,t=e["source"],e["target"]
+        if deg[s] >= 6 or deg[t] >= 6: continue
+        sparse.append(e); deg[s]+=1; deg[t]+=1
+
+    result_nodes = []
+    for n in selected:
+        c = dict(n)
+        c["blueprint_role"] = role(n)
+        result_nodes.append(c)
+
+    # Explicitly label this as the connected architectural projection.
+    return {"nodes": result_nodes, "edges": sparse, "blueprint_mode": False}
+
+
 # =============================================================================
 # MAIN REPORT + GRAPH DISPLAY
 # =============================================================================
@@ -5889,10 +6098,10 @@ if st.session_state.get("report_ready") and st.session_state.get("last_graph_dat
         value=False,
         key="show_additional_graph_relations",
         help=(
-            "By default the graph shows only the most intelligible relations: "
-            "thesaurus, UML and IF-THEN / AND / OR / XOR / NOT. Enable this "
-            "option to reveal additional causal, transformational, feedback "
-            "and other operational relations."
+            "By default the graph shows the semantic hierarchy plus the core "
+            "IMA→MA pipeline relations (ENABLES, TRANSFORMS, PRODUCES, "
+            "CONSTRAINS, VALIDATES). Enable this option for additional causal, "
+            "feedback, measurement and operational relations."
         ),
     )
 
