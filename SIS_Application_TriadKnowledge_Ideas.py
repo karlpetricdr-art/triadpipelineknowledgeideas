@@ -1465,9 +1465,12 @@ report stays clear and scannable:
 - **Practical next step:** one concrete, feasible first action a real team could
   take within a month (pilot, prototype, experiment, dataset, or policy step).
 - **Safeguards (if the innovation touches personal/biometric/health/behavioral
-  data):** name a concrete technical or ethical safeguard (on-device processing,
-  anonymization, differential privacy, consent). Omit this bullet only if truly
-  not applicable.
+  data):** specify a concrete Privacy-by-Design architecture, not a vague
+  mention — e.g. on-device aggregation only, differential privacy (ε-noise
+  addition) before any data leaves the device, so raw individual telemetry is
+  never stored or transmitted, only noised aggregates. Name the actual
+  mechanism, not just the word "privacy". Omit this bullet only if truly not
+  applicable.
 - **Expected effect:** ...
 
 Prioritize innovations that combine at least two of the selected science fields in
@@ -1494,16 +1497,41 @@ GRAPH GROUNDING — THE GRAPH IS A DIAGRAM OF THE REPORT, NOT A SEPARATE TASK:
 
 GEOMETRY IS A STRICT SEMANTIC CODE, NOT DECORATION — apply consistently to
 every node of that category, with no exceptions:
-- star = Strategic Goal / Vision (from IMA)
+- star = the actual, concrete problem/outcome goal named in the user's
+  inquiry (e.g. "reduce crime", "reduce stress") — NEVER a methodology,
+  framework, or theoretical approach (Hierarchology, IMA, MA, Six Thinking
+  Hats, etc. are NOT goals; they go under triangle, see below). If the
+  original inquiry names a target problem, it MUST have its own star node,
+  and every innovation that addresses it must connect to that star.
 - hexagon = Science Field (Physics, Sociology, Astronomy, etc.)
 - diamond = Innovation (Phase 2 output)
-- triangle = Process / Method / Transformation operation
+- triangle = Process / Method / Methodology / Framework / Transformation
+  operation (this includes Hierarchology, IMA, MA, and named ideation
+  techniques — they are tools of analysis, not the goal itself)
 - octagon = Rule / Constraint / Contradiction
 - ellipse = Human, biological or social entity/actor
 - rectangle = Fact, finding, or structural/data component (default only when
   nothing else fits)
 Two nodes describing the same kind of thing must always share the same shape.
-Never assign shapes arbitrarily for visual variety.
+Never assign shapes arbitrarily for visual variety, and never let a method
+node steal the star shape meant for the actual target problem.
+
+NO REDUNDANT PARALLEL EDGES:
+- Between any two given nodes, draw exactly ONE edge — the single relation
+  type that best captures the relationship. If both a causal link (IF-THEN)
+  and a thesaurus link (RT/AS) seem to apply to the same pair, pick the more
+  informative one and drop the other. Two parallel edges between the same
+  node pair (e.g. one IF-THEN and one RT) is a defect, not richness.
+
+ISO 25964 DIRECTION CONVENTION FOR BT/NT (this is commonly drawn backwards —
+follow it exactly):
+- BT (Broader Term): source is the NARROWER/more specific concept, target is
+  the BROADER concept it belongs to. Read as "source's Broader Term is target".
+- NT (Narrower Term): source is the BROADER concept, target is the NARROWER,
+  more specific concept it contains. Read as "source's Narrower Term is target".
+- Example: [Sociology] --NT--> [Informal Power Structures] is CORRECT
+  (Sociology is broad; Informal Power Structures is its narrower concept).
+  [Sociology] --BT--> [Informal Power Structures] would be WRONG (backwards).
 
 RELATION TYPES — you MUST draw from all three families below, not just UML.
 Pick the family that actually fits the semantic meaning of each edge; never
@@ -1570,11 +1598,14 @@ SELF-CHECK BEFORE YOU OUTPUT THE JSON (do this silently, then output only the
 corrected result): confirm (1) every important report entity is present as a
 node, (2) no node is invented beyond the report, (3) no node is isolated,
 (4) the thesaurus/logic edge-ratio rule is satisfied, (5) shapes are used
-consistently as the semantic code above, not arbitrarily, (6) every IF-THEN /
-Dependency arrow points cause→effect and reads correctly aloud, (7) every
-named problem/outcome from Phase 1 has a corresponding outcome node linked to
-the innovation that addresses it, (8) every edge "label" is a human-readable
-phrase, never a bare code.
+consistently as the semantic code above — the star belongs to the actual named
+problem/goal, never to a methodology, (6) every IF-THEN / Dependency arrow
+points cause→effect and reads correctly aloud, (7) every named problem/outcome
+from Phase 1 has a corresponding outcome node linked to the innovation that
+addresses it, (8) every edge "label" is a human-readable phrase, never a bare
+code, (9) no two nodes are connected by more than one parallel edge,
+(10) every BT/NT edge follows the direction convention above (BT: source is
+narrower → target is broader; NT: source is broader → target is narrower).
 
 GRAPH LIMITS:
 - Maximum 30 nodes.
@@ -1774,6 +1805,20 @@ Do not place explanatory text after the JSON object.
                             "label": e.get("label", rel)
                         }
                     })
+
+            # --- DEDUP SAFETY NET: remove parallel/duplicate edges between the ---
+            # --- same node pair (e.g. one IF-THEN and one RT on the same pair) ---
+            seen_pairs = set()
+            deduped_elements = []
+            for el in final_elements:
+                d = el.get("data", {})
+                if "source" in d:
+                    pair_key = frozenset({d.get("source"), d.get("target")})
+                    if pair_key in seen_pairs:
+                        continue
+                    seen_pairs.add(pair_key)
+                deduped_elements.append(el)
+            final_elements = deduped_elements
 
             # --- CONNECTIVITY SAFETY NET: guarantee no isolated nodes ---
             # Even with the prompt instruction, the model can occasionally leave
