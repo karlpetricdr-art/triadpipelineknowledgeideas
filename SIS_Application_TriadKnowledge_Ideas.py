@@ -1526,10 +1526,34 @@ Build a sparse semantic graph. Prefer meaningful relations over graph density.
 At least 2 edges must connect nodes that belong to different science-field
 clusters, so the graph visually demonstrates interdisciplinary integration.
 
-RELATION TYPES:
-TT, BT, NT, RT, EQ, AS, IN,
-Generalization, Specialization, Containment, Realization, Composition,
-Aggregation, Dependency, Conflict, AND, OR, XOR, NOT, IF-THEN
+RELATION TYPES — you MUST draw from all three families below, not just UML.
+Pick the family that actually fits the semantic meaning of each edge; never
+default to UML/structural types just because they are familiar.
+
+A) THESAURUS FAMILY (ISO 25964 style — use for conceptual/terminological links):
+   - TT (Top Term) / BT (Broader Term) / NT (Narrower Term): taxonomic level jumps
+   - EQ (Equivalence): two labels denote the same concept
+   - RT (Related Term): loosely associated concepts, no hierarchy
+   - AS (Associative): non-taxonomic thematic association
+   - IN (Instance-of): a concrete case of a general class
+
+B) STRUCTURAL/UML FAMILY (use for architectural or compositional links):
+   Generalization, Specialization, Containment, Realization, Composition,
+   Aggregation, Dependency, Conflict
+
+C) OPERATIONAL LOGIC FAMILY (use for decision/causal/conditional links —
+   especially between an IMA finding, a contradiction, an MA, and an innovation):
+   AND (joint necessary conditions), OR (alternative sufficient paths),
+   XOR (mutually exclusive choices), NOT (negation/exclusion),
+   IF-THEN (conditional/causal trigger)
+
+MANDATORY DIVERSITY RULE: the final edge set must include at least 3 edges from
+the Thesaurus family AND at least 3 edges from the Operational Logic family, in
+addition to any Structural/UML edges. A graph using only Generalization,
+Realization, Composition, Aggregation, Dependency and Conflict is INVALID —
+use TT/BT/NT/RT/EQ/AS/IN to connect concepts and classifications, and
+AND/OR/XOR/NOT/IF-THEN to connect findings, contradictions, decisions and
+innovations causally.
 
 GRAPH LIMITS:
 - Maximum 30 nodes.
@@ -1723,6 +1747,28 @@ Do not place explanatory text after the JSON object.
                             "label": e.get("label", rel)
                         }
                     })
+
+            # --- RELATION-FAMILY DIAGNOSTIC (Thesaurus vs UML vs Logic) ---
+            THESAURUS_TYPES = {"TT", "BT", "NT", "RT", "EQ", "AS", "IN"}
+            LOGIC_TYPES = {"AND", "OR", "XOR", "NOT", "IF-THEN"}
+            STRUCTURAL_TYPES = {"Generalization", "Specialization", "Containment",
+                                 "Realization", "Composition", "Aggregation",
+                                 "Dependency", "Conflict"}
+            edge_rel_types = [el["data"]["rel_type"] for el in final_elements if "source" in el.get("data", {})]
+            n_thesaurus = sum(1 for r in edge_rel_types if r in THESAURUS_TYPES)
+            n_logic = sum(1 for r in edge_rel_types if r in LOGIC_TYPES)
+            n_structural = sum(1 for r in edge_rel_types if r in STRUCTURAL_TYPES)
+            if edge_rel_types:
+                st.caption(
+                    f"🔗 Relation mix in graph — Thesaurus: {n_thesaurus} | "
+                    f"Structural/UML: {n_structural} | Operational Logic: {n_logic}"
+                )
+                if n_thesaurus < 2 or n_logic < 2:
+                    st.warning(
+                        "⚠️ The generated graph leans heavily on structural/UML relations. "
+                        "For richer semantics, try re-running Phase 2 or nudge the Innovation "
+                        "Prompt to explicitly ask for thesaurus (BT/NT/RT/EQ) and logic (AND/OR/IF-THEN) connections."
+                    )
 
             # --- 5. FINAL DISPLAY: SEQUENTIAL INTERACTIVE SYNERGY REPORT ---
 
