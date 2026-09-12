@@ -19,22 +19,22 @@ import streamlit.components.v1 as components
 # =============================================================================
 
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v24.2.0-IMA-MA-INNOVATION-BLUEPRINT-CLEAR"
+VERSION_CODE = "v25.0.0-IMA-MA-SEMANTIC-QUALITY-GATE"
 
 # =============================================================================
 # MODEL CATALOG
 # =============================================================================
 
 GEMINI_MODEL_CATALOG = {
-    "Gemini 3.6 Flash (najnovejši, agentni)": "gemini-3.6-flash",
+    "Gemini 3.6 Flash (agentni)": "gemini-3.6-flash",
     "Gemini 3.5 Flash (vsestranski)": "gemini-3.5-flash",
-    "Gemini 3.5 Flash-Lite (najhitrejši)": "gemini-3.5-flash-lite",
-    "Gemini 3.1 Flash-Lite": "gemini-3.1-flash-lite",
+    "Gemini 3.5 Flash-Lite (hitri)": "gemini-3.5-flash-lite",
+    "Gemini 3.1 Flash-Lite (varčni)": "gemini-3.1-flash-lite",
     "Gemini 3.1 Pro Preview": "gemini-3.1-pro-preview",
     "Gemma 4 31B": "gemma-4-31b-it",
     "Gemma 4 26B A4B": "gemma-4-26b-a4b-it",
-    "Hugging Face – Qwen2.5-72B-Instruct": "hf:Qwen/Qwen2.5-72B-Instruct",
 }
+
 
 GEMINI_MODEL_LABELS = list(GEMINI_MODEL_CATALOG.keys())
 HF_ROUTER_URL = "https://router.huggingface.co/v1/chat/completions"
@@ -306,6 +306,8 @@ RELATION_DEFINITIONS = {
     "Realization": "Implementation of an abstract specification.",
     "Dependency": "Operational dependency.",
     "Conflict": "Systemic incompatibility or tension.",
+    "Association": "UML Association — explicit structural relationship between model elements.",
+    "Constraint": "Explicit condition or restriction governing a system element or relationship.",
     "AND": "Conjunctive synthesis.",
     "OR": "Alternative path.",
     "XOR": "Exclusive alternative.",
@@ -586,6 +588,8 @@ UML_METAMODEL = {
         "Realization": "implements",
         "Dependency": "requires",
         "Conflict": "conflicts-with",
+        "Association": "explicit structural association",
+        "Constraint": "explicit constraint/boundary",
     },
 }
 
@@ -990,6 +994,12 @@ SCIENCE_FIELDS = {
         "tools": ["Mass Spectrometer", "Luminol", "Comparison Microscope", "AFIS"],
         "facets": ["Forensic Biology", "Forensic Chemistry", "Forensic Pathology", "Digital Forensics"],
     },
+    "Astronomy": {
+        "cat": "Natural",
+        "methods": ["Observational Astronomy", "Astrophysical Modeling", "Spectroscopy", "Celestial Mechanics"],
+        "tools": ["Telescopes", "Spectrometers", "Space Observatories", "Planetarium Software"],
+        "facets": ["Astrophysics", "Planetary Science", "Cosmology", "Stellar Astronomy"],
+    },
     "Legal Science": {
         "cat": "Social",
         "methods": ["Legal Hermeneutics", "Comparative Law", "Dogmatic Method", "Empirical Legal Research"],
@@ -997,6 +1007,8 @@ SCIENCE_FIELDS = {
         "facets": ["Jurisprudence", "Constitutional Law", "Criminal Law", "Civil Law", "International Law"],
     },
 }
+
+
 
 
 SCIENTIFIC_PARADIGMS = {
@@ -1016,6 +1028,7 @@ SCIENTIFIC_PARADIGMS = {
     "Structuralism": "Meaning arises through relations within a structure.",
     "Post-Structuralism": "Emphasis on instability, plurality and transformation of structures.",
 }
+
 
 
 STRUCTURAL_MODELS = {
@@ -3287,7 +3300,7 @@ PRIMARY_GRAPH_RELATIONS = {
     "TT", "BT", "NT", "RT", "EQ", "AS", "IN",
     # UML relations
     "Generalization", "Specialization", "Composition", "Aggregation",
-    "Containment", "Realization", "Dependency", "Conflict",
+    "Containment", "Realization", "Dependency", "Conflict", "Association", "Constraint",
     # Explicit logical relations
     "IF-THEN", "AND", "OR", "XOR", "NOT",
 }
@@ -3302,7 +3315,7 @@ THESAURUS_GRAPH_RELATIONS = {
 
 UML_GRAPH_RELATIONS = {
     "Generalization", "Specialization", "Composition", "Aggregation",
-    "Containment", "Realization", "Dependency", "Conflict",
+    "Containment", "Realization", "Dependency", "Conflict", "Association", "Constraint",
 }
 
 
@@ -4485,6 +4498,183 @@ function escapeHtml(value){{
     )
 
 
+def build_innovation_blueprint_graph(graph, max_nodes=80):
+    """Sparse, content-preserving presentation projection.
+
+    Unlike the previous implementation, this does not reduce the graph to only
+    innovations and science. It retains the strongest goal, innovation, IMA/MA,
+    science, process and constraint nodes and their genuine relations.
+    """
+    g = semantic_quality_gate(graph, max_nodes=min(max_nodes or 80, 80), max_degree=7)
+    nodes = g.get("nodes", [])
+    edges = g.get("edges", [])
+    if not nodes:
+        return {"nodes": [], "edges": [], "blueprint_mode": True}
+    role_priority = {
+        "root": 100, "innovation": 95, "goal": 90, "science-domain": 82,
+        "mental-approach": 78, "human-thinking-metamodel": 74,
+        "process": 70, "constraint": 66, "state": 55, "fact": 50,
+        "data": 45, "entity": 42,
+    }
+    for n in nodes:
+        n["blueprint_role"] = n.get("semantic_type") or n.get("layer") or "concept"
+    ranked = sorted(nodes, key=lambda n: (role_priority.get(n.get("semantic_type"), role_priority.get(n.get("layer"), 30)), float(n.get("importance", 0) or 0)), reverse=True)
+    keep = {n["id"] for n in ranked[:min(len(ranked), max_nodes or 80)]}
+    selected_nodes = [n for n in nodes if n["id"] in keep]
+    selected_edges = [e for e in edges if e["source"] in keep and e["target"] in keep]
+    return {"nodes": selected_nodes, "edges": selected_edges, "blueprint_mode": True}
+
+
+# =============================================================================
+# DETERMINISTIC SEMANTIC QUALITY GATE
+# =============================================================================
+
+GRAPH_HARD_MAX_NODES = 80
+GRAPH_MAX_DEGREE = 7
+GRAPH_MAX_EDGES_PER_PAIR = 1
+
+
+def semantic_quality_gate(graph, max_nodes=80, max_degree=7):
+    """Validate, deduplicate, prune and connect a semantic graph without inventing
+    substantive relations. This is deliberately deterministic so the two-model
+    pipeline remains economical and stable with Flash-Lite models.
+    """
+    graph = normalize_graph_data(graph)
+    nodes = graph.get("nodes", [])
+    edges = graph.get("edges", [])
+    if not nodes:
+        return {"nodes": [], "edges": [], "quality_gate": {"nodes": 0, "edges": 0}}
+
+    # Keep the strongest edge for the same ordered semantic relation.
+    dedup = {}
+    for e in edges:
+        key = (e["source"], e["target"], e["rel_type"])
+        if key not in dedup or float(e.get("weight", 1.0)) > float(dedup[key].get("weight", 1.0)):
+            dedup[key] = e
+    edges = list(dedup.values())
+
+    node_map = {n["id"]: n for n in nodes}
+    importance_bonus = {
+        "root": 100, "innovation": 45, "goal": 35, "science-domain": 30,
+        "mental-approach": 28, "human-thinking-metamodel": 25,
+        "process": 20, "constraint": 18, "state": 14, "fact": 12,
+        "data": 10, "entity": 10,
+    }
+
+    degree = {n["id"]: 0 for n in nodes}
+    for e in edges:
+        degree[e["source"]] = degree.get(e["source"], 0) + 1
+        degree[e["target"]] = degree.get(e["target"], 0) + 1
+
+    for n in nodes:
+        n["importance"] = round(
+            float(n.get("importance", 0) or 0)
+            + importance_bonus.get(n.get("semantic_type", ""), 0)
+            + importance_bonus.get(n.get("layer", ""), 0) * 0.25,
+            2,
+        )
+
+    # Prune weak redundant edges first. Essential structural relations are kept.
+    essential = {"TT", "BT", "NT", "Generalization", "Specialization",
+                 "Composition", "Aggregation", "Containment", "Realization",
+                 "Association", "Constraint", "CONSTRAINS", "IF-THEN",
+                 "CAUSES", "TRANSFORMS", "PRODUCES", "ENABLES", "VALIDATES"}
+    edges.sort(key=lambda e: (1 if e.get("rel_type") in essential else 0,
+                             float(e.get("weight", 1.0) or 1.0)), reverse=True)
+
+    kept = []
+    degree = {n["id"]: 0 for n in nodes}
+    pair_count = set()
+    for e in edges:
+        s, t = e["source"], e["target"]
+        pair = tuple(sorted((s, t)))
+        if pair in pair_count:
+            continue
+        # Preserve one strong relation per pair; this is the key anti-hairball rule.
+        if degree.get(s, 0) >= max_degree and node_map[s].get("semantic_type") != "root":
+            continue
+        if degree.get(t, 0) >= max_degree and node_map[t].get("semantic_type") != "root":
+            continue
+        kept.append(e)
+        pair_count.add(pair)
+        degree[s] += 1
+        degree[t] += 1
+
+    # Select nodes by structural importance, then restore graph connectivity with
+    # only the strongest already-existing semantic edge between components.
+    if len(nodes) > max_nodes:
+        root = next((n for n in nodes if n.get("semantic_type") == "root" or n["id"] == "knowledge_root"), None)
+        ranked = sorted(nodes, key=lambda n: float(n.get("importance", 0) or 0), reverse=True)
+        selected_ids = {root["id"]} if root else set()
+        for n in ranked:
+            if len(selected_ids) >= max_nodes:
+                break
+            selected_ids.add(n["id"])
+        nodes = [n for n in nodes if n["id"] in selected_ids]
+        node_map = {n["id"]: n for n in nodes}
+        kept = [e for e in kept if e["source"] in node_map and e["target"] in node_map]
+
+    # If disconnected components remain, connect each to the main component using
+    # a semantically strongest EXISTING edge candidate; otherwise leave it separate.
+    def comps(current_nodes, current_edges):
+        adj = {n["id"]: set() for n in current_nodes}
+        for e in current_edges:
+            if e["source"] in adj and e["target"] in adj:
+                adj[e["source"]].add(e["target"])
+                adj[e["target"]].add(e["source"])
+        out, seen = [], set()
+        for nid in adj:
+            if nid in seen: continue
+            stack, comp = [nid], set()
+            while stack:
+                x = stack.pop()
+                if x in seen: continue
+                seen.add(x); comp.add(x); stack.extend(adj[x] - seen)
+            out.append(comp)
+        return out
+
+    components = comps(nodes, kept)
+    if len(components) > 1:
+        main = max(components, key=len)
+        candidates = [e for e in edges if e["source"] in node_map and e["target"] in node_map]
+        for comp in components:
+            if comp is main: continue
+            best = None
+            for e in candidates:
+                a, b = e["source"], e["target"]
+                if (a in comp) != (b in comp):
+                    score = float(e.get("weight", 1.0) or 1.0)
+                    if e.get("rel_type") in essential: score += 0.4
+                    if best is None or score > best[0]: best = (score, e)
+            if best:
+                e = dict(best[1])
+                pair = tuple(sorted((e["source"], e["target"])))
+                if pair not in {tuple(sorted((x["source"], x["target"]))) for x in kept}:
+                    kept.append(e)
+                    main = main | comp
+
+    # Final deterministic normalization.
+    result = normalize_graph_data({"nodes": nodes, "edges": kept})
+    result["quality_gate"] = {
+        "nodes": len(result["nodes"]),
+        "edges": len(result["edges"]),
+        "max_nodes": max_nodes,
+        "max_degree": max_degree,
+        "artificial_relation_generation": False,
+    }
+    return result
+
+
+def build_quality_summary(phase1_graph, phase2_graph, integrated_graph):
+    def stats(g):
+        g = normalize_graph_data(g)
+        return len(g["nodes"]), len(g["edges"])
+    p1n, p1e = stats(phase1_graph)
+    p2n, p2e = stats(phase2_graph)
+    gn, ge = stats(integrated_graph)
+    return f"Quality Gate: Phase 1 {p1n} nodes/{p1e} edges; Phase 2 {p2n} nodes/{p2e} edges; integrated graph {gn} nodes/{ge} edges. Relations are validated, deduplicated and sparsified deterministically."
+
+
 # =============================================================================
 # AI PROMPTS – NATURAL NARRATIVE SYNTHESIS
 # =============================================================================
@@ -4495,260 +4685,177 @@ def build_phase1_system_prompt():
         for name, meta in HUMAN_THINKING_METAMODEL["nodes"].items()
     )
     ima_relations = "\n".join(
-        f"- {s} --{r}--> {t}"
-        for s, t, r in HUMAN_THINKING_METAMODEL["relations"]
+        f"- {s} --{r}--> {t}" for s, t, r in HUMAN_THINKING_METAMODEL["relations"]
     )
-
     return f"""
-You are the SIS Lead Knowledge Synthesizer, Hierarchologist and IMA Architect.
+You are the SIS Lead Knowledge Synthesizer and IMA Architect.
 
-PHASE 1 — IMA KNOWLEDGE SYNTHESIS
-=================================
-IMA means the COMPLETE METAMODEL OF HUMAN THINKING. Phase 1 is therefore not
-merely a literature summary. It is a professional, structured reconstruction
-of the knowledge space through the full Human Thinking Metamodel (IMA),
-supported by multidimensional thesaurus, polyhierarchy, UML, hierarchical-
-associative logic, operational logic, epistemic relations, system states and
-hierarchography.
+PHASE 1 — COMPLETE METAMODEL OF HUMAN THINKING (IMA)
+=====================================================
+Create a rigorous knowledge substrate, not a generic summary. Reconstruct the
+inquiry through concepts, problems, evidence, relationships, polyhierarchies,
+processes, constraints, states and cross-disciplinary bridges.
 
-The complete IMA architecture is active. Do not select only a few cognitive
-components. Integrate the complete supplied IMA metamodel where relevant:
-
-IMA NODES:
+MANDATORY IMA NODES:
 {ima_nodes}
 
-IMA RELATIONS:
+MANDATORY IMA RELATIONS:
 {ima_relations}
 
-REPORT QUALITY
-==============
-Produce a professional scholarly report suitable for an expert reader.
-Use clear section headings and substantial continuous prose. The report must
-contain, in this order:
+INTERNAL QUALITY TARGETS
+========================
+Optimize for conceptual novelty, systemic architecture, interdisciplinary
+integration and report/graph clarity. These are design targets, not claims of
+external validation. Prefer depth of reasoning over length.
 
-1. Executive synthesis — the central finding of the inquiry.
-2. Scope, assumptions and epistemic status — distinguish established
-   knowledge, interpretation, inference and unresolved uncertainty.
-3. Conceptual and scientific landscape — define and relate the major concepts.
-4. IMA reconstruction — show how the inquiry maps onto the complete human
-   thinking metamodel: identity, memory, mission, vision, goals, problem,
-   ethics, rules, decision-making, problem solving, conflict, knowledge,
-   tools, experience, classification, psychological/social aspects and the
-   hierarchical-associative system.
-5. Polyhierarchical knowledge architecture — explain the most important
-   simultaneous taxonomic, part-whole, process and associative structures.
-6. Operational and systemic logic — explain inputs, processes, transformations,
-   outputs, states, feedback, constraints and causal mechanisms.
-7. Cross-disciplinary synthesis — identify meaningful bridges among the
-   selected sciences, paradigms and structural models.
-8. Critical assessment — expose contradictions, gaps, assumptions and
-   scientific/operational limitations.
-9. Knowledge integration and synthesis — explicitly distinguish the most
-   important convergences, complementarities and tensions among concepts,
-   scientific fields, paradigms, structural models and the IMA architecture.
-10. Evidence, limitations and unresolved questions — identify what is well
-    supported, what is inferential, what remains uncertain and what should be
-    validated in subsequent work.
-11. Strategic knowledge implications — identify the knowledge structures,
-    relationships and mechanisms that Phase 2 should transform, without
-    proposing the innovations themselves.
-12. Conclusion — provide a substantive synthesis of the inquiry, including
-    the most important implications for subsequent innovation work.
+ANALYTICAL CHAIN
+================
+For every major concept, explain: WHAT it is; WHY it matters; WHAT it connects
+to; and WHAT follows from that connection. Distinguish evidence, interpretation,
+inference and uncertainty. Identify contradictions and knowledge gaps explicitly.
 
-REPORT DEPTH
-===========
-The report should be somewhat more exhaustive than a conventional summary.
-Develop the reasoning behind the major relationships instead of merely naming
-them. Explain why the central concepts belong together, how the selected
-sciences complement one another, how the IMA elements interact, and where
-the architecture reveals important gaps or opportunities. Prefer analytical
-depth and meaningful synthesis over repetition. The final report should give
-the reader a coherent intellectual model of the inquiry, not merely a list of
-components.
+INTERDISCIPLINARY SYNTHESIS
+===========================
+Do not merely list disciplines. For each important bridge use the logic:
+Science A contribution + Science B contribution → shared concept or mechanism →
+complementarity/tension → new synthesis or knowledge consequence.
 
-Do NOT solve the innovation objective in Phase 1. Phase 1 creates the
-knowledge substrate from which Phase 2 will innovate.
+POLYHIERARCHICAL SYSTEM LOGIC
+=============================
+Represent vertical hierarchy and lateral association simultaneously. Preserve
+meaningful taxonomic, part-whole, epistemic, operational, temporal and systemic
+relations. UML Association and explicit Constraint are first-class relations.
+Do not manufacture relations to increase graph density.
+
+REPORT — EXACT ORDER
+====================
+1. Executive synthesis
+2. Scope, assumptions and epistemic status
+3. Conceptual and scientific landscape
+4. IMA reconstruction
+5. Polyhierarchical knowledge architecture
+6. Operational and systemic logic
+7. Cross-disciplinary synthesis
+8. Critical assessment
+9. Knowledge integration and synthesis
+10. Evidence, limitations and unresolved questions
+11. Strategic knowledge implications for Phase 2
+12. Conclusion
+
+Phase 1 MUST NOT solve the innovation objective. It identifies the structured
+knowledge substrate that Phase 2 will transform.
 
 STYLE
 =====
-Professional, precise, analytical and readable. Avoid keyword dumps and
-telegraphic prose. Bullets may be used only for compact metadata; the
-substantive report must be continuous academic prose.
+Professional, precise, analytical, readable. Use continuous scholarly prose;
+use tables only where they materially improve comparison. Avoid keyword dumps.
 
 SEMANTIC GRAPH
-==============
-After the report, output the exact marker:
-
+=============
+After the report output exactly:
 ### IMA_SEMANTIC_GRAPH_JSON
+Then valid JSON with nodes and edges. Generate 18–45 high-information nodes,
+not every word. Prefer nodes that carry conceptual, structural, interdisciplinary
+or operational information. The graph is a semantic architecture, not a mind map.
 
-Then output valid JSON with:
-{{
-  "nodes": [...],
-  "edges": [...]
-}}
+Node fields: id, label, shape, color, description, layer, level, semantic_type,
+state, source_phase.
+Edge fields: id, source, target, rel_type, label, weight, direction.
 
-The IMA graph should contain approximately 18–45 of the MOST IMPORTANT
-concepts from the report, not every word. It must represent actual concepts
-from the report and the IMA architecture.
+Use only semantically justified relations. UML Association and Constraint must
+be available where genuinely appropriate. Never add an edge solely to satisfy a
+quota. Keep node degree moderate and avoid duplicate relations.
 
-Every node:
-id, label, shape, color, description, layer, level, semantic_type, state,
-source_phase
-
-Every edge:
-id, source, target, rel_type, label, weight, direction
-
-Use a balanced mixture of TT, BT, NT, RT, EQ, AS, IN, UML relations,
-logical operators, operational relations and feedback relations where
-semantically justified. Never manufacture a relation merely to satisfy a
-quota.
-
-GEOMETRY:
-star=mission/vision/goal; hexagon=science/domain; diamond=transformation or
+Geometry: star=mission/vision/goal; hexagon=science/domain; diamond=transformation/
 synthesis; triangle=process/method; octagon=rule/constraint/conflict;
 ellipse=human/agent; rectangle=concept/fact/evidence; round-rectangle=state;
-barrel=data/evidence repository.
-
-LEVEL:
-Macro, Meso or Micro.
-
-The JSON must be the final content of the response.
-Do not put markdown inside JSON. No comments. No trailing commas.
+barrel=data/evidence repository. Level = Macro, Meso or Micro.
 
 KNOWLEDGE ARCHITECTURE REFERENCE
 ================================
-Use the architecture context supplied with the user input as the governing
-semantic vocabulary.
+Use the architecture context supplied with the user input as governing vocabulary.
 """
 
 
 def build_phase2_system_prompt(architecture_context):
-    ma_nodes = "\n".join(
-        f"- {name}: {description}"
-        for name, description in MENTAL_APPROACHES_ONTOLOGY.items()
-    )
-
+    ma_nodes = "\n".join(f"- {n}: {d}" for n, d in MENTAL_APPROACHES_ONTOLOGY.items())
     return f"""
-You are the SIS Lead Innovation Architect, MA Architect and Hierarchographist.
+You are the SIS Lead Innovation Architect and MA Architect.
 
-PHASE 2 — MA INNOVATION ARCHITECTURE
-====================================
-MA means ALL MENTAL APPROACHES. Phase 2 must therefore activate the complete
-Mental Approaches architecture, not merely the user-selected ideation
-techniques. The selected ideation frameworks are supplementary tools; they do
-not replace MA.
+PHASE 2 — MENTAL APPROACHES (MA) → INNOVATION ARCHITECTURE
+===========================================================
+Transform the completed Phase 1 IMA substrate into a small portfolio of genuinely
+differentiated innovations. MA means the complete Mental Approaches architecture.
 
 COMPLETE MENTAL APPROACHES
-==========================
 {ma_nodes}
 
-PURPOSE
-=======
-Use the completed Phase 1 IMA knowledge synthesis as the knowledge substrate
-and transform it exclusively in response to the explicit Innovation Objective.
-Do not repeat Phase 1 as background. Find what can be invented, recombined,
-reframed, improved, operationalized or implemented.
+CORE TRANSFORMATION CHAIN
+=========================
+IMA knowledge → unmet need/contradiction → Mental Approaches → recombination →
+novel mechanism → innovation architecture → prototype/pilot → validation →
+implementation → scalable systemic end-state.
 
-VISIONARY + PRACTICAL INNOVATION DISCIPLINE
-=============================================
-Every proposed innovation must satisfy BOTH criteria simultaneously:
-1. VISIONARY: it should create a genuinely new configuration, capability,
-relationship, service, process, technology, organizational arrangement or
-conceptual architecture that could have meaningful long-term impact.
-2. PRACTICAL: it must have a credible path from the present situation to a
-working prototype, pilot, service, process or deployable capability.
+NOVELTY DISCIPLINE
+==================
+Every innovation MUST state:
+- the specific unmet need/problem;
+- the contradiction or knowledge/architecture gap it resolves;
+- the novelty claim;
+- the novelty mechanism;
+- the novelty boundary: what is NOT claimed to be novel;
+- why it is materially different from the other proposed innovations.
+Do not produce generic "AI platform", "dashboard", "app" or "collaboration"
+ideas unless the mechanism and system architecture are genuinely distinctive.
+Differentiate the portfolio across technological, methodological, organizational,
+knowledge/information and systemic innovation types where appropriate.
 
-The objective is NOT to choose between visionary and practical ideas. The
-strongest innovations should be both: ambitious in destination and concrete
-in execution. Do not confuse visionary with speculative. Avoid science-fiction
-claims, unsupported technological promises and impossible implementation
-assumptions.
+INTERDISCIPLINARY INTEGRATION
+============================
+For each innovation explain concrete contributions from at least two relevant
+fields using: field A contribution + field B contribution → shared mechanism →
+new synthesis → innovation consequence. Naming disciplines without explaining
+their causal contribution does not count as integration.
 
-For each major innovation, explicitly reason about:
-- the unmet need, user or system problem;
-- novelty and distinctive value;
-- the mechanism of action;
-- the Mental Approaches that generated and shaped it;
-- the sciences and Phase 1 concepts it recombines;
-- required knowledge, technology, data and organizational capabilities;
-- a concrete first prototype, pilot or proof-of-concept;
-- implementation dependencies and prerequisites;
-- technical, organizational, economic, ethical/legal and temporal feasibility;
-- principal risks and failure modes;
-- measurable success criteria and validation method;
-- responsible actor, team or organizational owner where identifiable;
-- first executable next step;
-- near-term (0–2 years), medium-term (3–5 years) and long-term (6–10+ years)
-development path;
-- the visionary end-state if the innovation succeeds at scale.
+PRACTICALITY
+============
+For each innovation specify user/problem, mechanism, MA contribution, reused IMA
+concepts, science contributions, requirements, prototype/pilot, dependencies,
+technical/organizational/economic/ethical-legal/temporal feasibility, risks,
+mitigation, measurable validation, owner, first executable step, 0–2 year,
+3–5 year and 6–10+ year path, and visionary end-state.
 
-Each innovation should therefore be readable as a mini blueprint: WHAT is
-being created, WHY it matters, HOW it works, WHAT is needed to build it,
-HOW it can first be tested, HOW success is measured, and WHAT larger future
-state it could enable.
+REPORT ORDER
+============
+1. Executive innovation thesis
+2. Transformation logic from Phase 1 to Phase 2
+3. Opportunity landscape and unmet potential
+4. MA synthesis
+5. Innovation portfolio — 3–7 strongly differentiated innovations
+6. Detailed innovation blueprints
+7. Systemic and interdisciplinary integration
+8. Feasibility, risks and validation
+9. Portfolio comparison and prioritization
+10. Strategic recommendation
+11. Conclusion
 
-PROFESSIONAL PHASE 2 REPORT
-===========================
-Produce a professional innovation strategy report with these sections:
-
-1. Executive innovation thesis.
-2. Transformation logic from Phase 1 to Phase 2.
-3. Opportunity landscape and unmet potential.
-4. MA synthesis — explicitly show how multiple Mental Approaches interact,
-   with ALL Mental Approaches considered and the most productive ones selected
-   for each innovation.
-5. Innovation portfolio — present 3–7 genuinely differentiated solutions.
-6. For each solution: concept, novelty, mechanism, value, MA combination,
-   prerequisites, feasibility, risks, validation and implementation path.
-7. Vision-to-realization roadmap — distinguish near (0–2 years), medium
-   (3–5 years) and long (6–10+ years) horizons where appropriate.
-8. Portfolio comparison and prioritization.
-9. Strategic recommendation.
-10. Conclusion.
-
-Use concise tables only where they materially improve comparison; otherwise
-use strong continuous analytical prose.
-
-FEASIBILITY DISCIPLINE
-======================
-Rate each innovation on a 1–5 scale for:
-technical, organizational, economic, ethical/legal and temporal feasibility.
-Give an overall feasibility judgment and explain it. An innovation with low
-feasibility may remain in the visionary portfolio, but it must be explicitly
-labelled as exploratory rather than presented as immediately implementable.
+Do not repeat Phase 1 as a literature review. Reuse its important concepts and
+explicitly trace every innovation back to IMA knowledge.
 
 SEMANTIC GRAPH
-==============
-After the report, output:
-
+=============
+After the report output exactly:
 ### MA_SEMANTIC_GRAPH_JSON
+Then valid JSON. Use 20–55 high-information nodes, not a mind map. Every diamond
+innovation node MUST mention at least three genuinely used Mental Approaches in
+its description. Include relevant IMA concepts, MA nodes, science fields,
+processes, states, constraints and validation/evidence nodes only when useful.
+UML Association and explicit Constraint are first-class semantic options.
+Never manufacture edges merely for visual completeness.
 
-Then valid JSON with:
-{{
-  "nodes": [...],
-  "edges": [...]
-}}
-
-The MA graph should contain approximately 20–55 of the most important
-innovation concepts, IMA concepts reused by the innovation, Mental Approaches,
-processes, states, constraints, goals and evidence. It must explicitly
-connect innovations back to concepts from Phase 1.
-
-Every diamond innovation node MUST contain in its description at least three
-Mental Approaches used in its synthesis. Preferably identify more when they
-genuinely contributed.
-
-Every node:
-id, label, shape, color, description, layer, level, semantic_type, state,
-source_phase
-
-Every edge:
-id, source, target, rel_type, label, weight, direction
-
-Use semantically justified thesaurus, UML, logical, operational and feedback
-relations. Do not force artificial relation diversity.
-
-The graph is NOT a mind map. It is a polyhierarchical semantic architecture.
+Node fields: id, label, shape, color, description, layer, level, semantic_type,
+state, source_phase.
+Edge fields: id, source, target, rel_type, label, weight, direction.
 
 KNOWLEDGE ARCHITECTURE REFERENCE
 ================================
@@ -4782,25 +4889,13 @@ with st.sidebar:
         key="google_api_key_v230",
     )
 
-    st.header("🤗 HUGGING FACE")
-
-    huggingface_api_key = st.text_input(
-        "Hugging Face API Key",
-        type="password",
-        key="hf_api_key_v230",
-    )
-
-    st.caption(
-        "Qwen2.5-72B-Instruct uporablja Hugging Face Inference Providers."
-    )
-
     st.subheader("🤖 Sequential Model Selection")
 
     p1_label = st.selectbox(
         "Phase 1 Model — IMA Knowledge Synthesis",
         GEMINI_MODEL_LABELS,
-        index=1,
-        key="p1_model_v230",
+        index=3,
+        key="p1_model_v250",
     )
 
     p1_model = GEMINI_MODEL_CATALOG[p1_label]
@@ -4808,8 +4903,8 @@ with st.sidebar:
     p2_label = st.selectbox(
         "Phase 2 Model — MA Innovation Architecture",
         GEMINI_MODEL_LABELS,
-        index=0,
-        key="p2_model_v230",
+        index=2,
+        key="p2_model_v250",
     )
 
     p2_model = GEMINI_MODEL_CATALOG[p2_label]
@@ -4835,18 +4930,14 @@ with st.sidebar:
     graph_node_limit = st.slider(
         "🔢 Graph nodes to display",
         min_value=10,
-        max_value=200,
-        value=80,
+        max_value=80,
+        value=50,
         step=5,
-        key="graph_node_limit_v231",
+        key="graph_node_limit_v250",
         help="Limits the number of displayed nodes while preserving the most structurally important nodes and their valid relations. Changing this slider updates the graph immediately, including after a synthesis/innovation run.",
     )
 
-    st.caption(
-        "Polyhierarchy + semantic association + operational transformations "
-        "+ system states. Use the slider to control graph density — it "
-        "applies live to the current synthesis/innovation graph as well."
-    )
+    st.caption("Maximum 80 nodes. The graph is semantically pruned; node count is a hard visual limit, not a target.")
 
     st.divider()
 
@@ -5265,18 +5356,8 @@ if st.button(
     key="execute_v2400",
 ):
 
-    p1_is_hf = p1_model.startswith("hf:")
-    p2_is_hf = p2_model.startswith("hf:")
-
-    google_required = (not p1_is_hf or not p2_is_hf)
-    hf_required = (p1_is_hf or p2_is_hf)
-
-    if google_required and not google_api_key:
-        st.error("❌ Google AI API key is required for the selected Google model.")
-        st.stop()
-
-    if hf_required and not huggingface_api_key:
-        st.error("❌ Hugging Face API key is required for Qwen2.5-72B-Instruct.")
+    if not google_api_key:
+        st.error("❌ Google AI (Gemini/Gemma) API key is required.")
         st.stop()
 
     if not user_query.strip():
@@ -5357,7 +5438,7 @@ The supplementary ideation frameworks above are not a substitute for MA.
         # ---------------------------------------------------------------------
         p1_provider_name = (
             "Hugging Face / Qwen2.5-72B-Instruct"
-            if p1_is_hf else f"Google / {p1_model}"
+            f"Google / {p1_model}"
         )
 
         with st.spinner(
@@ -5369,28 +5450,22 @@ The supplementary ideation frameworks above are not a substitute for MA.
                 build_phase1_system_prompt(),
                 architecture_context + "\n\n" + full_input,
                 temperature=0.40,
-                top_p=0.92 if p1_is_hf else 0.88,
-                huggingface_api_key=huggingface_api_key,
+                top_p=0.85,
+                huggingface_api_key=None,
             )
 
         phase1_graph = extract_json_object(phase1_result) or {"nodes": [], "edges": []}
         phase1_graph = normalize_graph_data(phase1_graph)
 
-        # Deterministic IMA enrichment.
-        phase1_graph = enrich_graph_with_architecture(
-            phase1_graph, selected_sciences
-        )
-        phase1_graph = enrich_graph_with_human_thinking_metamodel(
-            phase1_graph
-        )
-        phase1_graph = normalize_graph_data(phase1_graph)
+        # Deterministic Quality Gate — validate without inventing semantic relations.
+        phase1_graph = semantic_quality_gate(phase1_graph, max_nodes=45, max_degree=7)
 
         # ---------------------------------------------------------------------
         # PHASE 2 — MA
         # ---------------------------------------------------------------------
         p2_provider_name = (
             "Hugging Face / Qwen2.5-72B-Instruct"
-            if p2_is_hf else f"Google / {p2_model}"
+            f"Google / {p2_model}"
         )
 
         phase1_graph_for_prompt = json.dumps(
@@ -5449,22 +5524,15 @@ creating an unrelated graph.
                 phase2_system,
                 phase2_input,
                 temperature=0.85,
-                top_p=0.92 if p2_is_hf else 0.90,
-                huggingface_api_key=huggingface_api_key,
+                top_p=0.88,
+                huggingface_api_key=None,
             )
 
         phase2_graph = extract_json_object(phase2_result) or {"nodes": [], "edges": []}
         phase2_graph = normalize_graph_data(phase2_graph)
 
-        # Deterministic MA enrichment: the complete MA architecture is always
-        # present, while the selected techniques remain supplementary.
-        phase2_graph = enrich_graph_with_architecture(
-            phase2_graph, selected_sciences
-        )
-        phase2_graph = enrich_graph_with_mental_approaches(
-            phase2_graph, selected_techniques
-        )
-        phase2_graph = normalize_graph_data(phase2_graph)
+        # Deterministic Quality Gate — preserve AI-generated semantic content.
+        phase2_graph = semantic_quality_gate(phase2_graph, max_nodes=55, max_degree=7)
 
         # ---------------------------------------------------------------------
         # INTEGRATED GRAPH — BOTH REPORTS
@@ -5474,21 +5542,10 @@ creating an unrelated graph.
             phase2_graph,
         )
 
-        integrated_graph = enrich_graph_with_architecture(
-            integrated_graph,
-            selected_sciences,
-        )
-        integrated_graph = enrich_graph_with_human_thinking_metamodel(
-            integrated_graph,
-        )
-        integrated_graph = enrich_graph_with_mental_approaches(
-            integrated_graph,
-            selected_techniques,
-        )
-        integrated_graph = normalize_graph_data(integrated_graph)
-        integrated_graph = connect_isolated_components(integrated_graph)
+        # Final semantic integration: no quota-based edge generation.
+        integrated_graph = semantic_quality_gate(integrated_graph, max_nodes=GRAPH_HARD_MAX_NODES, max_degree=GRAPH_MAX_DEGREE)
         integrated_graph = rank_integrated_graph(integrated_graph)
-        integrated_graph = normalize_graph_data(integrated_graph)
+        integrated_graph = semantic_quality_gate(integrated_graph, max_nodes=GRAPH_HARD_MAX_NODES, max_degree=GRAPH_MAX_DEGREE)
 
         # Professional report extraction: remove graph payloads from prose.
         report_phase1 = phase1_result
@@ -5507,6 +5564,8 @@ creating an unrelated graph.
         report_phase2 = re.sub(r"```(?:json)?", "", report_phase2, flags=re.I).strip()
 
 
+        quality_summary = build_quality_summary(phase1_graph, phase2_graph, integrated_graph)
+
         integrated_report = f"""
 ## 🧠 PHASE 1 — IMA KNOWLEDGE SYNTHESIS
 ### Complete Metamodel of Human Thinking
@@ -5519,6 +5578,12 @@ creating an unrelated graph.
 ### All Mental Approaches → Visionary but Realizable Solutions
 
 {report_phase2}
+
+---
+
+### Deterministic Quality Gate
+
+{quality_summary}
 
 """
 
@@ -5760,9 +5825,7 @@ if (
 
         with tab:
 
-            st.markdown(
-                f"**{view.upper()} VIEW:** {description}"
-            )
+            st.markdown(f"**{view.upper()} VIEW**")
 
             render_cytoscape_network(
                 gallery_base,
