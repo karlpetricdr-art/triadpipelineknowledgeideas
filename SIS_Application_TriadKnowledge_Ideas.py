@@ -1139,57 +1139,6 @@ const cy = cytoscape({{
 }});
 </script></body></html>"""
 
-def build_pdf_report(report_text, graph_elements, perspective):
-    """Generate a PDF containing the textual report and a graph visualization."""
-    from reportlab.lib.pagesizes import A4, landscape
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib.units import cm
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
-    from reportlab.pdfbase.ttfonts import TTFont
-    from reportlab.pdfbase import pdfmetrics
-    from reportlab.lib.utils import ImageReader
-    import matplotlib.pyplot as plt
-    import networkx as nx
-
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=1.5*cm, leftMargin=1.5*cm,
-                            topMargin=1.5*cm, bottomMargin=1.5*cm)
-    styles = getSampleStyleSheet()
-    styles.add(ParagraphStyle(name="SmallReport", parent=styles["BodyText"], fontSize=8.5, leading=12))
-    story = [Paragraph("SIS Universal Knowledge Synthesizer Report", styles["Title"])]
-    plain = _report_plain_text(report_text)
-    for block in re.split(r'\n\s*\n', plain):
-        if block.strip():
-            safe = html.escape(block.strip()).replace("\n", "<br/>")
-            story.append(Paragraph(safe, styles["SmallReport"]))
-            story.append(Spacer(1, 0.18*cm))
-
-    story.append(PageBreak())
-    story.append(Paragraph(f"Hybrid Semantic System Map — {perspective.upper()} VIEW", styles["Heading2"]))
-    G = nx.DiGraph()
-    nodes = [e["data"] for e in graph_elements if "source" not in e.get("data", {})]
-    edges = [e["data"] for e in graph_elements if "source" in e.get("data", {})]
-    for n in nodes: G.add_node(n.get("id"), label=n.get("label","Node"))
-    for e in edges:
-        if e.get("source") in G and e.get("target") in G: G.add_edge(e["source"], e["target"], label=e.get("rel_type",""))
-    fig, ax = plt.subplots(figsize=(10,7))
-    if len(G):
-        pos = nx.spring_layout(G, seed=42, k=max(0.4, 2.0/(len(G)**0.5)), iterations=80)
-        nx.draw_networkx_nodes(G, pos, node_size=850, ax=ax)
-        nx.draw_networkx_edges(G, pos, arrows=True, alpha=0.6, ax=ax)
-        nx.draw_networkx_labels(G, pos, labels=nx.get_node_attributes(G,"label"), font_size=6, ax=ax)
-    ax.set_axis_off()
-    img = io.BytesIO()
-    fig.savefig(img, format="png", dpi=180, bbox_inches="tight", facecolor="white")
-    plt.close(fig)
-    img.seek(0)
-    story.append(Spacer(1, 0.2*cm))
-    from reportlab.platypus import Image
-    story.append(Image(img, width=17*cm, height=11.5*cm))
-    doc.build(story)
-    buffer.seek(0)
-    return buffer.getvalue()
-
 # --- MAIN PAGE CONTENT ---
 st.markdown('<h1 class="main-header-gradient">🧱 SIS Universal Knowledge Synthesizer</h1>', unsafe_allow_html=True)
 st.markdown(f"**Sequential Multi-Engine Pipeline** | Current Operating Date: **{SYSTEM_DATE}**")
@@ -1561,6 +1510,12 @@ GRAPH LIMITS:
 - Every edge must connect existing node IDs.
 - No artificial bridge edges.
 - No duplicate or semantically redundant edges.
+- MANDATORY CONNECTIVITY: every single node must appear in at least one edge —
+  zero isolated/orphan nodes are allowed. Before finishing, mentally verify that
+  the node set and edge set together form ONE connected graph (no separate
+  disconnected islands). If a node would otherwise be isolated, connect it with
+  the most semantically honest relation available (thesaurus RT/AS is usually
+  the safe default for a loose but real connection).
 
 GEOMETRY:
 star=Goals, hexagon=Science Fields, diamond=Innovations,
@@ -1748,6 +1703,35 @@ Do not place explanatory text after the JSON object.
                         }
                     })
 
+            # --- CONNECTIVITY SAFETY NET: guarantee no isolated nodes ---
+            # Even with the prompt instruction, the model can occasionally leave
+            # a node without any edge. We connect any orphan node to the most
+            # recently processed node using a neutral thesaurus "RT" (Related
+            # Term) relation, so the rendered graph is always one connected whole.
+            all_node_ids = [item["id"] for item in nodes_to_link]
+            connected_ids = set()
+            for el in final_elements:
+                d = el.get("data", {})
+                if "source" in d:
+                    connected_ids.add(d.get("source"))
+                    connected_ids.add(d.get("target"))
+            prev_id = None
+            for nid in all_node_ids:
+                if nid not in connected_ids and prev_id is not None:
+                    final_elements.append({
+                        "data": {
+                            "id": f"auto_link_{nid}",
+                            "source": prev_id,
+                            "target": nid,
+                            "rel_type": "RT",
+                            "color": "#2A9D8F",
+                            "weight": 1.0,
+                            "label": "RT"
+                        }
+                    })
+                    connected_ids.add(nid)
+                prev_id = nid
+
             # --- RELATION-FAMILY DIAGNOSTIC (Thesaurus vs UML vs Logic) ---
             THESAURUS_TYPES = {"TT", "BT", "NT", "RT", "EQ", "AS", "IN"}
             LOGIC_TYPES = {"AND", "OR", "XOR", "NOT", "IF-THEN"}
@@ -1858,31 +1842,16 @@ Do not place explanatory text after the JSON object.
                     container_id=f"cy_{int(time.time())}"
                 )
 
-                # --- REPORT EXPORT: COMPLETE REPORT + GRAPH ---
+                # --- REPORT EXPORT: COMPLETE REPORT + GRAPH (HTML only) ---
                 export_html = build_html_report(final_interactive_report, final_elements, graph_perspective)
-                export_col1, export_col2 = st.columns(2)
-                with export_col1:
-                    st.download_button(
-                        "🌐 EXPORT COMPLETE REPORT + GRAPH (HTML)",
-                        data=export_html,
-                        file_name=f"SIS_Universal_Knowledge_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html",
-                        mime="text/html",
-                        use_container_width=True,
-                        key="export_complete_html"
-                    )
-                with export_col2:
-                    try:
-                        export_pdf = build_pdf_report(final_interactive_report, final_elements, graph_perspective)
-                        st.download_button(
-                            "📄 EXPORT COMPLETE REPORT + GRAPH (PDF)",
-                            data=export_pdf,
-                            file_name=f"SIS_Universal_Knowledge_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
-                            mime="application/pdf",
-                            use_container_width=True,
-                            key="export_complete_pdf"
-                        )
-                    except Exception as export_exc:
-                        st.warning(f"⚠️ PDF export is unavailable in this environment: {export_exc}")
+                st.download_button(
+                    "🌐 EXPORT COMPLETE REPORT + GRAPH (HTML)",
+                    data=export_html,
+                    file_name=f"SIS_Universal_Knowledge_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html",
+                    mime="text/html",
+                    use_container_width=True,
+                    key="export_complete_html"
+                )
 
                 # --- NOVO: SHRANJEVANJE ZA GALERIJO (DODANO NA KONEC POROČILA) ---
                 st.session_state.final_graph_elements = final_elements
