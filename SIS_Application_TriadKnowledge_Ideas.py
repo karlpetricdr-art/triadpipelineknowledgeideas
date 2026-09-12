@@ -19,7 +19,7 @@ import streamlit.components.v1 as components
 # =============================================================================
 
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v25.0.0-IMA-MA-SEMANTIC-QUALITY-GATE"
+VERSION_CODE = "v26.0.0-SEMANTIC-ARCHITECTURE-HARDENED"
 
 # =============================================================================
 # MODEL CATALOG
@@ -3298,11 +3298,15 @@ def build_innovation_blueprint_graph(graph, max_nodes=80):
 PRIMARY_GRAPH_RELATIONS = {
     # Thesaurus / hierarchical-associative relations
     "TT", "BT", "NT", "RT", "EQ", "AS", "IN",
-    # UML relations
+    # UML / structural relations
     "Generalization", "Specialization", "Composition", "Aggregation",
     "Containment", "Realization", "Dependency", "Conflict", "Association", "Constraint",
     # Explicit logical relations
     "IF-THEN", "AND", "OR", "XOR", "NOT",
+    # Operational architecture relations needed to make the pipeline visible
+    "CAUSES", "ENABLES", "TRANSFORMS", "PRODUCES", "CONSUMES", "FEEDS",
+    "FEEDBACK", "POSITIVE-FEEDBACK", "NEGATIVE-FEEDBACK", "TRIGGERS",
+    "PRECEDES", "CONSTRAINS", "MEASURES", "VALIDATES",
 }
 
 LOGICAL_GRAPH_RELATIONS = {
@@ -4499,30 +4503,132 @@ function escapeHtml(value){{
 
 
 def build_innovation_blueprint_graph(graph, max_nodes=80):
-    """Sparse, content-preserving presentation projection.
+    """Build a readable system-architecture projection from genuine graph content.
 
-    Unlike the previous implementation, this does not reduce the graph to only
-    innovations and science. It retains the strongest goal, innovation, IMA/MA,
-    science, process and constraint nodes and their genuine relations.
+    This presentation layer deliberately avoids artificial science↔innovation
+    edges, forced modules and three-row star topologies. It selects a balanced
+    set of semantically important nodes, preserves only relations actually present
+    in the integrated graph, and then lets Cytoscape render the architecture by
+    Macro/Meso/Micro level.
     """
-    g = semantic_quality_gate(graph, max_nodes=min(max_nodes or 80, 80), max_degree=7)
-    nodes = g.get("nodes", [])
-    edges = g.get("edges", [])
-    if not nodes:
-        return {"nodes": [], "edges": [], "blueprint_mode": True}
-    role_priority = {
-        "root": 100, "innovation": 95, "goal": 90, "science-domain": 82,
-        "mental-approach": 78, "human-thinking-metamodel": 74,
-        "process": 70, "constraint": 66, "state": 55, "fact": 50,
-        "data": 45, "entity": 42,
-    }
+    graph = rank_integrated_graph(normalize_graph_data(graph))
+    if not graph.get("nodes"):
+        return {"nodes": [], "edges": [], "blueprint_mode": False}
+
+    nodes = graph["nodes"]
+    edges = graph["edges"]
+    node_map = {n["id"]: n for n in nodes}
+
+    def category(n):
+        st = (n.get("semantic_type") or "").lower()
+        layer = (n.get("layer") or "").lower()
+        shape = (n.get("shape") or "").lower()
+        if st == "root" or n.get("id") == "knowledge_root": return "root"
+        if layer == "goal" or shape == "star" or st == "goal": return "goal"
+        if layer == "innovation" or st == "innovation" or shape == "diamond": return "innovation"
+        if st in {"process", "method"} or layer == "process" or shape == "triangle": return "process"
+        if st in {"constraint", "rule"} or layer == "constraint" or shape == "octagon": return "constraint"
+        if st in {"science-domain", "domain", "science"} or layer == "domain" or shape == "hexagon": return "science"
+        if st in {"mental-approach", "mental-approaches-hub"}: return "ma"
+        if st == "human-thinking-metamodel": return "ima"
+        if layer in {"data", "evidence"} or st in {"data", "fact", "evidence"} or shape == "barrel": return "evidence"
+        if layer == "state" or st == "state" or shape == "round-rectangle": return "state"
+        return "concept"
+
+    groups = {}
     for n in nodes:
-        n["blueprint_role"] = n.get("semantic_type") or n.get("layer") or "concept"
-    ranked = sorted(nodes, key=lambda n: (role_priority.get(n.get("semantic_type"), role_priority.get(n.get("layer"), 30)), float(n.get("importance", 0) or 0)), reverse=True)
-    keep = {n["id"] for n in ranked[:min(len(ranked), max_nodes or 80)]}
-    selected_nodes = [n for n in nodes if n["id"] in keep]
-    selected_edges = [e for e in edges if e["source"] in keep and e["target"] in keep]
-    return {"nodes": selected_nodes, "edges": selected_edges, "blueprint_mode": True}
+        groups.setdefault(category(n), []).append(n)
+
+    # Balanced quotas stop one category (especially a root or science hub) from
+    # swallowing the whole graph. The exact graph size remains user-controlled.
+    quotas = {
+        "root": 1, "goal": 2, "innovation": 5, "concept": 8, "ima": 5,
+        "ma": 5, "science": 5, "process": 6, "constraint": 4,
+        "evidence": 4, "state": 3,
+    }
+
+    def score(n):
+        base = float(n.get("importance", 0) or 0)
+        if n.get("source_phase") == "IMA+MA": base += 20
+        if n.get("level") == "Macro": base += 7
+        if n.get("level") == "Meso": base += 4
+        # Prefer nodes that actually participate in several relations, but do not
+        # reward extreme hubs disproportionately.
+        deg = sum(1 for e in edges if n["id"] in {e["source"], e["target"]})
+        base += min(deg, 5) * 3
+        return base
+
+    selected = []
+    selected_ids = set()
+    for cat, quota in quotas.items():
+        candidates = sorted(groups.get(cat, []), key=score, reverse=True)
+        for n in candidates[:quota]:
+            if len(selected) >= max_nodes:
+                break
+            if n["id"] not in selected_ids:
+                selected.append(n)
+                selected_ids.add(n["id"])
+
+    # Add strongest bridge nodes until the display budget is reached.
+    adjacency = {n["id"]: [] for n in nodes}
+    for e in edges:
+        if e["source"] in adjacency and e["target"] in adjacency:
+            adjacency[e["source"]].append((e["target"], e))
+            adjacency[e["target"]].append((e["source"], e))
+
+    frontier = []
+    for n in selected:
+        for other, e in adjacency.get(n["id"], []):
+            if other in selected_ids: continue
+            on = node_map[other]
+            bridge_bonus = 18 if category(on) != category(n) else 0
+            phase_bonus = 15 if {n.get("source_phase"), on.get("source_phase")} == {"IMA", "MA"} else 0
+            frontier.append((score(on) + bridge_bonus + phase_bonus + float(e.get("weight", 1.0) or 1.0) * 8, other))
+
+    while frontier and len(selected) < min(max_nodes, 60):
+        frontier.sort(reverse=True)
+        _, nid = frontier.pop(0)
+        if nid in selected_ids: continue
+        selected_ids.add(nid)
+        selected.append(node_map[nid])
+        for other, e in adjacency.get(nid, []):
+            if other not in selected_ids:
+                frontier.append((score(node_map[other]) + float(e.get("weight", 1.0) or 1.0) * 8, other))
+
+    # If there is no root in the generated graph, do not invent one. The graph is
+    # still a valid architecture and the renderer can use its real Macro nodes.
+    selected_edges = [
+        dict(e) for e in edges
+        if e["source"] in selected_ids and e["target"] in selected_ids
+    ]
+
+    # Final sparse degree control for presentation only. Preserve the strongest
+    # genuine relation per unordered pair.
+    selected_edges.sort(key=lambda e: float(e.get("weight", 1.0) or 1.0), reverse=True)
+    degree = {nid: 0 for nid in selected_ids}
+    pair_seen = set()
+    final_edges = []
+    for e in selected_edges:
+        pair = tuple(sorted((e["source"], e["target"])))
+        if pair in pair_seen:
+            continue
+        if degree[e["source"]] >= 6 or degree[e["target"]] >= 6:
+            continue
+        pair_seen.add(pair)
+        final_edges.append(e)
+        degree[e["source"]] += 1
+        degree[e["target"]] += 1
+
+    # Preserve the level semantics in the node metadata; Cytoscape hierarchical
+    # and concentric layouts use this directly.
+    out_nodes = []
+    for n in selected:
+        c = category(n)
+        copied = dict(n)
+        copied["blueprint_role"] = c
+        out_nodes.append(copied)
+
+    return {"nodes": out_nodes, "edges": final_edges, "blueprint_mode": False}
 
 
 # =============================================================================
@@ -4745,26 +4851,53 @@ REPORT — EXACT ORDER
 Phase 1 MUST NOT solve the innovation objective. It identifies the structured
 knowledge substrate that Phase 2 will transform.
 
+EPISTEMIC SAFETY
+===============
+Separate established evidence, conceptual interpretation, hypothesis and
+design proposal. Do not present metaphor as measurement. Do not import a
+constant, equation or law from physics merely because a cognitive or social
+concept sounds analogous to a physical quantity.
+
 STYLE
 =====
 Professional, precise, analytical, readable. Use continuous scholarly prose;
 use tables only where they materially improve comparison. Avoid keyword dumps.
 
-SEMANTIC GRAPH
-=============
+SEMANTIC GRAPH — ARCHITECTURE CONTRACT
+=======================================
 After the report output exactly:
 ### IMA_SEMANTIC_GRAPH_JSON
-Then valid JSON with nodes and edges. Generate 18–45 high-information nodes,
-not every word. Prefer nodes that carry conceptual, structural, interdisciplinary
-or operational information. The graph is a semantic architecture, not a mind map.
+Then valid JSON with nodes and edges. Generate 24–42 high-information nodes.
+The graph MUST represent an architecture rather than a mind map or decorative
+network. Prefer a connected multi-level structure with a visible path:
+Knowledge/Goal → IMA concepts → evidence/problem → relationships/constraints
+→ processes/mechanisms → cross-disciplinary bridges.
 
 Node fields: id, label, shape, color, description, layer, level, semantic_type,
 state, source_phase.
 Edge fields: id, source, target, rel_type, label, weight, direction.
 
-Use only semantically justified relations. UML Association and Constraint must
-be available where genuinely appropriate. Never add an edge solely to satisfy a
-quota. Keep node degree moderate and avoid duplicate relations.
+Every important node must have at least one meaningful relation. Avoid isolated
+nodes. Do not create hub-and-spoke structures in which one root connects to
+everything. Use intermediate concepts and genuine hierarchical/associative
+relations. Prefer 2–5 edges per ordinary node.
+
+MANDATORY ARCHITECTURAL CONTENT
+-------------------------------
+Include, where supported by the inquiry: strategic goal/problem, 4–8 core IMA
+concepts, 2–5 evidence/data anchors, 2–5 constraints, 3–6 processes or
+transformations, 2–5 scientific domains, and explicit cross-disciplinary bridge
+concepts. Use the Human Thinking Metamodel as structural semantics, not as a
+second unrelated cluster.
+
+RELATION DISCIPLINE
+-------------------
+Use BT/NT/TT for genuine taxonomy; Composition/Aggregation/Containment for
+whole-part structure; Association for an explicit UML association; Dependency
+for actual dependence; Constraint or CONSTRAINS for explicit restrictions;
+Realization for implementation; IF-THEN/AND/OR/XOR/NOT only when logically
+justified; operational relations only when the report establishes them.
+Never add an edge just to improve visual density.
 
 Geometry: star=mission/vision/goal; hexagon=science/domain; diamond=transformation/
 synthesis; triangle=process/method; octagon=rule/constraint/conflict;
@@ -4825,6 +4958,35 @@ technical/organizational/economic/ethical-legal/temporal feasibility, risks,
 mitigation, measurable validation, owner, first executable step, 0–2 year,
 3–5 year and 6–10+ year path, and visionary end-state.
 
+MATHEMATICAL FORMALIZATION SAFETY
+=================================
+Mathematics is optional and must be earned by the evidence and the mechanism.
+Use an equation only when every symbol is defined, its domain is stated, units
+(or explicit dimensionless normalization) are consistent, parameters have a
+measurement/estimation protocol, and the direction of the model is causally or
+empirically defensible. Cognitive/social variables should normally be represented
+as normalized indices, latent-variable models, statistical models or graph
+metrics—not as physical quantities by analogy. Never import Boltzmann's constant,
+physical energy units, wave equations or diffusion laws unless the system truly
+contains the corresponding physical mechanism and boundary conditions. In
+particular, never use a negative/backward diffusion coefficient as a metaphor for
+innovation. If a proposed formalization is not empirically identifiable, label it
+conceptual and give a concrete future measurement protocol instead of pretending
+it is predictive.
+
+FORMALIZATION AUDIT
+-------------------
+Whenever mathematics is used, explicitly provide: variable definitions; units or
+normalization; measurable proxy; data source; estimation method; validity range;
+boundary/initial conditions where relevant; falsification test; and limitations.
+Prefer the simplest computable model that answers the stated question.
+
+IMPLEMENTATION CHAIN
+--------------------
+Every innovation must expose a traceable chain: problem → mechanism → required
+inputs → process → measurable output → validation criterion → decision. This chain
+must also be visible in the semantic graph.
+
 REPORT ORDER
 ============
 1. Executive innovation thesis
@@ -4842,14 +5004,25 @@ REPORT ORDER
 Do not repeat Phase 1 as a literature review. Reuse its important concepts and
 explicitly trace every innovation back to IMA knowledge.
 
-SEMANTIC GRAPH
-=============
+SEMANTIC GRAPH — INNOVATION SYSTEM ARCHITECTURE
+===============================================
 After the report output exactly:
 ### MA_SEMANTIC_GRAPH_JSON
-Then valid JSON. Use 20–55 high-information nodes, not a mind map. Every diamond
-innovation node MUST mention at least three genuinely used Mental Approaches in
-its description. Include relevant IMA concepts, MA nodes, science fields,
-processes, states, constraints and validation/evidence nodes only when useful.
+Then valid JSON. Use 28–50 high-information nodes, not a mind map. Build a
+traceable system architecture with a limited number of innovations (normally
+3–5), each connected through real mechanisms, processes, constraints, validation
+and relevant IMA/MA/science nodes. Every innovation must have at least one
+mechanism/process relation and one validation or constraint relation when such
+content exists in the report.
+
+The graph should show distinct layers: STRATEGIC (goal/problem), KNOWLEDGE
+(IMA concepts/evidence), TRANSFORMATION (MA/mechanisms/processes), INNOVATION,
+VALIDATION (metrics/evidence/states), and SCIENTIFIC FOUNDATION. Cross-layer
+bridges are more important than decorative density. Avoid a universal root
+connected directly to all nodes and avoid isolated clusters.
+
+Every diamond innovation node MUST state the genuinely used Mental Approaches,
+the novel mechanism and the boundary of the novelty claim in its description.
 UML Association and explicit Constraint are first-class semantic options.
 Never manufacture edges merely for visual completeness.
 
@@ -5668,7 +5841,7 @@ if st.session_state.get("report_ready") and st.session_state.get("last_graph_dat
     st.divider()
 
     st.subheader(
-        "🧭 IMA → MA INNOVATION BLUEPRINT HIERARCHOGRAPH"
+        "🧭 IMA → MA SEMANTIC SYSTEM HIERARCHOGRAPH"
     )
 
     # -------------------------------------------------------------------------
@@ -5696,17 +5869,8 @@ if st.session_state.get("report_ready") and st.session_state.get("last_graph_dat
 
     st.session_state.selected_graph_components = selected_components
 
-    modular_view = st.checkbox(
-        "📦 Modular hierarchy view (compound boxes as in the organic screenshot)",
-        value=st.session_state.get("modular_hierarchy_view", False),
-        key="modular_hierarchy_view",
-        help=(
-            "Splits the graph into visual modules (Environmental Foundation, "
-            "Informational Hierarchy, Mechanical Hierarchy, Biochemical Hierarchy, "
-            "Systemic Core …) using Cytoscape compound nodes – identical visual "
-            "language to the attached hierarchograph image."
-        ),
-    )
+    modular_view = False
+
 
     # Build the innovation-centric presentation layer without changing
     # the underlying integrated IMA → MA knowledge graph.
@@ -5733,16 +5897,12 @@ if st.session_state.get("report_ready") and st.session_state.get("last_graph_dat
     )
 
     st.caption(
-        "The hierarchograph is presented as a deliberately sparse **innovation blueprint**. "
-        "Innovation ideas are the central design elements and involved science fields "
-        "form their interdisciplinary foundation. Only the strongest one or two science "
-        "connections per innovation are shown, preventing the graph from becoming a "
-        "dense semantic network. The default visual language is limited to thesaurus "
-        "relations, UML relations and IF-THEN / AND / OR / XOR / NOT. "
-        "Additional operational relations remain available on demand. "
-        f"Blueprint capacity: up to {graph_node_limit} nodes. "
-        f"Currently showing {len(filtered_graph['nodes'])} nodes after component filter. "
-        "Use the ➕/➖ ZOOM buttons or the mouse wheel to zoom in and out."
+        "The hierarchograph is a **semantic system architecture**, not a mind map. "
+        "It preserves genuine IMA→MA relations and makes the traceable chain "
+        "from goals/problems through concepts, evidence, mechanisms, processes, "
+        "constraints, innovations, science and validation visible. No artificial "
+        "relations are added merely to increase density. "
+        f"Display capacity: up to {graph_node_limit} nodes; currently showing {len(filtered_graph['nodes'])}."
     )
 
     render_cytoscape_network(
@@ -5768,16 +5928,16 @@ if (
 
     st.markdown(
         '<h2 style="color:#1d3557;text-align:center;">'
-        "🖼️ MULTI-PERSPECTIVE HIERARCHOGRAPH GALLERY"
+        "🖼️ MULTI-PERSPECTIVE SEMANTIC ARCHITECTURE GALLERY"
         "</h2>",
         unsafe_allow_html=True,
     )
 
     st.info(
-        "The same innovation blueprint is displayed through different visual "
-        "grammars. The complete underlying knowledge model remains unchanged. "
-        "Innovations and science fields remain the principal anchors, while "
-        "thesaurus, UML and basic logical relations keep the blueprint readable. "
+        "The same semantic system architecture is displayed through different visual "
+        "grammars. The complete underlying IMA→MA knowledge model remains unchanged. "
+        "The views emphasize hierarchy, operational flow, semantic association and "
+        "cross-disciplinary structure without inventing substantive relations. "
         "Every view supports mouse-wheel zoom and the ➕/➖ ZOOM buttons. "
         "The component filter selected above also applies to the gallery."
     )
