@@ -1475,6 +1475,32 @@ Build a sparse semantic graph. Prefer meaningful relations over graph density.
 At least 2 edges must connect nodes that belong to different science-field
 clusters, so the graph visually demonstrates interdisciplinary integration.
 
+GRAPH GROUNDING — THE GRAPH IS A DIAGRAM OF THE REPORT, NOT A SEPARATE TASK:
+- Every node label MUST correspond to a concept, finding, science field, MA,
+  contradiction, or innovation that you explicitly named in the Phase 1 or
+  Phase 2 text above. Do not invent nodes that do not appear in the written
+  report — if it is not in the text, it does not belong in the graph.
+- Conversely, the most important items you wrote about (each innovation, each
+  cross-disciplinary bridge point, each science field actually used, each MA
+  actually used) MUST appear as a node. A graph that omits the innovations or
+  the bridge points you just described is incomplete and INVALID.
+- Every edge must reflect a relationship that is stated or clearly implied in
+  the text (e.g. "Innovation 2 resolves the contradiction from finding X" ->
+  an edge between those two nodes).
+
+GEOMETRY IS A STRICT SEMANTIC CODE, NOT DECORATION — apply consistently to
+every node of that category, with no exceptions:
+- star = Strategic Goal / Vision (from IMA)
+- hexagon = Science Field (Physics, Sociology, Astronomy, etc.)
+- diamond = Innovation (Phase 2 output)
+- triangle = Process / Method / Transformation operation
+- octagon = Rule / Constraint / Contradiction
+- ellipse = Human, biological or social entity/actor
+- rectangle = Fact, finding, or structural/data component (default only when
+  nothing else fits)
+Two nodes describing the same kind of thing must always share the same shape.
+Never assign shapes arbitrarily for visual variety.
+
 RELATION TYPES — you MUST draw from all three families below, not just UML.
 Pick the family that actually fits the semantic meaning of each edge; never
 default to UML/structural types just because they are familiar.
@@ -1496,13 +1522,17 @@ C) OPERATIONAL LOGIC FAMILY (use for decision/causal/conditional links —
    XOR (mutually exclusive choices), NOT (negation/exclusion),
    IF-THEN (conditional/causal trigger)
 
-MANDATORY DIVERSITY RULE: the final edge set must include at least 3 edges from
-the Thesaurus family AND at least 3 edges from the Operational Logic family, in
-addition to any Structural/UML edges. A graph using only Generalization,
-Realization, Composition, Aggregation, Dependency and Conflict is INVALID —
-use TT/BT/NT/RT/EQ/AS/IN to connect concepts and classifications, and
-AND/OR/XOR/NOT/IF-THEN to connect findings, contradictions, decisions and
-innovations causally.
+MANDATORY DIVERSITY RULE (quantitative, not optional): of the total edges,
+AT LEAST 25% must be Thesaurus-family and AT LEAST 25% must be Operational
+Logic-family. The remainder may be Structural/UML. For example, in a graph
+with 20 edges, at least 5 must be thesaurus and at least 5 must be logic type.
+A graph that fails this ratio is INVALID and must be corrected before output.
+
+SELF-CHECK BEFORE YOU OUTPUT THE JSON (do this silently, then output only the
+corrected result): confirm (1) every important report entity is present as a
+node, (2) no node is invented beyond the report, (3) no node is isolated,
+(4) the thesaurus/logic edge-ratio rule is satisfied, (5) shapes are used
+consistently as the semantic code above, not arbitrarily.
 
 GRAPH LIMITS:
 - Maximum 30 nodes.
@@ -1743,15 +1773,19 @@ Do not place explanatory text after the JSON object.
             n_logic = sum(1 for r in edge_rel_types if r in LOGIC_TYPES)
             n_structural = sum(1 for r in edge_rel_types if r in STRUCTURAL_TYPES)
             if edge_rel_types:
+                total_edges = len(edge_rel_types)
                 st.caption(
-                    f"🔗 Relation mix in graph — Thesaurus: {n_thesaurus} | "
-                    f"Structural/UML: {n_structural} | Operational Logic: {n_logic}"
+                    f"🔗 Relation mix in graph ({total_edges} edges) — "
+                    f"Thesaurus: {n_thesaurus} ({n_thesaurus/total_edges:.0%}) | "
+                    f"Structural/UML: {n_structural} ({n_structural/total_edges:.0%}) | "
+                    f"Operational Logic: {n_logic} ({n_logic/total_edges:.0%})"
                 )
-                if n_thesaurus < 2 or n_logic < 2:
+                if n_thesaurus / total_edges < 0.20 or n_logic / total_edges < 0.20:
                     st.warning(
-                        "⚠️ The generated graph leans heavily on structural/UML relations. "
-                        "For richer semantics, try re-running Phase 2 or nudge the Innovation "
-                        "Prompt to explicitly ask for thesaurus (BT/NT/RT/EQ) and logic (AND/OR/IF-THEN) connections."
+                        "⚠️ The generated graph leans too heavily on structural/UML relations "
+                        "(target: ≥25% thesaurus, ≥25% operational logic). Try re-running Phase 2, "
+                        "or nudge the Innovation Prompt to explicitly request thesaurus (BT/NT/RT/EQ) "
+                        "and logic (AND/OR/IF-THEN) connections."
                     )
 
             # --- 5. FINAL DISPLAY: SEQUENTIAL INTERACTIVE SYNERGY REPORT ---
