@@ -1464,6 +1464,10 @@ report stays clear and scannable:
   innovation connects and what each field specifically contributes.
 - **Practical next step:** one concrete, feasible first action a real team could
   take within a month (pilot, prototype, experiment, dataset, or policy step).
+- **Safeguards (if the innovation touches personal/biometric/health/behavioral
+  data):** name a concrete technical or ethical safeguard (on-device processing,
+  anonymization, differential privacy, consent). Omit this bullet only if truly
+  not applicable.
 - **Expected effect:** ...
 
 Prioritize innovations that combine at least two of the selected science fields in
@@ -1528,11 +1532,49 @@ Logic-family. The remainder may be Structural/UML. For example, in a graph
 with 20 edges, at least 5 must be thesaurus and at least 5 must be logic type.
 A graph that fails this ratio is INVALID and must be corrected before output.
 
+CAUSAL DIRECTION DISCIPLINE (this is where most graphs break):
+- For every IF-THEN edge: source = the cause/enabler/condition, target = the
+  resulting effect/outcome. Read it aloud as "If <source> then <target>" — if
+  that sentence does not make literal sense, the arrow is backwards. Example:
+  [Computer Science] --IF-THEN--> [Innovation: Semantic Mediator] is correct
+  (a field enables an innovation); the reverse is wrong.
+- The same left-to-right cause→effect discipline applies to Dependency,
+  Realization and AND/OR edges: source is the precondition, target is what
+  depends on or results from it.
+
+TARGET-OUTCOME TRACEABILITY (do not lose the original problem):
+- Any concrete negative condition, risk, symptom, or problem named in the
+  Phase 1 report (e.g. a named stressor, harm, inefficiency, or risk) must
+  reappear in the graph as its own outcome node — do not let it silently
+  disappear once you move to innovations.
+- Connect each such outcome node to the specific innovation(s) that address it
+  with a directional edge whose human-readable label states the effect
+  precisely: "mitigates", "prevents", "resolves", "reduces" — not a generic
+  "related to".
+
+HUMAN-READABLE EDGE LABELS (rel_type is for styling only, label is for humans):
+- "rel_type" must stay one of the codes listed above (for consistent visual
+  styling). "label" must independently be a short, precise, human-readable
+  verb phrase describing what the edge actually does — e.g. "operationalizes",
+  "constrained by", "mitigates", "enables", "contradicts". NEVER leave "label"
+  as a bare code like "IN", "BT", or "AND" — that tells a human nothing.
+
+SENSITIVE-DOMAIN SAFEGUARDS:
+- If an innovation involves personal, biometric, health, behavioral, or other
+  sensitive data, its "innovation" and "practical next step" text must name a
+  concrete technical or ethical safeguard (e.g. on-device processing,
+  anonymization, differential privacy, explicit consent) — do not leave privacy
+  or safety implicit.
+
 SELF-CHECK BEFORE YOU OUTPUT THE JSON (do this silently, then output only the
 corrected result): confirm (1) every important report entity is present as a
 node, (2) no node is invented beyond the report, (3) no node is isolated,
 (4) the thesaurus/logic edge-ratio rule is satisfied, (5) shapes are used
-consistently as the semantic code above, not arbitrarily.
+consistently as the semantic code above, not arbitrarily, (6) every IF-THEN /
+Dependency arrow points cause→effect and reads correctly aloud, (7) every
+named problem/outcome from Phase 1 has a corresponding outcome node linked to
+the innovation that addresses it, (8) every edge "label" is a human-readable
+phrase, never a bare code.
 
 GRAPH LIMITS:
 - Maximum 30 nodes.
@@ -1570,7 +1612,7 @@ Then valid JSON only:
     }}
   ],
   "edges": [
-    {{"source": "n1", "target": "n2", "rel_type": "Realization"}}
+    {{"source": "n1", "target": "n2", "rel_type": "IF-THEN", "label": "enables"}}
   ]
 }}
 
