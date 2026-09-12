@@ -932,6 +932,15 @@ IDEATION_TECHNIQUES = {
     "Blue Ocean Strategy": "Identify ways to make the competition irrelevant by creating a new value space through 'Eliminate-Reduce-Raise-Create' logic.",
     "Synectics": "Use direct, personal, and symbolic analogies to make the strange familiar and the familiar strange."
 }
+
+# =============================================================================
+# 3.2 RELATION-FAMILY CONSTANTS (shared by diagnostic + auto-rebalancer)
+# =============================================================================
+THESAURUS_TYPES = {"TT", "BT", "NT", "RT", "EQ", "AS", "IN"}
+LOGIC_TYPES = {"AND", "OR", "XOR", "NOT", "IF-THEN"}
+STRUCTURAL_TYPES = {"Generalization", "Specialization", "Containment",
+                     "Realization", "Composition", "Aggregation",
+                     "Dependency", "Conflict"}
 # =============================================================================
 # 4. KONČNI POPRAVLJEN SIDEBAR (Z SAMBANOVO IN UNIKATNIMI KLJUČI)
 # =============================================================================
