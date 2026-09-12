@@ -1431,6 +1431,13 @@ Requirements:
    the supplied material unless clearly marked as interpretation.
 7. Do not introduce 'Scientific Cage' unless the supplied material supports it.
 8. Produce a structured foundation, not generic commentary.
+9. For each key concept, explicitly note which selected science field(s) it belongs
+   to or bridges, so Phase 2 can build genuine interdisciplinary connections.
+10. Write in clear, well-labeled sections with short paragraphs (max 4-5 sentences)
+    and bullet points where useful. Avoid dense, unreadable academic blocks.
+11. Explicitly identify at least 2-3 cross-disciplinary tension points, contradictions
+    or knowledge gaps between the selected science fields — these become the raw
+    material for innovation in Phase 2.
 
 Selected sciences: {', '.join(sel_sciences)}
 Selected paradigms: {', '.join(sel_paradigms)}
@@ -1440,13 +1447,15 @@ Selected tools: {', '.join(sel_tools)}
 Expertise: {expertise}
 Strategic goal: {goal_context}
 
-Return:
-- IMA Problem Definition
-- Relevant Knowledge Structure
-- Macro–Meso–Micro Analysis
-- Constraints and Contradictions
-- Evidence / Interpretation Boundary
-- Key Findings for Phase 2
+Return, using these as literal markdown section headers, in this order:
+### 1. IMA Problem Definition
+### 2. Relevant Knowledge Structure
+### 3. Macro–Meso–Micro Analysis
+### 4. Cross-Disciplinary Bridge Points
+(explicit tensions, gaps or complementarities between the selected science fields)
+### 5. Constraints and Contradictions
+### 6. Evidence / Interpretation Boundary
+### 7. Key Findings for Phase 2
 
 Do not generate innovations in Phase 1.
 """
@@ -1463,8 +1472,8 @@ Do not generate innovations in Phase 1.
             phase2_system_prompt = f"""
 You are the SIS Lead Strategic Innovation Architect and Hierarchographist.
 
-Transform the Phase 1 IMA foundation into traceable innovations using Mental
-Approaches (MA). Do NOT produce generic brainstorming.
+Transform the Phase 1 IMA foundation into traceable, PRACTICAL innovations using
+Mental Approaches (MA). Do NOT produce generic brainstorming.
 
 CORE TRANSFORMATION CHAIN:
 IMA finding -> limitation/contradiction -> selected MA -> transformation
@@ -1487,17 +1496,35 @@ SELECTED METHODOLOGY:
 SELECTED TOOLS:
 {', '.join(sel_tools)}
 
-For each of 3–4 innovations explicitly state:
-- IMA finding
-- limitation or contradiction
-- MA used
-- transformation operation
-- resulting new configuration
-- innovation
-- expected cross-disciplinary effect
+Start the report with a short "### Executive Synthesis" section (max 6 sentences)
+naming the single most important interdisciplinary insight connecting the
+selected science fields — this is the thread the rest of the report follows.
+
+For each of 3–4 innovations, use this exact literal markdown structure so the
+report stays clear and scannable:
+
+#### Innovation N: <short, concrete, punchy name>
+- **IMA finding:** ...
+- **Limitation/contradiction:** ...
+- **Mental Approach used:** ...
+- **Transformation operation:** ...
+- **New configuration:** ...
+- **The innovation:** one clear, concrete, implementable idea — state what would
+  actually be built, tested, measured, or changed. Avoid vague generalities.
+- **Cross-disciplinary bridge:** name the ≥2 distinct science fields this
+  innovation connects and what each field specifically contributes.
+- **Practical next step:** one concrete, feasible first action a real team could
+  take within a month (pilot, prototype, experiment, dataset, or policy step).
+- **Expected effect:** ...
+
+Prioritize innovations that combine at least two of the selected science fields in
+a non-obvious way over single-field extensions. Reject any innovation that is just
+a restatement of a Phase 1 finding without a genuine transformation step.
 
 Avoid unsupported claims and invented terminology.
 Build a sparse semantic graph. Prefer meaningful relations over graph density.
+At least 2 edges must connect nodes that belong to different science-field
+clusters, so the graph visually demonstrates interdisciplinary integration.
 
 RELATION TYPES:
 TT, BT, NT, RT, EQ, AS, IN,
@@ -1827,9 +1854,13 @@ if st.session_state.get('report_ready') and 'final_graph_elements' in st.session
     st.markdown('<h2 style="color: #1d3557; text-align: center;">🖼️ MULTI-PERSPECTIVE GRAPH GALLERY</h2>', unsafe_allow_html=True)
     st.info("💡 **SEQUENTIAL SAVING INSTRUCTIONS:** Below are tabs featuring different visual perspectives of the same knowledge synthesis. Please open each tab individually and click the **EXPORT PNG** button to save all 5 architectural versions to your local drive.")
 
-    tab1, tab2, tab3, tab4 = st.tabs([
-        "🌲 HIERARCHICAL", "🎯 CONCENTRIC", "⭕ CIRCULAR", "🔲 GRID"
+    tab0, tab1, tab2, tab3, tab4 = st.tabs([
+        "🌿 ORGANIC", "🌲 HIERARCHICAL", "🎯 CONCENTRIC", "⭕ CIRCULAR", "🔲 GRID"
     ])
+
+    with tab0:
+        st.markdown("**Organic View:** Force-directed natural clustering — related concepts gravitate together, ideal for spotting emergent interdisciplinary clusters.")
+        render_cytoscape_network(st.session_state.final_graph_elements, layout_type="organic", container_id="gal_organic")
 
     with tab1:
         st.markdown("**Hierarchical View:** Primary IMA → MA structure and semantic dependencies.")
