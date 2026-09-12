@@ -5429,17 +5429,14 @@ The supplementary ideation frameworks above are not a substitute for MA.
 {biblio_context}
 """
 
-        gemini_client = None
-        if google_required:
-            gemini_client = genai.Client(api_key=google_api_key)
+        # Google/Gemini is the only active provider in this version.
+        # The previous google_required flag was undefined and caused a NameError.
+        gemini_client = genai.Client(api_key=google_api_key)
 
         # ---------------------------------------------------------------------
         # PHASE 1 — IMA
         # ---------------------------------------------------------------------
-        p1_provider_name = (
-            "Hugging Face / Qwen2.5-72B-Instruct"
-            f"Google / {p1_model}"
-        )
+        p1_provider_name = f"Google / {p1_model}"
 
         with st.spinner(
             f"PHASE 1 — IMA Complete Human Thinking Metamodel synthesis with {p1_provider_name}..."
@@ -5449,7 +5446,7 @@ The supplementary ideation frameworks above are not a substitute for MA.
                 p1_model,
                 build_phase1_system_prompt(),
                 architecture_context + "\n\n" + full_input,
-                temperature=0.40,
+                temperature=0.25,
                 top_p=0.85,
                 huggingface_api_key=None,
             )
@@ -5463,10 +5460,7 @@ The supplementary ideation frameworks above are not a substitute for MA.
         # ---------------------------------------------------------------------
         # PHASE 2 — MA
         # ---------------------------------------------------------------------
-        p2_provider_name = (
-            "Hugging Face / Qwen2.5-72B-Instruct"
-            f"Google / {p2_model}"
-        )
+        p2_provider_name = f"Google / {p2_model}"
 
         phase1_graph_for_prompt = json.dumps(
             phase1_graph,
@@ -5523,7 +5517,7 @@ creating an unrelated graph.
                 p2_model,
                 phase2_system,
                 phase2_input,
-                temperature=0.85,
+                temperature=0.68,
                 top_p=0.88,
                 huggingface_api_key=None,
             )
