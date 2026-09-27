@@ -16,7 +16,7 @@ import streamlit.components.v1 as components
 # 0. GLOBAL CONFIGURATION & SESSION DATE (FEBRUARY 24, 2026)
 # =============================================================================
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v24.6.0-GOOGLE-GEMINI-ONLY-FIXED"
+VERSION_CODE = "v25.0.0-HYBRID-LANGUAGE-IMA-MA"
 
 # =============================================================================
 # INITIALIZATION FIX: Preprečuje AttributeError pri zagonu in resetiranju
@@ -368,6 +368,23 @@ def render_cytoscape_network(elements, layout_type="hierarchical", container_id=
                     {{ selector: 'edge[rel_type="XOR"]', style: {{ 'width': 4, 'line-color': '#FF8C00', 'line-style': 'double', 'target-arrow-color': '#FF8C00', 'target-arrow-shape': 'diamond' }} }},
                     {{ selector: 'edge[rel_type="NOT"]', style: {{ 'width': 4, 'line-color': '#FF0000', 'line-style': 'dashed', 'target-arrow-color': '#FF0000', 'target-arrow-shape': 'tee' }} }},
                     {{ selector: 'edge[rel_type="IF-THEN"]', style: {{ 'width': 4, 'line-color': '#FFD700', 'target-arrow-color': '#FFD700', 'target-arrow-shape': 'triangle', 'arrow-scale': 1.3 }} }},
+
+                    /* --- FORMAL / SYMBOLIC LANGUAGE --- */
+                    {{ selector: 'edge[rel_type="IMPLIES"]', style: {{ 'width': 4, 'line-color': '#8E44AD', 'target-arrow-color': '#8E44AD', 'target-arrow-shape': 'triangle' }} }},
+                    {{ selector: 'edge[rel_type="EQUIV"]', style: {{ 'width': 4, 'line-color': '#F39C12', 'line-style': 'double', 'target-arrow-shape': 'none', 'source-arrow-shape': 'none' }} }},
+                    {{ selector: 'edge[rel_type="CONTRADICTS"]', style: {{ 'width': 5, 'line-color': '#C0392B', 'line-style': 'dashed', 'target-arrow-shape': 'triangle-cross', 'source-arrow-shape': 'triangle-cross' }} }},
+                    {{ selector: 'edge[rel_type="CAUSES"]', style: {{ 'width': 4, 'line-color': '#D35400', 'target-arrow-shape': 'triangle' }} }},
+                    {{ selector: 'edge[rel_type="INCREASES"]', style: {{ 'width': 3, 'line-color': '#16A085', 'target-arrow-shape': 'triangle' }} }},
+                    {{ selector: 'edge[rel_type="DECREASES"]', style: {{ 'width': 3, 'line-color': '#2980B9', 'target-arrow-shape': 'triangle' }} }},
+                    {{ selector: 'edge[rel_type="MEASURES"]', style: {{ 'width': 3, 'line-color': '#6C5CE7', 'line-style': 'dotted', 'target-arrow-shape': 'vee' }} }},
+                    {{ selector: 'edge[rel_type="FUNCTION"]', style: {{ 'width': 4, 'line-color': '#5E35B1', 'target-arrow-shape': 'triangle' }} }},
+                    {{ selector: 'edge[rel_type="MEMBER-OF"]', style: {{ 'width': 3, 'line-color': '#00838F', 'target-arrow-shape': 'triangle' }} }},
+                    {{ selector: 'edge[rel_type="SUBSET-OF"]', style: {{ 'width': 3, 'line-color': '#3949AB', 'line-style': 'dashed', 'target-arrow-shape': 'triangle' }} }},
+                    {{ selector: 'edge[rel_type="ORDER"]', style: {{ 'width': 3, 'line-color': '#546E7A', 'target-arrow-shape': 'triangle' }} }},
+                    {{ selector: 'edge[rel_type="QUANTIFIES"]', style: {{ 'width': 3, 'line-color': '#7E57C2', 'line-style': 'dotted', 'target-arrow-shape': 'vee' }} }},
+                    {{ selector: 'edge[rel_type="OPTIMIZES"]', style: {{ 'width': 4, 'line-color': '#2E7D32', 'target-arrow-shape': 'triangle' }} }},
+                    {{ selector: 'edge[rel_type="CONSTRAINS"]', style: {{ 'width': 4, 'line-color': '#795548', 'line-style': 'dashed', 'target-arrow-shape': 'tee' }} }},
+                    {{ selector: 'edge[rel_type="TRANSFORMS"]', style: {{ 'width': 4, 'line-color': '#AD1457', 'target-arrow-shape': 'triangle' }} }},
 
                     /* Poudarek na zvezdah (Macro cilji) */
                     {{ selector: 'node[shape="star"]', style: {{ 'font-size': '16px', 'width': 130, 'height': 130, 'border-width': 5, 'border-color': '#FFD700' }} }}
@@ -941,6 +958,256 @@ LOGIC_TYPES = {"AND", "OR", "XOR", "NOT", "IF-THEN"}
 STRUCTURAL_TYPES = {"Generalization", "Specialization", "Containment",
                      "Realization", "Composition", "Aggregation",
                      "Dependency", "Conflict"}
+
+# =============================================================================
+# 3.3 LSM-HYBRID LANGUAGE LAYER
+# =============================================================================
+# This is an enhancement layer, not a replacement of IMA/MA.  It gives the
+# language model an explicit intermediate representation for natural language,
+# symbolic relations and mathematical/formal expressions.
+FORMAL_TYPES = {
+    "IMPLIES", "EQUIV", "CONTRADICTS", "CAUSES", "INCREASES", "DECREASES",
+    "MEASURES", "FUNCTION", "MEMBER-OF", "SUBSET-OF", "ORDER", "QUANTIFIES",
+    "OPTIMIZES", "CONSTRAINS", "TRANSFORMS"
+}
+
+SEMANTIC_LAYER_TYPES = {
+    "natural_language": "Human-readable proposition or source statement.",
+    "symbolic_language": "Explicit logical, relational or structural representation.",
+    "mathematical_language": "Mathematical expression used only when justified by the source/context.",
+    "hybrid_language": "Linked representation combining natural, symbolic and mathematical forms."
+}
+
+SEMANTIC_FORMALIZATION_SCHEMA = {
+    "propositions": [
+        {
+            "id": "p1",
+            "natural_language": "short source-grounded proposition",
+            "subject": "entity",
+            "predicate": "relation/property",
+            "object": "entity/value",
+            "modality": "fact|possibility|necessity|uncertain|normative|question",
+            "evidence_status": "source-supported|inferred|unknown"
+        }
+    ],
+    "ambiguities": [
+        {
+            "term": "ambiguous term",
+            "possible_meanings": ["meaning A", "meaning B"],
+            "resolution": "resolved|unresolved",
+            "reason": "brief reason"
+        }
+    ],
+    "symbolic_forms": [
+        {
+            "proposition_id": "p1",
+            "expression": "A -> B",
+            "operator": "IMPLIES",
+            "meaning": "source-grounded interpretation"
+        }
+    ],
+    "mathematical_forms": [
+        {
+            "proposition_id": "p1",
+            "expression": "f(x) = ...",
+            "status": "justified|partial|not-justified",
+            "variables": ["x"],
+            "meaning": "what the expression represents"
+        }
+    ],
+    "hybrid_forms": [
+        {
+            "natural": "source statement",
+            "symbolic": "A -> B",
+            "mathematical": "optional expression or null",
+            "interpretation": "short explanation"
+        }
+    ],
+    "formalization_limits": [
+        "What cannot be formalized from the available evidence"
+    ]
+}
+
+SYMBOLIC_OPERATOR_GUIDE = {
+    "AND": "A ∧ B — both conditions hold jointly.",
+    "OR": "A ∨ B — at least one alternative holds.",
+    "XOR": "A ⊕ B — exactly one alternative holds.",
+    "NOT": "¬A — explicit negation or exclusion.",
+    "IF-THEN": "A → B — conditional/causal relation when justified.",
+    "EQUIV": "A ↔ B — equivalence only when the source supports bidirectional equivalence.",
+    "CONTRADICTS": "A ⟂ B — propositions cannot jointly hold under the stated conditions.",
+    "CAUSES": "A ⇒ B — causal relation; use only when causality is supported.",
+    "INCREASES": "A ↑ B — A is associated with an increase in B under stated conditions.",
+    "DECREASES": "A ↓ B — A is associated with a decrease in B under stated conditions.",
+    "MEASURES": "A measures B — measurement relationship.",
+    "FUNCTION": "B = f(A) — functional dependence when mathematically justified.",
+    "MEMBER-OF": "A ∈ B — instance/member relationship.",
+    "SUBSET-OF": "A ⊂ B — set/subclass relation.",
+    "ORDER": "A < B, A ≤ B, A > B or A ≥ B — ordered comparison when justified.",
+    "QUANTIFIES": "A quantifies B — numerical/measurement specification.",
+    "OPTIMIZES": "argmax/argmin — optimization relation only when an objective and variables exist.",
+    "CONSTRAINS": "A restricts B — explicit constraint.",
+    "TRANSFORMS": "A ↦ B — transformation from one representation/state to another."
+}
+
+
+def _safe_json_object(text_value):
+    """Extract the first valid JSON object from model output without crashing."""
+    if not text_value:
+        return None
+    cleaned = re.sub(r'```(?:json)?', '', str(text_value), flags=re.I).strip()
+    cleaned = re.sub(r',\s*([}\]])', r'\1', cleaned)
+    decoder = json.JSONDecoder()
+    for idx, char in enumerate(cleaned):
+        if char != '{':
+            continue
+        try:
+            obj, _ = decoder.raw_decode(cleaned[idx:])
+            if isinstance(obj, dict):
+                return obj
+        except Exception:
+            continue
+    return None
+
+
+def extract_marked_json(text_value, marker):
+    """Extract JSON following a named markdown marker."""
+    if not text_value or marker not in text_value:
+        return None
+    tail = text_value.split(marker, 1)[1]
+    return _safe_json_object(tail)
+
+
+def validate_semantic_representation(data):
+    """Defensive validation of the hybrid semantic contract returned by Gemini."""
+    if not isinstance(data, dict):
+        return {"propositions": [], "ambiguities": [], "symbolic_forms": [],
+                "mathematical_forms": [], "hybrid_forms": [], "formalization_limits": []}
+
+    result = {}
+    for key in ["propositions", "ambiguities", "symbolic_forms", "mathematical_forms", "hybrid_forms", "formalization_limits"]:
+        value = data.get(key, [])
+        result[key] = value if isinstance(value, list) else []
+
+    # Never allow a malformed model response to create unbounded UI output.
+    result["propositions"] = result["propositions"][:40]
+    result["ambiguities"] = result["ambiguities"][:20]
+    result["symbolic_forms"] = result["symbolic_forms"][:40]
+    result["mathematical_forms"] = result["mathematical_forms"][:30]
+    result["hybrid_forms"] = result["hybrid_forms"][:30]
+    result["formalization_limits"] = result["formalization_limits"][:20]
+    return result
+
+
+def build_hybrid_context(semantic_data):
+    """Compactly serialize the semantic layer for Phase 2 without changing IMA/MA."""
+    d = validate_semantic_representation(semantic_data)
+    return json.dumps(d, ensure_ascii=False, indent=2)
+
+
+def formalization_quality_summary(semantic_data):
+    """Return small diagnostic metrics for the UI."""
+    d = validate_semantic_representation(semantic_data)
+    justified_math = sum(
+        1 for item in d["mathematical_forms"]
+        if isinstance(item, dict) and item.get("status") == "justified"
+    )
+    unresolved = sum(
+        1 for item in d["ambiguities"]
+        if isinstance(item, dict) and item.get("resolution") == "unresolved"
+    )
+    return {
+        "propositions": len(d["propositions"]),
+        "symbolic": len(d["symbolic_forms"]),
+        "mathematical": len(d["mathematical_forms"]),
+        "justified_mathematical": justified_math,
+        "ambiguities": len(d["ambiguities"]),
+        "unresolved_ambiguities": unresolved,
+        "hybrid": len(d["hybrid_forms"]),
+    }
+
+
+def semantic_layer_markdown(semantic_data):
+    """Render the formal layer as a readable diagnostic, never as the main report."""
+    d = validate_semantic_representation(semantic_data)
+    parts = ["### Semantic Normalization", ""]
+    parts.append("**Natural-language propositions**")
+    for item in d["propositions"][:12]:
+        if isinstance(item, dict):
+            parts.append(
+                f"- **{item.get('id', 'p?')}**: {item.get('natural_language', '')} "
+                f"`{item.get('subject', '')} — {item.get('predicate', '')} — {item.get('object', '')}` "
+                f"[{item.get('evidence_status', 'unknown')}]"
+            )
+    if not d["propositions"]:
+        parts.append("- No structured propositions were returned.")
+
+    parts.append("")
+    parts.append("**Symbolic language**")
+    for item in d["symbolic_forms"][:12]:
+        if isinstance(item, dict):
+            parts.append(f"- `{item.get('expression', '')}` — {item.get('meaning', '')}")
+    if not d["symbolic_forms"]:
+        parts.append("- No symbolic forms were returned.")
+
+    parts.append("")
+    parts.append("**Mathematical language**")
+    for item in d["mathematical_forms"][:12]:
+        if isinstance(item, dict):
+            parts.append(
+                f"- `{item.get('expression', '')}` — status: **{item.get('status', 'unknown')}** — "
+                f"{item.get('meaning', '')}"
+            )
+    if not d["mathematical_forms"]:
+        parts.append("- No mathematical formalization was justified or returned.")
+
+    parts.append("")
+    parts.append("**Ambiguity register**")
+    for item in d["ambiguities"][:10]:
+        if isinstance(item, dict):
+            parts.append(
+                f"- **{item.get('term', '')}**: {', '.join(map(str, item.get('possible_meanings', [])))} "
+                f"→ {item.get('resolution', 'unresolved')}"
+            )
+    if not d["ambiguities"]:
+        parts.append("- No material ambiguity was flagged.")
+
+    if d["formalization_limits"]:
+        parts.append("")
+        parts.append("**Formalization limits**")
+        parts.extend(f"- {x}" for x in d["formalization_limits"][:10])
+    return "\n".join(parts)
+
+
+def graph_relation_family(rel):
+    if rel in THESAURUS_TYPES:
+        return "Thesaurus"
+    if rel in LOGIC_TYPES:
+        return "Operational Logic"
+    if rel in STRUCTURAL_TYPES:
+        return "Structural/UML"
+    if rel in FORMAL_TYPES:
+        return "Formal/Symbolic"
+    return "Other"
+
+
+def graph_relation_color(rel):
+    """Centralized relation color mapping for the original and new relation families."""
+    colors = {
+        "Generalization": "#E63946", "Realization": "#E63946", "Composition": "#E63946",
+        "Aggregation": "#E63946", "Dependency": "#E63946", "Specialization": "#000000",
+        "Containment": "#1D3557", "Conflict": "#B91D1D",
+        "BT": "#1D3557", "NT": "#1D3557", "TT": "#1D3557", "IN": "#0077B6",
+        "AS": "#7B2CB1", "EQ": "#F1C40F", "RT": "#2A9D8F",
+        "AND": "#00FF00", "OR": "#00BFFF", "XOR": "#FF8C00", "NOT": "#FF0000",
+        "IF-THEN": "#FFD700",
+        "IMPLIES": "#8E44AD", "EQUIV": "#F39C12", "CONTRADICTS": "#C0392B",
+        "CAUSES": "#D35400", "INCREASES": "#16A085", "DECREASES": "#2980B9",
+        "MEASURES": "#6C5CE7", "FUNCTION": "#5E35B1", "MEMBER-OF": "#00838F",
+        "SUBSET-OF": "#3949AB", "ORDER": "#546E7A", "QUANTIFIES": "#7E57C2",
+        "OPTIMIZES": "#2E7D32", "CONSTRAINS": "#795548", "TRANSFORMS": "#AD1457"
+    }
+    return colors.get(rel, "#ADB5BD")
 # =============================================================================
 # 4. KONČNI POPRAVLJEN SIDEBAR (Z SAMBANOVO IN UNIKATNIMI KLJUČI)
 # =============================================================================
@@ -1044,6 +1311,15 @@ with st.sidebar:
     st.divider()
     st.subheader("📚 KNOWLEDGE EXPLORER")
 
+    with st.expander("🔤 Language / Symbolic / Mathematical Layer", expanded=False):
+        st.markdown("**Natural Language:** source propositions, ambiguity, modality, evidence status.")
+        st.markdown("**Symbolic Language:** explicit logical and structural relations such as `A → B`, `A ∧ B`, `A ↔ B`, `A ⊂ B`. ")
+        st.markdown("**Mathematical Language:** equations, functions, measures, ratios and optimization only when justified.")
+        st.markdown("**Hybrid Language:** the linked representation of natural, symbolic, mathematical and hierarchical forms.")
+        st.markdown("**Rule:** formalization must never invent a formula or causal relation merely to make the output look scientific.")
+        for op, desc in list(SYMBOLIC_OPERATOR_GUIDE.items())[:12]:
+            st.markdown(f"- **{op}**: {desc}")
+
     with st.expander("👤 User Profile Ontologies", expanded=False):
         for p, d in KNOWLEDGE_BASE["User profiles"].items(): 
             st.markdown(f"**{p}**: {d['description']}")
@@ -1142,7 +1418,22 @@ const cy = cytoscape({{
  {{selector:'edge[rel_type="OR"]',style:{{'width':3,'line-style':'dashed'}}}},
  {{selector:'edge[rel_type="XOR"]',style:{{'width':4,'line-style':'double'}}}},
  {{selector:'edge[rel_type="NOT"]',style:{{'width':4,'line-style':'dashed'}}}},
- {{selector:'edge[rel_type="IF-THEN"]',style:{{'width':4}}}}
+ {{selector:'edge[rel_type="IF-THEN"]',style:{{'width':4}}}},
+ {{selector:'edge[rel_type="IMPLIES"]',style:{{'width':4,'line-color':'#8E44AD','target-arrow-shape':'triangle'}}}},
+ {{selector:'edge[rel_type="EQUIV"]',style:{{'width':4,'line-color':'#F39C12','line-style':'double','target-arrow-shape':'none','source-arrow-shape':'none'}}}},
+ {{selector:'edge[rel_type="CONTRADICTS"]',style:{{'width':5,'line-color':'#C0392B','line-style':'dashed'}}}},
+ {{selector:'edge[rel_type="CAUSES"]',style:{{'width':4,'line-color':'#D35400','target-arrow-shape':'triangle'}}}},
+ {{selector:'edge[rel_type="INCREASES"]',style:{{'width':3,'line-color':'#16A085','target-arrow-shape':'triangle'}}}},
+ {{selector:'edge[rel_type="DECREASES"]',style:{{'width':3,'line-color':'#2980B9','target-arrow-shape':'triangle'}}}},
+ {{selector:'edge[rel_type="MEASURES"]',style:{{'width':3,'line-color':'#6C5CE7','line-style':'dotted'}}}},
+ {{selector:'edge[rel_type="FUNCTION"]',style:{{'width':4,'line-color':'#5E35B1','target-arrow-shape':'triangle'}}}},
+ {{selector:'edge[rel_type="MEMBER-OF"]',style:{{'width':3,'line-color':'#00838F','target-arrow-shape':'triangle'}}}},
+ {{selector:'edge[rel_type="SUBSET-OF"]',style:{{'width':3,'line-color':'#3949AB','line-style':'dashed','target-arrow-shape':'triangle'}}}},
+ {{selector:'edge[rel_type="ORDER"]',style:{{'width':3,'line-color':'#546E7A','target-arrow-shape':'triangle'}}}},
+ {{selector:'edge[rel_type="QUANTIFIES"]',style:{{'width':3,'line-color':'#7E57C2','line-style':'dotted'}}}},
+ {{selector:'edge[rel_type="OPTIMIZES"]',style:{{'width':4,'line-color':'#2E7D32','target-arrow-shape':'triangle'}}}},
+ {{selector:'edge[rel_type="CONSTRAINS"]',style:{{'width':4,'line-color':'#795548','line-style':'dashed'}}}},
+ {{selector:'edge[rel_type="TRANSFORMS"]',style:{{'width':4,'line-color':'#AD1457','target-arrow-shape':'triangle'}}}}
  ],
  layout: {json.dumps({"name":"cose","fit":True,"padding":50})}
 }});
@@ -1154,11 +1445,12 @@ st.markdown(f"**Sequential Multi-Engine Pipeline** | Current Operating Date: **{
 
 if st.session_state.show_user_guide:
     st.info(f"""
-    **Sequential Synergy Pipeline Workflow (Updated Feb 24, 2026):**
+    **Sequential Synergy Pipeline Workflow (Hybrid Language Layer):**
     1. **Key Input**: Enter your Google Gemini API key and select Google models for Phase 1 and Phase 2.
-    2. **Research Foundation (Step 1)**: Google Gemini performs structural synthesis using Integrated Metamodel Architecture (IMA).
-    3. **Innovation Prompt (Step 2)**: Google Gemini takes the Phase 1 foundation and generates useful innovative ideas using Mental Approaches (MA) logic.
-    4. **Visualization**: The interactive 18D graph maps structural facts against generative ideas.
+    2. **Research Foundation (Step 1)**: Google Gemini performs IMA synthesis and source-grounded semantic normalization.
+    3. **Formalization**: Natural-language propositions are linked, where justified, to symbolic and mathematical representations; ambiguity is retained rather than silently guessed.
+    4. **Innovation Prompt (Step 2)**: Google Gemini transforms the IMA foundation through Mental Approaches (MA), using the hybrid representation as a reasoning scaffold.
+    5. **Visualization**: The interactive graph maps hierarchical, thesaurus, operational-logic and formal/symbolic relations.
     """)
 
 # REFERENCE ARCHITECTURE BOXES
@@ -1168,6 +1460,7 @@ with col_ref1:
 with col_ref2:
     st.markdown("""<div class="mental-approach-box"><b>🧠 Phase 2: Google Gemini (MA Architecture)</b><br>Cognitive transformation generating innovative solutions. Focus: Dialectics, Perspective, Induction.</div>""", unsafe_allow_html=True)
 
+st.markdown("""<div class="metamodel-box"><b>🔤 LSM-Hybrid Language Layer</b><br>Natural language is preserved as the source layer; IMA structures meaning; MA transforms it; symbolic and mathematical representations are added only where justified; the hybrid layer keeps the representations traceable to one another.</div>""", unsafe_allow_html=True)
 st.markdown("### 🛠️ CONFIGURE SYNERGY PIPELINE")
 
 # Entry Rows
@@ -1370,9 +1663,12 @@ INTERFACE PARAMETERS:
             biblio_context = f"\n\n[AUTHOR RESEARCH BACKGROUND]:\n{biblio_data}" if biblio_data else ""
             full_ai_input = f"{active_context}\nUSER RESEARCH INQUIRY:\n{user_query}{file_context_str}{biblio_context}"
 
+            # The hybrid layer is deliberately computed inside the existing Phase 1 call.
+            # It does not create a new LLM stage or change the IMA -> MA architecture.
             google_client = genai.Client(api_key=google_api_key)
 
             # ---------------- PHASE 1: IMA ----------------
+            semantic_schema_text = json.dumps(SEMANTIC_FORMALIZATION_SCHEMA, ensure_ascii=False, indent=2)
             phase1_system_prompt = f"""
 You are the SIS Lead Hierarchologist and Knowledge Architect.
 
@@ -1415,6 +1711,21 @@ Return, using these as literal markdown section headers, in this order:
 ### 6. Evidence / Interpretation Boundary
 ### 7. Key Findings for Phase 2
 
+After the seven human-readable sections, add this exact marker:
+### SEMANTIC_NORMALIZATION_JSON
+Then output one valid JSON object and nothing else after it. The JSON must contain:
+{semantic_schema_text}
+
+FORMALIZATION RULES:
+- Natural language remains the source representation; formalization is an explicit second layer.
+- Do not invent numerical values, variables, equations, causal mechanisms or logical equivalences.
+- Use symbolic operators only when the source or reasoning structure justifies them.
+- Use mathematical expressions only when variables, quantities or relationships are sufficiently defined.
+- If a mathematical expression would be speculative, set status to "not-justified" and explain why.
+- Preserve ambiguity explicitly instead of silently choosing a meaning.
+- Distinguish correlation/association from causation.
+- The semantic JSON is a reasoning scaffold for Phase 2, not an additional answer.
+
 Do not generate innovations in Phase 1.
 """
 
@@ -1425,8 +1736,24 @@ Do not generate innovations in Phase 1.
                 )
                 st.session_state.phase1_synthesis = phase1_synthesis
 
+            # ---------------- HYBRID LANGUAGE EXTRACTION ----------------
+            semantic_data = validate_semantic_representation(
+                extract_marked_json(phase1_synthesis, "### SEMANTIC_NORMALIZATION_JSON")
+            )
+            st.session_state.semantic_normalization = semantic_data
+            semantic_metrics = formalization_quality_summary(semantic_data)
+            with st.expander("🔤 SEMANTIC / SYMBOLIC / MATHEMATICAL NORMALIZATION", expanded=False):
+                c1, c2, c3, c4, c5 = st.columns(5)
+                c1.metric("Propositions", semantic_metrics["propositions"])
+                c2.metric("Symbolic", semantic_metrics["symbolic"])
+                c3.metric("Math", semantic_metrics["mathematical"])
+                c4.metric("Ambiguities", semantic_metrics["ambiguities"])
+                c5.metric("Hybrid", semantic_metrics["hybrid"])
+                st.markdown(semantic_layer_markdown(semantic_data))
+
             # ---------------- PHASE 2: MA ----------------
             ma_list_for_ai = ", ".join(MENTAL_APPROACHES_ONTOLOGY["nodes"].keys())
+            hybrid_context = build_hybrid_context(semantic_data)
             phase2_system_prompt = f"""
 You are the SIS Lead Strategic Innovation Architect and Hierarchographist.
 
@@ -1563,9 +1890,17 @@ C) OPERATIONAL LOGIC FAMILY (use for decision/causal/conditional links —
    XOR (mutually exclusive choices), NOT (negation/exclusion),
    IF-THEN (conditional/causal trigger)
 
+D) FORMAL / SYMBOLIC FAMILY (use when the relation has an explicit formal
+   interpretation that is more precise than ordinary prose):
+   IMPLIES, EQUIV, CONTRADICTS, CAUSES, INCREASES, DECREASES, MEASURES,
+   FUNCTION, MEMBER-OF, SUBSET-OF, ORDER, QUANTIFIES, OPTIMIZES,
+   CONSTRAINS, TRANSFORMS.
+   These relations do not replace the three established families; they add a
+   fourth formal layer. Use them only when their semantics are justified.
+
 MANDATORY DIVERSITY RULE (quantitative, not optional): of the total edges,
 AT LEAST 25% must be Thesaurus-family and AT LEAST 25% must be Operational
-Logic-family. The remainder may be Structural/UML. For example, in a graph
+Logic-family. The remainder may be Structural/UML and/or Formal/Symbolic. For example, in a graph
 with 20 edges, at least 5 must be thesaurus and at least 5 must be logic type.
 A graph that fails this ratio is INVALID and must be corrected before output.
 
@@ -1617,7 +1952,7 @@ code, (9) no two nodes are connected by more than one parallel edge,
 narrower → target is broader; NT: source is broader → target is narrower).
 
 GRAPH LIMITS:
-- Maximum 30 nodes.
+- Maximum {graph_node_count} nodes (respect the user's graph-node setting).
 - Maximum 45 edges.
 - Every edge must connect existing node IDs.
 - No artificial bridge edges.
@@ -1636,12 +1971,28 @@ rectangle=Facts/Components.
 
 The graph must represent the same reasoning as the report.
 
+HYBRID LANGUAGE INTEGRATION:
+The Phase 1 semantic normalization below is a formal reasoning scaffold. Use it
+to improve precision, but do not treat every inferred or uncertain item as fact.
+Preserve unresolved ambiguity. Distinguish association from causality. Mathematical
+expressions are allowed only when variables/relationships are sufficiently defined.
+Symbolic relations must be source-grounded or logically entailed by the stated
+reasoning. Do not create equations merely for visual sophistication.
+
+SEMANTIC NORMALIZATION FROM PHASE 1:
+{hybrid_context}
+
 At the end output:
 ### SEMANTIC_GRAPH_JSON
 
 Then valid JSON only:
 {{
   "system_metrics": {{"f_pf": 0.70, "f_sf": 0.40, "f_pr": 0.30}},
+  "hybrid_language": {{
+    "symbolic_propositions": ["A -> B"],
+    "mathematical_forms": [{{"expression":"...","status":"justified|partial|not-justified"}}],
+    "formalization_limits": ["..."]
+  }},
   "nodes": [
     {{
       "id": "n1",
@@ -1663,6 +2014,7 @@ Do not place explanatory text after the JSON object.
             with st.spinner(f'PHASE 2: MA innovation with {p2_model_label}...'):
                 phase2_user_content = (
                     f"PHASE 1 IMA FOUNDATION:\n{phase1_synthesis}\n\n"
+                    f"PHASE 1 HYBRID SEMANTIC REPRESENTATION:\n{hybrid_context}\n\n"
                     f"USER INNOVATION OBJECTIVE:\n{idea_query}{file_context_str}"
                 )
                 google_innovation = google_generate(
@@ -1761,47 +2113,9 @@ Do not place explanatory text after the JSON object.
                 for e in g_data.get("edges", []):
                     rel = e.get("rel_type", "Association")
 
-                    # A) UML IN STRUKTURNA LOGIKA (Rdeča/Črna/Modra skala)
-                    if rel in ["Generalization", "Realization", "Composition", "Aggregation", "Dependency", "Specialization", "Containment", "Conflict"]:
-                        if rel == "Conflict":
-                            e_color = "#b91d1d"  # Temno rdeča za trčenje/spor
-                        elif rel == "Specialization":
-                            e_color = "#000000"  # Črna za dedukcijo
-                        elif rel == "Containment":
-                            e_color = "#1D3557"  # Temno modra za "Scientific Cage"
-                        elif rel == "Generalization":
-                            e_color = "#E63946"  # UML rdeča
-                        elif rel == "Realization":
-                            e_color = "#E63946"  # UML rdeča
-                        else:
-                            e_color = "#E63946"  # Privzeta UML rdeča (Dependency, Aggregation...)
-
-                    # B) ISO THESAURUS (Hierarhologija - Modra/Vijolična skala)
-                    elif rel in ["BT", "NT", "TT"]:
-                        e_color = "#1D3557"  # Temno modra (Nivoji)
-                    elif rel == "IN":
-                        e_color = "#0077B6"  # Svetlo modra (Instanca)
-                    elif rel == "AS":
-                        e_color = "#7B2CB1"  # Vijolična (Asociativna)
-                    elif rel == "EQ":
-                        e_color = "#F1C40F"  # Rumena (Ekvivalenca)
-                    elif rel == "RT":
-                        e_color = "#2A9D8F"  # Zelena (Povezano)
-
-                    # C) LOGIČNI KONEKTORJI (Decision Logic - Neon skala)
-                    elif rel == "AND":
-                        e_color = "#00FF00"  # Neon zelena
-                    elif rel == "OR":
-                        e_color = "#00BFFF"  # Svetlo modra
-                    elif rel == "XOR":
-                        e_color = "#FF8C00"  # Oranžna
-                    elif rel == "NOT":
-                        e_color = "#FF0000"  # Rdeča
-                    elif rel == "IF-THEN":
-                        e_color = "#FFD700"  # Zlata
-
-                    else:
-                        e_color = "#ADB5BD"  # Če tipa ne pozna = Siva
+                    # Centralized styling keeps the original three families and adds
+                    # the formal/symbolic fourth family without changing graph semantics.
+                    e_color = graph_relation_color(rel)
 
                     final_elements.append({
                         "data": {
@@ -1859,11 +2173,6 @@ Do not place explanatory text after the JSON object.
                 prev_id = nid
 
             # --- RELATION-FAMILY DIAGNOSTIC (Thesaurus vs UML vs Logic) ---
-            THESAURUS_TYPES = {"TT", "BT", "NT", "RT", "EQ", "AS", "IN"}
-            LOGIC_TYPES = {"AND", "OR", "XOR", "NOT", "IF-THEN"}
-            STRUCTURAL_TYPES = {"Generalization", "Specialization", "Containment",
-                                 "Realization", "Composition", "Aggregation",
-                                 "Dependency", "Conflict"}
             edge_rel_types = [el["data"]["rel_type"] for el in final_elements if "source" in el.get("data", {})]
             n_thesaurus = sum(1 for r in edge_rel_types if r in THESAURUS_TYPES)
             n_logic = sum(1 for r in edge_rel_types if r in LOGIC_TYPES)
@@ -1876,13 +2185,16 @@ Do not place explanatory text after the JSON object.
                     f"Structural/UML: {n_structural} ({n_structural/total_edges:.0%}) | "
                     f"Operational Logic: {n_logic} ({n_logic/total_edges:.0%})"
                 )
-                if n_thesaurus / total_edges < 0.20 or n_logic / total_edges < 0.20:
+                if n_thesaurus / total_edges < 0.25 or n_logic / total_edges < 0.25:
                     st.warning(
                         "⚠️ The generated graph leans too heavily on structural/UML relations "
                         "(target: ≥25% thesaurus, ≥25% operational logic). Try re-running Phase 2, "
                         "or nudge the Innovation Prompt to explicitly request thesaurus (BT/NT/RT/EQ) "
                         "and logic (AND/OR/IF-THEN) connections."
                     )
+                n_formal = sum(1 for r in edge_rel_types if r in FORMAL_TYPES)
+                if n_formal:
+                    st.caption(f"🔤 Formal/Symbolic relations: {n_formal} ({n_formal/total_edges:.0%})")
 
             # --- 5. FINAL DISPLAY: SEQUENTIAL INTERACTIVE SYNERGY REPORT ---
 
@@ -1985,6 +2297,8 @@ Do not place explanatory text after the JSON object.
 
                 # --- NOVO: SHRANJEVANJE ZA GALERIJO (DODANO NA KONEC POROČILA) ---
                 st.session_state.final_graph_elements = final_elements
+                st.session_state.semantic_normalization = semantic_data
+                st.session_state.hybrid_language_data = g_data.get("hybrid_language", {}) if isinstance(g_data, dict) else {}
                 st.session_state.report_ready = True
 
         except Exception as e:
@@ -1995,6 +2309,9 @@ Do not place explanatory text after the JSON object.
 # =============================================================================
 
 if st.session_state.get('report_ready') and 'final_graph_elements' in st.session_state:
+    if st.session_state.get('hybrid_language_data'):
+        with st.expander("🔣 PHASE 2 HYBRID LANGUAGE OUTPUT", expanded=False):
+            st.json(st.session_state.hybrid_language_data)
     st.divider()
     st.markdown('<h2 style="color: #1d3557; text-align: center;">🖼️ MULTI-PERSPECTIVE GRAPH GALLERY</h2>', unsafe_allow_html=True)
     st.info("💡 **SEQUENTIAL SAVING INSTRUCTIONS:** Below are tabs featuring different visual perspectives of the same knowledge synthesis. Please open each tab individually and click the **EXPORT PNG** button to save all 5 architectural versions to your local drive.")
@@ -2028,3 +2345,5 @@ if st.session_state.get('report_ready') and 'final_graph_elements' in st.session
 # =============================================================================
 st.divider()
 st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | {SYSTEM_DATE}")
+
+
