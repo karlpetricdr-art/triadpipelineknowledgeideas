@@ -16,7 +16,7 @@ import streamlit.components.v1 as components
 # 0. GLOBAL CONFIGURATION & SESSION DATE (FEBRUARY 24, 2026)
 # =============================================================================
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v24.7.0-HYBRID-LANGUAGE-UPGRADE"
+VERSION_CODE = "v24.7.1-HYBRID-LANGUAGE-UML-FIX"
 
 # =============================================================================
 # INITIALIZATION FIX: Preprečuje AttributeError pri zagonu in resetiranju
@@ -62,14 +62,15 @@ st.markdown("""
         min-width: 380px !important;
     }
 
-    /* Force all sidebar text to be deep black/navy for perfect visibility */
-    [data-testid="stSidebar"] .stMarkdown p, 
+    /* Force all sidebar text to be deep black/navy for perfect visibility.
+       Explicitly exclude the date-badge so it keeps its white-on-navy styling. */
+    [data-testid="stSidebar"] .stMarkdown p:not(.date-badge), 
     [data-testid="stSidebar"] .stMarkdown li,
     [data-testid="stSidebar"] label,
     [data-testid="stSidebar"] .stExpander p,
     [data-testid="stSidebar"] .stExpander li,
-    [data-testid="stSidebar"] .stMarkdown span,
-    [data-testid="stSidebar"] .stMarkdown div {
+    [data-testid="stSidebar"] .stMarkdown span:not(.date-badge),
+    [data-testid="stSidebar"] .stMarkdown div:not(.date-badge) {
         color: #1d3557 !important; /* Maximum Contrast — deep navy on light sidebar */
         font-size: 0.98em !important;
         font-weight: 500 !important;
@@ -162,18 +163,26 @@ st.markdown("""
         font-size: 2.8rem;
     }
 
+    /* Date badge under logo — forced high-contrast white text on deep navy */
+    [data-testid="stSidebar"] .date-badge,
     .date-badge {
-        background-color: #1d3557;
-        color: white;
-        padding: 12px 20px;
-        border-radius: 50px;
-        font-size: 1em;
-        font-weight: 800;
-        margin-bottom: 30px;
-        display: block;
-        text-align: center;
-        box-shadow: 0 4px 15px rgba(29, 53, 87, 0.3);
-        letter-spacing: 1px;
+        background-color: #1d3557 !important;
+        color: #ffffff !important;
+        padding: 12px 20px !important;
+        border-radius: 50px !important;
+        font-size: 1em !important;
+        font-weight: 800 !important;
+        margin-bottom: 30px !important;
+        display: block !important;
+        text-align: center !important;
+        box-shadow: 0 4px 15px rgba(29, 53, 87, 0.3) !important;
+        letter-spacing: 1px !important;
+        opacity: 1 !important;
+    }
+    [data-testid="stSidebar"] .date-badge *,
+    .date-badge * {
+        color: #ffffff !important;
+        opacity: 1 !important;
     }
 
     .sidebar-logo-container {
@@ -1621,11 +1630,17 @@ C) OPERATIONAL LOGIC FAMILY (use for decision/causal/conditional links —
    XOR (mutually exclusive choices), NOT (negation/exclusion),
    IF-THEN (conditional/causal trigger)
 
-MANDATORY DIVERSITY RULE (quantitative, not optional): of the total edges,
-AT LEAST 25% must be Thesaurus-family and AT LEAST 25% must be Operational
-Logic-family. The remainder may be Structural/UML. For example, in a graph
-with 20 edges, at least 5 must be thesaurus and at least 5 must be logic type.
-A graph that fails this ratio is INVALID and must be corrected before output.
+MANDATORY DIVERSITY RULE (quantitative, not optional): of the total edges you
+MUST draw substantially from ALL THREE families. Specifically:
+- AT LEAST 20% Thesaurus-family (TT/BT/NT/RT/EQ/AS/IN),
+- AT LEAST 20% Operational Logic-family (AND/OR/XOR/NOT/IF-THEN),
+- AT LEAST 20% Structural/UML-family (Generalization, Specialization, Containment,
+  Realization, Composition, Aggregation, Dependency, Conflict).
+UML/structural relations are crucial for architectural, compositional and
+inheritance links — never omit them. For example, in a graph with 20 edges,
+at least 4 must be thesaurus, at least 4 must be logic, and at least 4 must
+be UML/structural. A graph that fails any of these minima is INVALID and
+must be corrected before output.
 
 CAUSAL DIRECTION DISCIPLINE (this is where most graphs break):
 - For every IF-THEN edge: source = the cause/enabler/condition, target = the
@@ -1664,13 +1679,14 @@ SENSITIVE-DOMAIN SAFEGUARDS:
 SELF-CHECK BEFORE YOU OUTPUT THE JSON (do this silently, then output only the
 corrected result): confirm (1) every important report entity is present as a
 node, (2) no node is invented beyond the report, (3) no node is isolated,
-(4) the thesaurus/logic edge-ratio rule is satisfied, (5) shapes are used
-consistently as the semantic code above — the star belongs to the actual named
-problem/goal, never to a methodology, (6) every IF-THEN / Dependency arrow
-points cause→effect and reads correctly aloud, (7) every named problem/outcome
-from Phase 1 has a corresponding outcome node linked to the innovation that
-addresses it, (8) every edge "label" is a human-readable phrase, never a bare
-code, (9) no two nodes are connected by more than one parallel edge,
+(4) the three-family edge-ratio rule is satisfied (≥20% Thesaurus, ≥20% Logic,
+≥20% Structural/UML — UML relations are mandatory for architectural links),
+(5) shapes are used consistently as the semantic code above — the star belongs
+to the actual named problem/goal, never to a methodology, (6) every IF-THEN /
+Dependency arrow points cause→effect and reads correctly aloud, (7) every named
+problem/outcome from Phase 1 has a corresponding outcome node linked to the
+innovation that addresses it, (8) every edge "label" is a human-readable phrase,
+never a bare code, (9) no two nodes are connected by more than one parallel edge,
 (10) every BT/NT edge follows the direction convention above (BT: source is
 narrower → target is broader; NT: source is broader → target is narrower).
 
@@ -1934,12 +1950,14 @@ Do not place explanatory text after the JSON object.
                     f"Structural/UML: {n_structural} ({n_structural/total_edges:.0%}) | "
                     f"Operational Logic: {n_logic} ({n_logic/total_edges:.0%})"
                 )
-                if n_thesaurus / total_edges < 0.20 or n_logic / total_edges < 0.20:
+                if (n_thesaurus / total_edges < 0.18 or n_logic / total_edges < 0.18
+                        or n_structural / total_edges < 0.18):
                     st.warning(
-                        "⚠️ The generated graph leans too heavily on structural/UML relations "
-                        "(target: ≥25% thesaurus, ≥25% operational logic). Try re-running Phase 2, "
-                        "or nudge the Innovation Prompt to explicitly request thesaurus (BT/NT/RT/EQ) "
-                        "and logic (AND/OR/IF-THEN) connections."
+                        "⚠️ The generated graph is unbalanced across relation families "
+                        "(target: ≥20% Thesaurus, ≥20% Operational Logic, ≥20% Structural/UML). "
+                        "UML connections (Generalization, Composition, Dependency, etc.) are crucial. "
+                        "Try re-running Phase 2 or nudge the Innovation Prompt to request a balanced mix "
+                        "including UML/structural links."
                     )
 
             # --- 5. FINAL DISPLAY: SEQUENTIAL INTERACTIVE SYNERGY REPORT ---
