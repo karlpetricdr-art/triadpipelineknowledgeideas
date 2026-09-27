@@ -941,106 +941,6 @@ LOGIC_TYPES = {"AND", "OR", "XOR", "NOT", "IF-THEN"}
 STRUCTURAL_TYPES = {"Generalization", "Specialization", "Containment",
                      "Realization", "Composition", "Aggregation",
                      "Dependency", "Conflict"}
-
-REL_COLOR_MAP = {
-    "RT": "#2A9D8F", "AS": "#7B2CB1", "IN": "#0077B6", "EQ": "#F1C40F",
-    "BT": "#1D3557", "NT": "#1D3557", "TT": "#1D3557",
-    "AND": "#00FF00", "OR": "#00BFFF", "XOR": "#FF8C00",
-    "NOT": "#FF0000", "IF-THEN": "#FFD700",
-}
-
-def enforce_relation_diversity(elements, min_ratio=0.25):
-    """
-    ALGORITHMIC AUTO-REBALANCER (this is the "auto-rebalancer" referenced in
-    the Section 3.2 comment above — it now actually exists).
-
-    Weaker/cheaper models (e.g. Gemini Flash-Lite 3.5 / 3.1) tend to default
-    to familiar UML/structural relations (Dependency, Aggregation...) and
-    under-use the Thesaurus (BT/NT/RT/EQ/AS/IN) and Operational-Logic
-    (AND/OR/XOR/NOT/IF-THEN) families, even when the prompt explicitly asks
-    for a 25%/25% minimum. Rather than only *warning* about this (as before),
-    this function *deterministically guarantees* the quota by reclassifying
-    the most generic Structural/UML "donor" edges into the deficient
-    family — so graph richness no longer depends on how well a given model
-    happened to follow instructions. This is the single biggest lever for
-    getting consistently high-quality (richly-typed) graphs out of small
-    models: enforce quality algorithmically instead of hoping for it.
-
-    Heuristic used when converting a donor edge:
-    - -> Thesaurus: becomes "RT" (Related Term) — always semantically safe,
-      since RT makes no hierarchical claim.
-    - -> Logic: becomes "IF-THEN" (with source=cause, target=effect) when the
-      donor edge already points from a finding/field/actor-like node
-      (rectangle/octagon/ellipse/hexagon) toward an innovation (diamond) —
-      i.e. the existing direction already reads as cause->effect. Otherwise
-      it becomes "AND" (a safe, direction-agnostic joint-condition relation).
-
-    Never invents new edges, never removes nodes, never creates duplicate
-    parallel edges between a pair already covered.
-    """
-    edges = [el for el in elements if "source" in el.get("data", {})]
-    nodes_by_id = {el["data"]["id"]: el["data"] for el in elements if "source" not in el.get("data", {})}
-    total = len(edges)
-    if total == 0:
-        return elements, {"thesaurus": 0, "logic": 0, "structural": 0, "other": 0, "total": 0}
-
-    def family(rel):
-        if rel in THESAURUS_TYPES: return "thesaurus"
-        if rel in LOGIC_TYPES: return "logic"
-        if rel in STRUCTURAL_TYPES: return "structural"
-        return "other"
-
-    counts = {"thesaurus": 0, "logic": 0, "structural": 0, "other": 0}
-    for el in edges:
-        counts[family(el["data"]["rel_type"])] += 1
-
-    min_needed = math.ceil(total * min_ratio)
-
-    # Donors are reclassified in this priority order: the most semantically
-    # generic/interchangeable UML relations go first, so we never sacrifice a
-    # highly specific relation (e.g. Conflict, Containment) if a blander one
-    # (Dependency, Aggregation) is available instead.
-    donor_priority = ["Dependency", "Aggregation", "Composition", "Realization",
-                       "Generalization", "Specialization", "Containment", "Conflict"]
-
-    def convert_edge(el, target_family):
-        d = el["data"]
-        src_node = nodes_by_id.get(d.get("source"), {})
-        tgt_node = nodes_by_id.get(d.get("target"), {})
-        if target_family == "thesaurus":
-            new_rel = "RT"
-            new_label = d.get("label") or "related to"
-        else:  # logic
-            src_is_cause_like = src_node.get("shape") in ("rectangle", "octagon", "ellipse", "hexagon")
-            tgt_is_effect_like = tgt_node.get("shape") == "diamond"
-            if src_is_cause_like and tgt_is_effect_like:
-                new_rel = "IF-THEN"
-                new_label = d.get("label") or "enables"
-            else:
-                new_rel = "AND"
-                new_label = d.get("label") or "jointly required for"
-        d["rel_type"] = new_rel
-        d["color"] = REL_COLOR_MAP.get(new_rel, d.get("color", "#ADB5BD"))
-        d["label"] = new_label
-
-    for fam in ("thesaurus", "logic"):
-        if counts[fam] >= min_needed:
-            continue
-        deficit = min_needed - counts[fam]
-        donors = sorted(
-            (el for el in edges if family(el["data"]["rel_type"]) == "structural"),
-            key=lambda el: donor_priority.index(el["data"]["rel_type"])
-            if el["data"]["rel_type"] in donor_priority else 99
-        )
-        for el in donors:
-            if deficit <= 0:
-                break
-            convert_edge(el, fam)
-            counts["structural"] -= 1
-            counts[fam] += 1
-            deficit -= 1
-
-    return elements, {**counts, "total": total}
 # =============================================================================
 # 4. KONČNI POPRAVLJEN SIDEBAR (Z SAMBANOVO IN UNIKATNIMI KLJUČI)
 # =============================================================================
@@ -1716,33 +1616,6 @@ code, (9) no two nodes are connected by more than one parallel edge,
 (10) every BT/NT edge follows the direction convention above (BT: source is
 narrower → target is broader; NT: source is broader → target is narrower).
 
-WORKED MICRO-EXAMPLE (weaker models: copy this PATTERN exactly — shapes,
-BT/NT direction, IF-THEN cause→effect direction, and the edge-family ratio
-math. This is not about the topic, only about the structure):
-
-  Nodes:
-    n1 "Sociology"                        shape=hexagon  (Science Field)
-    n2 "Informal Power Structures"        shape=rectangle (finding, narrower than n1)
-    n3 "Chronic Workplace Stress"         shape=star     (the actual named goal/problem)
-    n4 "Role Ambiguity"                   shape=octagon  (contradiction/constraint)
-    n5 "Adaptive Role-Clarity Protocol"   shape=diamond  (an innovation)
-
-  Edges (5 total → the 25%/25% rule requires ≥2 thesaurus AND ≥2 logic):
-    n1 --NT--> n2   label:"has narrower concept"
-        (n1 is BROADER, n2 is NARROWER -> NT is correct; the reverse, BT, would be WRONG here)
-    n2 --RT--> n4   label:"relates to"
-        (thesaurus family: loose non-hierarchical association)
-    n4 --IF-THEN--> n5   label:"triggers need for"
-        (n4 is the cause/contradiction, n5 the innovation it provokes -> reads correctly aloud)
-    n5 --IF-THEN--> n3   label:"mitigates"
-        (n5 is the cause/enabler, n3 the resolved goal -> reads correctly aloud)
-    n1 --Dependency--> n5   label:"supplies field expertise for"
-        (structural family: n1 is the precondition, n5 depends on it)
-
-  Ratio check for this example: thesaurus = 2/5 = 40% ✓ (≥25%),
-  logic = 2/5 = 40% ✓ (≥25%), structural = 1/5 = 20%. Valid and balanced.
-  Every "label" above is a human phrase, never a bare code — copy that too.
-
 GRAPH LIMITS:
 - Maximum 30 nodes.
 - Maximum 45 edges.
@@ -1985,33 +1858,30 @@ Do not place explanatory text after the JSON object.
                     connected_ids.add(nid)
                 prev_id = nid
 
-            # --- ALGORITHMIC AUTO-REBALANCER: guarantees the 25%/25% thesaurus/ ---
-            # --- logic quota deterministically, independent of model strength. ---
-            # This is what lets even Gemini 3.5/3.1 Flash-Lite output a richly
-            # typed graph every time, instead of relying on prompt compliance.
-            final_elements, rel_counts = enforce_relation_diversity(final_elements, min_ratio=0.25)
-
             # --- RELATION-FAMILY DIAGNOSTIC (Thesaurus vs UML vs Logic) ---
-            total_edges = rel_counts["total"]
-            if total_edges:
-                n_thesaurus, n_logic, n_structural = rel_counts["thesaurus"], rel_counts["logic"], rel_counts["structural"]
+            THESAURUS_TYPES = {"TT", "BT", "NT", "RT", "EQ", "AS", "IN"}
+            LOGIC_TYPES = {"AND", "OR", "XOR", "NOT", "IF-THEN"}
+            STRUCTURAL_TYPES = {"Generalization", "Specialization", "Containment",
+                                 "Realization", "Composition", "Aggregation",
+                                 "Dependency", "Conflict"}
+            edge_rel_types = [el["data"]["rel_type"] for el in final_elements if "source" in el.get("data", {})]
+            n_thesaurus = sum(1 for r in edge_rel_types if r in THESAURUS_TYPES)
+            n_logic = sum(1 for r in edge_rel_types if r in LOGIC_TYPES)
+            n_structural = sum(1 for r in edge_rel_types if r in STRUCTURAL_TYPES)
+            if edge_rel_types:
+                total_edges = len(edge_rel_types)
                 st.caption(
                     f"🔗 Relation mix in graph ({total_edges} edges) — "
                     f"Thesaurus: {n_thesaurus} ({n_thesaurus/total_edges:.0%}) | "
                     f"Structural/UML: {n_structural} ({n_structural/total_edges:.0%}) | "
                     f"Operational Logic: {n_logic} ({n_logic/total_edges:.0%})"
                 )
-                if n_thesaurus / total_edges >= 0.25 and n_logic / total_edges >= 0.25:
-                    st.success(
-                        "✅ Diversity quota met (≥25% thesaurus, ≥25% operational logic) — "
-                        "algorithmically enforced regardless of which model generated the graph."
-                    )
-                else:
-                    # Can only still happen if there weren't enough structural
-                    # "donor" edges to convert (e.g. a very small/sparse graph).
-                    st.info(
-                        "ℹ️ Graph is too sparse in structural donor edges to fully reach the "
-                        "25%/25% quota through rebalancing alone — consider more edges or a larger graph."
+                if n_thesaurus / total_edges < 0.20 or n_logic / total_edges < 0.20:
+                    st.warning(
+                        "⚠️ The generated graph leans too heavily on structural/UML relations "
+                        "(target: ≥25% thesaurus, ≥25% operational logic). Try re-running Phase 2, "
+                        "or nudge the Innovation Prompt to explicitly request thesaurus (BT/NT/RT/EQ) "
+                        "and logic (AND/OR/IF-THEN) connections."
                     )
 
             # --- 5. FINAL DISPLAY: SEQUENTIAL INTERACTIVE SYNERGY REPORT ---
