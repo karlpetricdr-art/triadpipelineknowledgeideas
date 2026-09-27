@@ -16,7 +16,7 @@ import streamlit.components.v1 as components
 # 0. GLOBAL CONFIGURATION & SESSION DATE (FEBRUARY 24, 2026)
 # =============================================================================
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v24.7.2-RICH-VISUAL-LANGUAGE-BALANCED"
+VERSION_CODE = "v24.6.0-GOOGLE-GEMINI-ONLY-FIXED"
 
 # =============================================================================
 # INITIALIZATION FIX: Preprečuje AttributeError pri zagonu in resetiranju
@@ -62,16 +62,15 @@ st.markdown("""
         min-width: 380px !important;
     }
 
-    /* Force all sidebar text to be deep black/navy for perfect visibility.
-       Explicitly exclude the date-badge so it keeps its white-on-navy styling. */
-    [data-testid="stSidebar"] .stMarkdown p:not(.date-badge), 
+    /* Force all sidebar text to be deep black/navy for perfect visibility */
+    [data-testid="stSidebar"] .stMarkdown p, 
     [data-testid="stSidebar"] .stMarkdown li,
     [data-testid="stSidebar"] label,
     [data-testid="stSidebar"] .stExpander p,
     [data-testid="stSidebar"] .stExpander li,
-    [data-testid="stSidebar"] .stMarkdown span:not(.date-badge),
-    [data-testid="stSidebar"] .stMarkdown div:not(.date-badge) {
-        color: #1d3557 !important; /* Maximum Contrast — deep navy on light sidebar */
+    [data-testid="stSidebar"] .stMarkdown span,
+    [data-testid="stSidebar"] .stMarkdown div {
+        color: #ffffff !important; /* Maximum Contrast */
         font-size: 0.98em !important;
         font-weight: 500 !important;
         line-height: 1.6 !important;
@@ -163,26 +162,18 @@ st.markdown("""
         font-size: 2.8rem;
     }
 
-    /* Date badge under logo — forced high-contrast white text on deep navy */
-    [data-testid="stSidebar"] .date-badge,
     .date-badge {
-        background-color: #1d3557 !important;
-        color: #ffffff !important;
-        padding: 12px 20px !important;
-        border-radius: 50px !important;
-        font-size: 1em !important;
-        font-weight: 800 !important;
-        margin-bottom: 30px !important;
-        display: block !important;
-        text-align: center !important;
-        box-shadow: 0 4px 15px rgba(29, 53, 87, 0.3) !important;
-        letter-spacing: 1px !important;
-        opacity: 1 !important;
-    }
-    [data-testid="stSidebar"] .date-badge *,
-    .date-badge * {
-        color: #ffffff !important;
-        opacity: 1 !important;
+        background-color: #1d3557;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 50px;
+        font-size: 1em;
+        font-weight: 800;
+        margin-bottom: 30px;
+        display: block;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(29, 53, 87, 0.3);
+        letter-spacing: 1px;
     }
 
     .sidebar-logo-container {
@@ -660,22 +651,6 @@ MENTAL_APPROACHES_ONTOLOGY = {
         "Openness and closedness": {
             "color": "#FFC000", "shape": "diamond", 
             "desc": "Systemic boundary state governing external data nodes."
-        },
-        "Formalization": {
-            "color": "#4A90E2", "shape": "diamond",
-            "desc": "Translating ambiguous natural-language concepts into precise mathematical equations, logical predicates or symbolic notations to eliminate vagueness and enable rigorous manipulation."
-        },
-        "Symbolic Mapping": {
-            "color": "#9B59B6", "shape": "diamond",
-            "desc": "Encoding concepts, relations and transformations into consistent symbols, operators and formal structures for unambiguous representation and computation."
-        },
-        "Hybrid Language Synthesis": {
-            "color": "#E67E22", "shape": "diamond",
-            "desc": "Integrating natural-language explanations with mathematical formalisms and symbolic notations into coherent multi-layered descriptions that retain human readability while achieving formal precision."
-        },
-        "Ambiguity Resolution": {
-            "color": "#1ABC9C", "shape": "diamond",
-            "desc": "Systematic identification and elimination of natural-language shortcomings (polysemy, vagueness, context-dependence, implicit assumptions) through definitional rigor, formal grounding and explicit disambiguation."
         }
     }
 }
@@ -707,10 +682,7 @@ HIERARCHOLOGY_ONTOLOGY = {
 HUMAN_THINKING_METAMODEL["nodes"].update({
     "Hierarchical Associative System": {"color": "#fd7e14", "shape": "ellipse", "desc": "The primary cognitive framework defined by hierarchology."},
     "Scientific Cage": {"color": "#6c757d", "shape": "rectangle", "desc": "The boundary of human mental perspective."},
-    "Hierarchography": {"color": "#e63946", "shape": "diamond", "desc": "The visual description of hierarchical structures."},
-    "Linguistic Precision Layer": {"color": "#4A90E2", "shape": "rectangle", "desc": "The controlled language stratum that upgrades natural language into precise, ambiguity-free expressions by combining definitional rigor with formal constraints."},
-    "Symbolic Formalism": {"color": "#9B59B6", "shape": "rectangle", "desc": "The mathematical and symbolic encoding layer that represents concepts, relations and transformations as equations, predicates or operators for rigorous manipulation."},
-    "Hybrid Articulation": {"color": "#E67E22", "shape": "rectangle", "desc": "The multi-layered communicative mode that interleaves natural prose, mathematical language and symbolic notation to overcome the inherent limitations of pure natural language."}
+    "Hierarchography": {"color": "#e63946", "shape": "diamond", "desc": "The visual description of hierarchical structures."}
 })
 # =============================================================================
 # 3. KNOWLEDGE BASE (EXHAUSTIVE 18D SCIENCE FIELDS & ONTOLOGIES)
@@ -1182,19 +1154,19 @@ st.markdown(f"**Sequential Multi-Engine Pipeline** | Current Operating Date: **{
 
 if st.session_state.show_user_guide:
     st.info(f"""
-    **Sequential Synergy Pipeline Workflow (Updated {SYSTEM_DATE} — Hybrid Language Upgrade):**
+    **Sequential Synergy Pipeline Workflow (Updated Feb 24, 2026):**
     1. **Key Input**: Enter your Google Gemini API key and select Google models for Phase 1 and Phase 2.
-    2. **Research Foundation (Step 1)**: Google Gemini performs structural synthesis using Integrated Metamodel Architecture (IMA), now with mandatory Hybrid Language Protocol (natural + mathematical + symbolic layers) to eliminate natural-language ambiguity.
-    3. **Innovation Prompt (Step 2)**: Google Gemini takes the Phase 1 foundation and generates useful innovative ideas using Mental Approaches (MA) logic, applying Formalization, Symbolic Mapping, Hybrid Language Synthesis and Ambiguity Resolution.
-    4. **Visualization**: The interactive graph maps structural facts against generative ideas; node/edge descriptions carry the formal/symbolic layer.
+    2. **Research Foundation (Step 1)**: Google Gemini performs structural synthesis using Integrated Metamodel Architecture (IMA).
+    3. **Innovation Prompt (Step 2)**: Google Gemini takes the Phase 1 foundation and generates useful innovative ideas using Mental Approaches (MA) logic.
+    4. **Visualization**: The interactive 18D graph maps structural facts against generative ideas.
     """)
 
 # REFERENCE ARCHITECTURE BOXES
 col_ref1, col_ref2 = st.columns(2)
 with col_ref1:
-    st.markdown("""<div class="metamodel-box"><b>🏛️ Phase 1: Google Gemini (IMA Architecture)</b><br>Structural reasoning building the factual foundation. Focus: Identity, Mission, Problem + Linguistic Precision Layer, Symbolic Formalism, Hybrid Articulation.</div>""", unsafe_allow_html=True)
+    st.markdown("""<div class="metamodel-box"><b>🏛️ Phase 1: Google Gemini (IMA Architecture)</b><br>Structural reasoning building the factual foundation. Focus: Identity, Mission, Problem. </div>""", unsafe_allow_html=True)
 with col_ref2:
-    st.markdown("""<div class="mental-approach-box"><b>🧠 Phase 2: Google Gemini (MA Architecture)</b><br>Cognitive transformation generating innovative solutions. Focus: Dialectics, Perspective, Induction + Formalization, Symbolic Mapping, Hybrid Language Synthesis, Ambiguity Resolution.</div>""", unsafe_allow_html=True)
+    st.markdown("""<div class="mental-approach-box"><b>🧠 Phase 2: Google Gemini (MA Architecture)</b><br>Cognitive transformation generating innovative solutions. Focus: Dialectics, Perspective, Induction.</div>""", unsafe_allow_html=True)
 
 st.markdown("### 🛠️ CONFIGURE SYNERGY PIPELINE")
 
@@ -1424,19 +1396,6 @@ Requirements:
 11. Explicitly identify at least 2-3 cross-disciplinary tension points, contradictions
     or knowledge gaps between the selected science fields — these become the raw
     material for innovation in Phase 2.
-12. HYBRID LANGUAGE PROTOCOL (mandatory for overcoming natural-language shortcomings):
-    - For every key concept, relation or constraint provide THREE coordinated layers:
-      (a) Natural-language definition (precise, unambiguous, no vague qualifiers);
-      (b) Mathematical / formal representation wherever quantitative or logical structure exists
-          (use LaTeX notation, e.g. $\\sigma = \\arcsin(\\sqrt{{(F_{{SF}} \\cdot F_{{PR}}) / F_{{PF}}}})$ or logical predicates);
-      (c) Symbolic encoding (compact operator / symbol / predicate that can be reused later).
-    - Explicitly apply the Mental Approaches "Formalization", "Symbolic Mapping",
-      "Hybrid Language Synthesis" and "Ambiguity Resolution" wherever they reduce
-      natural-language ambiguity, polysemy or implicit assumptions.
-    - Flag residual natural-language risks (vagueness, context-dependence) and show
-      how the formal/symbolic layer resolves them.
-    - Ground every formalization in the selected paradigms, methods and IMA nodes
-      (especially Linguistic Precision Layer, Symbolic Formalism, Hybrid Articulation).
 
 Selected sciences: {', '.join(sel_sciences)}
 Selected paradigms: {', '.join(sel_paradigms)}
@@ -1454,9 +1413,7 @@ Return, using these as literal markdown section headers, in this order:
 (explicit tensions, gaps or complementarities between the selected science fields)
 ### 5. Constraints and Contradictions
 ### 6. Evidence / Interpretation Boundary
-### 7. Hybrid Language Formalizations
-(for each major concept: natural definition + mathematical/formal form + symbolic encoding + ambiguity resolved)
-### 8. Key Findings for Phase 2
+### 7. Key Findings for Phase 2
 
 Do not generate innovations in Phase 1.
 """
@@ -1500,23 +1457,6 @@ SELECTED TOOLS:
 Start the report with a short "### Executive Synthesis" section (max 6 sentences)
 naming the single most important interdisciplinary insight connecting the
 selected science fields — this is the thread the rest of the report follows.
-Within the Executive Synthesis also state, in one sentence, how the hybrid
-language upgrade (natural + mathematical + symbolic) strengthens that insight.
-
-HYBRID LANGUAGE PROTOCOL (mandatory — overcomes natural-language shortcomings):
-- Every innovation must be articulated in three coordinated layers:
-  (a) Natural-language description (precise, free of vague qualifiers);
-  (b) Mathematical / formal representation of the core transformation
-      (LaTeX equations, logical predicates, or quantitative relations);
-  (c) Symbolic encoding (compact reusable symbol / operator / predicate).
-- Explicitly invoke the Mental Approaches "Formalization", "Symbolic Mapping",
-  "Hybrid Language Synthesis" and/or "Ambiguity Resolution" for each innovation
-  where they add rigor. Prefer these MAs when the limitation is linguistic
-  (vagueness, polysemy, missing formal structure).
-- In the graph, node descriptions and edge labels should reflect the formal /
-  symbolic layer whenever a mathematical or logical relation exists.
-- Residual natural-language risks must be named and shown as resolved by the
-  formal/symbolic layer.
 
 For each of 3–4 innovations, use this exact literal markdown structure so the
 report stays clear and scannable:
@@ -1524,13 +1464,8 @@ report stays clear and scannable:
 #### Innovation N: <short, concrete, punchy name>
 - **IMA finding:** ...
 - **Limitation/contradiction:** ...
-- **Mental Approach used:** ... (prefer Formalization / Symbolic Mapping /
-  Hybrid Language Synthesis / Ambiguity Resolution when the limitation is
-  linguistic or structural ambiguity)
+- **Mental Approach used:** ...
 - **Transformation operation:** ...
-- **Formal / mathematical expression of the transformation:** (LaTeX or logical
-  form; if purely qualitative, give a precise predicate or operator schema)
-- **Symbolic encoding:** (compact symbol or operator that can be reused)
 - **New configuration:** ...
 - **The innovation:** one clear, concrete, implementable idea — state what would
   actually be built, tested, measured, or changed. Avoid vague generalities.
@@ -1546,8 +1481,6 @@ report stays clear and scannable:
   mechanism, not just the word "privacy". Omit this bullet only if truly not
   applicable.
 - **Expected effect:** ...
-- **Ambiguity resolved:** (one short statement of which natural-language
-  shortcoming was eliminated by the formal/symbolic layer)
 
 Prioritize innovations that combine at least two of the selected science fields in
 a non-obvious way over single-field extensions. Reject any innovation that is just
@@ -1609,44 +1542,32 @@ follow it exactly):
   (Sociology is broad; Informal Power Structures is its narrower concept).
   [Sociology] --BT--> [Informal Power Structures] would be WRONG (backwards).
 
-RELATION TYPES — RICH VISUAL LANGUAGE requires ALL THREE families equally.
-Pick the family that best fits the semantic meaning of each edge. Never
-default to only one family. Thesaurus, UML and Logic are complementary and
-all three must appear in substantial proportions.
+RELATION TYPES — you MUST draw from all three families below, not just UML.
+Pick the family that actually fits the semantic meaning of each edge; never
+default to UML/structural types just because they are familiar.
 
-A) THESAURUS FAMILY (ISO 25964 — conceptual / terminological / hierarchical backbone):
+A) THESAURUS FAMILY (ISO 25964 style — use for conceptual/terminological links):
    - TT (Top Term) / BT (Broader Term) / NT (Narrower Term): taxonomic level jumps
    - EQ (Equivalence): two labels denote the same concept
    - RT (Related Term): loosely associated concepts, no hierarchy
    - AS (Associative): non-taxonomic thematic association
    - IN (Instance-of): a concrete case of a general class
 
-B) STRUCTURAL/UML FAMILY (architectural / compositional / inheritance skeleton):
+B) STRUCTURAL/UML FAMILY (use for architectural or compositional links):
    Generalization, Specialization, Containment, Realization, Composition,
    Aggregation, Dependency, Conflict
 
-C) OPERATIONAL LOGIC FAMILY (decision / causal / conditional dynamics —
+C) OPERATIONAL LOGIC FAMILY (use for decision/causal/conditional links —
    especially between an IMA finding, a contradiction, an MA, and an innovation):
    AND (joint necessary conditions), OR (alternative sufficient paths),
    XOR (mutually exclusive choices), NOT (negation/exclusion),
    IF-THEN (conditional/causal trigger)
 
-MANDATORY DIVERSITY RULE (quantitative, not optional) — RICH VISUAL LANGUAGE:
-The graph MUST be a balanced mixture of ALL THREE relation families. No family
-may be omitted or reduced to a token presence. Specifically, of the total edges:
-- AT LEAST 25% Thesaurus-family (TT / BT / NT / RT / EQ / AS / IN)
-  → hierarchical, terminological and associative conceptual links (ISO 25964)
-- AT LEAST 25% Operational Logic-family (AND / OR / XOR / NOT / IF-THEN)
-  → decision, causal and conditional links
-- AT LEAST 25% Structural/UML-family (Generalization, Specialization, Containment,
-  Realization, Composition, Aggregation, Dependency, Conflict)
-  → architectural, compositional, inheritance and conflict links
-All three families are equally crucial. Thesaurus supplies the conceptual
-backbone, UML supplies the architectural skeleton, Logic supplies the
-operational dynamics. For a graph of 20 edges this means ≥5 Thesaurus,
-≥5 Logic and ≥5 UML. A graph that fails any of these three minima is INVALID
-and must be corrected before output. Prefer meaningful, non-redundant edges
-from each family over artificial padding.
+MANDATORY DIVERSITY RULE (quantitative, not optional): of the total edges,
+AT LEAST 25% must be Thesaurus-family and AT LEAST 25% must be Operational
+Logic-family. The remainder may be Structural/UML. For example, in a graph
+with 20 edges, at least 5 must be thesaurus and at least 5 must be logic type.
+A graph that fails this ratio is INVALID and must be corrected before output.
 
 CAUSAL DIRECTION DISCIPLINE (this is where most graphs break):
 - For every IF-THEN edge: source = the cause/enabler/condition, target = the
@@ -1685,15 +1606,13 @@ SENSITIVE-DOMAIN SAFEGUARDS:
 SELF-CHECK BEFORE YOU OUTPUT THE JSON (do this silently, then output only the
 corrected result): confirm (1) every important report entity is present as a
 node, (2) no node is invented beyond the report, (3) no node is isolated,
-(4) the three-family edge-ratio rule is fully satisfied (≥25% Thesaurus,
-≥25% Operational Logic, ≥25% Structural/UML) — all three families are equally
-required for a rich visual language; none may be missing or token-only,
-(5) shapes are used consistently as the semantic code above — the star belongs
-to the actual named problem/goal, never to a methodology, (6) every IF-THEN /
-Dependency arrow points cause→effect and reads correctly aloud, (7) every named
-problem/outcome from Phase 1 has a corresponding outcome node linked to the
-innovation that addresses it, (8) every edge "label" is a human-readable phrase,
-never a bare code, (9) no two nodes are connected by more than one parallel edge,
+(4) the thesaurus/logic edge-ratio rule is satisfied, (5) shapes are used
+consistently as the semantic code above — the star belongs to the actual named
+problem/goal, never to a methodology, (6) every IF-THEN / Dependency arrow
+points cause→effect and reads correctly aloud, (7) every named problem/outcome
+from Phase 1 has a corresponding outcome node linked to the innovation that
+addresses it, (8) every edge "label" is a human-readable phrase, never a bare
+code, (9) no two nodes are connected by more than one parallel edge,
 (10) every BT/NT edge follows the direction convention above (BT: source is
 narrower → target is broader; NT: source is broader → target is narrower).
 
@@ -1957,15 +1876,12 @@ Do not place explanatory text after the JSON object.
                     f"Structural/UML: {n_structural} ({n_structural/total_edges:.0%}) | "
                     f"Operational Logic: {n_logic} ({n_logic/total_edges:.0%})"
                 )
-                if (n_thesaurus / total_edges < 0.22 or n_logic / total_edges < 0.22
-                        or n_structural / total_edges < 0.22):
+                if n_thesaurus / total_edges < 0.20 or n_logic / total_edges < 0.20:
                     st.warning(
-                        "⚠️ The generated graph is unbalanced across the three relation families "
-                        "(target: ≥25% Thesaurus, ≥25% Operational Logic, ≥25% Structural/UML). "
-                        "A rich visual language requires all three: Thesaurus (conceptual backbone), "
-                        "UML (architectural skeleton) and Logic (operational dynamics). "
-                        "Re-run Phase 2 or explicitly request a balanced mix of BT/NT/RT, "
-                        "Generalization/Composition/Dependency and AND/OR/IF-THEN in the Innovation Prompt."
+                        "⚠️ The generated graph leans too heavily on structural/UML relations "
+                        "(target: ≥25% thesaurus, ≥25% operational logic). Try re-running Phase 2, "
+                        "or nudge the Innovation Prompt to explicitly request thesaurus (BT/NT/RT/EQ) "
+                        "and logic (AND/OR/IF-THEN) connections."
                     )
 
             # --- 5. FINAL DISPLAY: SEQUENTIAL INTERACTIVE SYNERGY REPORT ---
@@ -2111,6 +2027,6 @@ if st.session_state.get('report_ready') and 'final_graph_elements' in st.session
 # 7. FOOTER
 # =============================================================================
 st.divider()
-st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | Hybrid Language Upgrade (Natural + Mathematical + Symbolic) | {SYSTEM_DATE}")
+st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | {SYSTEM_DATE}")
 
 
