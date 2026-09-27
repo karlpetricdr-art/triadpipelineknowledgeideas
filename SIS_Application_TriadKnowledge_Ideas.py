@@ -16,7 +16,7 @@ import streamlit.components.v1 as components
 # 0. GLOBAL CONFIGURATION & SESSION DATE (FEBRUARY 24, 2026)
 # =============================================================================
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v24.7.1-HYBRID-LANGUAGE-UML-FIX"
+VERSION_CODE = "v24.7.2-RICH-VISUAL-LANGUAGE-BALANCED"
 
 # =============================================================================
 # INITIALIZATION FIX: Preprečuje AttributeError pri zagonu in resetiranju
@@ -1609,38 +1609,44 @@ follow it exactly):
   (Sociology is broad; Informal Power Structures is its narrower concept).
   [Sociology] --BT--> [Informal Power Structures] would be WRONG (backwards).
 
-RELATION TYPES — you MUST draw from all three families below, not just UML.
-Pick the family that actually fits the semantic meaning of each edge; never
-default to UML/structural types just because they are familiar.
+RELATION TYPES — RICH VISUAL LANGUAGE requires ALL THREE families equally.
+Pick the family that best fits the semantic meaning of each edge. Never
+default to only one family. Thesaurus, UML and Logic are complementary and
+all three must appear in substantial proportions.
 
-A) THESAURUS FAMILY (ISO 25964 style — use for conceptual/terminological links):
+A) THESAURUS FAMILY (ISO 25964 — conceptual / terminological / hierarchical backbone):
    - TT (Top Term) / BT (Broader Term) / NT (Narrower Term): taxonomic level jumps
    - EQ (Equivalence): two labels denote the same concept
    - RT (Related Term): loosely associated concepts, no hierarchy
    - AS (Associative): non-taxonomic thematic association
    - IN (Instance-of): a concrete case of a general class
 
-B) STRUCTURAL/UML FAMILY (use for architectural or compositional links):
+B) STRUCTURAL/UML FAMILY (architectural / compositional / inheritance skeleton):
    Generalization, Specialization, Containment, Realization, Composition,
    Aggregation, Dependency, Conflict
 
-C) OPERATIONAL LOGIC FAMILY (use for decision/causal/conditional links —
+C) OPERATIONAL LOGIC FAMILY (decision / causal / conditional dynamics —
    especially between an IMA finding, a contradiction, an MA, and an innovation):
    AND (joint necessary conditions), OR (alternative sufficient paths),
    XOR (mutually exclusive choices), NOT (negation/exclusion),
    IF-THEN (conditional/causal trigger)
 
-MANDATORY DIVERSITY RULE (quantitative, not optional): of the total edges you
-MUST draw substantially from ALL THREE families. Specifically:
-- AT LEAST 20% Thesaurus-family (TT/BT/NT/RT/EQ/AS/IN),
-- AT LEAST 20% Operational Logic-family (AND/OR/XOR/NOT/IF-THEN),
-- AT LEAST 20% Structural/UML-family (Generalization, Specialization, Containment,
-  Realization, Composition, Aggregation, Dependency, Conflict).
-UML/structural relations are crucial for architectural, compositional and
-inheritance links — never omit them. For example, in a graph with 20 edges,
-at least 4 must be thesaurus, at least 4 must be logic, and at least 4 must
-be UML/structural. A graph that fails any of these minima is INVALID and
-must be corrected before output.
+MANDATORY DIVERSITY RULE (quantitative, not optional) — RICH VISUAL LANGUAGE:
+The graph MUST be a balanced mixture of ALL THREE relation families. No family
+may be omitted or reduced to a token presence. Specifically, of the total edges:
+- AT LEAST 25% Thesaurus-family (TT / BT / NT / RT / EQ / AS / IN)
+  → hierarchical, terminological and associative conceptual links (ISO 25964)
+- AT LEAST 25% Operational Logic-family (AND / OR / XOR / NOT / IF-THEN)
+  → decision, causal and conditional links
+- AT LEAST 25% Structural/UML-family (Generalization, Specialization, Containment,
+  Realization, Composition, Aggregation, Dependency, Conflict)
+  → architectural, compositional, inheritance and conflict links
+All three families are equally crucial. Thesaurus supplies the conceptual
+backbone, UML supplies the architectural skeleton, Logic supplies the
+operational dynamics. For a graph of 20 edges this means ≥5 Thesaurus,
+≥5 Logic and ≥5 UML. A graph that fails any of these three minima is INVALID
+and must be corrected before output. Prefer meaningful, non-redundant edges
+from each family over artificial padding.
 
 CAUSAL DIRECTION DISCIPLINE (this is where most graphs break):
 - For every IF-THEN edge: source = the cause/enabler/condition, target = the
@@ -1679,8 +1685,9 @@ SENSITIVE-DOMAIN SAFEGUARDS:
 SELF-CHECK BEFORE YOU OUTPUT THE JSON (do this silently, then output only the
 corrected result): confirm (1) every important report entity is present as a
 node, (2) no node is invented beyond the report, (3) no node is isolated,
-(4) the three-family edge-ratio rule is satisfied (≥20% Thesaurus, ≥20% Logic,
-≥20% Structural/UML — UML relations are mandatory for architectural links),
+(4) the three-family edge-ratio rule is fully satisfied (≥25% Thesaurus,
+≥25% Operational Logic, ≥25% Structural/UML) — all three families are equally
+required for a rich visual language; none may be missing or token-only,
 (5) shapes are used consistently as the semantic code above — the star belongs
 to the actual named problem/goal, never to a methodology, (6) every IF-THEN /
 Dependency arrow points cause→effect and reads correctly aloud, (7) every named
@@ -1950,14 +1957,15 @@ Do not place explanatory text after the JSON object.
                     f"Structural/UML: {n_structural} ({n_structural/total_edges:.0%}) | "
                     f"Operational Logic: {n_logic} ({n_logic/total_edges:.0%})"
                 )
-                if (n_thesaurus / total_edges < 0.18 or n_logic / total_edges < 0.18
-                        or n_structural / total_edges < 0.18):
+                if (n_thesaurus / total_edges < 0.22 or n_logic / total_edges < 0.22
+                        or n_structural / total_edges < 0.22):
                     st.warning(
-                        "⚠️ The generated graph is unbalanced across relation families "
-                        "(target: ≥20% Thesaurus, ≥20% Operational Logic, ≥20% Structural/UML). "
-                        "UML connections (Generalization, Composition, Dependency, etc.) are crucial. "
-                        "Try re-running Phase 2 or nudge the Innovation Prompt to request a balanced mix "
-                        "including UML/structural links."
+                        "⚠️ The generated graph is unbalanced across the three relation families "
+                        "(target: ≥25% Thesaurus, ≥25% Operational Logic, ≥25% Structural/UML). "
+                        "A rich visual language requires all three: Thesaurus (conceptual backbone), "
+                        "UML (architectural skeleton) and Logic (operational dynamics). "
+                        "Re-run Phase 2 or explicitly request a balanced mix of BT/NT/RT, "
+                        "Generalization/Composition/Dependency and AND/OR/IF-THEN in the Innovation Prompt."
                     )
 
             # --- 5. FINAL DISPLAY: SEQUENTIAL INTERACTIVE SYNERGY REPORT ---
