@@ -1644,9 +1644,8 @@ else:
     st.info(f"**Active Hybrid Strategy:** {combined_desc}")
 st.divider()
 
-# --- [NOVO] CRIME & STRESS PREVENTION MODULE (izbirnik + kalkulator) ---
+# --- [NOVO] CRIME & STRESS PREVENTION MODULE ---
 cs_mode = render_crime_stress_mode(st)
-render_stress_calculator(st, calculate_systemic_stress, calculate_effective_energy)
 st.divider()
 
 # DUAL INQUIRY INTERFACE
@@ -1795,60 +1794,41 @@ INTERFACE PARAMETERS:
             biblio_context = f"\n\n[AUTHOR RESEARCH BACKGROUND]:\n{biblio_data}" if biblio_data else ""
             full_ai_input = f"{active_context}\nUSER RESEARCH INQUIRY:\n{user_query}{file_context_str}{biblio_context}"
 
-            # --- [NOVO] Izmerjena intenzivnost stresa (če jo je uporabnik vnesel v kalkulator) ---
-            cs_measured = st.session_state.get("cs_measured")
-            if cs_active and cs_measured:
-                full_ai_input += measured_stress_note(
-                    cs_measured["f_pf"], cs_measured["f_sf"], cs_measured["f_pr"],
-                    cs_measured["degrees"], cs_measured["energy"], cs_measured["efficiency"]
-                )
-
             google_client = genai.Client(api_key=google_api_key)
 
             # ---------------- PHASE 1: IMA ----------------
             phase1_system_prompt = f"""
-You are the SIS Lead Hierarchologist and Knowledge Architect.
+You are the SIS Lead Hierarchologist. Build a rigorous Phase 1 IMA factual foundation only — no innovations.
 
-Perform a rigorous Phase 1 IMA knowledge synthesis. Do not solve the innovation
-problem yet. Build the factual and conceptual foundation for Phase 2.
+Follow FOUR TRACKS in every section:
 
-Requirements:
-1. Identify the actual problem, goal, relevant actors/concepts and constraints.
-2. Map only relevant IMA elements; do not force all ontology nodes.
-3. Distinguish Macro, Meso and Micro levels where the source supports them.
-4. Identify important concepts, relations, dependencies and contradictions.
-5. Distinguish source-supported information from interpretation.
-6. Do not invent named theories, concepts, mechanisms or terminology absent from
-   the supplied material unless clearly marked as interpretation.
-7. Do not introduce 'Scientific Cage' unless the supplied material supports it.
-8. Produce a structured foundation, not generic commentary.
-9. For each key concept, explicitly note which selected science field(s) it belongs
-   to or bridges, so Phase 2 can build genuine interdisciplinary connections.
-10. Write in clear, well-labeled sections with short paragraphs (max 4-5 sentences)
-    and bullet points where useful. Avoid dense, unreadable academic blocks.
-11. Explicitly identify at least 2-3 cross-disciplinary tension points, contradictions
-    or knowledge gaps between the selected science fields — these become the raw
-    material for innovation in Phase 2.
+CONTENT TRACK — mechanisms, evidence, multi-level structure:
+- Identify problem, goal, actors, constraints. Map only relevant IMA elements.
+- Distinguish Macro / Meso / Micro. Note science-field ownership for key concepts.
+- Separate source-supported facts from interpretation. No invented theories.
+- ≥2–3 cross-disciplinary tension points between selected fields.
 
-Selected sciences: {', '.join(sel_sciences)}
-Selected paradigms: {', '.join(sel_paradigms)}
-Selected structural models: {', '.join(sel_models)}
-Selected methodology: {', '.join(sel_methods)}
-Selected tools: {', '.join(sel_tools)}
-Expertise: {expertise}
-Strategic goal: {goal_context}
+ETHICAL-LEGAL TRACK — constraints that bound all later innovation:
+- Privacy, surveillance risk, algorithmic bias, stigma, biological reductionism, AI over-reliance.
+- Legality vs actual harm. Consent and data-minimisation principles.
 
-Return, using these as literal markdown section headers, in this order:
+OPERATIONAL TRACK — what is actionable:
+- Existing approaches and their main limits (CPTED, hot-spot, violence interruption, CBT youth, green-space, procedural justice, trauma-informed care — one line each).
+- Earliest low-harm intervention leverage points (level + timing before escalation).
+
+SEMANTIC TRACK — prepare graph material:
+- Name key concepts, relations and contradictions clearly so Phase 2 can draw Thesaurus (BT/NT/RT/EQ), UML (Composition, Aggregation, Dependency, Generalization, Conflict) and Logic (IF-THEN, AND, OR, NOT) edges.
+
+Selected: sciences={', '.join(sel_sciences)}; paradigms={', '.join(sel_paradigms)}; models={', '.join(sel_models)}; methods={', '.join(sel_methods)}; tools={', '.join(sel_tools)}; expertise={expertise}; goal={goal_context}.
+
+Output exactly these headers:
 ### 1. IMA Problem Definition
 ### 2. Relevant Knowledge Structure
 ### 3. Macro–Meso–Micro Analysis
 ### 4. Cross-Disciplinary Bridge Points
-(explicit tensions, gaps or complementarities between the selected science fields)
 ### 5. Constraints and Contradictions
 ### 6. Evidence / Interpretation Boundary
 ### 7. Key Findings for Phase 2
-
-Do not generate innovations in Phase 1.
 """
             # --- [NOVO] Crime & Stress tematska okrepitev Faze 1 (prepended) ---
             if cs_active:
@@ -1864,230 +1844,62 @@ Do not generate innovations in Phase 1.
             # ---------------- PHASE 2: MA ----------------
             ma_list_for_ai = ", ".join(MENTAL_APPROACHES_ONTOLOGY["nodes"].keys())
             phase2_system_prompt = f"""
-You are the SIS Lead Strategic Innovation Architect and Hierarchographist.
+You are the SIS Lead Strategic Innovation Architect. Transform Phase 1 into 3–4 PRACTICAL innovations via Mental Approaches (MA). No generic brainstorming.
 
-Transform the Phase 1 IMA foundation into traceable, PRACTICAL innovations using
-Mental Approaches (MA). Do NOT produce generic brainstorming.
+Follow FOUR TRACKS throughout:
 
-CORE TRANSFORMATION CHAIN:
-IMA finding -> limitation/contradiction -> selected MA -> transformation
-operation -> changed configuration -> innovation -> expected effect.
+CONTENT TRACK — genuine transformation:
+TRANSFORMATION: IMA finding → limitation → MA → transformation → new config → innovation → expected effect.
+Use only useful MAs (not all 20). Prefer multi-field, non-obvious links. Reject pure restatements of Phase 1.
 
-Use only genuinely useful MAs. You are NOT required to use all 20.
+ETHICAL-LEGAL TRACK — hard constraints:
+Any personal/biometric/health/behavioural data → name exact Privacy-by-Design mechanism (on-device aggregation, differential privacy, consent, bias audit, human-in-the-loop). Reject individual-level crime prediction or covert monitoring. Address stigma and reductionism.
 
-AVAILABLE MENTAL APPROACHES:
-{ma_definitions}
+OPERATIONAL TRACK — implementability:
+- Acts on ≥2 levels (micro/meso/macro); ≥1 innovation targets micro or macro.
+- Expected effect = two measurable lines (stress-side + crime/harm-side) with evaluation method.
+- One concrete municipal action startable within 30 days.
+- Prefer environment / institution / policy + aggregated indicators.
 
-AVAILABLE MA NAMES:
-{ma_list_for_ai}
+SEMANTIC TRACK — graph is a diagram of the report:
+- Nodes only from report text; all key entities must appear. Max 30 nodes / 45 edges. One connected graph, no isolates, no parallel edges.
+- Shapes: star=goal/outcome (reduce stress/crime — NEVER a method); hexagon=science field; diamond=innovation; triangle=process/method; octagon=constraint; ellipse=actor; rectangle=fact.
+- Relations — ALL THREE families REQUIRED (≥20% each):
+  Thesaurus: TT/BT/NT/EQ/RT/AS/IN (BT: narrow→broad; NT: broad→narrow)
+  UML/Structural: Generalization, Specialization, Containment, Realization, Composition, Aggregation, Dependency, Conflict
+  Logic: AND, OR, XOR, NOT, IF-THEN (source=cause → target=effect)
+- Edge "label" = human-readable verb phrase (mitigates, enables, constrains…); never bare code.
+- Outcome nodes from Phase 1 problems must link to innovations with mitigates/prevents/reduces.
+- ≥2 inter-field edges.
 
-SELECTED IDEATION FRAMEWORKS:
-{', '.join(selected_techniques)}
+MA definitions: {ma_definitions}
+MA names: {ma_list_for_ai}
+Frameworks: {', '.join(selected_techniques)} | Methods: {', '.join(sel_methods)} | Tools: {', '.join(sel_tools)}
 
-SELECTED METHODOLOGY:
-{', '.join(sel_methods)}
+### Executive Synthesis
+Max 6 sentences: the single key interdisciplinary insight linking the selected fields.
 
-SELECTED TOOLS:
-{', '.join(sel_tools)}
-
-Start the report with a short "### Executive Synthesis" section (max 6 sentences)
-naming the single most important interdisciplinary insight connecting the
-selected science fields — this is the thread the rest of the report follows.
-
-For each of 3–4 innovations, use this exact literal markdown structure so the
-report stays clear and scannable:
-
-#### Innovation N: <short, concrete, punchy name>
+#### Innovation N: <punchy name>
 - **IMA finding:** ...
 - **Limitation/contradiction:** ...
 - **Mental Approach used:** ...
 - **Transformation operation:** ...
 - **New configuration:** ...
-- **The innovation:** one clear, concrete, implementable idea — state what would
-  actually be built, tested, measured, or changed. Avoid vague generalities.
-- **Cross-disciplinary bridge:** name the ≥2 distinct science fields this
-  innovation connects and what each field specifically contributes.
-- **Practical next step:** one concrete, feasible first action a real team could
-  take within a month (pilot, prototype, experiment, dataset, or policy step).
-- **Safeguards (if the innovation touches personal/biometric/health/behavioral
-  data):** specify a concrete Privacy-by-Design architecture, not a vague
-  mention — e.g. on-device aggregation only, differential privacy (ε-noise
-  addition) before any data leaves the device, so raw individual telemetry is
-  never stored or transmitted, only noised aggregates. Name the actual
-  mechanism, not just the word "privacy". Omit this bullet only if truly not
-  applicable.
-- **Expected effect:** ...
+- **The innovation:** concrete, implementable.
+- **Cross-disciplinary bridge:** ≥2 fields + each contribution.
+- **Practical next step:** one concrete municipal action ≤30 days.
+- **Safeguards:** if sensitive data — exact Privacy-by-Design mechanism. Omit if N/A.
+- **Expected effect:** stress-side + crime/harm-side (indicator + evaluation).
 
-Prioritize innovations that combine at least two of the selected science fields in
-a non-obvious way over single-field extensions. Reject any innovation that is just
-a restatement of a Phase 1 finding without a genuine transformation step.
-
-Avoid unsupported claims and invented terminology.
-Build a sparse semantic graph. Prefer meaningful relations over graph density.
-At least 2 edges must connect nodes that belong to different science-field
-clusters, so the graph visually demonstrates interdisciplinary integration.
-
-GRAPH GROUNDING — THE GRAPH IS A DIAGRAM OF THE REPORT, NOT A SEPARATE TASK:
-- Every node label MUST correspond to a concept, finding, science field, MA,
-  contradiction, or innovation that you explicitly named in the Phase 1 or
-  Phase 2 text above. Do not invent nodes that do not appear in the written
-  report — if it is not in the text, it does not belong in the graph.
-- Conversely, the most important items you wrote about (each innovation, each
-  cross-disciplinary bridge point, each science field actually used, each MA
-  actually used) MUST appear as a node. A graph that omits the innovations or
-  the bridge points you just described is incomplete and INVALID.
-- Every edge must reflect a relationship that is stated or clearly implied in
-  the text (e.g. "Innovation 2 resolves the contradiction from finding X" ->
-  an edge between those two nodes).
-
-GEOMETRY IS A STRICT SEMANTIC CODE, NOT DECORATION — apply consistently to
-every node of that category, with no exceptions:
-- star = the actual, concrete problem/outcome goal named in the user's
-  inquiry (e.g. "reduce crime", "reduce stress") — NEVER a methodology,
-  framework, or theoretical approach (Hierarchology, IMA, MA, Six Thinking
-  Hats, etc. are NOT goals; they go under triangle, see below). If the
-  original inquiry names a target problem, it MUST have its own star node,
-  and every innovation that addresses it must connect to that star.
-- hexagon = Science Field (Physics, Sociology, Astronomy, etc.)
-- diamond = Innovation (Phase 2 output)
-- triangle = Process / Method / Methodology / Framework / Transformation
-  operation (this includes Hierarchology, IMA, MA, and named ideation
-  techniques — they are tools of analysis, not the goal itself)
-- octagon = Rule / Constraint / Contradiction
-- ellipse = Human, biological or social entity/actor
-- rectangle = Fact, finding, or structural/data component (default only when
-  nothing else fits)
-Two nodes describing the same kind of thing must always share the same shape.
-Never assign shapes arbitrarily for visual variety, and never let a method
-node steal the star shape meant for the actual target problem.
-
-NO REDUNDANT PARALLEL EDGES:
-- Between any two given nodes, draw exactly ONE edge — the single relation
-  type that best captures the relationship. If both a causal link (IF-THEN)
-  and a thesaurus link (RT/AS) seem to apply to the same pair, pick the more
-  informative one and drop the other. Two parallel edges between the same
-  node pair (e.g. one IF-THEN and one RT) is a defect, not richness.
-
-ISO 25964 DIRECTION CONVENTION FOR BT/NT (this is commonly drawn backwards —
-follow it exactly):
-- BT (Broader Term): source is the NARROWER/more specific concept, target is
-  the BROADER concept it belongs to. Read as "source's Broader Term is target".
-- NT (Narrower Term): source is the BROADER concept, target is the NARROWER,
-  more specific concept it contains. Read as "source's Narrower Term is target".
-- Example: [Sociology] --NT--> [Informal Power Structures] is CORRECT
-  (Sociology is broad; Informal Power Structures is its narrower concept).
-  [Sociology] --BT--> [Informal Power Structures] would be WRONG (backwards).
-
-RELATION TYPES — you MUST draw from ALL THREE families below. No family may be missing.
-
-A) THESAURUS FAMILY (ISO 25964 — conceptual/terminological links):
-   TT, BT, NT, EQ, RT, AS, IN
-
-B) STRUCTURAL/UML FAMILY (architectural or compositional links — REQUIRED):
-   Generalization, Specialization, Containment, Realization, Composition,
-   Aggregation, Dependency, Conflict
-   Use these for: hierarchy of concepts, part-whole, implementation of an idea,
-   conflicts between constraints, and dependencies between components.
-
-C) OPERATIONAL LOGIC FAMILY (decision/causal/conditional links):
-   AND, OR, XOR, NOT, IF-THEN
-
-MANDATORY DIVERSITY RULE (quantitative, not optional):
-Of the total edges, EACH of the three families must have AT LEAST 20%.
-Example (20 edges): ≥4 thesaurus, ≥4 structural/UML, ≥4 logic.
-A graph missing any family (especially UML) is INVALID and must be corrected.
-Prefer UML for architecture (Composition, Aggregation, Dependency, Generalization,
-Conflict) whenever the relation is structural rather than purely causal or taxonomic.
-
-CAUSAL DIRECTION DISCIPLINE (this is where most graphs break):
-- For every IF-THEN edge: source = the cause/enabler/condition, target = the
-  resulting effect/outcome. Read it aloud as "If <source> then <target>" — if
-  that sentence does not make literal sense, the arrow is backwards. Example:
-  [Computer Science] --IF-THEN--> [Innovation: Semantic Mediator] is correct
-  (a field enables an innovation); the reverse is wrong.
-- The same left-to-right cause→effect discipline applies to Dependency,
-  Realization and AND/OR edges: source is the precondition, target is what
-  depends on or results from it.
-
-TARGET-OUTCOME TRACEABILITY (do not lose the original problem):
-- Any concrete negative condition, risk, symptom, or problem named in the
-  Phase 1 report (e.g. a named stressor, harm, inefficiency, or risk) must
-  reappear in the graph as its own outcome node — do not let it silently
-  disappear once you move to innovations.
-- Connect each such outcome node to the specific innovation(s) that address it
-  with a directional edge whose human-readable label states the effect
-  precisely: "mitigates", "prevents", "resolves", "reduces" — not a generic
-  "related to".
-
-HUMAN-READABLE EDGE LABELS (rel_type is for styling only, label is for humans):
-- "rel_type" must stay one of the codes listed above (for consistent visual
-  styling). "label" must independently be a short, precise, human-readable
-  verb phrase describing what the edge actually does — e.g. "operationalizes",
-  "constrained by", "mitigates", "enables", "contradicts". NEVER leave "label"
-  as a bare code like "IN", "BT", or "AND" — that tells a human nothing.
-
-SENSITIVE-DOMAIN SAFEGUARDS:
-- If an innovation involves personal, biometric, health, behavioral, or other
-  sensitive data, its "innovation" and "practical next step" text must name a
-  concrete technical or ethical safeguard (e.g. on-device processing,
-  anonymization, differential privacy, explicit consent) — do not leave privacy
-  or safety implicit.
-
-SELF-CHECK BEFORE YOU OUTPUT THE JSON (do this silently, then output only the
-corrected result): confirm (1) every important report entity is present as a
-node, (2) no node is invented beyond the report, (3) no node is isolated,
-(4) ALL THREE relation families are present (≥20% each: thesaurus, structural/UML,
-logic), (5) shapes are used consistently — the star belongs to the actual named
-problem/goal, never to a methodology, (6) every IF-THEN / Dependency arrow
-points cause→effect and reads correctly aloud, (7) every named problem/outcome
-from Phase 1 has a corresponding outcome node linked to the innovation that
-addresses it, (8) every edge "label" is a human-readable phrase, never a bare
-code, (9) no two nodes are connected by more than one parallel edge,
-(10) every BT/NT edge follows the direction convention (BT: narrow→broad;
-NT: broad→narrow).
-
-GRAPH LIMITS:
-- Maximum 30 nodes.
-- Maximum 45 edges.
-- Every edge must connect existing node IDs.
-- No artificial bridge edges.
-- No duplicate or semantically redundant edges.
-- MANDATORY CONNECTIVITY: every single node must appear in at least one edge —
-  zero isolated/orphan nodes are allowed. Before finishing, mentally verify that
-  the node set and edge set together form ONE connected graph (no separate
-  disconnected islands). If a node would otherwise be isolated, connect it with
-  the most semantically honest relation available (thesaurus RT/AS is usually
-  the safe default for a loose but real connection).
-
-GEOMETRY:
-star=Goals, hexagon=Science Fields, diamond=Innovations,
-triangle=Processes, octagon=Rules, ellipse=Human/Biological entities,
-rectangle=Facts/Components.
-
-The graph must represent the same reasoning as the report.
-
-At the end output:
+End with:
 ### SEMANTIC_GRAPH_JSON
-
-Then valid JSON only:
+then valid JSON only:
 {{
   "system_metrics": {{"f_pf": 0.70, "f_sf": 0.40, "f_pr": 0.30}},
-  "nodes": [
-    {{
-      "id": "n1",
-      "label": "Example",
-      "shape": "diamond",
-      "color": "#fd7e14",
-      "description": "Short semantic description"
-    }}
-  ],
-  "edges": [
-    {{"source": "n1", "target": "n2", "rel_type": "IF-THEN", "label": "enables"}}
-  ]
+  "nodes": [{{"id":"n1","label":"Example","shape":"diamond","color":"#fd7e14","description":"..."}}],
+  "edges": [{{"source":"n1","target":"n2","rel_type":"IF-THEN","label":"enables"}}]
 }}
-
-Use standard JSON with double quotes. Escape internal quotes correctly.
-Do not place explanatory text after the JSON object.
+No text after JSON.
 """
             # --- [NOVO] Crime & Stress tematska okrepitev Faze 2 (prepended) ---
             if cs_active:
@@ -2322,10 +2134,6 @@ Do not place explanatory text after the JSON object.
                         "explicitly request UML (Composition, Aggregation, Dependency, Generalization, Conflict) "
                         "alongside thesaurus and logic edges."
                     )
-
-            # --- [NOVO] Crime & Stress: prikaz metrik intenzivnosti stresa ---
-            if cs_active:
-                render_stress_metrics(st, g_data.get("system_metrics"), calculate_systemic_stress, calculate_effective_energy)
 
             # --- 5. FINAL DISPLAY: SEQUENTIAL INTERACTIVE SYNERGY REPORT ---
 
