@@ -1646,95 +1646,40 @@ st.divider()
 
 # --- [NOVO] CRIME & STRESS PREVENTION MODULE (izbirnik + kalkulator) ---
 cs_mode = render_crime_stress_mode(st)
+render_stress_calculator(st, calculate_systemic_stress, calculate_effective_energy)
 st.divider()
 
-# =============================================================================
-# DUAL INQUIRY INTERFACE — TRACK FORM (CONTENT / ETHICAL-LEGAL / OPERATIONAL / SEMANTIC)
-# =============================================================================
-TRACKS = ["CONTENT", "ETHICAL-LEGAL", "OPERATIONAL", "SEMANTIC"]
-TRACK_HINTS_P1 = {
-    "CONTENT": "Mechanisms, evidence, Macro/Meso/Micro, cross-field tensions...",
-    "ETHICAL-LEGAL": "Privacy, bias, stigma, reductionism, legality vs harm...",
-    "OPERATIONAL": "Existing approaches + limits; earliest low-harm leverage points...",
-    "SEMANTIC": "Key concepts and relations for Thesaurus / UML / Logic edges...",
-}
-TRACK_HINTS_P2 = {
-    "CONTENT": "Transform Phase 1 finding; multi-field non-obvious innovation...",
-    "ETHICAL-LEGAL": "Privacy-by-Design; no individual prediction or covert monitoring...",
-    "OPERATIONAL": ">=2 levels; dual measurable effect; municipal step <=30 days...",
-    "SEMANTIC": "Graph nodes/edges: Thesaurus + UML + Logic (>=20% each)...",
-}
-
-st.markdown("### STEP 1 — Research Inquiry (Phase 1 tracks)")
-p1_parts = []
-for track in TRACKS:
-    c1, c2 = st.columns([1, 4])
-    with c1:
-        st.markdown(f"**{track}**")
-    with c2:
-        val = st.text_input(
-            track, value="", placeholder=TRACK_HINTS_P1[track],
-            key=f"p1_{track}", label_visibility="collapsed"
-        )
-        if val and val.strip():
-            p1_parts.append("[" + track + "]" + chr(10) + val.strip())
-user_query = (chr(10) + chr(10)).join(p1_parts)
-
-st.markdown("### STEP 2 — Innovation Prompt (Phase 2 tracks)")
-p2_parts = []
-for track in TRACKS:
-    c1, c2 = st.columns([1, 4])
-    with c1:
-        st.markdown(f"**{track}**")
-    with c2:
-        val = st.text_input(
-            track, value="", placeholder=TRACK_HINTS_P2[track],
-            key=f"p2_{track}", label_visibility="collapsed"
-        )
-        if val and val.strip():
-            p2_parts.append("[" + track + "]" + chr(10) + val.strip())
-idea_query = (chr(10) + chr(10)).join(p2_parts)
-
-uploaded_file = st.file_uploader("ATTACH DATA (.txt only):", type=["txt"], key="final_file_uploader_v2")
-file_content = ""
-if uploaded_file is not None:
-    try:
-        file_content = uploaded_file.read().decode("utf-8")
-        st.success(uploaded_file.name + " uploaded!")
-        with st.expander("File Preview"):
-            st.text(file_content[:300] + "...")
-    except Exception as e:
-        st.error("Error reading file: " + str(e))
-
-
+# DUAL INQUIRY INTERFACE
+col_inq1, col_inq2, col_inq3 = st.columns([2, 2, 1])
+with col_inq1:
+    user_query = st.text_area("❓ STEP 1: Research Inquiry (for GOOGLE GEMINI):", placeholder="Fact-based Foundational Inquiry...", height=200)
+with col_inq2:
+    idea_query = st.text_area("💡 STEP 2: Innovation Prompt (for GOOGLE GEMINI):", placeholder="Targets for innovative idea production...", height=200)
+# --- POPRAVEK KORAK 1: Branje vsebine datoteke ---
+# --- KORAK 1: File Upload with English Translation ---
+with col_inq3:
+    uploaded_file = st.file_uploader("📂 ATTACH DATA (.txt only):", type=['txt'], key="final_file_uploader_v2")
+    file_content = "" 
+    if uploaded_file is not None:
+        try:
+            file_content = uploaded_file.read().decode("utf-8")
+            st.success(f"📎 {uploaded_file.name} uploaded!")
+            # Prevedeno v angleščino:
+            with st.expander("File Preview"):
+                st.text(file_content[:300] + "...")
+        except Exception as e:
+            st.error(f"Error reading file: {e}")
 
 # =============================================================================
 # 5. SYNERGY EXECUTION ENGINE (GOOGLE GEMINI / GEMMA ONLY)
 # =============================================================================
 
-def google_generate(
-    client,
-    model_id,
-    system_prompt,
-    user_content,
-    temperature,
-    max_retries=7,
-    base_delay=5,
-    max_delay=60,
-):
-    """Robust Google GenAI gateway for the SIS pipeline.
+def google_generate(client, model_id, system_prompt, user_content, temperature, max_retries=4):
+    """Single Google GenAI gateway. No third-party LLM providers.
 
-    Retries temporary Google-side failures without changing the selected model.
-    This preserves methodological consistency between pipeline executions.
-
-    Transient errors handled:
-      503 UNAVAILABLE / high demand
-      429 RESOURCE_EXHAUSTED
-      500 INTERNAL
-      502 BAD_GATEWAY
-      504 DEADLINE_EXCEEDED
-
-    Backoff: approximately 5, 10, 20, 40, 60, 60 seconds, with small jitter.
+    Includes automatic retry with exponential backoff for transient server-side
+    errors (e.g. 503 UNAVAILABLE / high demand), which are temporary on Google's
+    side and usually succeed on the next attempt.
     """
     if client is None:
         raise RuntimeError("Google Gemini client is not initialized.")
@@ -1743,95 +1688,41 @@ def google_generate(
         "system_instruction": system_prompt,
         "temperature": temperature,
     }
-
     if model_id.startswith("gemini-3"):
         try:
-            config_kwargs["thinking_config"] = types.ThinkingConfig(
-                thinking_level="low"
-            )
+            config_kwargs["thinking_config"] = types.ThinkingConfig(thinking_level="low")
         except Exception:
-            # Compatibility with older google-genai package versions.
             pass
 
     config = types.GenerateContentConfig(**config_kwargs)
 
-    def is_transient_google_error(exc):
-        error_text = str(exc).upper()
-        transient_markers = (
-            "503", "UNAVAILABLE",
-            "429", "RESOURCE_EXHAUSTED",
-            "500", "INTERNAL",
-            "502", "BAD_GATEWAY",
-            "504", "DEADLINE_EXCEEDED",
-            "SERVICE_UNAVAILABLE",
-            "TEMPORARILY_UNAVAILABLE",
-        )
-        return any(marker in error_text for marker in transient_markers)
-
     last_exc = None
-
-    for attempt in range(1, max_retries + 1):
+    for attempt in range(max_retries):
         try:
             response = client.models.generate_content(
                 model=model_id,
                 contents=user_content,
                 config=config,
             )
-
             text_out = getattr(response, "text", None)
-            if text_out and text_out.strip():
-                return text_out.strip()
-
+            if text_out:
+                return text_out
             try:
-                fallback_text = response.candidates[0].content.parts[0].text
-                if fallback_text and fallback_text.strip():
-                    return fallback_text.strip()
-            except Exception as fallback_exc:
-                raise RuntimeError(
-                    f"Google returned no usable text response: {fallback_exc}"
-                ) from fallback_exc
-
-            raise RuntimeError("Google returned an empty response.")
-
+                return response.candidates[0].content.parts[0].text
+            except Exception as exc:
+                raise RuntimeError(f"Google returned no usable text response: {exc}") from exc
         except Exception as exc:
             last_exc = exc
-            error_text = str(exc)
+            error_str = str(exc)
+            is_transient = any(code in error_str for code in ["503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED", "500", "INTERNAL"])
+            if is_transient and attempt < max_retries - 1:
+                wait_time = (2 ** attempt) + 1  # 2s, 3s, 5s, 9s...
+                st.toast(f"⏳ Google API trenutno preobremenjen (poskus {attempt + 1}/{max_retries}). Ponovni poskus čez {wait_time}s...")
+                time.sleep(wait_time)
+                continue
+            raise
 
-            if not is_transient_google_error(exc):
-                raise RuntimeError(
-                    f"Google Gemini request failed for model '{model_id}': "
-                    f"{error_text}"
-                ) from exc
-
-            if attempt >= max_retries:
-                break
-
-            # Exponential backoff with an upper bound.
-            delay = min(base_delay * (2 ** (attempt - 1)), max_delay)
-            # Small deterministic jitter prevents synchronized retries.
-            jitter = min(attempt * 0.75, 4.0)
-            wait_time = delay + jitter
-
-            upper_error = error_text.upper()
-            if "429" in upper_error or "RESOURCE_EXHAUSTED" in upper_error:
-                reason = "Google API rate limit / resource exhaustion"
-            elif "503" in upper_error or "UNAVAILABLE" in upper_error:
-                reason = "Google model temporarily unavailable / high demand"
-            else:
-                reason = "temporary Google server error"
-
-            st.warning(
-                f"⚠️ {reason}. Model: `{model_id}`. "
-                f"Retry {attempt}/{max_retries - 1}. "
-                f"Waiting {wait_time:.1f}s..."
-            )
-            time.sleep(wait_time)
-
-    raise RuntimeError(
-        f"Google Gemini model '{model_id}' remained unavailable after "
-        f"{max_retries} attempts. Last error: {last_exc}"
-    )
-
+    raise RuntimeError(f"Google Gemini API ni na voljo po {max_retries} poskusih: {last_exc}")
 
 
 if st.button("🚀 EXECUTE MULTI-DIMENSIONAL GOOGLE GEMINI PIPELINE", use_container_width=True, key="exec_pipeline_v2026"):
@@ -1904,28 +1795,60 @@ INTERFACE PARAMETERS:
             biblio_context = f"\n\n[AUTHOR RESEARCH BACKGROUND]:\n{biblio_data}" if biblio_data else ""
             full_ai_input = f"{active_context}\nUSER RESEARCH INQUIRY:\n{user_query}{file_context_str}{biblio_context}"
 
+            # --- [NOVO] Izmerjena intenzivnost stresa (če jo je uporabnik vnesel v kalkulator) ---
+            cs_measured = st.session_state.get("cs_measured")
+            if cs_active and cs_measured:
+                full_ai_input += measured_stress_note(
+                    cs_measured["f_pf"], cs_measured["f_sf"], cs_measured["f_pr"],
+                    cs_measured["degrees"], cs_measured["energy"], cs_measured["efficiency"]
+                )
+
             google_client = genai.Client(api_key=google_api_key)
 
             # ---------------- PHASE 1: IMA ----------------
             phase1_system_prompt = f"""
-You are the SIS Lead Hierarchologist. Phase 1 only: factual IMA foundation. No innovations.
+You are the SIS Lead Hierarchologist and Knowledge Architect.
 
-Four tracks (apply inside required sections):
-CONTENT: problem, goal, actors, constraints; Macro/Meso/Micro; science-field ownership; >=2 cross-field tensions; facts vs interpretation.
-ETHICAL-LEGAL: privacy, bias, stigma, reductionism, AI over-reliance, legality vs harm.
-OPERATIONAL: limits of CPTED, hot-spot, violence interruption, CBT youth, green-space, procedural justice, trauma care (1 line each); earliest low-harm leverage points.
-SEMANTIC: name concepts/relations so Phase 2 can use Thesaurus (BT/NT/RT), UML (Composition, Aggregation, Dependency, Conflict) and Logic (IF-THEN, AND, NOT).
+Perform a rigorous Phase 1 IMA knowledge synthesis. Do not solve the innovation
+problem yet. Build the factual and conceptual foundation for Phase 2.
 
-Selected: {', '.join(sel_sciences)} | {', '.join(sel_paradigms)} | {expertise} | {goal_context}
+Requirements:
+1. Identify the actual problem, goal, relevant actors/concepts and constraints.
+2. Map only relevant IMA elements; do not force all ontology nodes.
+3. Distinguish Macro, Meso and Micro levels where the source supports them.
+4. Identify important concepts, relations, dependencies and contradictions.
+5. Distinguish source-supported information from interpretation.
+6. Do not invent named theories, concepts, mechanisms or terminology absent from
+   the supplied material unless clearly marked as interpretation.
+7. Do not introduce 'Scientific Cage' unless the supplied material supports it.
+8. Produce a structured foundation, not generic commentary.
+9. For each key concept, explicitly note which selected science field(s) it belongs
+   to or bridges, so Phase 2 can build genuine interdisciplinary connections.
+10. Write in clear, well-labeled sections with short paragraphs (max 4-5 sentences)
+    and bullet points where useful. Avoid dense, unreadable academic blocks.
+11. Explicitly identify at least 2-3 cross-disciplinary tension points, contradictions
+    or knowledge gaps between the selected science fields — these become the raw
+    material for innovation in Phase 2.
 
-Headers only:
+Selected sciences: {', '.join(sel_sciences)}
+Selected paradigms: {', '.join(sel_paradigms)}
+Selected structural models: {', '.join(sel_models)}
+Selected methodology: {', '.join(sel_methods)}
+Selected tools: {', '.join(sel_tools)}
+Expertise: {expertise}
+Strategic goal: {goal_context}
+
+Return, using these as literal markdown section headers, in this order:
 ### 1. IMA Problem Definition
 ### 2. Relevant Knowledge Structure
-### 3. Macro-Meso-Micro Analysis
+### 3. Macro–Meso–Micro Analysis
 ### 4. Cross-Disciplinary Bridge Points
+(explicit tensions, gaps or complementarities between the selected science fields)
 ### 5. Constraints and Contradictions
 ### 6. Evidence / Interpretation Boundary
 ### 7. Key Findings for Phase 2
+
+Do not generate innovations in Phase 1.
 """
             # --- [NOVO] Crime & Stress tematska okrepitev Faze 1 (prepended) ---
             if cs_active:
@@ -1938,48 +1861,233 @@ Headers only:
                 )
                 st.session_state.phase1_synthesis = phase1_synthesis
 
-            # Small cooldown between sequential Google requests.
-            # This reduces consecutive-load 503 responses without changing
-            # the selected model or the SIS methodology.
-            time.sleep(3)
-
             # ---------------- PHASE 2: MA ----------------
             ma_list_for_ai = ", ".join(MENTAL_APPROACHES_ONTOLOGY["nodes"].keys())
             phase2_system_prompt = f"""
-You are the SIS Innovation Architect. From Phase 1 produce 3-4 practical innovations via MA. No filler.
+You are the SIS Lead Strategic Innovation Architect and Hierarchographist.
 
-Four tracks:
-CONTENT: IMA finding -> limitation -> MA -> transformation -> innovation. Multi-field, non-obvious. No restatement.
-ETHICAL-LEGAL: sensitive data -> exact Privacy-by-Design (on-device, differential privacy, consent, bias audit). No individual prediction/covert monitoring.
-OPERATIONAL: >=2 levels (one micro or macro); dual measurable effect (stress + crime/harm); one municipal step <=30 days; prefer policy/environment/aggregates.
-SEMANTIC: graph = report diagram. Max 30 nodes/45 edges, connected, no isolates/parallels.
-Shapes: star=goal, hexagon=field, diamond=innovation, triangle=process, octagon=constraint, ellipse=actor, rectangle=fact.
-Relations >=20% each family:
-  Thesaurus: BT/NT/RT/EQ/AS/IN
-  UML: Composition, Aggregation, Dependency, Generalization, Conflict
-  Logic: IF-THEN, AND, OR, NOT
-Edge label = human verb (mitigates, enables...). Outcomes link to innovations with mitigates/prevents.
+Transform the Phase 1 IMA foundation into traceable, PRACTICAL innovations using
+Mental Approaches (MA). Do NOT produce generic brainstorming.
 
-MA: {ma_list_for_ai}
-Frameworks: {', '.join(selected_techniques)}
+CORE TRANSFORMATION CHAIN:
+IMA finding -> limitation/contradiction -> selected MA -> transformation
+operation -> changed configuration -> innovation -> expected effect.
 
-### Executive Synthesis (<=6 sentences)
+Use only genuinely useful MAs. You are NOT required to use all 20.
 
-#### Innovation N: <name>
+AVAILABLE MENTAL APPROACHES:
+{ma_definitions}
+
+AVAILABLE MA NAMES:
+{ma_list_for_ai}
+
+SELECTED IDEATION FRAMEWORKS:
+{', '.join(selected_techniques)}
+
+SELECTED METHODOLOGY:
+{', '.join(sel_methods)}
+
+SELECTED TOOLS:
+{', '.join(sel_tools)}
+
+Start the report with a short "### Executive Synthesis" section (max 6 sentences)
+naming the single most important interdisciplinary insight connecting the
+selected science fields — this is the thread the rest of the report follows.
+
+For each of 3–4 innovations, use this exact literal markdown structure so the
+report stays clear and scannable:
+
+#### Innovation N: <short, concrete, punchy name>
 - **IMA finding:** ...
 - **Limitation/contradiction:** ...
 - **Mental Approach used:** ...
 - **Transformation operation:** ...
 - **New configuration:** ...
-- **The innovation:** ...
-- **Cross-disciplinary bridge:** ...
-- **Practical next step:** ...
-- **Safeguards:** ... (or omit)
-- **Expected effect:** stress-side | crime-side
+- **The innovation:** one clear, concrete, implementable idea — state what would
+  actually be built, tested, measured, or changed. Avoid vague generalities.
+- **Cross-disciplinary bridge:** name the ≥2 distinct science fields this
+  innovation connects and what each field specifically contributes.
+- **Practical next step:** one concrete, feasible first action a real team could
+  take within a month (pilot, prototype, experiment, dataset, or policy step).
+- **Safeguards (if the innovation touches personal/biometric/health/behavioral
+  data):** specify a concrete Privacy-by-Design architecture, not a vague
+  mention — e.g. on-device aggregation only, differential privacy (ε-noise
+  addition) before any data leaves the device, so raw individual telemetry is
+  never stored or transmitted, only noised aggregates. Name the actual
+  mechanism, not just the word "privacy". Omit this bullet only if truly not
+  applicable.
+- **Expected effect:** ...
 
+Prioritize innovations that combine at least two of the selected science fields in
+a non-obvious way over single-field extensions. Reject any innovation that is just
+a restatement of a Phase 1 finding without a genuine transformation step.
+
+Avoid unsupported claims and invented terminology.
+Build a sparse semantic graph. Prefer meaningful relations over graph density.
+At least 2 edges must connect nodes that belong to different science-field
+clusters, so the graph visually demonstrates interdisciplinary integration.
+
+GRAPH GROUNDING — THE GRAPH IS A DIAGRAM OF THE REPORT, NOT A SEPARATE TASK:
+- Every node label MUST correspond to a concept, finding, science field, MA,
+  contradiction, or innovation that you explicitly named in the Phase 1 or
+  Phase 2 text above. Do not invent nodes that do not appear in the written
+  report — if it is not in the text, it does not belong in the graph.
+- Conversely, the most important items you wrote about (each innovation, each
+  cross-disciplinary bridge point, each science field actually used, each MA
+  actually used) MUST appear as a node. A graph that omits the innovations or
+  the bridge points you just described is incomplete and INVALID.
+- Every edge must reflect a relationship that is stated or clearly implied in
+  the text (e.g. "Innovation 2 resolves the contradiction from finding X" ->
+  an edge between those two nodes).
+
+GEOMETRY IS A STRICT SEMANTIC CODE, NOT DECORATION — apply consistently to
+every node of that category, with no exceptions:
+- star = the actual, concrete problem/outcome goal named in the user's
+  inquiry (e.g. "reduce crime", "reduce stress") — NEVER a methodology,
+  framework, or theoretical approach (Hierarchology, IMA, MA, Six Thinking
+  Hats, etc. are NOT goals; they go under triangle, see below). If the
+  original inquiry names a target problem, it MUST have its own star node,
+  and every innovation that addresses it must connect to that star.
+- hexagon = Science Field (Physics, Sociology, Astronomy, etc.)
+- diamond = Innovation (Phase 2 output)
+- triangle = Process / Method / Methodology / Framework / Transformation
+  operation (this includes Hierarchology, IMA, MA, and named ideation
+  techniques — they are tools of analysis, not the goal itself)
+- octagon = Rule / Constraint / Contradiction
+- ellipse = Human, biological or social entity/actor
+- rectangle = Fact, finding, or structural/data component (default only when
+  nothing else fits)
+Two nodes describing the same kind of thing must always share the same shape.
+Never assign shapes arbitrarily for visual variety, and never let a method
+node steal the star shape meant for the actual target problem.
+
+NO REDUNDANT PARALLEL EDGES:
+- Between any two given nodes, draw exactly ONE edge — the single relation
+  type that best captures the relationship. If both a causal link (IF-THEN)
+  and a thesaurus link (RT/AS) seem to apply to the same pair, pick the more
+  informative one and drop the other. Two parallel edges between the same
+  node pair (e.g. one IF-THEN and one RT) is a defect, not richness.
+
+ISO 25964 DIRECTION CONVENTION FOR BT/NT (this is commonly drawn backwards —
+follow it exactly):
+- BT (Broader Term): source is the NARROWER/more specific concept, target is
+  the BROADER concept it belongs to. Read as "source's Broader Term is target".
+- NT (Narrower Term): source is the BROADER concept, target is the NARROWER,
+  more specific concept it contains. Read as "source's Narrower Term is target".
+- Example: [Sociology] --NT--> [Informal Power Structures] is CORRECT
+  (Sociology is broad; Informal Power Structures is its narrower concept).
+  [Sociology] --BT--> [Informal Power Structures] would be WRONG (backwards).
+
+RELATION TYPES — you MUST draw from ALL THREE families below. No family may be missing.
+
+A) THESAURUS FAMILY (ISO 25964 — conceptual/terminological links):
+   TT, BT, NT, EQ, RT, AS, IN
+
+B) STRUCTURAL/UML FAMILY (architectural or compositional links — REQUIRED):
+   Generalization, Specialization, Containment, Realization, Composition,
+   Aggregation, Dependency, Conflict
+   Use these for: hierarchy of concepts, part-whole, implementation of an idea,
+   conflicts between constraints, and dependencies between components.
+
+C) OPERATIONAL LOGIC FAMILY (decision/causal/conditional links):
+   AND, OR, XOR, NOT, IF-THEN
+
+MANDATORY DIVERSITY RULE (quantitative, not optional):
+Of the total edges, EACH of the three families must have AT LEAST 20%.
+Example (20 edges): ≥4 thesaurus, ≥4 structural/UML, ≥4 logic.
+A graph missing any family (especially UML) is INVALID and must be corrected.
+Prefer UML for architecture (Composition, Aggregation, Dependency, Generalization,
+Conflict) whenever the relation is structural rather than purely causal or taxonomic.
+
+CAUSAL DIRECTION DISCIPLINE (this is where most graphs break):
+- For every IF-THEN edge: source = the cause/enabler/condition, target = the
+  resulting effect/outcome. Read it aloud as "If <source> then <target>" — if
+  that sentence does not make literal sense, the arrow is backwards. Example:
+  [Computer Science] --IF-THEN--> [Innovation: Semantic Mediator] is correct
+  (a field enables an innovation); the reverse is wrong.
+- The same left-to-right cause→effect discipline applies to Dependency,
+  Realization and AND/OR edges: source is the precondition, target is what
+  depends on or results from it.
+
+TARGET-OUTCOME TRACEABILITY (do not lose the original problem):
+- Any concrete negative condition, risk, symptom, or problem named in the
+  Phase 1 report (e.g. a named stressor, harm, inefficiency, or risk) must
+  reappear in the graph as its own outcome node — do not let it silently
+  disappear once you move to innovations.
+- Connect each such outcome node to the specific innovation(s) that address it
+  with a directional edge whose human-readable label states the effect
+  precisely: "mitigates", "prevents", "resolves", "reduces" — not a generic
+  "related to".
+
+HUMAN-READABLE EDGE LABELS (rel_type is for styling only, label is for humans):
+- "rel_type" must stay one of the codes listed above (for consistent visual
+  styling). "label" must independently be a short, precise, human-readable
+  verb phrase describing what the edge actually does — e.g. "operationalizes",
+  "constrained by", "mitigates", "enables", "contradicts". NEVER leave "label"
+  as a bare code like "IN", "BT", or "AND" — that tells a human nothing.
+
+SENSITIVE-DOMAIN SAFEGUARDS:
+- If an innovation involves personal, biometric, health, behavioral, or other
+  sensitive data, its "innovation" and "practical next step" text must name a
+  concrete technical or ethical safeguard (e.g. on-device processing,
+  anonymization, differential privacy, explicit consent) — do not leave privacy
+  or safety implicit.
+
+SELF-CHECK BEFORE YOU OUTPUT THE JSON (do this silently, then output only the
+corrected result): confirm (1) every important report entity is present as a
+node, (2) no node is invented beyond the report, (3) no node is isolated,
+(4) ALL THREE relation families are present (≥20% each: thesaurus, structural/UML,
+logic), (5) shapes are used consistently — the star belongs to the actual named
+problem/goal, never to a methodology, (6) every IF-THEN / Dependency arrow
+points cause→effect and reads correctly aloud, (7) every named problem/outcome
+from Phase 1 has a corresponding outcome node linked to the innovation that
+addresses it, (8) every edge "label" is a human-readable phrase, never a bare
+code, (9) no two nodes are connected by more than one parallel edge,
+(10) every BT/NT edge follows the direction convention (BT: narrow→broad;
+NT: broad→narrow).
+
+GRAPH LIMITS:
+- Maximum 30 nodes.
+- Maximum 45 edges.
+- Every edge must connect existing node IDs.
+- No artificial bridge edges.
+- No duplicate or semantically redundant edges.
+- MANDATORY CONNECTIVITY: every single node must appear in at least one edge —
+  zero isolated/orphan nodes are allowed. Before finishing, mentally verify that
+  the node set and edge set together form ONE connected graph (no separate
+  disconnected islands). If a node would otherwise be isolated, connect it with
+  the most semantically honest relation available (thesaurus RT/AS is usually
+  the safe default for a loose but real connection).
+
+GEOMETRY:
+star=Goals, hexagon=Science Fields, diamond=Innovations,
+triangle=Processes, octagon=Rules, ellipse=Human/Biological entities,
+rectangle=Facts/Components.
+
+The graph must represent the same reasoning as the report.
+
+At the end output:
 ### SEMANTIC_GRAPH_JSON
-{{"system_metrics":{{"f_pf":0.7,"f_sf":0.4,"f_pr":0.3}},"nodes":[{{"id":"n1","label":"...","shape":"diamond","color":"#fd7e14","description":"..."}}],"edges":[{{"source":"n1","target":"n2","rel_type":"IF-THEN","label":"enables"}}]}}
-No text after JSON.
+
+Then valid JSON only:
+{{
+  "system_metrics": {{"f_pf": 0.70, "f_sf": 0.40, "f_pr": 0.30}},
+  "nodes": [
+    {{
+      "id": "n1",
+      "label": "Example",
+      "shape": "diamond",
+      "color": "#fd7e14",
+      "description": "Short semantic description"
+    }}
+  ],
+  "edges": [
+    {{"source": "n1", "target": "n2", "rel_type": "IF-THEN", "label": "enables"}}
+  ]
+}}
+
+Use standard JSON with double quotes. Escape internal quotes correctly.
+Do not place explanatory text after the JSON object.
 """
             # --- [NOVO] Crime & Stress tematska okrepitev Faze 2 (prepended) ---
             if cs_active:
@@ -2215,7 +2323,9 @@ No text after JSON.
                         "alongside thesaurus and logic edges."
                     )
 
-            # --- 5. FINAL DISPLAY
+            # --- [NOVO] Crime & Stress: prikaz metrik intenzivnosti stresa ---
+            if cs_active:
+                render_stress_metrics(st, g_data.get("system_metrics"), calculate_systemic_stress, calculate_effective_energy)
 
             # --- 5. FINAL DISPLAY: SEQUENTIAL INTERACTIVE SYNERGY REPORT ---
 
