@@ -212,30 +212,29 @@ def build_phase1_addendum():
     """PREPENDED to Phase 1. No new section headers."""
     return f"""
 
-### CRIME & STRESS (Phase 1 — use only if relevant; Petrič 2026)
+### CRIME & STRESS (Phase 1 — only if relevant; Petric 2026)
 STRESS: {_digest(STRESS_KNOWLEDGE)}
 CRIME: {_digest(CRIME_KNOWLEDGE)}
-Rules: multi-causal; assign micro/meso/macro in §3; flag mesocosmic bias; eustress≠distress; stress→crime = hypothesis only (§6); ethics in §5; §7 name stress+crime pathways for Phase 2.
+Rules: multi-causal; micro/meso/macro in sec.3; flag mesocosmic bias; stress->crime = hypothesis only; ethics in sec.5; sec.7 name stress+crime pathways for Phase 2.
 """
 
 
-
 def build_phase2_addendum():
-    """PREPENDED to Phase 2. Keeps innovation structure."""
-    interventions = "
-".join(
-        f"   • {k}: {v['desc']} [stress: {v['stress_path']}; crime: {v['crime_path']}; caution: {v['caution']}]"
+    """PREPENDED to Phase 2."""
+    interventions = chr(10).join(
+        f"   - {k}: {v['desc']} [stress: {v['stress_path']}; crime: {v['crime_path']}; caution: {v['caution']}]"
         for k, v in INTERVENTION_ARCHETYPES.items()
     )
     safeguards = _digest(ETHICAL_SAFEGUARDS)
-    pathways = "
-".join(f"   • {s} --{r}--> {t}  ({l})" for s, t, r, l in STRESS_CRIME_PATHWAYS)
+    pathways = chr(10).join(f"   - {s} --{r}--> {t} ({l})" for s, t, r, l in STRESS_CRIME_PATHWAYS)
     criteria = ", ".join(EVALUATION_CRITERIA)
     return f"""
 
 ### CRIME & STRESS (Phase 2 — hypotheses only, do not copy)
 Archetypes: {interventions}
-Rules: dual Expected effect (stress + crime); ≥1 innovation on micro or macro; prefer environment/institution/policy + aggregates; no individual prediction/covert biometrics; sensitive data → concrete safeguard ({safeguards}); self-rate 1-10 on {criteria}; stress/crime each get star node; reuse only if text supports: {pathways}
+Rules: dual Expected effect (stress + crime); >=1 innovation on micro or macro; prefer environment/institution/policy + aggregates; no individual prediction/covert biometrics; sensitive data -> concrete safeguard; self-rate 1-10 on {criteria}; stress/crime each get star node.
+Safeguards ref: {safeguards}
+Pathways (reuse only if text supports): {pathways}
 """
 
 
@@ -1606,9 +1605,8 @@ else:
     st.info(f"**Active Hybrid Strategy:** {combined_desc}")
 st.divider()
 
-# --- [NOVO] CRIME & STRESS PREVENTION MODULE (izbirnik + kalkulator) ---
+# --- [NOVO] CRIME & STRESS PREVENTION MODULE ---
 cs_mode = render_crime_stress_mode(st)
-render_stress_calculator(st, calculate_systemic_stress, calculate_effective_energy)
 st.divider()
 
 # DUAL INQUIRY INTERFACE
@@ -1757,22 +1755,14 @@ INTERFACE PARAMETERS:
             biblio_context = f"\n\n[AUTHOR RESEARCH BACKGROUND]:\n{biblio_data}" if biblio_data else ""
             full_ai_input = f"{active_context}\nUSER RESEARCH INQUIRY:\n{user_query}{file_context_str}{biblio_context}"
 
-            # --- [NOVO] Izmerjena intenzivnost stresa (če jo je uporabnik vnesel v kalkulator) ---
-            cs_measured = st.session_state.get("cs_measured")
-            if cs_active and cs_measured:
-                full_ai_input += measured_stress_note(
-                    cs_measured["f_pf"], cs_measured["f_sf"], cs_measured["f_pr"],
-                    cs_measured["degrees"], cs_measured["energy"], cs_measured["efficiency"]
-                )
-
             google_client = genai.Client(api_key=google_api_key)
 
             # ---------------- PHASE 1: IMA ----------------
             phase1_system_prompt = f"""
 You are the SIS Lead Hierarchologist. Phase 1 only: factual IMA foundation. No innovations.
 
-Work in four short tracks inside the required sections:
-CONTENT: problem, goal, actors, constraints; Macro/Meso/Micro; science-field ownership; ≥2 cross-field tensions; facts vs interpretation.
+Four tracks (apply inside required sections):
+CONTENT: problem, goal, actors, constraints; Macro/Meso/Micro; science-field ownership; >=2 cross-field tensions; facts vs interpretation.
 ETHICAL-LEGAL: privacy, bias, stigma, reductionism, AI over-reliance, legality vs harm.
 OPERATIONAL: limits of CPTED, hot-spot, violence interruption, CBT youth, green-space, procedural justice, trauma care (1 line each); earliest low-harm leverage points.
 SEMANTIC: name concepts/relations so Phase 2 can use Thesaurus (BT/NT/RT), UML (Composition, Aggregation, Dependency, Conflict) and Logic (IF-THEN, AND, NOT).
@@ -1782,7 +1772,7 @@ Selected: {', '.join(sel_sciences)} | {', '.join(sel_paradigms)} | {expertise} |
 Headers only:
 ### 1. IMA Problem Definition
 ### 2. Relevant Knowledge Structure
-### 3. Macro–Meso–Micro Analysis
+### 3. Macro-Meso-Micro Analysis
 ### 4. Cross-Disciplinary Bridge Points
 ### 5. Constraints and Contradictions
 ### 6. Evidence / Interpretation Boundary
@@ -1802,24 +1792,24 @@ Headers only:
             # ---------------- PHASE 2: MA ----------------
             ma_list_for_ai = ", ".join(MENTAL_APPROACHES_ONTOLOGY["nodes"].keys())
             phase2_system_prompt = f"""
-You are the SIS Innovation Architect. From Phase 1 produce 3–4 practical innovations via MA. No filler.
+You are the SIS Innovation Architect. From Phase 1 produce 3-4 practical innovations via MA. No filler.
 
 Four tracks:
-CONTENT: IMA finding → limitation → MA → transformation → innovation. Multi-field, non-obvious. No restatement.
-ETHICAL-LEGAL: sensitive data → exact Privacy-by-Design (on-device, differential privacy, consent, bias audit). No individual prediction/covert monitoring.
-OPERATIONAL: ≥2 levels (one micro or macro); dual measurable effect (stress + crime/harm); one municipal step ≤30 days; prefer policy/environment/aggregates.
+CONTENT: IMA finding -> limitation -> MA -> transformation -> innovation. Multi-field, non-obvious. No restatement.
+ETHICAL-LEGAL: sensitive data -> exact Privacy-by-Design (on-device, differential privacy, consent, bias audit). No individual prediction/covert monitoring.
+OPERATIONAL: >=2 levels (one micro or macro); dual measurable effect (stress + crime/harm); one municipal step <=30 days; prefer policy/environment/aggregates.
 SEMANTIC: graph = report diagram. Max 30 nodes/45 edges, connected, no isolates/parallels.
 Shapes: star=goal, hexagon=field, diamond=innovation, triangle=process, octagon=constraint, ellipse=actor, rectangle=fact.
-Relations ≥20% each family:
+Relations >=20% each family:
   Thesaurus: BT/NT/RT/EQ/AS/IN
   UML: Composition, Aggregation, Dependency, Generalization, Conflict
   Logic: IF-THEN, AND, OR, NOT
-Edge label = human verb (mitigates, enables…). Outcomes → innovations with mitigates/prevents.
+Edge label = human verb (mitigates, enables...). Outcomes link to innovations with mitigates/prevents.
 
 MA: {ma_list_for_ai}
 Frameworks: {', '.join(selected_techniques)}
 
-### Executive Synthesis (≤6 sentences)
+### Executive Synthesis (<=6 sentences)
 
 #### Innovation N: <name>
 - **IMA finding:** ...
@@ -2071,9 +2061,7 @@ No text after JSON.
                         "alongside thesaurus and logic edges."
                     )
 
-            # --- [NOVO] Crime & Stress: prikaz metrik intenzivnosti stresa ---
-            if cs_active:
-                render_stress_metrics(st, g_data.get("system_metrics"), calculate_systemic_stress, calculate_effective_energy)
+            # --- 5. FINAL DISPLAY
 
             # --- 5. FINAL DISPLAY: SEQUENTIAL INTERACTIVE SYNERGY REPORT ---
 
