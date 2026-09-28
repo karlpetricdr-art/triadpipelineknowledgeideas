@@ -278,19 +278,6 @@ Domain rules (extend, do not replace, the innovation structure and output format
 """
 
 
-def measured_stress_note(f_pf, f_sf, f_pr, degrees, effective_energy, efficiency_pct):
-    """Optional note that injects user-measured stress data into the Phase 1 input."""
-    return (
-        "\n\n[MEASURED STRESS INTENSITY - user-supplied opinion data, Petrič method]\n"
-        f"F_PF={f_pf:.3f}, F_SF={f_sf:.3f}, F_PR={f_pr:.3f} -> "
-        f"stress intensity {degrees:.2f} °S ({classify_stress_intensity(degrees)}); "
-        f"effective energy {effective_energy:.0f} kcal ({efficiency_pct:.1f}% of baseline). "
-        "Treat as an organizational indicator, not a physiological measurement."
-    )
-
-
-# =============================================================================
-# 8. STRESS QUANTIFICATION (§4.5.1) - extends the existing calculate_* functions
 # =============================================================================
 def opinion_real_factor(f0, n0, fr, k_t=1.0, rho_t=10.0):
     """
@@ -360,64 +347,6 @@ def render_crime_stress_mode(st):
              "requirements to Phase 1 and Phase 2 prompts. Existing pipeline is unchanged.",
     )
 
-
-def render_stress_calculator(st, calc_stress, calc_energy, initial_energy=2500):
-    """
-    Optional calculator for the book's stress-intensity method. Stores the result in
-    st.session_state["cs_measured"] (dict) or removes it if input is incomplete.
-    calc_stress / calc_energy = the existing calculate_systemic_stress / calculate_effective_energy.
-    """
-    with st.expander("📏 Stress Intensity Calculator (optional, Petrič method §4.5.1)", expanded=False):
-        st.caption("Enter opinion counts from your own survey/interviews. Leave zeros to skip.")
-        n0 = st.number_input("N0 — number of respondents", min_value=0, value=0, step=1, key="cs_n0")
-        cols = st.columns(3)
-        labels = [("PF", "positive factors"), ("SF", "stress factors"), ("PR", "proposals for reducing stress")]
-        F = {}
-        for col, (code, name) in zip(cols, labels):
-            with col:
-                f0 = st.number_input(f"{code}: total opinions f0 ({name})", min_value=0, value=0, step=1, key=f"cs_f0_{code}")
-                fr = st.number_input(f"{code}: distinct opinions fr", min_value=0, value=0, step=1, key=f"cs_fr_{code}")
-                F[code] = opinion_real_factor(f0, n0, fr)
-        if all(v > 0 for v in F.values()):
-            deg = calc_stress(F["PF"], F["SF"], F["PR"])
-            eff, pct = calc_energy(deg, initial_energy)
-            st.session_state["cs_measured"] = {
-                "f_pf": F["PF"], "f_sf": F["SF"], "f_pr": F["PR"],
-                "degrees": deg, "energy": eff, "efficiency": pct,
-            }
-            st.success(
-                f"σ = {deg:.2f} °S — {classify_stress_intensity(deg)} | "
-                f"effective energy {eff:.0f} kcal ({pct:.1f}%)"
-            )
-            st.caption("This value will be passed to Phase 1 as user-measured data.")
-        else:
-            st.session_state.pop("cs_measured", None)
-
-
-def render_stress_metrics(st, model_metrics, calc_stress, calc_energy, initial_energy=2500):
-    """
-    Show stress metrics after the pipeline. Prefers user-measured data; otherwise shows
-    the LLM's system_metrics clearly labelled as illustrative.
-    """
-    measured = st.session_state.get("cs_measured")
-    if measured:
-        st.caption(
-            f"🧪 Measured stress intensity: {measured['degrees']:.2f} °S "
-            f"({classify_stress_intensity(measured['degrees'])}); effective energy "
-            f"{measured['energy']:.0f} kcal ({measured['efficiency']:.1f}%)."
-        )
-        return
-    try:
-        m = model_metrics or {}
-        pf, sf, pr = float(m["f_pf"]), float(m["f_sf"]), float(m["f_pr"])
-    except (KeyError, TypeError, ValueError):
-        return
-    deg = calc_stress(pf, sf, pr)
-    eff, pct = calc_energy(deg, initial_energy)
-    st.caption(
-        f"⚠️ Model-estimated (illustrative, NOT empirical) stress intensity: {deg:.2f} °S; "
-        f"effective energy {eff:.0f} kcal ({pct:.1f}%). Use the calculator with real data for measurement."
-    )
 
 # =============================================================================
 # 0. GLOBAL CONFIGURATION & SESSION DATE (FEBRUARY 24, 2026)
@@ -833,58 +762,6 @@ def fetch_author_bibliographies(author_input):
     return comprehensive_biblio
 
 import math
-
-def calculate_systemic_stress(f_pf, f_sf, f_pr):
-    """
-    Implements Dr. Petrič's Stress Intensity formula (Page 60).
-    σ0SF = arcsin(sqrt((FSF * FPR) / FPF))
-    """
-    try:
-        # Convert to float and ensure f_pf (Positive Factors) isn't zero to avoid crash
-        pf = float(f_pf)
-        sf = float(f_sf)
-        pr = float(f_pr)
-        
-        if pf <= 0: pf = 0.001 
-        
-        # Calculate the ratio
-        ratio = (sf * pr) / pf
-        
-        # MATH SAFETY: sqrt() needs positive, arcsin() needs value between -1 and 1
-        clamped_ratio = max(0.0, min(ratio, 1.0))
-        
-        stress_rad = math.asin(math.sqrt(clamped_ratio))
-        
-        # Returns the result in "Stress Degrees" (°S) as defined in the book
-        return math.degrees(stress_rad)
-    except Exception:
-        return 0.0
-
-def calculate_effective_energy(stress_intensity, initial_potential=2500):
-    """
-    Implements the Energy Loss Index (W_EP) from Page 61 of the book.
-    W_EP = Initial_Energy - (Initial_Energy * (Stress_Intensity / 90))
-    2500 Kcal is the default baseline used in Dr. Petrič's example.
-    """
-    try:
-        # The book defines 90°S as the theoretical maximum stress
-        max_stress = 90.0
-        
-        # Calculate the proportion of energy lost
-        loss_ratio = stress_intensity / max_stress
-        
-        # Ensure ratio stays within logical bounds [0, 1]
-        loss_ratio = max(0.0, min(loss_ratio, 1.0))
-        
-        # Calculate remaining (effective) energy
-        effective_energy = initial_potential - (initial_potential * loss_ratio)
-        
-        # Efficiency percentage
-        efficiency_pct = (effective_energy / initial_potential) * 100
-        
-        return round(effective_energy, 2), round(efficiency_pct, 1)
-    except Exception:
-        return 0.0, 0.0
 
 # =============================================================================
 # 2. ARCHITECTURAL ONTOLOGIES (IMA & MA) - EXHAUSTIVE EXPANSION
@@ -1646,7 +1523,6 @@ st.divider()
 
 # --- [NOVO] CRIME & STRESS PREVENTION MODULE (izbirnik + kalkulator) ---
 cs_mode = render_crime_stress_mode(st)
-render_stress_calculator(st, calculate_systemic_stress, calculate_effective_energy)
 st.divider()
 
 # DUAL INQUIRY INTERFACE
@@ -1796,12 +1672,6 @@ INTERFACE PARAMETERS:
             full_ai_input = f"{active_context}\nUSER RESEARCH INQUIRY:\n{user_query}{file_context_str}{biblio_context}"
 
             # --- [NOVO] Izmerjena intenzivnost stresa (če jo je uporabnik vnesel v kalkulator) ---
-            cs_measured = st.session_state.get("cs_measured")
-            if cs_active and cs_measured:
-                full_ai_input += measured_stress_note(
-                    cs_measured["f_pf"], cs_measured["f_sf"], cs_measured["f_pr"],
-                    cs_measured["degrees"], cs_measured["energy"], cs_measured["efficiency"]
-                )
 
             google_client = genai.Client(api_key=google_api_key)
 
@@ -2322,11 +2192,6 @@ Do not place explanatory text after the JSON object.
                         "explicitly request UML (Composition, Aggregation, Dependency, Generalization, Conflict) "
                         "alongside thesaurus and logic edges."
                     )
-
-            # --- [NOVO] Crime & Stress: prikaz metrik intenzivnosti stresa ---
-            if cs_active:
-                render_stress_metrics(st, g_data.get("system_metrics"), calculate_systemic_stress, calculate_effective_energy)
-
             # --- 5. FINAL DISPLAY: SEQUENTIAL INTERACTIVE SYNERGY REPORT ---
 
             # 5a. GLOBAL SEMANTIC HIGHLIGHTER (Regex Highlighter)
