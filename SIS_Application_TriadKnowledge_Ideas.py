@@ -1712,12 +1712,29 @@ if uploaded_file is not None:
 # 5. SYNERGY EXECUTION ENGINE (GOOGLE GEMINI / GEMMA ONLY)
 # =============================================================================
 
-def google_generate(client, model_id, system_prompt, user_content, temperature, max_retries=4):
-    """Single Google GenAI gateway. No third-party LLM providers.
+def google_generate(
+    client,
+    model_id,
+    system_prompt,
+    user_content,
+    temperature,
+    max_retries=7,
+    base_delay=5,
+    max_delay=60,
+):
+    """Robust Google GenAI gateway for the SIS pipeline.
 
-    Includes automatic retry with exponential backoff for transient server-side
-    errors (e.g. 503 UNAVAILABLE / high demand), which are temporary on Google's
-    side and usually succeed on the next attempt.
+    Retries temporary Google-side failures without changing the selected model.
+    This preserves methodological consistency between pipeline executions.
+
+    Transient errors handled:
+      503 UNAVAILABLE / high demand
+      429 RESOURCE_EXHAUSTED
+      500 INTERNAL
+      502 BAD_GATEWAY
+      504 DEADLINE_EXCEEDED
+
+    Backoff: approximately 5, 10, 20, 40, 60, 60 seconds, with small jitter.
     """
     if client is None:
         raise RuntimeError("Google Gemini client is not initialized.")
@@ -1726,41 +1743,95 @@ def google_generate(client, model_id, system_prompt, user_content, temperature, 
         "system_instruction": system_prompt,
         "temperature": temperature,
     }
+
     if model_id.startswith("gemini-3"):
         try:
-            config_kwargs["thinking_config"] = types.ThinkingConfig(thinking_level="low")
+            config_kwargs["thinking_config"] = types.ThinkingConfig(
+                thinking_level="low"
+            )
         except Exception:
+            # Compatibility with older google-genai package versions.
             pass
 
     config = types.GenerateContentConfig(**config_kwargs)
 
+    def is_transient_google_error(exc):
+        error_text = str(exc).upper()
+        transient_markers = (
+            "503", "UNAVAILABLE",
+            "429", "RESOURCE_EXHAUSTED",
+            "500", "INTERNAL",
+            "502", "BAD_GATEWAY",
+            "504", "DEADLINE_EXCEEDED",
+            "SERVICE_UNAVAILABLE",
+            "TEMPORARILY_UNAVAILABLE",
+        )
+        return any(marker in error_text for marker in transient_markers)
+
     last_exc = None
-    for attempt in range(max_retries):
+
+    for attempt in range(1, max_retries + 1):
         try:
             response = client.models.generate_content(
                 model=model_id,
                 contents=user_content,
                 config=config,
             )
+
             text_out = getattr(response, "text", None)
-            if text_out:
-                return text_out
+            if text_out and text_out.strip():
+                return text_out.strip()
+
             try:
-                return response.candidates[0].content.parts[0].text
-            except Exception as exc:
-                raise RuntimeError(f"Google returned no usable text response: {exc}") from exc
+                fallback_text = response.candidates[0].content.parts[0].text
+                if fallback_text and fallback_text.strip():
+                    return fallback_text.strip()
+            except Exception as fallback_exc:
+                raise RuntimeError(
+                    f"Google returned no usable text response: {fallback_exc}"
+                ) from fallback_exc
+
+            raise RuntimeError("Google returned an empty response.")
+
         except Exception as exc:
             last_exc = exc
-            error_str = str(exc)
-            is_transient = any(code in error_str for code in ["503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED", "500", "INTERNAL"])
-            if is_transient and attempt < max_retries - 1:
-                wait_time = (2 ** attempt) + 1  # 2s, 3s, 5s, 9s...
-                st.toast(f"⏳ Google API trenutno preobremenjen (poskus {attempt + 1}/{max_retries}). Ponovni poskus čez {wait_time}s...")
-                time.sleep(wait_time)
-                continue
-            raise
+            error_text = str(exc)
 
-    raise RuntimeError(f"Google Gemini API ni na voljo po {max_retries} poskusih: {last_exc}")
+            if not is_transient_google_error(exc):
+                raise RuntimeError(
+                    f"Google Gemini request failed for model '{model_id}': "
+                    f"{error_text}"
+                ) from exc
+
+            if attempt >= max_retries:
+                break
+
+            # Exponential backoff with an upper bound.
+            delay = min(base_delay * (2 ** (attempt - 1)), max_delay)
+            # Small deterministic jitter prevents synchronized retries.
+            jitter = min(attempt * 0.75, 4.0)
+            wait_time = delay + jitter
+
+            upper_error = error_text.upper()
+            if "429" in upper_error or "RESOURCE_EXHAUSTED" in upper_error:
+                reason = "Google API rate limit / resource exhaustion"
+            elif "503" in upper_error or "UNAVAILABLE" in upper_error:
+                reason = "Google model temporarily unavailable / high demand"
+            else:
+                reason = "temporary Google server error"
+
+            st.warning(
+                f"⚠️ {reason}. Model: `{model_id}`. "
+                f"Retry {attempt}/{max_retries - 1}. "
+                f"Waiting {wait_time:.1f}s..."
+            )
+            time.sleep(wait_time)
+
+    raise RuntimeError(
+        f"Google Gemini model '{model_id}' remained unavailable after "
+        f"{max_retries} attempts. Last error: {last_exc}"
+    )
+
 
 
 if st.button("🚀 EXECUTE MULTI-DIMENSIONAL GOOGLE GEMINI PIPELINE", use_container_width=True, key="exec_pipeline_v2026"):
@@ -1866,6 +1937,11 @@ Headers only:
                     full_ai_input, temperature=0.40
                 )
                 st.session_state.phase1_synthesis = phase1_synthesis
+
+            # Small cooldown between sequential Google requests.
+            # This reduces consecutive-load 503 responses without changing
+            # the selected model or the SIS methodology.
+            time.sleep(3)
 
             # ---------------- PHASE 2: MA ----------------
             ma_list_for_ai = ", ".join(MENTAL_APPROACHES_ONTOLOGY["nodes"].keys())
