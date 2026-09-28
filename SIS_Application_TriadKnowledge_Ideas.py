@@ -209,34 +209,73 @@ def _digest(d):
 
 
 def build_phase1_addendum():
-    """PREPENDED to Phase 1. No new section headers."""
+    """Text PREPENDED to the Phase 1 system prompt (so the output-format rules stay last). Adds NO new section headers."""
     return f"""
 
-### CRIME & STRESS (Phase 1 — only if relevant; Petric 2026)
-STRESS: {_digest(STRESS_KNOWLEDGE)}
-CRIME: {_digest(CRIME_KNOWLEDGE)}
-Rules: multi-causal; micro/meso/macro in sec.3; flag mesocosmic bias; stress->crime = hypothesis only; ethics in sec.5; sec.7 name stress+crime pathways for Phase 2.
+### CRIME & STRESS THEMATIC REINFORCEMENT (Phase 1)
+Domain knowledge to use ONLY where relevant to the inquiry (source: Petrič 2026).
+STRESS:
+{_digest(STRESS_KNOWLEDGE)}
+CRIME:
+{_digest(CRIME_KNOWLEDGE)}
+
+Rules for this domain (apply inside the existing seven sections; do not add headers):
+- Treat stress and crime as MULTI-CAUSAL. In section 3 explicitly assign factors to
+  microcosm (genes, neurons, hormones, microbiome), mesocosm (family, workplace,
+  institutions, community) and macrocosm (ecology, climate, planetary). Explicitly
+  check for MESOCOSMIC BIAS: state which micro/macro explanations were neglected.
+- Separate eustress from distress, and individual stress from stress as a SYSTEMIC
+  indicator of organizational dysfunction.
+- Present stress -> crime/deviance links as plausible, non-deterministic HYPOTHESES.
+  Never claim direct causation; put them on the interpretation side of section 6.
+- In section 4 list cross-disciplinary tension points, including: (a) social vs.
+  physical stressors (the source study found physical stressors weak), (b) biological
+  vs. sociological explanations of crime, (c) legality vs. actual harm.
+- In section 5 include the ethical constraints: privacy/surveillance, algorithmic
+  bias, biological reductionism, dependence on AI, technological limitations.
+- In section 7 state which stress pathway and which crime pathway Phase 2 must address.
 """
 
 
 def build_phase2_addendum():
-    """PREPENDED to Phase 2."""
-    interventions = chr(10).join(
-        f"   - {k}: {v['desc']} [stress: {v['stress_path']}; crime: {v['crime_path']}; caution: {v['caution']}]"
+    """Text PREPENDED to the Phase 2 system prompt (so the JSON output rules stay last). Keeps the existing bullet structure."""
+    interventions = "\n".join(
+        f"   • {k}: {v['desc']} [stress: {v['stress_path']}; crime: {v['crime_path']}; caution: {v['caution']}]"
         for k, v in INTERVENTION_ARCHETYPES.items()
     )
     safeguards = _digest(ETHICAL_SAFEGUARDS)
-    pathways = chr(10).join(f"   - {s} --{r}--> {t} ({l})" for s, t, r, l in STRESS_CRIME_PATHWAYS)
+    pathways = "\n".join(f"   • {s} --{r}--> {t}  ({l})" for s, t, r, l in STRESS_CRIME_PATHWAYS)
     criteria = ", ".join(EVALUATION_CRITERIA)
     return f"""
 
-### CRIME & STRESS (Phase 2 — hypotheses only, do not copy)
-Archetypes: {interventions}
-Rules: dual Expected effect (stress + crime); >=1 innovation on micro or macro; prefer environment/institution/policy + aggregates; no individual prediction/covert biometrics; sensitive data -> concrete safeguard; self-rate 1-10 on {criteria}; stress/crime each get star node.
-Safeguards ref: {safeguards}
-Pathways (reuse only if text supports): {pathways}
-"""
+### CRIME & STRESS THEMATIC REINFORCEMENT (Phase 2)
+Reference archetypes from prior work (AI-generated HYPOTHESES, not validated). Use
+them only as inspiration; do NOT copy them. A valid innovation must be a genuine
+transformation of the Phase 1 findings:
+{interventions}
 
+Domain rules (extend, do not replace, the innovation structure and output format given further below):
+- Every innovation must state in "Expected effect" TWO separate lines: the STRESS-side
+  effect and the CRIME/HARM-side effect, each with one measurable indicator and how it
+  would be evaluated. If it addresses only one side, say so and justify.
+- Name the level(s) it acts on (micro/meso/macro). At least one innovation must act
+  on the macrocosm or microcosm, not only on the mesocosm, to counter mesocosmic bias.
+- Prefer ENVIRONMENT-, INSTITUTION- and POLICY-level interventions and aggregated
+  indicators over individual-level prediction or profiling of persons.
+- Reject or reframe any idea that relies on individual-level crime prediction,
+  covert biometric monitoring or coercive neuro-intervention.
+- Whenever an idea touches health, biometric, behavioral or predictive data, the
+  Safeguards bullet must name a concrete mechanism (on-device aggregation, differential
+  privacy, informed consent, bias audit, human-in-the-loop) and address these risks:
+{safeguards}
+- Self-rate each innovation 1-10 on: {criteria}. Show the numbers in the
+  "Expected effect" bullet only as a rough self-assessment, never as evidence.
+- Graph guidance: if the inquiry names stress and/or crime, each MUST have its own
+  star (goal/outcome) node, and innovations must connect to them with labels such as
+  "mitigates", "prevents", "reduces". Keep micro/meso/macro in node descriptions.
+  Canonical relations you MAY reuse ONLY when the report text supports them:
+{pathways}
+"""
 
 
 def measured_stress_note(f_pf, f_sf, f_pr, degrees, effective_energy, efficiency_pct):
@@ -1605,30 +1644,69 @@ else:
     st.info(f"**Active Hybrid Strategy:** {combined_desc}")
 st.divider()
 
-# --- [NOVO] CRIME & STRESS PREVENTION MODULE ---
+# --- [NOVO] CRIME & STRESS PREVENTION MODULE (izbirnik + kalkulator) ---
 cs_mode = render_crime_stress_mode(st)
 st.divider()
 
-# DUAL INQUIRY INTERFACE
-col_inq1, col_inq2, col_inq3 = st.columns([2, 2, 1])
-with col_inq1:
-    user_query = st.text_area("❓ STEP 1: Research Inquiry (for GOOGLE GEMINI):", placeholder="Fact-based Foundational Inquiry...", height=200)
-with col_inq2:
-    idea_query = st.text_area("💡 STEP 2: Innovation Prompt (for GOOGLE GEMINI):", placeholder="Targets for innovative idea production...", height=200)
-# --- POPRAVEK KORAK 1: Branje vsebine datoteke ---
-# --- KORAK 1: File Upload with English Translation ---
-with col_inq3:
-    uploaded_file = st.file_uploader("📂 ATTACH DATA (.txt only):", type=['txt'], key="final_file_uploader_v2")
-    file_content = "" 
-    if uploaded_file is not None:
-        try:
-            file_content = uploaded_file.read().decode("utf-8")
-            st.success(f"📎 {uploaded_file.name} uploaded!")
-            # Prevedeno v angleščino:
-            with st.expander("File Preview"):
-                st.text(file_content[:300] + "...")
-        except Exception as e:
-            st.error(f"Error reading file: {e}")
+# =============================================================================
+# DUAL INQUIRY INTERFACE — TRACK FORM (CONTENT / ETHICAL-LEGAL / OPERATIONAL / SEMANTIC)
+# =============================================================================
+TRACKS = ["CONTENT", "ETHICAL-LEGAL", "OPERATIONAL", "SEMANTIC"]
+TRACK_HINTS_P1 = {
+    "CONTENT": "Mechanisms, evidence, Macro/Meso/Micro, cross-field tensions...",
+    "ETHICAL-LEGAL": "Privacy, bias, stigma, reductionism, legality vs harm...",
+    "OPERATIONAL": "Existing approaches + limits; earliest low-harm leverage points...",
+    "SEMANTIC": "Key concepts and relations for Thesaurus / UML / Logic edges...",
+}
+TRACK_HINTS_P2 = {
+    "CONTENT": "Transform Phase 1 finding; multi-field non-obvious innovation...",
+    "ETHICAL-LEGAL": "Privacy-by-Design; no individual prediction or covert monitoring...",
+    "OPERATIONAL": ">=2 levels; dual measurable effect; municipal step <=30 days...",
+    "SEMANTIC": "Graph nodes/edges: Thesaurus + UML + Logic (>=20% each)...",
+}
+
+st.markdown("### STEP 1 — Research Inquiry (Phase 1 tracks)")
+p1_parts = []
+for track in TRACKS:
+    c1, c2 = st.columns([1, 4])
+    with c1:
+        st.markdown(f"**{track}**")
+    with c2:
+        val = st.text_input(
+            track, value="", placeholder=TRACK_HINTS_P1[track],
+            key=f"p1_{track}", label_visibility="collapsed"
+        )
+        if val and val.strip():
+            p1_parts.append("[" + track + "]" + chr(10) + val.strip())
+user_query = (chr(10) + chr(10)).join(p1_parts)
+
+st.markdown("### STEP 2 — Innovation Prompt (Phase 2 tracks)")
+p2_parts = []
+for track in TRACKS:
+    c1, c2 = st.columns([1, 4])
+    with c1:
+        st.markdown(f"**{track}**")
+    with c2:
+        val = st.text_input(
+            track, value="", placeholder=TRACK_HINTS_P2[track],
+            key=f"p2_{track}", label_visibility="collapsed"
+        )
+        if val and val.strip():
+            p2_parts.append("[" + track + "]" + chr(10) + val.strip())
+idea_query = (chr(10) + chr(10)).join(p2_parts)
+
+uploaded_file = st.file_uploader("ATTACH DATA (.txt only):", type=["txt"], key="final_file_uploader_v2")
+file_content = ""
+if uploaded_file is not None:
+    try:
+        file_content = uploaded_file.read().decode("utf-8")
+        st.success(uploaded_file.name + " uploaded!")
+        with st.expander("File Preview"):
+            st.text(file_content[:300] + "...")
+    except Exception as e:
+        st.error("Error reading file: " + str(e))
+
+
 
 # =============================================================================
 # 5. SYNERGY EXECUTION ENGINE (GOOGLE GEMINI / GEMMA ONLY)
