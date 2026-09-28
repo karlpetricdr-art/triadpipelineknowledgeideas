@@ -1978,26 +1978,32 @@ follow it exactly):
   (Sociology is broad; Informal Power Structures is its narrower concept).
   [Sociology] --BT--> [Informal Power Structures] would be WRONG (backwards).
 
-RELATION TYPES — you MUST draw from ALL THREE families below. No family may be missing.
+RELATION TYPES — you MUST draw from all three families below, not just UML.
+Pick the family that actually fits the semantic meaning of each edge; never
+default to UML/structural types just because they are familiar.
 
-A) THESAURUS FAMILY (ISO 25964 — conceptual/terminological links):
-   TT, BT, NT, EQ, RT, AS, IN
+A) THESAURUS FAMILY (ISO 25964 style — use for conceptual/terminological links):
+   - TT (Top Term) / BT (Broader Term) / NT (Narrower Term): taxonomic level jumps
+   - EQ (Equivalence): two labels denote the same concept
+   - RT (Related Term): loosely associated concepts, no hierarchy
+   - AS (Associative): non-taxonomic thematic association
+   - IN (Instance-of): a concrete case of a general class
 
-B) STRUCTURAL/UML FAMILY (architectural or compositional links — REQUIRED):
+B) STRUCTURAL/UML FAMILY (use for architectural or compositional links):
    Generalization, Specialization, Containment, Realization, Composition,
    Aggregation, Dependency, Conflict
-   Use these for: hierarchy of concepts, part-whole, implementation of an idea,
-   conflicts between constraints, and dependencies between components.
 
-C) OPERATIONAL LOGIC FAMILY (decision/causal/conditional links):
-   AND, OR, XOR, NOT, IF-THEN
+C) OPERATIONAL LOGIC FAMILY (use for decision/causal/conditional links —
+   especially between an IMA finding, a contradiction, an MA, and an innovation):
+   AND (joint necessary conditions), OR (alternative sufficient paths),
+   XOR (mutually exclusive choices), NOT (negation/exclusion),
+   IF-THEN (conditional/causal trigger)
 
-MANDATORY DIVERSITY RULE (quantitative, not optional):
-Of the total edges, EACH of the three families must have AT LEAST 20%.
-Example (20 edges): ≥4 thesaurus, ≥4 structural/UML, ≥4 logic.
-A graph missing any family (especially UML) is INVALID and must be corrected.
-Prefer UML for architecture (Composition, Aggregation, Dependency, Generalization,
-Conflict) whenever the relation is structural rather than purely causal or taxonomic.
+MANDATORY DIVERSITY RULE (quantitative, not optional): of the total edges,
+AT LEAST 25% must be Thesaurus-family and AT LEAST 25% must be Operational
+Logic-family. The remainder may be Structural/UML. For example, in a graph
+with 20 edges, at least 5 must be thesaurus and at least 5 must be logic type.
+A graph that fails this ratio is INVALID and must be corrected before output.
 
 CAUSAL DIRECTION DISCIPLINE (this is where most graphs break):
 - For every IF-THEN edge: source = the cause/enabler/condition, target = the
@@ -2036,15 +2042,15 @@ SENSITIVE-DOMAIN SAFEGUARDS:
 SELF-CHECK BEFORE YOU OUTPUT THE JSON (do this silently, then output only the
 corrected result): confirm (1) every important report entity is present as a
 node, (2) no node is invented beyond the report, (3) no node is isolated,
-(4) ALL THREE relation families are present (≥20% each: thesaurus, structural/UML,
-logic), (5) shapes are used consistently — the star belongs to the actual named
+(4) the thesaurus/logic edge-ratio rule is satisfied, (5) shapes are used
+consistently as the semantic code above — the star belongs to the actual named
 problem/goal, never to a methodology, (6) every IF-THEN / Dependency arrow
 points cause→effect and reads correctly aloud, (7) every named problem/outcome
 from Phase 1 has a corresponding outcome node linked to the innovation that
 addresses it, (8) every edge "label" is a human-readable phrase, never a bare
 code, (9) no two nodes are connected by more than one parallel edge,
-(10) every BT/NT edge follows the direction convention (BT: narrow→broad;
-NT: broad→narrow).
+(10) every BT/NT edge follows the direction convention above (BT: source is
+narrower → target is broader; NT: source is broader → target is narrower).
 
 GRAPH LIMITS:
 - Maximum 30 nodes.
@@ -2309,18 +2315,12 @@ Do not place explanatory text after the JSON object.
                     f"Structural/UML: {n_structural} ({n_structural/total_edges:.0%}) | "
                     f"Operational Logic: {n_logic} ({n_logic/total_edges:.0%})"
                 )
-                if (n_thesaurus / total_edges < 0.20 or
-                    n_logic / total_edges < 0.20 or
-                    n_structural / total_edges < 0.20):
-                    missing = []
-                    if n_thesaurus / total_edges < 0.20: missing.append("Thesaurus")
-                    if n_structural / total_edges < 0.20: missing.append("Structural/UML")
-                    if n_logic / total_edges < 0.20: missing.append("Operational Logic")
+                if n_thesaurus / total_edges < 0.20 or n_logic / total_edges < 0.20:
                     st.warning(
-                        f"⚠️ Graph is missing or under-using: {', '.join(missing)} "
-                        "(target: ≥20% each family). Re-run Phase 2 or add to Innovation Prompt: "
-                        "explicitly request UML (Composition, Aggregation, Dependency, Generalization, Conflict) "
-                        "alongside thesaurus and logic edges."
+                        "⚠️ The generated graph leans too heavily on structural/UML relations "
+                        "(target: ≥25% thesaurus, ≥25% operational logic). Try re-running Phase 2, "
+                        "or nudge the Innovation Prompt to explicitly request thesaurus (BT/NT/RT/EQ) "
+                        "and logic (AND/OR/IF-THEN) connections."
                     )
 
             # --- [NOVO] Crime & Stress: prikaz metrik intenzivnosti stresa ---
