@@ -361,39 +361,6 @@ def render_crime_stress_mode(st):
     )
 
 
-def render_stress_calculator(st, calc_stress, calc_energy, initial_energy=2500):
-    """
-    Optional calculator for the book's stress-intensity method. Stores the result in
-    st.session_state["cs_measured"] (dict) or removes it if input is incomplete.
-    calc_stress / calc_energy = the existing calculate_systemic_stress / calculate_effective_energy.
-    """
-    with st.expander("📏 Stress Intensity Calculator (optional, Petrič method §4.5.1)", expanded=False):
-        st.caption("Enter opinion counts from your own survey/interviews. Leave zeros to skip.")
-        n0 = st.number_input("N0 — number of respondents", min_value=0, value=0, step=1, key="cs_n0")
-        cols = st.columns(3)
-        labels = [("PF", "positive factors"), ("SF", "stress factors"), ("PR", "proposals for reducing stress")]
-        F = {}
-        for col, (code, name) in zip(cols, labels):
-            with col:
-                f0 = st.number_input(f"{code}: total opinions f0 ({name})", min_value=0, value=0, step=1, key=f"cs_f0_{code}")
-                fr = st.number_input(f"{code}: distinct opinions fr", min_value=0, value=0, step=1, key=f"cs_fr_{code}")
-                F[code] = opinion_real_factor(f0, n0, fr)
-        if all(v > 0 for v in F.values()):
-            deg = calc_stress(F["PF"], F["SF"], F["PR"])
-            eff, pct = calc_energy(deg, initial_energy)
-            st.session_state["cs_measured"] = {
-                "f_pf": F["PF"], "f_sf": F["SF"], "f_pr": F["PR"],
-                "degrees": deg, "energy": eff, "efficiency": pct,
-            }
-            st.success(
-                f"σ = {deg:.2f} °S — {classify_stress_intensity(deg)} | "
-                f"effective energy {eff:.0f} kcal ({pct:.1f}%)"
-            )
-            st.caption("This value will be passed to Phase 1 as user-measured data.")
-        else:
-            st.session_state.pop("cs_measured", None)
-
-
 def render_stress_metrics(st, model_metrics, calc_stress, calc_energy, initial_energy=2500):
     """
     Show stress metrics after the pipeline. Prefers user-measured data; otherwise shows
@@ -1644,9 +1611,9 @@ else:
     st.info(f"**Active Hybrid Strategy:** {combined_desc}")
 st.divider()
 
-# --- [NOVO] CRIME & STRESS PREVENTION MODULE (izbirnik + kalkulator) ---
+# --- [NOVO] CRIME & STRESS PREVENTION MODULE (izbirnik) ---
+# (Stress Intensity Calculator je odstranjen na željo uporabnika.)
 cs_mode = render_crime_stress_mode(st)
-render_stress_calculator(st, calculate_systemic_stress, calculate_effective_energy)
 st.divider()
 
 # DUAL INQUIRY INTERFACE
@@ -1723,6 +1690,124 @@ def google_generate(client, model_id, system_prompt, user_content, temperature, 
             raise
 
     raise RuntimeError(f"Google Gemini API ni na voljo po {max_retries} poskusih: {last_exc}")
+
+
+# =============================================================================
+# 5.1 [NOVO] PROMPT IMPROVEMENT ADVISOR (post-report)
+# =============================================================================
+def compute_graph_diagnostics(elements):
+    """Objective, code-computed graph facts that are fed to the advisor."""
+    nodes = [e["data"] for e in elements if "source" not in e.get("data", {})]
+    edges = [e["data"] for e in elements if "source" in e.get("data", {})]
+    total = len(edges)
+    rel = [e.get("rel_type", "") for e in edges]
+    n_th = sum(1 for r in rel if r in THESAURUS_TYPES)
+    n_lg = sum(1 for r in rel if r in LOGIC_TYPES)
+    n_st = sum(1 for r in rel if r in STRUCTURAL_TYPES)
+    shapes = {}
+    for n in nodes:
+        shapes[n.get("shape", "?")] = shapes.get(n.get("shape", "?"), 0) + 1
+    auto_links = sum(1 for e in edges if str(e.get("id", "")).startswith("auto_link_"))
+    bare_labels = sum(1 for e in edges if str(e.get("label", "")) == str(e.get("rel_type", "")))
+    connected = {e.get("source") for e in edges} | {e.get("target") for e in edges}
+    isolated = sum(1 for n in nodes if n.get("id") not in connected)
+    pct = lambda x: f"{(x / total):.0%}" if total else "n/a"
+    return (
+        f"- Nodes: {len(nodes)}; edges: {total}\n"
+        f"- Node shapes: {shapes}\n"
+        f"- Star (goal/outcome) nodes: {shapes.get('star', 0)}\n"
+        f"- Relation mix: thesaurus {n_th} ({pct(n_th)}), logic {n_lg} ({pct(n_lg)}), "
+        f"structural/UML {n_st} ({pct(n_st)}) [target: >=25% thesaurus, >=25% logic]\n"
+        f"- Isolated nodes: {isolated}\n"
+        f"- Edges auto-added by the connectivity safety net (model left orphan nodes): {auto_links}\n"
+        f"- Edges whose human label is just the bare code: {bare_labels}\n"
+    )
+
+
+PROMPT_ADVISOR_SYSTEM = """
+You are the SIS Prompt Optimization Advisor. You review a finished two-phase
+pipeline run (Phase 1 = IMA research synthesis, Phase 2 = MA innovation report +
+semantic graph) and propose BETTER USER PROMPTS so that the combined quality of
+report + graph can reach 9.95/10 or more in the next run.
+
+IMPORTANT CONTEXT
+- "Prompt 1" = the user's Research Inquiry text (feeds Phase 1).
+- "Prompt 2" = the user's Innovation Prompt text (feeds Phase 2).
+- You improve ONLY these two user-side texts. The hidden system prompts already
+  enforce the report structure, graph rules and shape semantics; your improved
+  prompts must supply what the system prompts cannot: precise scope, concrete
+  target outcomes, constraints, measurable indicators, and explicit demands
+  that close the observed defects.
+
+SCORING RUBRIC (be strict and honest; never inflate to reach the target)
+REPORT (0-10): clarity/structure; source-grounding and evidence-vs-interpretation
+discipline; genuine cross-disciplinary integration; concreteness and feasibility
+of innovations (practical next step); safeguards for sensitive data; traceability
+Phase 1 -> Phase 2.
+GRAPH (0-10): grounding in the report text; connectivity (no orphans, no
+auto-added filler links); relation-family mix (>=25% thesaurus, >=25% logic);
+consistent shape semantics (star only for the real named goal/outcome); correct
+causal direction; no parallel edges; outcome traceability; readable edge labels.
+Use the supplied objective graph diagnostics as hard evidence.
+COMBINED = 0.6 * REPORT + 0.4 * GRAPH.
+
+OUTPUT FORMAT (markdown, English, exactly these sections):
+#### Estimated scores
+A small table: Report, Graph, Combined (two decimals) and the gap to 9.95.
+State clearly that these are heuristic self-estimates, not validated metrics.
+#### Main defects found
+Max 5 bullets. Each names the defect, cites concrete evidence from the run
+(a quote of <=12 words, a diagnostic number, or a missing element) and says
+which prompt (1, 2 or both) can fix it.
+#### Improved Prompt 1 (Research Inquiry)
+One ready-to-paste prompt in a fenced code block.
+#### Improved Prompt 2 (Innovation Prompt)
+One ready-to-paste prompt in a fenced code block.
+#### Why these changes should raise the score
+3-5 short bullets mapping each change to a rubric item.
+#### What to keep unchanged
+Strengths of the current prompts that must not be lost.
+
+RULES FOR THE IMPROVED PROMPTS
+- Keep the user's original topic, language of terms and intent; do not change
+  the subject or invent facts, sources, statistics or theories.
+- Be concrete: name the target problem/outcome(s) explicitly (they become star
+  nodes), the population/context, the time horizon and 2-4 measurable indicators.
+- Prompt 1 must ask for source-supported facts, explicit Macro/Meso/Micro
+  factors, cross-field tension points, constraints and ethical limits; it must
+  ask to separate evidence from interpretation.
+- Prompt 2 must ask for 3-4 implementable innovations, each with one measurable
+  indicator per named outcome, a first-month pilot step, a concrete privacy/
+  ethics mechanism where data is sensitive, and at least two innovations that
+  bridge different science fields in a non-obvious way.
+- Where the diagnostics show graph defects, add explicit graph-oriented requests
+  (e.g. name the outcome nodes that must exist; ask for thesaurus BT/NT/RT/EQ
+  and logic AND/OR/IF-THEN links where meaningful; ask that every innovation
+  connects to the outcome it addresses). Do not ask for more nodes than the
+  graph limit allows.
+- Do not include system-prompt text, JSON specs or shape codes in the prompts.
+- Keep each improved prompt under 220 words. If a prompt is already near-optimal,
+  say so and change only what is necessary.
+- If the run already deserves >= 9.95, say so honestly and list only refinements
+  that protect that level.
+"""
+
+
+def suggest_better_prompts(client, model_id, prompt1, prompt2, phase1_text, phase2_text, elements):
+    diagnostics = compute_graph_diagnostics(elements or [])
+    node_labels = [
+        f"{e['data'].get('label')} [{e['data'].get('shape')}]"
+        for e in (elements or []) if "source" not in e.get("data", {})
+    ]
+    user_content = (
+        f"CURRENT PROMPT 1 (Research Inquiry):\n{prompt1 or '(empty)'}\n\n"
+        f"CURRENT PROMPT 2 (Innovation Prompt):\n{prompt2 or '(empty)'}\n\n"
+        f"OBJECTIVE GRAPH DIAGNOSTICS (computed by code):\n{diagnostics}\n"
+        f"GRAPH NODES: {', '.join(node_labels) if node_labels else '(none)'}\n\n"
+        f"PHASE 1 REPORT (truncated):\n{(phase1_text or '')[:12000]}\n\n"
+        f"PHASE 2 REPORT (truncated):\n{(phase2_text or '')[:12000]}\n"
+    )
+    return google_generate(client, model_id, PROMPT_ADVISOR_SYSTEM, user_content, temperature=0.3)
 
 
 if st.button("🚀 EXECUTE MULTI-DIMENSIONAL GOOGLE GEMINI PIPELINE", use_container_width=True, key="exec_pipeline_v2026"):
@@ -2429,6 +2514,21 @@ Do not place explanatory text after the JSON object.
                 # --- NOVO: SHRANJEVANJE ZA GALERIJO (DODANO NA KONEC POROČILA) ---
                 st.session_state.final_graph_elements = final_elements
                 st.session_state.report_ready = True
+
+            # --- [NOVO] PROMPT IMPROVEMENT ADVISOR (po zaključenem poročilu) ---
+            try:
+                with st.spinner("🎯 Prompt Improvement Advisor: analysing report + graph..."):
+                    advisor_text = suggest_better_prompts(
+                        google_client, p2_model, user_query, idea_query,
+                        phase1_synthesis, innovation_text, final_elements
+                    )
+                st.divider()
+                st.markdown("### 🎯 PROMPT IMPROVEMENT ADVISOR (target: combined score ≥ 9.95)")
+                st.caption("Heuristic self-estimate by the model + code-computed graph diagnostics. "
+                           "Paste the improved prompts into STEP 1 and STEP 2 and re-run.")
+                st.markdown(advisor_text)
+            except Exception as adv_exc:
+                st.warning(f"⚠️ Prompt Improvement Advisor failed (report is unaffected): {adv_exc}")
 
         except Exception as e:
             st.error(f"❌ Pipeline Failure: {str(e)}")
