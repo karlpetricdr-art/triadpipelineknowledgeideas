@@ -11,7 +11,7 @@ from datetime import datetime
 from google import genai
 from google.genai import types
 import streamlit.components.v1 as components
-
+import math
 
 # =============================================================================
 # [NOVO] CRIME & STRESS PREVENTION MODULE (vgrajen; prej crime_stress_module.py)
@@ -144,8 +144,6 @@ STRESS_CRIME_PATHWAYS = [
 # =============================================================================
 # 6. EXTENSIONS OF EXISTING ONTOLOGIES (merge with .update(), nothing is removed)
 # =============================================================================
-# Science fields named in the book's 100-iteration crime/stress study (§7.2.4)
-# that are missing in KNOWLEDGE_BASE["Science fields"].
 EXTRA_SCIENCE_FIELDS = {
     "Urbanism": {
         "cat": "Applied/Social",
@@ -161,7 +159,6 @@ EXTRA_SCIENCE_FIELDS = {
     },
 }
 
-# Book's 100-iteration crime/stress field set (§7.2.4) - preset for the multiselect.
 CRIME_STRESS_SCIENCE_PRESET = [
     "Criminology", "Sociology", "Neuroscience", "Psychology", "Psychiatry",
     "Medicine", "Biology", "Computer Science", "Library Science", "Engineering",
@@ -169,7 +166,6 @@ CRIME_STRESS_SCIENCE_PRESET = [
     "Legal science", "Geography",
 ]
 
-# Additional IMA metamodel nodes (same structure as HUMAN_THINKING_METAMODEL["nodes"])
 CRIME_STRESS_METAMODEL_NODES = {
     "Stress (eustress/distress)": {"color": "#F4A261", "shape": "rectangle",
         "desc": "Person-environment strain: moderate stress mobilizes, chronic distress drains energy and degrades ethical decision-making; also a societal indicator."},
@@ -209,7 +205,7 @@ def _digest(d):
 
 
 def build_phase1_addendum():
-    """Text PREPENDED to the Phase 1 system prompt (so the output-format rules stay last). Adds NO new section headers."""
+    """Text PREPENDED to the Phase 1 system prompt."""
     return f"""
 
 ### CRIME & STRESS THEMATIC REINFORCEMENT (Phase 1)
@@ -238,7 +234,7 @@ Rules for this domain (apply inside the existing seven sections; do not add head
 
 
 def build_phase2_addendum():
-    """Text PREPENDED to the Phase 2 system prompt (so the JSON output rules stay last). Keeps the existing bullet structure."""
+    """Text PREPENDED to the Phase 2 system prompt."""
     interventions = "\n".join(
         f"   • {k}: {v['desc']} [stress: {v['stress_path']}; crime: {v['crime_path']}; caution: {v['caution']}]"
         for k, v in INTERVENTION_ARCHETYPES.items()
@@ -278,53 +274,6 @@ Domain rules (extend, do not replace, the innovation structure and output format
 """
 
 
-def measured_stress_note(f_pf, f_sf, f_pr, degrees, effective_energy, efficiency_pct):
-    """Optional note that injects user-measured stress data into the Phase 1 input."""
-    return (
-        "\n\n[MEASURED STRESS INTENSITY - user-supplied opinion data, Petrič method]\n"
-        f"F_PF={f_pf:.3f}, F_SF={f_sf:.3f}, F_PR={f_pr:.3f} -> "
-        f"stress intensity {degrees:.2f} °S ({classify_stress_intensity(degrees)}); "
-        f"effective energy {effective_energy:.0f} kcal ({efficiency_pct:.1f}% of baseline). "
-        "Treat as an organizational indicator, not a physiological measurement."
-    )
-
-
-# =============================================================================
-# 8. STRESS QUANTIFICATION (§4.5.1) - extends the existing calculate_* functions
-# =============================================================================
-def opinion_real_factor(f0, n0, fr, k_t=1.0, rho_t=10.0):
-    """
-    F0 = (K0 * rho0) / (Kt * rho_t)
-      rho0 = f0 / N0   (opinion density: opinions per respondent)
-      K0   = f0 / fr   (opinion complexity: total / distinct opinions)
-      Kt = 1, rho_t = 10 opinions per respondent (theoretical maximum).
-    Returns 0.0 for invalid input.
-    """
-    try:
-        f0, n0, fr = float(f0), float(n0), float(fr)
-        if f0 <= 0 or n0 <= 0 or fr <= 0 or fr > f0:
-            return 0.0
-        return ((f0 / fr) * (f0 / n0)) / (k_t * rho_t)
-    except (TypeError, ValueError):
-        return 0.0
-
-
-def classify_stress_intensity(degrees):
-    """
-    PROVISIONAL bands (thirds of the 0-90 °S range). The book confirms only that
-    32.76 °S is 'moderate'; its full classification scale is not reproduced in the
-    short version, so replace these thresholds if you have the original scale.
-    """
-    if degrees < 30:
-        return "low (provisional band)"
-    if degrees < 60:
-        return "moderate (provisional band)"
-    return "high (provisional band)"
-
-
-# =============================================================================
-# 9. STREAMLIT UI HELPERS (receive `st`; no streamlit import needed here)
-# =============================================================================
 def render_crime_stress_sidebar(st):
     """Call inside `with st.sidebar:` after the existing Knowledge Explorer expanders."""
     with st.expander("🛡️ Crime & Stress Prevention Ontology", expanded=False):
@@ -361,52 +310,10 @@ def render_crime_stress_mode(st):
     )
 
 
-def render_stress_calculator(st, calc_stress, calc_energy, initial_energy=2500):
-    """
-    Optional calculator for the book's stress-intensity method. Stores the result in
-    st.session_state["cs_measured"] (dict) or removes it if input is incomplete.
-    calc_stress / calc_energy = the existing calculate_systemic_stress / calculate_effective_energy.
-    """
-    with st.expander("📏 Stress Intensity Calculator (optional, Petrič method §4.5.1)", expanded=False):
-        st.caption("Enter opinion counts from your own survey/interviews. Leave zeros to skip.")
-        n0 = st.number_input("N0 — number of respondents", min_value=0, value=0, step=1, key="cs_n0")
-        cols = st.columns(3)
-        labels = [("PF", "positive factors"), ("SF", "stress factors"), ("PR", "proposals for reducing stress")]
-        F = {}
-        for col, (code, name) in zip(cols, labels):
-            with col:
-                f0 = st.number_input(f"{code}: total opinions f0 ({name})", min_value=0, value=0, step=1, key=f"cs_f0_{code}")
-                fr = st.number_input(f"{code}: distinct opinions fr", min_value=0, value=0, step=1, key=f"cs_fr_{code}")
-                F[code] = opinion_real_factor(f0, n0, fr)
-        if all(v > 0 for v in F.values()):
-            deg = calc_stress(F["PF"], F["SF"], F["PR"])
-            eff, pct = calc_energy(deg, initial_energy)
-            st.session_state["cs_measured"] = {
-                "f_pf": F["PF"], "f_sf": F["SF"], "f_pr": F["PR"],
-                "degrees": deg, "energy": eff, "efficiency": pct,
-            }
-            st.success(
-                f"σ = {deg:.2f} °S — {classify_stress_intensity(deg)} | "
-                f"effective energy {eff:.0f} kcal ({pct:.1f}%)"
-            )
-            st.caption("This value will be passed to Phase 1 as user-measured data.")
-        else:
-            st.session_state.pop("cs_measured", None)
-
-
 def render_stress_metrics(st, model_metrics, calc_stress, calc_energy, initial_energy=2500):
     """
-    Show stress metrics after the pipeline. Prefers user-measured data; otherwise shows
-    the LLM's system_metrics clearly labelled as illustrative.
+    Show model-estimated stress metrics after the pipeline (illustrative only).
     """
-    measured = st.session_state.get("cs_measured")
-    if measured:
-        st.caption(
-            f"🧪 Measured stress intensity: {measured['degrees']:.2f} °S "
-            f"({classify_stress_intensity(measured['degrees'])}); effective energy "
-            f"{measured['energy']:.0f} kcal ({measured['efficiency']:.1f}%)."
-        )
-        return
     try:
         m = model_metrics or {}
         pf, sf, pr = float(m["f_pf"]), float(m["f_sf"]), float(m["f_pr"])
@@ -416,22 +323,182 @@ def render_stress_metrics(st, model_metrics, calc_stress, calc_energy, initial_e
     eff, pct = calc_energy(deg, initial_energy)
     st.caption(
         f"⚠️ Model-estimated (illustrative, NOT empirical) stress intensity: {deg:.2f} °S; "
-        f"effective energy {eff:.0f} kcal ({pct:.1f}%). Use the calculator with real data for measurement."
+        f"effective energy {eff:.0f} kcal ({pct:.1f}%)."
     )
 
-# =============================================================================
-# 0. GLOBAL CONFIGURATION & SESSION DATE (FEBRUARY 24, 2026)
-# =============================================================================
-SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v24.6.0-GOOGLE-GEMINI-ONLY-FIXED"
 
 # =============================================================================
-# INITIALIZATION FIX: Preprečuje AttributeError pri zagonu in resetiranju
+# NOVO: Klasifikacija inquiryja po principih članka 2014 (CU + IU)
 # =============================================================================
+CU_CATEGORIES = {
+    1: "Sociological systems, organisations, departments",
+    2: "Persons (names, gender, functions, status)",
+    3: "Intellectual cultural work (books, systems, databases, innovations)",
+    4: "Items, materials, prices, flats",
+    5: "Sciences, arts, professions, sports",
+    6: "Activities, processes, procedures, events, states",
+    7: "Questions (how-to, procedures, membership, publishing)",
+}
+
+IU_CATEGORIES = [
+    "General information",
+    "Access to web pages / resources",
+    "Information of resources (books, journals, bibliographies, databases)",
+    "Factual knowledge",
+    "Accurate / exact information",
+    "Professional information (standards, reports)",
+    "Special information (polls, warrants, births, deaths)",
+    "Empirical knowledge (analysis, statistics, research)",
+    "Non-factual knowledge (tricks, new methods, useful ideas, intuitive knowledge)",
+]
+
+
+def classify_query_cu_iu(text: str) -> dict:
+    """
+    Lightweight rule-based classifier inspired by the 2014 article (CU 1-7 + IU).
+    Returns a dict usable for injection into Phase 1.
+    """
+    if not text:
+        return {"cu": 0, "cu_label": "Unclassified", "iu": "General information", "confidence": "low"}
+
+    t = text.lower()
+
+    # CU detection (priority order)
+    cu = 0
+    if any(w in t for w in ["how to", "kako", "postopek", "navodilo", "članstvo", "objaviti", "vprašanje"]):
+        cu = 7
+    elif any(w in t for w in ["proces", "postopek", "aktivnost", "dogodek", "stanje", "event", "procedure"]):
+        cu = 6
+    elif any(w in t for w in ["znanost", "science", "umetnost", "profesija", "šport", "discipline"]):
+        cu = 5
+    elif any(w in t for w in ["cena", "material", "stanovanje", "item", "price", "flat"]):
+        cu = 4
+    elif any(w in t for w in ["knjiga", "book", "baza", "database", "sistem", "inovacija", "publikacija", "journal"]):
+        cu = 3
+    elif any(w in t for w in ["oseba", "person", "ime", "priimek", "funkcija", "status", "minister", "direktor"]):
+        cu = 2
+    elif any(w in t for w in ["organizacija", "ministrstvo", "oddelek", "department", "služba", "institucija"]):
+        cu = 1
+    else:
+        cu = 1  # default fallback
+
+    # IU detection
+    iu = "General information"
+    if any(w in t for w in ["ideja", "idea", "nova metoda", "trik", "intuitiv"]):
+        iu = "Non-factual knowledge (tricks, new methods, useful ideas, intuitive knowledge)"
+    elif any(w in t for w in ["analiza", "statistika", "raziskava", "empirical", "research"]):
+        iu = "Empirical knowledge (analysis, statistics, research)"
+    elif any(w in t for w in ["standard", "poročilo", "report", "profesional"]):
+        iu = "Professional information (standards, reports)"
+    elif any(w in t for w in ["natančen", "exact", "točen", "precise", "člen", "zakon"]):
+        iu = "Accurate / exact information"
+    elif any(w in t for w in ["dejstvo", "faktual", "crime", "forensics", "terorizem"]):
+        iu = "Factual knowledge"
+    elif any(w in t for w in ["knjiga", "revija", "bibliografija", "baza podatkov", "resource"]):
+        iu = "Information of resources (books, journals, bibliographies, databases)"
+    elif any(w in t for w in ["stran", "page", "povezava", "url", "dostop"]):
+        iu = "Access to web pages / resources"
+
+    return {
+        "cu": cu,
+        "cu_label": CU_CATEGORIES.get(cu, "Unclassified"),
+        "iu": iu,
+        "confidence": "medium" if cu > 0 else "low"
+    }
+
+
+def build_dynamic_thesaurus(concepts: list, base_weights: dict = None) -> dict:
+    """
+    Simple dynamic thesaurus builder inspired by the 2014 article.
+    concepts: list of strings extracted from Phase 1 or selected sciences.
+    Returns a dict with TT/BT/NT/RT structure and weights 1-5.
+    """
+    if not concepts:
+        return {}
+
+    thesaurus = {}
+    weights = base_weights or {}
+
+    # Very lightweight grouping by keyword similarity
+    for c in concepts:
+        c_clean = c.strip()
+        if not c_clean:
+            continue
+        w = weights.get(c_clean, 3)
+        thesaurus[c_clean] = {
+            "W": w,
+            "TT": None,
+            "BT": [],
+            "NT": [],
+            "RT": []
+        }
+
+    # Simple related-term linking (shared tokens)
+    keys = list(thesaurus.keys())
+    for i, k1 in enumerate(keys):
+        tokens1 = set(k1.lower().split())
+        for k2 in keys[i+1:]:
+            tokens2 = set(k2.lower().split())
+            if tokens1 & tokens2:
+                thesaurus[k1]["RT"].append(k2)
+                thesaurus[k2]["RT"].append(k1)
+
+    return thesaurus
+
+
+def group_and_evaluate_innovations(innovations: list) -> dict:
+    """
+    Groups innovations into 4 thematic groups (inspired by the 2014 mind map)
+    and produces a simple evaluation matrix (social / semantic-cognitive / IT).
+    """
+    groups = {
+        "Business Intelligence & Decision Support": [],
+        "Digital Library / Knowledge Resources": [],
+        "Simple IT / Semantic Solutions": [],
+        "Specific e-Services & Interventions": []
+    }
+
+    for inv in innovations:
+        label = (inv.get("label") or "").lower()
+        desc = (inv.get("description") or "").lower()
+        text = label + " " + desc
+
+        if any(w in text for w in ["dashboard", "monitoring", "analytics", "expert system", "decision", "business process"]):
+            groups["Business Intelligence & Decision Support"].append(inv)
+        elif any(w in text for w in ["library", "digital", "bibliography", "repository", "archive", "knowledge base"]):
+            groups["Digital Library / Knowledge Resources"].append(inv)
+        elif any(w in text for w in ["portal", "database", "network", "visualization", "semantic", "query", "matrix"]):
+            groups["Simple IT / Semantic Solutions"].append(inv)
+        else:
+            groups["Specific e-Services & Interventions"].append(inv)
+
+    # Simple domain scoring (1-3)
+    matrix = {
+        "social": 0,
+        "semantic_cognitive": 0,
+        "IT": 0
+    }
+    for inv in innovations:
+        text = ((inv.get("label") or "") + " " + (inv.get("description") or "")).lower()
+        if any(w in text for w in ["social", "group", "network", "community", "trust", "cohesion", "organization"]):
+            matrix["social"] += 2
+        if any(w in text for w in ["semantic", "knowledge", "ontology", "thesaurus", "classification", "concept"]):
+            matrix["semantic_cognitive"] += 2
+        if any(w in text for w in ["system", "platform", "software", "ai", "algorithm", "dashboard", "portal", "database"]):
+            matrix["IT"] += 2
+
+    return {"groups": groups, "matrix": matrix}
+
+
+# =============================================================================
+# 0. GLOBAL CONFIGURATION & SESSION DATE
+# =============================================================================
+SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
+VERSION_CODE = "v24.7.0-GOOGLE-GEMINI-ARTICLE-ENHANCED"
+
 if 'show_user_guide' not in st.session_state:
     st.session_state.show_user_guide = False
 
-# Zagotovimo, da so vsi ključi prisotni v session_state pred prvo uporabo
 if 'phase1_synthesis' not in st.session_state:
     st.session_state.phase1_synthesis = ""
 
@@ -442,13 +509,9 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- NUCLEAR CSS OVERRIDE: OBLITERATING SIDEBAR ARTIFACTS & FIXING VISIBILITY ---
-# Targets the 'keyboard_double_arrow_right' artifact and forced navy-black contrast.
-# This section ensures the Knowledge Explorer is perfectly visible.
+# --- NUCLEAR CSS OVERRIDE ---
 st.markdown("""
 <style>
-    /* 1. OBLITERATE ARROW ARTIFACTS & SIDEBAR ICONS */
-    /* Hides the specific Streamlit containers where "keyboard_double_arrow_right" appears as text */
     [data-testid="stSidebar"] [data-testid="stIcon"],
     [data-testid="stSidebar"] button[data-testid="stSidebarCollapseButton"],
     [data-testid="stSidebar"] .st-emotion-cache-16idsys,
@@ -462,14 +525,12 @@ st.markdown("""
         opacity: 0 !important;
     }
 
-    /* 2. FORCE SIDEBAR VISIBILITY & HIGH CONTRAST */
     [data-testid="stSidebar"] {
         background-color: #fcfcfc !important;
         border-right: 2px solid #e9ecef !important;
         min-width: 380px !important;
     }
 
-    /* Force all sidebar text to be deep black/navy for perfect visibility */
     [data-testid="stSidebar"] .stMarkdown p, 
     [data-testid="stSidebar"] .stMarkdown li,
     [data-testid="stSidebar"] label,
@@ -477,14 +538,13 @@ st.markdown("""
     [data-testid="stSidebar"] .stExpander li,
     [data-testid="stSidebar"] .stMarkdown span,
     [data-testid="stSidebar"] .stMarkdown div {
-        color: #ffffff !important; /* Maximum Contrast */
+        color: #ffffff !important;
         font-size: 0.98em !important;
         font-weight: 500 !important;
         line-height: 1.6 !important;
         opacity: 1 !important;
     }
 
-    /* 3. RE-STYLE EXPANDERS FOR PROFESSIONAL DENSITY */
     .stExpander {
         background-color: #A9A9A9 !important;
         border: 1px solid #d8e2dc !important;
@@ -501,7 +561,6 @@ st.markdown("""
         letter-spacing: 0.5px;
     }
 
-    /* 4. CONTENT HIGHLIGHTING & NAVIGATION */
     .semantic-node-highlight {
         color: #2a9d8f;
         font-weight: bold;
@@ -543,7 +602,6 @@ st.markdown("""
         font-size: 1.05em;
     }
 
-    /* 5. ARCHITECTURAL FOCUS BOXES */
     .metamodel-box {
         padding: 25px;
         border-radius: 15px;
@@ -602,10 +660,8 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 def get_svg_base64(svg_str):
-    """Encodes SVG for reliable display in Streamlit sidebar."""
     return base64.b64encode(svg_str.encode('utf-8')).decode('utf-8')
 
-# --- LOGOTIP: ORIGINAL 3D RELIEF (PYRAMID & TREE RESTORED EXACTLY) ---
 SVG_3D_RELIEF = """
 <svg width="240" height="240" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
     <defs>
@@ -639,12 +695,6 @@ SVG_3D_RELIEF = """
 # =============================================================================
 
 def render_cytoscape_network(elements, layout_type="hierarchical", container_id="cy_canvas"):
-    """
-    Posodobljen motor z več perspektivami (Multi-Perspective Layout Engine).
-    Vključuje UML, ISO Thesaurus in Logične konektorje (AND, OR, XOR, NOT, IF-THEN).
-    """
-
-    # Mapiranje Python izbire v Cytoscape JS konfiguracije
     layout_configs = {
         "organic": """{ 
             name: 'cose', 
@@ -750,7 +800,6 @@ def render_cytoscape_network(elements, layout_type="hierarchical", container_id=
                             'opacity': 0.8
                         }}
                     }},
-                    /* --- UML NOTACIJA --- */
                     {{ selector: 'edge[rel_type="Generalization"]', style: {{ 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow', 'width': 3 }} }},
                     {{ selector: 'edge[rel_type="Realization"]', style: {{ 'line-style': 'dashed', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' }} }},
                     {{ selector: 'edge[rel_type="Composition"]', style: {{ 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'filled', 'width': 4 }} }},
@@ -759,8 +808,6 @@ def render_cytoscape_network(elements, layout_type="hierarchical", container_id=
                     {{ selector: 'edge[rel_type="Conflict"]', style: {{ 'width': 6, 'line-color': '#b91d1d', 'line-style': 'solid', 'target-arrow-color': '#b91d1d', 'target-arrow-shape': 'triangle-cross', 'source-arrow-shape': 'triangle-cross', 'source-arrow-color': '#b91d1d' }} }},
                     {{ selector: 'edge[rel_type="Specialization"]', style: {{ 'line-style': 'dashed', 'line-color': '#000000', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'filled', 'target-arrow-color': '#000000', 'width': 2 }} }},
                     {{ selector: 'edge[rel_type="Containment"]', style: {{ 'line-color': '#1d3557', 'target-arrow-shape': 'circle', 'target-arrow-color': '#1d3557', 'target-arrow-fill': 'hollow', 'width': 4 }} }},
-                    
-                    /* --- ISO THESAURUS --- */
                     {{ selector: 'edge[rel_type="TT"]', style: {{ 'width': 6, 'line-color': '#1d3557' }} }},
                     {{ selector: 'edge[rel_type="BT"]', style: {{ 'width': 4, 'line-color': '#1d3557' }} }},
                     {{ selector: 'edge[rel_type="NT"]', style: {{ 'width': 4, 'line-color': '#1d3557' }} }},
@@ -768,15 +815,11 @@ def render_cytoscape_network(elements, layout_type="hierarchical", container_id=
                     {{ selector: 'edge[rel_type="RT"]', style: {{ 'line-style': 'dotted', 'width': 2, 'line-color': '#2a9d8f', 'target-arrow-shape': 'none' }} }},
                     {{ selector: 'edge[rel_type="AS"]', style: {{ 'line-style': 'dashed', 'width': 2, 'line-color': '#7b2cb1' }} }},
                     {{ selector: 'edge[rel_type="IN"]', style: {{ 'line-style': 'dotted', 'width': 3, 'line-color': '#0077b6', 'target-arrow-shape': 'triangle' }} }},
-                    
-                    /* --- LOGIČNI KONEKTORJI (Decision Logic) --- */
                     {{ selector: 'edge[rel_type="AND"]', style: {{ 'width': 5, 'line-color': '#00FF00', 'target-arrow-color': '#00FF00', 'target-arrow-shape': 'triangle' }} }},
                     {{ selector: 'edge[rel_type="OR"]', style: {{ 'width': 3, 'line-color': '#00BFFF', 'line-style': 'dashed', 'target-arrow-color': '#00BFFF', 'target-arrow-shape': 'vee' }} }},
                     {{ selector: 'edge[rel_type="XOR"]', style: {{ 'width': 4, 'line-color': '#FF8C00', 'line-style': 'double', 'target-arrow-color': '#FF8C00', 'target-arrow-shape': 'diamond' }} }},
                     {{ selector: 'edge[rel_type="NOT"]', style: {{ 'width': 4, 'line-color': '#FF0000', 'line-style': 'dashed', 'target-arrow-color': '#FF0000', 'target-arrow-shape': 'tee' }} }},
                     {{ selector: 'edge[rel_type="IF-THEN"]', style: {{ 'width': 4, 'line-color': '#FFD700', 'target-arrow-color': '#FFD700', 'target-arrow-shape': 'triangle', 'arrow-scale': 1.3 }} }},
-
-                    /* Poudarek na zvezdah (Macro cilji) */
                     {{ selector: 'node[shape="star"]', style: {{ 'font-size': '16px', 'width': 130, 'height': 130, 'border-width': 5, 'border-color': '#FFD700' }} }}
                 ],
                 layout: {selected_layout}
@@ -804,7 +847,6 @@ def render_cytoscape_network(elements, layout_type="hierarchical", container_id=
     """
     components.html(cyto_html, height=900)
 
-import math # Move all imports to the top of your script if possible
 
 def fetch_author_bibliographies(author_input):
     if not author_input: return ""
@@ -813,8 +855,6 @@ def fetch_author_bibliographies(author_input):
     headers = {"Accept": "application/json"}
     for auth in author_list:
         try:
-            # FIX: URL-encode the author name so non-ASCII characters (č, š, ž, ...)
-            # don't break the request ('ascii' codec can't encode character error).
             s_res = requests.get(f"https://pub.orcid.org/v3.0/search/?q={urllib.parse.quote(auth)}", headers=headers, timeout=6).json()
             if s_res.get('result'):
                 orcid_id = s_res['result'][0]['orcid-identifier']['path']
@@ -829,62 +869,35 @@ def fetch_author_bibliographies(author_input):
                     comprehensive_biblio += f"- **{year}**: {title}\n"
                 comprehensive_biblio += "\n---\n"
         except Exception: 
-            pass # Ignore API errors to keep the app running
+            pass
     return comprehensive_biblio
 
-import math
 
 def calculate_systemic_stress(f_pf, f_sf, f_pr):
-    """
-    Implements Dr. Petrič's Stress Intensity formula (Page 60).
-    σ0SF = arcsin(sqrt((FSF * FPR) / FPF))
-    """
     try:
-        # Convert to float and ensure f_pf (Positive Factors) isn't zero to avoid crash
         pf = float(f_pf)
         sf = float(f_sf)
         pr = float(f_pr)
-        
         if pf <= 0: pf = 0.001 
-        
-        # Calculate the ratio
         ratio = (sf * pr) / pf
-        
-        # MATH SAFETY: sqrt() needs positive, arcsin() needs value between -1 and 1
         clamped_ratio = max(0.0, min(ratio, 1.0))
-        
         stress_rad = math.asin(math.sqrt(clamped_ratio))
-        
-        # Returns the result in "Stress Degrees" (°S) as defined in the book
         return math.degrees(stress_rad)
     except Exception:
         return 0.0
 
+
 def calculate_effective_energy(stress_intensity, initial_potential=2500):
-    """
-    Implements the Energy Loss Index (W_EP) from Page 61 of the book.
-    W_EP = Initial_Energy - (Initial_Energy * (Stress_Intensity / 90))
-    2500 Kcal is the default baseline used in Dr. Petrič's example.
-    """
     try:
-        # The book defines 90°S as the theoretical maximum stress
         max_stress = 90.0
-        
-        # Calculate the proportion of energy lost
         loss_ratio = stress_intensity / max_stress
-        
-        # Ensure ratio stays within logical bounds [0, 1]
         loss_ratio = max(0.0, min(loss_ratio, 1.0))
-        
-        # Calculate remaining (effective) energy
         effective_energy = initial_potential - (initial_potential * loss_ratio)
-        
-        # Efficiency percentage
         efficiency_pct = (effective_energy / initial_potential) * 100
-        
         return round(effective_energy, 2), round(efficiency_pct, 1)
     except Exception:
         return 0.0, 0.0
+
 
 # =============================================================================
 # 2. ARCHITECTURAL ONTOLOGIES (IMA & MA) - EXHAUSTIVE EXPANSION
@@ -992,469 +1005,152 @@ MENTAL_APPROACHES_ONTOLOGY = {
             "desc": "Distillation of a problem into fundamental essence."
         },
         "Attraction": {
-            "color": "#F2A6A2", "shape": "diamond", 
-            "desc": "Force drawing disparate concepts into synthesis."
+            "color": "#FF69B4", "shape": "diamond",
+            "desc": "Forces that pull concepts or actors together."
         },
         "Repulsion": {
-            "color": "#D9D9D9", "shape": "diamond", 
-            "desc": "Isolation of incompatible solutions or noise."
-        },
-        "Condensation": {
-            "color": "#CCC0DA", "shape": "diamond", 
-            "desc": "Reduction of vast complexity into strategic insight."
-        },
-        "Framework and foundation": {
-            "color": "#F8CBAD", "shape": "diamond", 
-            "desc": "Establishing boundaries for innovation logic."
-        },
-        "Bipolarity and dialectics": {
-            "color": "#DDEBF7", "shape": "diamond", 
-            "desc": "Synthesis through opposing tension tension."
-        },
-        "Constant": {
-            "color": "#E1C1D1", "shape": "diamond", 
-            "desc": "Identifying stable system invariants."
-        },
-        "Associativity": {
-            "color": "#E1C1D1", "shape": "diamond", 
-            "desc": "Non-linear, lateral knowledge linking."
+            "color": "#FF4500", "shape": "diamond",
+            "desc": "Forces that push concepts or actors apart."
         },
         "Induction": {
-            "color": "#B4C6E7", "shape": "diamond", 
-            "desc": "Building broad theory from field observations."
-        },
-        "Whole and part": {
-            "color": "#00FF00", "shape": "diamond", 
-            "desc": "Holistic vs Granular logic navigation."
-        },
-        "Mini-max": {
-            "color": "#00FF00", "shape": "diamond", 
-            "desc": "Maximum utility with minimum friction search."
-        },
-        "Addition and composition": {
-            "color": "#FF00FF", "shape": "diamond", 
-            "desc": "Building complexity through layering building blocks."
-        },
-        "Hierarchy": {
-            "color": "#C6EFCE", "shape": "diamond", 
-            "desc": "Vertical taxonomic ranking by systemic priority."
-        },
-        "Balance": {
-            "color": "#00B0F0", "shape": "diamond", 
-            "desc": "Search for dynamic equilibrium between variables."
+            "color": "#87CEEB", "shape": "diamond",
+            "desc": "Moving from specific observations to general principles."
         },
         "Deduction": {
-            "color": "#92D050", "shape": "diamond", 
-            "desc": "Applying broad laws to solve specifics."
+            "color": "#4682B4", "shape": "diamond",
+            "desc": "Moving from general principles to specific cases."
         },
-        "Abstraction and elimination": {
-            "color": "#00B0F0", "shape": "diamond", 
-            "desc": "Removing noise to reach a generic model."
+        "Abduction": {
+            "color": "#9370DB", "shape": "diamond",
+            "desc": "Inferring the best explanation for observations."
         },
-        "Pleasure and displeasure": {
-            "color": "#00FF00", "shape": "diamond", 
-            "desc": "Evaluative feedback on solution elegance."
+        "Dialectics": {
+            "color": "#DC143C", "shape": "diamond",
+            "desc": "Thesis-antithesis-synthesis tension resolution."
         },
-        "Openness and closedness": {
-            "color": "#FFC000", "shape": "diamond", 
-            "desc": "Systemic boundary state governing external data nodes."
+        "Analogy": {
+            "color": "#32CD32", "shape": "diamond",
+            "desc": "Mapping structure from a known domain to a new one."
+        },
+        "Abstraction": {
+            "color": "#A9A9A9", "shape": "diamond",
+            "desc": "Removing detail to reveal higher-order patterns."
+        },
+        "Concretization": {
+            "color": "#CD853F", "shape": "diamond",
+            "desc": "Adding concrete detail to an abstract idea."
+        },
+        "Inversion": {
+            "color": "#FF1493", "shape": "diamond",
+            "desc": "Reversing assumptions or causal direction."
+        },
+        "Combination": {
+            "color": "#00CED1", "shape": "diamond",
+            "desc": "Merging previously separate elements."
+        },
+        "Decomposition": {
+            "color": "#B8860B", "shape": "diamond",
+            "desc": "Breaking a whole into constituent parts."
+        },
+        "Generalization": {
+            "color": "#6A5ACD", "shape": "diamond",
+            "desc": "Extending a finding beyond its original scope."
+        },
+        "Specialization": {
+            "color": "#20B2AA", "shape": "diamond",
+            "desc": "Narrowing a finding to a precise subdomain."
+        },
+        "Temporal shifting": {
+            "color": "#FF6347", "shape": "diamond",
+            "desc": "Moving the problem forward or backward in time."
+        },
+        "Scale shifting": {
+            "color": "#4169E1", "shape": "diamond",
+            "desc": "Changing the level of analysis (micro ↔ macro)."
+        },
+        "Value reorientation": {
+            "color": "#FFD700", "shape": "diamond",
+            "desc": "Changing the ethical or preference weighting of outcomes."
         }
     }
 }
-# =============================================================================
-# 2.1 HIERARCHOLOGY & HIERARCHOGRAPHY ONTOLOGY
-# =============================================================================
+
+# Minimal placeholders for the rest of the knowledge base (extend as needed)
+KNOWLEDGE_BASE = {
+    "User profiles": {
+        "Researcher": {"description": "Academic or applied researcher seeking rigorous synthesis."},
+        "Policy maker": {"description": "Decision-maker needing actionable, multi-level insights."},
+        "Practitioner": {"description": "Professional applying knowledge in organizational settings."},
+    },
+    "Science fields": {
+        "Physics": {"methods": ["Experiment", "Modelling"], "tools": ["Simulation", "Measurement"]},
+        "Psychology": {"methods": ["Experiment", "Survey"], "tools": ["Psychometrics", "Observation"]},
+        "Sociology": {"methods": ["Survey", "Network analysis"], "tools": ["Statistics", "Qualitative coding"]},
+        "Computer Science": {"methods": ["Algorithm design", "Data mining"], "tools": ["Python", "Graph databases"]},
+        "Criminology": {"methods": ["Case study", "Statistical analysis"], "tools": ["GIS", "Predictive models"]},
+        "Library Science": {"methods": ["Classification", "Thesaurus construction"], "tools": ["Cataloguing systems", "Metadata"]},
+    },
+    "Scientific paradigms": {
+        "Rationalism": "Reason and logical deduction as primary sources of knowledge.",
+        "Empiricism": "Observation and sensory experience as the foundation of knowledge.",
+        "Pragmatism": "Truth judged by practical consequences and usefulness.",
+    },
+    "Structural models": {
+        "Concepts": "Basic building blocks of knowledge representation.",
+        "Networks": "Relational structures among entities.",
+        "Hierarchies": "Ordered levels of abstraction or authority.",
+    }
+}
+
+# Merge extra science fields
+KNOWLEDGE_BASE["Science fields"].update(EXTRA_SCIENCE_FIELDS)
 
 HIERARCHOLOGY_ONTOLOGY = {
     "core_definitions": {
-        "Hierarchology": "Interdisciplinary science studying hierarchical associative systems (Micro, Meso, Macro).",
-        "Hierarchography": "Descriptive outlining of systems using workflows, tree maps, and structural diagrams.",
-        "Scientific Cage": "Cognitive limitations preventing thought beyond established paradigms."
+        "Hierarchology": "The study of hierarchical structures and processes across natural and social systems.",
+        "Hierarchography": "The mapping and visualization of hierarchical relations using formal and visual languages.",
     },
     "hierarchical_levels": {
-        "Micro-hierarchology": "Internal individual thinking and neural inductive communication.",
-        "Meso-hierarchology": "Intermediate social groups and organizational associative structures.",
-        "Macro-hierarchology": "Fundamental social laws and universal natural hierarchies."
+        "Macro": "Large-scale systemic patterns and planetary/ecological influences.",
+        "Meso": "Organizational, institutional and community-level structures.",
+        "Micro": "Individual, biological and cognitive-level processes.",
     },
     "operational_logic": {
-        "Internal Processes": "Inductive (building from specific neural/local signals to patterns).",
-        "External Functioning": "Deductive & Dialectical (applying general laws to specific social behaviors)."
+        "Internal Processes": "Inductive movement from concrete observations toward general principles.",
+        "External Functioning": "Deductive application of general principles to specific cases.",
     },
-    "hierarchography_tools": [
-        "Workflow Mapping", "Tree Maps", "Oligographs", "UML Modeling", "Mind Mapping", "Cognitive Modeling"
-    ]
+    "hierarchography_tools": ["Semantic graphs", "Thesauri", "Mind maps", "Network analysis", "Cytoscape layouts"]
 }
 
-# Add Hierarchology-specific nodes to your existing Metamodel
-HUMAN_THINKING_METAMODEL["nodes"].update({
-    "Hierarchical Associative System": {"color": "#fd7e14", "shape": "ellipse", "desc": "The primary cognitive framework defined by hierarchology."},
-    "Scientific Cage": {"color": "#6c757d", "shape": "rectangle", "desc": "The boundary of human mental perspective."},
-    "Hierarchography": {"color": "#e63946", "shape": "diamond", "desc": "The visual description of hierarchical structures."}
-})
-# =============================================================================
-# 3. KNOWLEDGE BASE (EXHAUSTIVE 18D SCIENCE FIELDS & ONTOLOGIES)
-# =============================================================================
-
-KNOWLEDGE_BASE = {
-    "User profiles": {
-        "Adventurers": {"description": "Explorers of hidden interdisciplinary patterns and high-risk hypotheses."},
-        "Applicators": {"description": "Focused on practical efficiency, rapid deployment, and tangible execution."},
-        "Know-it-alls": {"description": "Seekers of systemic absolute clarity, comprehensive taxonomy, and complete data."},
-        "Observers": {"description": "Passive monitors of systemic dynamics and trend watchers without intervention."}
-    },
-    "Scientific paradigms": {
-        "Empiricism": "Focus on sensory experience, experimental evidence, and observation-driven data.",
-        "Rationalism": "Reliance on deductive logic, a priori reasoning, and mathematical certainty.",
-        "Constructivism": "Knowledge as a social and cognitive build, dependent on perception.",
-        "Positivism": "Strict adherence to verifiable facts and rejection of speculation.",
-        "Pragmatism": "Evaluation based on utility and real-world application.",
-        "Reductionism": "Explaining complex phenomena by breaking them down into simpler, fundamental parts.",
-        "Holism": "Systems should be viewed as wholes, not just as a collection of parts.",
-        "Systems Theory": "Interdisciplinary study of systems where the focus is on relationships and patterns.",
-        "Phenomenology": "Study of structures of consciousness as experienced from the first-person point of view.",
-        "Falsificationism": "Popper’s principle that scientific theories must be inherently testable and refutable.",
-        "Critical Theory": "Social theory oriented toward critiquing and changing society as a whole.",
-        "Hermeneutics": "Theory and methodology of interpretation, especially of texts and human actions.",
-        "Relativism": "The view that truth and falsity, right and wrong, are products of social and historical contexts.",
-        "Structuralism": "Elements of human culture must be understood in terms of their relationship to a broader system.",
-        "Post-Structuralism": "Critique of structuralism, emphasizing the instability of meaning and systems.",
-        "Scientific Realism": "The view that scientific theories can provide approximately true descriptions of a mind-independent reality, including entities not directly observable.",
-        "Critical Realism": "A stratified view of reality distinguishing observable events, underlying mechanisms, and generative structures while recognizing limits of observation.",
-        "Postpositivism": "A fallibilist approach to science recognizing that observations and theories are theory-laden, while retaining systematic empirical testing and critical evaluation.",
-        "Bayesianism": "An inferential framework in which hypotheses are updated by evidence through probabilistic reasoning and explicit prior assumptions.",
-        "Mechanistic Explanation": "Explaining phenomena by identifying entities, activities, organization, and interactions that generate observable outcomes.",
-        "Evolutionary Paradigm": "Understanding change through variation, selection, inheritance, adaptation, and historical processes across biological and social systems.",
-        "Complexity and Emergence": "Explaining system-level patterns as emergent outcomes of nonlinear interactions among interconnected components.",
-        "Cybernetics": "The study of feedback, regulation, communication, control, and adaptive behavior in complex systems.",
-        "Computational Paradigm": "Treating computation, algorithms, information processing, and simulation as fundamental means for representing and investigating phenomena.",
-        "Process Philosophy": "Understanding reality primarily in terms of processes, relations, transformation, and becoming rather than static entities alone."
-    },
-    "Structural models": {
-        "Causal Connections": "Chains of cause and effect mapping systemic causality.",
-        "Principles & Relations": "Fundamental laws and the inter-relations between entities.",
-        "Episodes & Sequences": "Temporal flow, historical timelines, and event ordering.",
-        "Facts & Characteristics": "Raw data properties, attributes, and static descriptions.",
-        "Generalizations": "Broad frameworks and high-level theoretical models.",
-        "Glossary": "Precise definitions and terminological clarity.",
-        "Concepts": "Abstract constructs and conceptual building blocks."
-    },
-    "Science fields": {
-        "Mathematics": {
-            "cat": "Formal", 
-            "methods": ["Axiomatization", "Formal Proof", "Stochastic Modeling", "Topology"], 
-            "tools": ["MATLAB", "LaTeX", "WolframAlpha"], 
-            "facets": ["Algebra", "Analysis", "Number Theory", "Calculus"]
-        },
-        "Physics": {
-            "cat": "Natural", 
-            "methods": ["Quantum Modeling", "Particle Tracking", "Interferometry", "Simulation"], 
-            "tools": ["Accelerator", "Spectrometer", "Oscilloscopes", "Cryostats"], 
-            "facets": ["Relativity", "Quantum Mechanics", "Thermodynamics", "Optics"]
-        },
-        "Astronomy": {
-            "cat": "Natural", 
-            "methods": ["Observational Astronomy", "Astrophysical Modeling", "Spectroscopy", "Astrometry"], 
-            "tools": ["Telescopes", "Spectrographs", "Radio Interferometers", "Space Observatories"], 
-            "facets": ["Planetary Science", "Stellar Astronomy", "Galactic Astronomy", "Cosmology"]
-        },
-        "Chemistry": {
-            "cat": "Natural", 
-            "methods": ["Organic Synthesis", "Chromatography", "NMR Spectroscopy", "Titration"], 
-            "tools": ["NMR", "Mass Spec", "Incubators", "Burettes"], 
-            "facets": ["Biochemistry", "Physical Chemistry", "Analytical", "Inorganic"]
-        },
-        "Biology": {
-            "cat": "Natural", 
-            "methods": ["Gene Sequencing", "CRISPR", "Cell Culture", "In-vivo observation"], 
-            "tools": ["Electron Microscope", "PCR Machine", "Centrifuge", "Incubators"], 
-            "facets": ["Genetics", "Microbiology", "Ecology", "Cell Biology"]
-        },
-        "Neuroscience": {
-            "cat": "Natural", 
-            "methods": ["Neuroimaging", "Optogenetics", "Behavioral Mapping", "Electrophysiology"], 
-            "tools": ["fMRI", "EEG", "Electrodes", "Patch Clamp"], 
-            "facets": ["Cognitive Neuroscience", "Neural Plasticity", "Synaptic Physiology"]
-        },
-        "Psychology": {
-            "cat": "Social", 
-            "methods": ["Double-Blind Trials", "Psychometrics", "Longitudinal Studies", "CBT"], 
-            "tools": ["Standardized Tests", "Surveys", "Biofeedback", "Eye-tracking"], 
-            "facets": ["Behavioral", "Clinical", "Developmental", "Cognitive Psychology"]
-        },
-        "Sociology": {
-            "cat": "Social", 
-            "methods": ["Ethnography", "Network Analysis", "Survey Design", "Grounded Theory"], 
-            "tools": ["NVivo", "SPSS", "Census Data", "Social Graphs"], 
-            "facets": ["Demography", "Stratification", "Dynamics", "Urban Sociology"]
-        },
-        "Political Science": {
-            "cat": "Social",
-            "methods": ["Comparative Method", "Institutional Analysis", "Quantitative Modeling", "Political Theory Analysis"],
-            "tools": ["STATA", "Polling Data", "Legislative Archives"],
-            "facets": ["International Relations", "Comparative Politics", "Political Theory", "Public Policy", "Geopolitics"]
-        },
-        "Anthropology": {
-            "cat": "Social/Humanities",
-            "methods": ["Participant Observation", "Ethnography", "Cross-Cultural Comparison", "Archaeological Excavation"],
-            "tools": ["Field Journals", "GIS", "Radiocarbon Dating"],
-            "facets": ["Cultural Anthropology", "Biological Anthropology", "Archaeology", "Linguistic Anthropology"]
-        },
-        "Cognitive Science": {
-            "cat": "Interdisciplinary",
-            "methods": ["Computational Modeling", "Experimental Paradigm Design", "Turing Analysis"],
-            "tools": ["AI Architectures", "Eye-tracking", "Reaction-time Latency"],
-            "facets": ["Artificial Intelligence", "Philosophy of Mind", "Cognitive Psychology", "Linguistics"]
-        },
-        "Complexity Science": {
-            "cat": "Formal/Interdisciplinary",
-            "methods": ["Agent-Based Modeling", "Network Topology", "Chaos Theory", "Fractal Analysis"],
-            "tools": ["NetLogo", "Graph Theory Software", "Non-linear Simulators"],
-            "facets": ["Self-Organization", "Emergence", "System Dynamics", "Complex Adaptive Systems"]
-        },
-        "Computer Science": {
-            "cat": "Formal", 
-            "methods": ["Algorithm Design", "Verification", "Complexity Analysis", "Parallelism"], 
-            "tools": ["GPU Clusters", "Docker", "Compilers", "IDEs", "Kubernetes"], 
-            "facets": ["AI", "Cybersecurity", "Blockchain", "Cloud Computing"]
-        },
-        "Medicine": {
-            "cat": "Applied", 
-            "methods": ["Clinical Trials", "Epidemiology", "Radiology", "Pathology"], 
-            "tools": ["MRI", "CT Scanner", "Biomarker Assays", "Ultrasound"], 
-            "facets": ["Genomics", "Immunology", "Oncology", "Internal Medicine"]
-        },
-        "Psychiatry": {
-            "cat": "Applied/Medical", 
-            "methods": ["Clinical Trials", "Diagnostic Interviewing", "Case Formulation", "Psychopharmacological Modeling", "Neuroimaging Analysis"], 
-            "tools": ["DSM-5-TR", "ICD-11", "EEG", "fMRI", "Standardized Rating Scales"], 
-            "facets": ["Clinical Psychiatry", "Neuropsychiatry", "Forensic Psychiatry", "Geriatric Psychiatry"]
-        },
-        "Public Health": {
-            "cat": "Applied/Social",
-            "methods": ["Biostatistics", "Community Health Assessment", "Policy Advocacy", "Epidemiological Surveillance"],
-            "tools": ["Vital Statistics", "Health Registries", "GIS"],
-            "facets": ["Epidemiology", "Environmental Health", "Global Health", "Health Policy"]
-        },
-        "Engineering": {
-            "cat": "Applied", 
-            "methods": ["FEA Analysis", "Prototyping", "Stress Testing", "Systems Integration"], 
-            "tools": ["CAD", "3D Printers", "CNC Machines", "Simulation SW"], 
-            "facets": ["Robotics", "Nanotechnology", "Civil Eng", "Electrical Eng"]
-        },
-        "Materials Science": {
-            "cat": "Applied/Natural",
-            "methods": ["Crystallography", "Metallography", "Polymer Characterization", "Nano-fabrication"],
-            "tools": ["SEM (Scanning Electron Microscope)", "X-ray Diffraction", "Spectroscopy"],
-            "facets": ["Nanomaterials", "Biomaterials", "Metallurgy", "Semiconductors"]
-        },
-        "Economics": {
-            "cat": "Social", 
-            "methods": ["Econometrics", "Game Theory", "Macro Equilibrium Modeling", "Forecasting"], 
-            "tools": ["Bloomberg", "Stata", "R", "Python Pandas"], 
-            "facets": ["Finance", "Behavioral Econ", "Macroeconomics", "Microeconomics"]
-        },
-        "Philosophy": {
-            "cat": "Humanities", 
-            "methods": ["Socratic Method", "Dialectics", "Phenomenology", "Conceptual Analysis"], 
-            "tools": ["Logic Mapping", "Primary Texts", "Semantic Analysis"], 
-            "facets": ["Epistemology", "Ethics", "Metaphysics", "Aesthetics"]
-        },
-        "Linguistics": {
-            "cat": "Humanities", 
-            "methods": ["Corpus Analysis", "Syntactic Parsing", "Historical Phonetics", "Transcription"], 
-            "tools": ["Praat", "NLTK", "WordNet", "ELAN"], 
-            "facets": ["Semantics", "Phonology", "Sociolinguistics", "CompLing"]
-        },
-        "Ecology": {
-            "cat": "Natural", 
-            "methods": ["Remote Sensing", "Trophic Modeling", "Field Sampling", "Biogeochemistry"], 
-            "tools": ["GIS", "Biosensors", "Drones", "Satellite Imagery"], 
-            "facets": ["Biodiversity", "Conservation Biology", "Restoration Ecology"]
-        },
-        "History": {
-            "cat": "Humanities", 
-            "methods": ["Archival Research", "Historiography", "Oral History", "Prosopography"], 
-            "tools": ["Radiocarbon Dating", "Microfilm", "Digital Archives"], 
-            "facets": ["Military History", "Diplomacy", "Ancient Civilizations", "Social History"]
-        },
-        "Architecture": {
-            "cat": "Applied", 
-            "methods": ["Parametric Design", "Environmental Analysis", "BIM", "Urbanism"], 
-            "tools": ["Revit", "Rhino 3D", "AutoCAD", "Photogrammetry"], 
-            "facets": ["Urban Design", "Sustainability", "Landscape Arch", "Heritage"]
-        },
-        "Geology": {
-            "cat": "Natural", 
-            "methods": ["Stratigraphy", "Mineralogy", "Seismology", "Petrology"], 
-            "tools": ["Seismograph", "GIS", "Magnetometers", "Thin-sectioning"], 
-            "facets": ["Tectonics", "Petrology", "Paleontology", "Geophysics"]
-        },
-        "Geography": {
-            "cat": "Natural/Social", 
-            "methods": ["Spatial Analysis", "Geospatial Modeling", "Remote Sensing", "Field Observation", "Regional Synthesis"], 
-            "tools": ["ArcGIS/QGIS", "GPS Systems", "Satellite Imagery", "Lidar Scan"], 
-            "facets": ["Physical Geography", "Human Geography", "Geomorphology", "Urban Geography"]
-        },
-        "Climatology": {
-            "cat": "Natural", 
-            "methods": ["Climate Modeling", "Paleoclimatic Reconstruction", "Statistical Time-Series Analysis"], 
-            "tools": ["Supercomputers (HPC)", "Weather Station Arrays", "Satellite Radiometers"], 
-            "facets": ["Meteorology", "Paleoclimatology", "Dynamic Climatology", "Applied Climatology"]
-        },
-        "Library Science": {
-            "cat": "Applied", 
-            "methods": ["Taxonomy", "Archival Appraisal", "Retrieval Logic", "Metadata"], 
-            "tools": ["OPAC", "Metadata Systems", "Thesauri", "Digital Archives"], 
-            "facets": ["Knowledge Organization", "Information Retrieval", "Digital Curation"]
-        },
-        "Criminology": {
-            "cat": "Social", 
-            "methods": ["Profiling", "Longitudinal Studies", "Victimology Analysis", "Ethnography"], 
-            "tools": ["Crime Mapping", "AFIS", "CODIS", "SPSS"], 
-            "facets": ["Penology", "Forensic Psychology", "Police Science", "Criminal Justice"]
-        },
-        "Forensic sciences": {
-            "cat": "Applied/Natural", 
-            "methods": ["DNA Profiling", "Ballistics", "Toxicology", "Trace Analysis"], 
-            "tools": ["Mass Spectrometer", "Luminol", "Comparison Microscope", "AFIS"], 
-            "facets": ["Forensic Biology", "Forensic Chemistry", "Forensic Pathology", "Digital Forensics"]
-        },
-        "Legal science": {
-            "cat": "Social", 
-            "methods": ["Legal Hermeneutics", "Comparative Law", "Dogmatic Method", "Empirical Legal Research"], 
-            "tools": ["Legislative Databases", "Case Law Archives", "Constitutional Records", "Westlaw"], 
-            "facets": ["Jurisprudence", "Constitutional Law", "Criminal Law", "Civil Law", "International Law"]
-        }
-    }
-}
-# =============================================================================
-# 3.1 ADVANCED IDEATION TECHNIQUES LIBRARY
-# =============================================================================
 IDEATION_TECHNIQUES = {
-    "Six Thinking Hats": "Process the problem through 6 perspectives: White (Data), Red (Emotion), Black (Risk), Yellow (Value), Green (Creativity), and Blue (Control/Planning).",
-    "SCAMPER": "Apply the following filters: Substitute, Combine, Adapt, Modify, Put to another use, Eliminate, and Reverse.",
-    "First Principles": "Deconstruct the problem into fundamental, undeniable truths and rebuild a solution from the ground up (avoiding analogies).",
-    "TRIZ (Simplified)": "Identify systemic contradictions and apply inventive principles like Segmentation, Nesting, or Local Quality to resolve them.",
-    "Lateral Thinking": "Use 'Provocation' and 'Movement' to jump out of established patterns and find non-obvious entry points to the problem.",
-    "Blue Ocean Strategy": "Identify ways to make the competition irrelevant by creating a new value space through 'Eliminate-Reduce-Raise-Create' logic.",
-    "Synectics": "Use direct, personal, and symbolic analogies to make the strange familiar and the familiar strange."
+    "Six Thinking Hats": "Parallel thinking in six modes (facts, emotions, caution, benefits, creativity, process).",
+    "SCAMPER": "Substitute, Combine, Adapt, Modify, Put to other uses, Eliminate, Reverse.",
+    "TRIZ": "Theory of inventive problem solving using contradiction matrix and inventive principles.",
+    "Design Thinking": "Empathize, Define, Ideate, Prototype, Test.",
+    "Morphological Analysis": "Systematic exploration of all possible combinations of parameters.",
 }
 
-# =============================================================================
-# 3.2 RELATION-FAMILY CONSTANTS (shared by diagnostic + auto-rebalancer)
-# =============================================================================
-THESAURUS_TYPES = {"TT", "BT", "NT", "RT", "EQ", "AS", "IN"}
-LOGIC_TYPES = {"AND", "OR", "XOR", "NOT", "IF-THEN"}
-STRUCTURAL_TYPES = {"Generalization", "Specialization", "Containment",
-                     "Realization", "Composition", "Aggregation",
-                     "Dependency", "Conflict"}
 
 # =============================================================================
-# 3.3 [NOVO] CRIME & STRESS THEMATIC EXTENSION (samo dodaja; nič ne odstrani)
-# =============================================================================
-KNOWLEDGE_BASE["Science fields"].update(EXTRA_SCIENCE_FIELDS)
-HUMAN_THINKING_METAMODEL["nodes"].update(CRIME_STRESS_METAMODEL_NODES)
-
-# =============================================================================
-# 4. KONČNI POPRAVLJEN SIDEBAR (Z SAMBANOVO IN UNIKATNIMI KLJUČI)
+# SIDEBAR
 # =============================================================================
 with st.sidebar:
-    # 1. Original 3D Relief Logo
-    st.markdown(f'<div class="sidebar-logo-container"><img src="data:image/svg+xml;base64,{get_svg_base64(SVG_3D_RELIEF)}" width="220"></div>', unsafe_allow_html=True)
-
-    # 2. Date Badge
-    st.markdown(f'<div class="date-badge">{SYSTEM_DATE.upper()}</div>', unsafe_allow_html=True)
-
-    st.header("⚙️ SYSTEM CONTROL")
-
-    # 3. GOOGLE GEMINI SYSTEM CONTROL
-    st.header("⚙️ GOOGLE GEMINI SYSTEM CONTROL")
-    google_api_key = st.text_input(
-        "Google Gemini API Key:",
-        type="password",
-        key="side_google_gemini_v2026",
-        help="Google AI Studio / Gemini API key."
-    )
-
-    # Google-only language-model catalog.  The list intentionally contains
-    # current Gemini 3.x models plus the established Gemini 2.5 family and
-    # Google's Gemma instruction-tuned models. No third-party provider is used.
-    GOOGLE_MODELS = {
-        # Current Gemini 3.x
-        "Gemini 3.8 Flash — latest": "gemini-3.8-flash",
-        "Gemini 3.7 Flash — advanced": "gemini-3.7-flash",
-        "Gemini 3.6 Flash": "gemini-3.6-flash",
-        "Gemini 3.5 Flash": "gemini-3.5-flash",
-        "Gemini 3.5 Flash-Lite — free/cost-efficient": "gemini-3.5-flash-lite",
-        "Gemini 3.1 Flash-Lite — free/cost-efficient": "gemini-3.1-flash-lite",
-        "Gemini 3.1 Pro Preview": "gemini-3.1-pro-preview",
-        "Gemini 3 Flash Preview": "gemini-3-flash-preview",
-        # Gemini 2.5 family
-        "Gemini 2.5 Pro": "gemini-2.5-pro",
-        "Gemini 2.5 Flash": "gemini-2.5-flash",
-        "Gemini 2.5 Flash-Lite": "gemini-2.5-flash-lite",
-        # Gemma 4
-        "Gemma 4 31B IT — free": "gemma-4-31b-it",
-        "Gemma 4 26B A4B IT — free": "gemma-4-26b-a4b-it",
-    }
-
-    st.subheader("🤖 Sequential Google Model Selection")
-    p1_model_label = st.selectbox(
-        "Phase 1 Model (IMA Structure):",
-        list(GOOGLE_MODELS.keys()), index=4,
-        help="Recommended default: Gemini 3.5 Flash-Lite for efficient IMA synthesis."
-    )
-    p1_model = GOOGLE_MODELS[p1_model_label]
-    p2_model_label = st.selectbox(
-        "Phase 2 Model (MA Innovation):",
-        list(GOOGLE_MODELS.keys()), index=5,
-        help="Recommended default: Gemini 3.1 Flash-Lite; choose Gemini 3.7/3.8 for stronger innovation."
-    )
-    p2_model = GOOGLE_MODELS[p2_model_label]
-
-    st.divider()
-
-    # --- NOVO: IZBIRA PERSPEKTIVE GRAFA ---
-    st.subheader("🎨 GRAPH PERSPECTIVE")
-    graph_perspective = st.selectbox(
-        "Select Visual Layout Engine:",
-        options=["organic", "hierarchical", "concentric", "circular", "grid"],
-        index=0,
-        format_func=lambda x: x.capitalize() + " View",
-        help="Organic: naravna tematska struktura | Hierarchical: drevesna struktura | Concentric: Macro-Meso-Micro | Circular: relacije | Grid: pregled",
-        key="side_graph_layout_v2026"
-    )
-
-    graph_node_count = st.slider(
-        "🔢 Number of Graph Nodes:",
-        min_value=10,
-        max_value=80,
-        value=50,
-        step=1,
-        help="Set the maximum number of nodes displayed in the semantic graph."
-    )
-
-    st.divider()
-
-    # 5. Reset in Guide Gumbi (Dodani unikatni ključi)
-    col_res, col_gui = st.columns(2)
-    with col_res:
-        if st.button("♻️ RESET", key="sidebar_reset_btn_unique"):
-            for key in list(st.session_state.keys()):
-                del st.session_state[key]
-            st.rerun()
-    with col_gui:
-        if st.button("📖 GUIDE", key="sidebar_guide_btn_unique"):
-            st.session_state.show_user_guide = not st.session_state.show_user_guide
-            st.rerun()
-
-    st.divider()
-    st.subheader("🌐 EXTERNAL CONNECTORS")
-    st.link_button("📂 GitHub Repository", "https://github.com/", use_container_width=True, key="side_git_link")
-    st.link_button("🆔 ORCID Registry", "https://orcid.org/", use_container_width=True, key="side_orcid_link")
-    st.link_button("🎓 Google Scholar", "https://scholar.google.com/", use_container_width=True, key="side_scholar_link")
-
-    # 6. KNOWLEDGE EXPLORER (POSODOBLJENA RAZŠIRJENA RAZLIČICA)
+    st.markdown('<div class="sidebar-logo-container">' + 
+                f'<img src="data:image/svg+xml;base64,{get_svg_base64(SVG_3D_RELIEF)}" width="180">' + 
+                '</div>', unsafe_allow_html=True)
+    
+    st.markdown(f'<div class="date-badge">{SYSTEM_DATE}</div>', unsafe_allow_html=True)
+    
+    google_api_key = st.text_input("🔑 Google Gemini API Key", type="password", key="google_api_key")
+    
+    p1_model = st.selectbox("Phase 1 Model (IMA)", ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-2.5-pro"], index=0)
+    p1_model_label = p1_model
+    p2_model = st.selectbox("Phase 2 Model (MA)", ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-2.5-pro"], index=1)
+    p2_model_label = p2_model
+    
+    graph_perspective = st.selectbox("Default Graph Perspective", ["hierarchical", "organic", "concentric", "circular", "grid"], index=0)
+    graph_node_count = st.slider("Max nodes in graph", 10, 80, 35)
+    
     st.divider()
     st.subheader("📚 KNOWLEDGE EXPLORER")
 
@@ -1474,67 +1170,17 @@ with st.sidebar:
         st.markdown("**Core Concepts:**")
         for key, val in HIERARCHOLOGY_ONTOLOGY["core_definitions"].items():
             st.markdown(f"• **{key}**: {val}")
-
         st.markdown("---")
         st.markdown("**Advanced Mapping Connectors:**")
-        st.markdown("• ⬛ ┄ ➤ **Specialization**: Deduktivna izpeljava iz splošnega zakona v specifičen primer (nasprotje generalizacije).")
-        st.markdown("• 🟦 — ◯ **Containment**: Močna strukturna vsebovanost; označuje elemente, ujetne znotraj 'znanstvene kletke'.")
+        st.markdown("• ⬛ ┄ ➤ **Specialization**: Deduktivna izpeljava iz splošnega zakona v specifičen primer.")
+        st.markdown("• 🟦 — ◯ **Containment**: Močna strukturna vsebovanost.")
 
     with st.expander("🔬 Science Taxonomy & Levels", expanded=False):
         st.markdown("**Field Domains:**")
         for s in sorted(KNOWLEDGE_BASE["Science fields"].keys()): 
             st.markdown(f"• **{s}**")
-
         st.markdown("---")
-        st.markdown("**Hierarchical Levels:**")
-        for level, desc in HIERARCHOLOGY_ONTOLOGY["hierarchical_levels"].items():
-            st.markdown(f"• **{level}**: {desc}")
-
-        st.markdown("---")
-        st.markdown("**Logic Flows:**")
-        st.markdown(f"• *Internal (Inductive):* {HIERARCHOLOGY_ONTOLOGY['operational_logic']['Internal Processes']}")
-        st.markdown(f"• *External (Deductive):* {HIERARCHOLOGY_ONTOLOGY['operational_logic']['External Functioning']}")
-
-        st.markdown("---")
-        st.markdown("**Hierarchography Methods:**")
-        st.write(", ".join(HIERARCHOLOGY_ONTOLOGY["hierarchography_tools"]))
-
-    with st.expander("🏗️ Structural Model Context", expanded=False):
-        for m, d in KNOWLEDGE_BASE["Structural models"].items(): 
-            st.markdown(f"**{m}**: {d}")
-
-    # --- [NOVO] Crime & Stress Prevention Ontology (expander) ---
-    render_crime_stress_sidebar(st)
-
-# =============================================================================
-# 3.9 REPORT EXPORT HELPERS
-# =============================================================================
-def _report_plain_text(markdown_text):
-    """Create readable plain text from the generated Markdown/HTML report."""
-    cleaned = re.sub(r'<[^>]+>', '', markdown_text or '')
-    cleaned = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', cleaned)
-    cleaned = re.sub(r'[#*_`]', '', cleaned)
-    return html.unescape(cleaned)
-
-def build_html_report(report_text, graph_elements, perspective):
-    """Build a self-contained HTML report with an interactive Cytoscape graph."""
-    graph_json = json.dumps(graph_elements, ensure_ascii=False)
-    report_html = report_text or ""
-    return f"""<!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8">
-<title>SIS Universal Knowledge Synthesizer Report</title>
-<style>
-body{{font-family:Arial,Helvetica,sans-serif;margin:40px;color:#1d3557;line-height:1.6}}
-.report{{max-width:1200px;margin:auto}}
-.graph{{width:100%;height:850px;border:1px solid #ddd;border-radius:16px;margin-top:25px}}
-h1,h2,h3{{color:#1d3557}}
-</style></head><body><div class="report">
-<h1>SIS Universal Knowledge Synthesizer Report</h1>
-<div>{report_html}</div>
-<h2>Hybrid Semantic System Map — {html.escape(perspective.upper())} VIEW</h2>
-<div id="cy" class="graph"></div>
-</div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
+        st.markdown("**Hierarchical Levelsape/3.26.0/cytoscape.min.js"></script>
 <script>
 const elements = {graph_json};
 const cy = cytoscape({{
@@ -1565,20 +1211,21 @@ const cy = cytoscape({{
 }});
 </script></body></html>"""
 
+
 # --- MAIN PAGE CONTENT ---
 st.markdown('<h1 class="main-header-gradient">🧱 SIS Universal Knowledge Synthesizer</h1>', unsafe_allow_html=True)
-st.markdown(f"**Sequential Multi-Engine Pipeline** | Current Operating Date: **{SYSTEM_DATE}**")
+st.markdown(f"**Sequential Multi-Engine Pipeline** | Current Operating Date: **{SYSTEM_DATE}** | Version: **{VERSION_CODE}**")
 
 if st.session_state.show_user_guide:
     st.info(f"""
-    **Sequential Synergy Pipeline Workflow (Updated Feb 24, 2026):**
+    **Sequential Synergy Pipeline Workflow:**
     1. **Key Input**: Enter your Google Gemini API key and select Google models for Phase 1 and Phase 2.
     2. **Research Foundation (Step 1)**: Google Gemini performs structural synthesis using Integrated Metamodel Architecture (IMA).
     3. **Innovation Prompt (Step 2)**: Google Gemini takes the Phase 1 foundation and generates useful innovative ideas using Mental Approaches (MA) logic.
-    4. **Visualization**: The interactive 18D graph maps structural facts against generative ideas.
+    4. **Visualization**: The interactive graph maps structural facts against generative ideas.
+    5. **Article 2014 enhancements**: CU/IU classification, dynamic thesaurus, innovation grouping + evaluation matrix.
     """)
 
-# REFERENCE ARCHITECTURE BOXES
 col_ref1, col_ref2 = st.columns(2)
 with col_ref1:
     st.markdown("""<div class="metamodel-box"><b>🏛️ Phase 1: Google Gemini (IMA Architecture)</b><br>Structural reasoning building the factual foundation. Focus: Identity, Mission, Problem. </div>""", unsafe_allow_html=True)
@@ -1587,7 +1234,6 @@ with col_ref2:
 
 st.markdown("### 🛠️ CONFIGURE SYNERGY PIPELINE")
 
-# Entry Rows
 r1c1, r1c2, r1c3 = st.columns([1.5, 2, 1])
 with r1c1: target_authors = st.text_input("👤 Authors for ORCID Analysis:", placeholder="Karl Petrič, Samo Kralj, Teodor Petrič")
 with r1c2: sel_sciences = st.multiselect("2. Select Science Fields:", sorted(list(KNOWLEDGE_BASE["Science fields"].keys())), default=["Physics", "Psychology", "Sociology"])
@@ -1598,7 +1244,6 @@ with r2c1: sel_paradigms = st.multiselect("4. Scientific Paradigms:", list(KNOWL
 with r2c2: sel_models = st.multiselect("5. Structural Models:", list(KNOWLEDGE_BASE["Structural models"].keys()), default=["Concepts"])
 with r2c3: goal_context = st.selectbox("6. Strategic Project Goal:", ["Scientific Research", "Problem Solving", "Educational", "Policy Making"])
 
-# --- METHODOLOGY & TOOLS UI (ACTIVATED BEFORE INNOVATION STRATEGY) ---
 available_methods = sorted({
     method
     for science in sel_sciences
@@ -1627,7 +1272,6 @@ with r3c2:
     )
 
 st.divider()
-# --- ADVANCED MULTI-IDEATION UI ---
 st.markdown("### 🧬 INNOVATION STRATEGY")
 selected_techniques = st.multiselect(
     "Select Strategic Ideation Frameworks (Pick one or more):", 
@@ -1639,14 +1283,12 @@ selected_techniques = st.multiselect(
 if not selected_techniques:
     st.warning("⚠️ Please select at least one technique for Phase 2.")
 else:
-    # Build a combined description for the info box
     combined_desc = " | ".join([f"**{t}**: {IDEATION_TECHNIQUES[t]}" for t in selected_techniques])
     st.info(f"**Active Hybrid Strategy:** {combined_desc}")
 st.divider()
 
-# --- [NOVO] CRIME & STRESS PREVENTION MODULE (izbirnik + kalkulator) ---
+# Crime & Stress mode (calculator removed)
 cs_mode = render_crime_stress_mode(st)
-render_stress_calculator(st, calculate_systemic_stress, calculate_effective_energy)
 st.divider()
 
 # DUAL INQUIRY INTERFACE
@@ -1655,8 +1297,6 @@ with col_inq1:
     user_query = st.text_area("❓ STEP 1: Research Inquiry (for GOOGLE GEMINI):", placeholder="Fact-based Foundational Inquiry...", height=200)
 with col_inq2:
     idea_query = st.text_area("💡 STEP 2: Innovation Prompt (for GOOGLE GEMINI):", placeholder="Targets for innovative idea production...", height=200)
-# --- POPRAVEK KORAK 1: Branje vsebine datoteke ---
-# --- KORAK 1: File Upload with English Translation ---
 with col_inq3:
     uploaded_file = st.file_uploader("📂 ATTACH DATA (.txt only):", type=['txt'], key="final_file_uploader_v2")
     file_content = "" 
@@ -1664,23 +1304,17 @@ with col_inq3:
         try:
             file_content = uploaded_file.read().decode("utf-8")
             st.success(f"📎 {uploaded_file.name} uploaded!")
-            # Prevedeno v angleščino:
             with st.expander("File Preview"):
                 st.text(file_content[:300] + "...")
         except Exception as e:
             st.error(f"Error reading file: {e}")
+
 
 # =============================================================================
 # 5. SYNERGY EXECUTION ENGINE (GOOGLE GEMINI / GEMMA ONLY)
 # =============================================================================
 
 def google_generate(client, model_id, system_prompt, user_content, temperature, max_retries=4):
-    """Single Google GenAI gateway. No third-party LLM providers.
-
-    Includes automatic retry with exponential backoff for transient server-side
-    errors (e.g. 503 UNAVAILABLE / high demand), which are temporary on Google's
-    side and usually succeed on the next attempt.
-    """
     if client is None:
         raise RuntimeError("Google Gemini client is not initialized.")
 
@@ -1716,7 +1350,7 @@ def google_generate(client, model_id, system_prompt, user_content, temperature, 
             error_str = str(exc)
             is_transient = any(code in error_str for code in ["503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED", "500", "INTERNAL"])
             if is_transient and attempt < max_retries - 1:
-                wait_time = (2 ** attempt) + 1  # 2s, 3s, 5s, 9s...
+                wait_time = (2 ** attempt) + 1
                 st.toast(f"⏳ Google API trenutno preobremenjen (poskus {attempt + 1}/{max_retries}). Ponovni poskus čez {wait_time}s...")
                 time.sleep(wait_time)
                 continue
@@ -1785,23 +1419,24 @@ INTERFACE PARAMETERS:
 - Strategic Goal: {goal_context}
 """
 
-            # --- [NOVO] Ali je aktiven Crime & Stress Prevention modul? ---
             cs_active = crime_stress_should_activate(cs_mode, user_query, idea_query)
+
+            # --- NOVO: CU/IU klasifikacija (članek 2014) ---
+            cu_iu = classify_query_cu_iu(user_query)
+            cu_iu_note = (
+                f"\n\n[CU/IU CLASSIFICATION – inspired by Petrič et al. 2014]\n"
+                f"CU category: {cu_iu['cu']} – {cu_iu['cu_label']}\n"
+                f"Assumed user intention (IU): {cu_iu['iu']}\n"
+                f"Confidence: {cu_iu['confidence']}\n"
+                f"Use this classification to better structure the problem definition and to prioritise relevant knowledge domains."
+            )
 
             with st.spinner('🔍 Accessing ORCID research background...'):
                 biblio_data = fetch_author_bibliographies(target_authors) if target_authors else ""
 
             file_context_str = f"\n\n[FILE CONTEXT]:\n{file_content}" if file_content else ""
             biblio_context = f"\n\n[AUTHOR RESEARCH BACKGROUND]:\n{biblio_data}" if biblio_data else ""
-            full_ai_input = f"{active_context}\nUSER RESEARCH INQUIRY:\n{user_query}{file_context_str}{biblio_context}"
-
-            # --- [NOVO] Izmerjena intenzivnost stresa (če jo je uporabnik vnesel v kalkulator) ---
-            cs_measured = st.session_state.get("cs_measured")
-            if cs_active and cs_measured:
-                full_ai_input += measured_stress_note(
-                    cs_measured["f_pf"], cs_measured["f_sf"], cs_measured["f_pr"],
-                    cs_measured["degrees"], cs_measured["energy"], cs_measured["efficiency"]
-                )
+            full_ai_input = f"{active_context}\nUSER RESEARCH INQUIRY:\n{user_query}{file_context_str}{biblio_context}{cu_iu_note}"
 
             google_client = genai.Client(api_key=google_api_key)
 
@@ -1829,6 +1464,9 @@ Requirements:
 11. Explicitly identify at least 2-3 cross-disciplinary tension points, contradictions
     or knowledge gaps between the selected science fields — these become the raw
     material for innovation in Phase 2.
+12. Take into account the CU/IU classification provided in the input: use the CU
+    category to focus the relevant entity types and the IU to prioritise the kind
+    of knowledge the user is seeking.
 
 Selected sciences: {', '.join(sel_sciences)}
 Selected paradigms: {', '.join(sel_paradigms)}
@@ -1850,7 +1488,6 @@ Return, using these as literal markdown section headers, in this order:
 
 Do not generate innovations in Phase 1.
 """
-            # --- [NOVO] Crime & Stress tematska okrepitev Faze 1 (prepended) ---
             if cs_active:
                 phase1_system_prompt = build_phase1_addendum() + phase1_system_prompt
 
@@ -2095,7 +1732,6 @@ Then valid JSON only:
 Use standard JSON with double quotes. Escape internal quotes correctly.
 Do not place explanatory text after the JSON object.
 """
-            # --- [NOVO] Crime & Stress tematska okrepitev Faze 2 (prepended) ---
             if cs_active:
                 phase2_system_prompt = build_phase2_addendum() + phase2_system_prompt
 
@@ -2110,9 +1746,6 @@ Do not place explanatory text after the JSON object.
                 )
 
             # --- 4. PROCESS RESULTS ---
-            # Always initialize these containers before any conditional JSON parsing.
-            # The previous version could reach the highlighter with undefined
-            # nodes_to_link/final_elements, causing Pipeline Failure.
             g_data = {"nodes": [], "edges": [], "system_metrics": {}}
             nodes_to_link = []
             final_elements = []
@@ -2127,9 +1760,6 @@ Do not place explanatory text after the JSON object.
 
             innovation_text = re.sub(r'```json|```', '', innovation_text)
 
-            # Parse the model-generated semantic graph.  Do this before any
-            # node/edge rendering; the previous version extracted json_raw but
-            # never assigned it to g_data.
             if json_raw.strip():
                 try:
                     cleaned_json = json_raw.strip()
@@ -2143,11 +1773,8 @@ Do not place explanatory text after the JSON object.
                     if isinstance(parsed, dict):
                         g_data = parsed
                 except Exception as parse_exc:
-                    # Keep the textual report usable even if the model emitted
-                    # malformed JSON. The graph simply remains empty.
                     st.warning(f"⚠️ Semantic graph JSON could not be parsed; report retained. ({parse_exc})")
 
-            # Validate graph structure defensively.
             if not isinstance(g_data.get("nodes"), list):
                 g_data["nodes"] = []
             if not isinstance(g_data.get("edges"), list):
@@ -2160,8 +1787,6 @@ Do not place explanatory text after the JSON object.
                 f"{innovation_text}"
             )
 
-            # --- NODE COUNT CONTROL (10–80) ---
-            # Preserve the selected maximum number of nodes and remove orphaned edges.
             if isinstance(g_data.get("nodes"), list):
                 g_data["nodes"] = g_data["nodes"][:graph_node_count]
                 valid_node_ids = {
@@ -2174,7 +1799,6 @@ Do not place explanatory text after the JSON object.
                     and str(e.get("target")) in valid_node_ids
                 ]
 
-            # --- PROCESIRANJE VOZLIŠČ Z DINAMIČNO VELIKOSTJO ---
             if g_data.get("nodes"):
                 for n in g_data.get("nodes", []):
                     lbl = n.get("label", "Node")
@@ -2182,7 +1806,6 @@ Do not place explanatory text after the JSON object.
                     n_color = n.get("color", "#DDEBF7")
                     n_shape = n.get("shape", "rectangle")
 
-                    # Velikostna hierarhija glede na obliko
                     if n_shape == 'star': n_size = 125
                     elif n_shape == 'diamond': n_size = 110
                     elif n_shape == 'octagon': n_size = 105
@@ -2196,51 +1819,40 @@ Do not place explanatory text after the JSON object.
                         "data": {"id": nid, "label": lbl, "color": n_color, "shape": n_shape, "size": n_size, "description": n.get("description", "Detail breakdown in report.")}
                     })
 
-                # --- PROCESIRANJE POVEZAV (UML + THESAURUS + LOGIC) ---
                 for e in g_data.get("edges", []):
                     rel = e.get("rel_type", "Association")
 
-                    # A) UML IN STRUKTURNA LOGIKA (Rdeča/Črna/Modra skala)
                     if rel in ["Generalization", "Realization", "Composition", "Aggregation", "Dependency", "Specialization", "Containment", "Conflict"]:
                         if rel == "Conflict":
-                            e_color = "#b91d1d"  # Temno rdeča za trčenje/spor
+                            e_color = "#b91d1d"
                         elif rel == "Specialization":
-                            e_color = "#000000"  # Črna za dedukcijo
+                            e_color = "#000000"
                         elif rel == "Containment":
-                            e_color = "#1D3557"  # Temno modra za "Scientific Cage"
-                        elif rel == "Generalization":
-                            e_color = "#E63946"  # UML rdeča
-                        elif rel == "Realization":
-                            e_color = "#E63946"  # UML rdeča
+                            e_color = "#1D3557"
                         else:
-                            e_color = "#E63946"  # Privzeta UML rdeča (Dependency, Aggregation...)
-
-                    # B) ISO THESAURUS (Hierarhologija - Modra/Vijolična skala)
+                            e_color = "#E63946"
                     elif rel in ["BT", "NT", "TT"]:
-                        e_color = "#1D3557"  # Temno modra (Nivoji)
+                        e_color = "#1D3557"
                     elif rel == "IN":
-                        e_color = "#0077B6"  # Svetlo modra (Instanca)
+                        e_color = "#0077B6"
                     elif rel == "AS":
-                        e_color = "#7B2CB1"  # Vijolična (Asociativna)
+                        e_color = "#7B2CB1"
                     elif rel == "EQ":
-                        e_color = "#F1C40F"  # Rumena (Ekvivalenca)
+                        e_color = "#F1C40F"
                     elif rel == "RT":
-                        e_color = "#2A9D8F"  # Zelena (Povezano)
-
-                    # C) LOGIČNI KONEKTORJI (Decision Logic - Neon skala)
+                        e_color = "#2A9D8F"
                     elif rel == "AND":
-                        e_color = "#00FF00"  # Neon zelena
+                        e_color = "#00FF00"
                     elif rel == "OR":
-                        e_color = "#00BFFF"  # Svetlo modra
+                        e_color = "#00BFFF"
                     elif rel == "XOR":
-                        e_color = "#FF8C00"  # Oranžna
+                        e_color = "#FF8C00"
                     elif rel == "NOT":
-                        e_color = "#FF0000"  # Rdeča
+                        e_color = "#FF0000"
                     elif rel == "IF-THEN":
-                        e_color = "#FFD700"  # Zlata
-
+                        e_color = "#FFD700"
                     else:
-                        e_color = "#ADB5BD"  # Če tipa ne pozna = Siva
+                        e_color = "#ADB5BD"
 
                     final_elements.append({
                         "data": {
@@ -2254,8 +1866,7 @@ Do not place explanatory text after the JSON object.
                         }
                     })
 
-            # --- DEDUP SAFETY NET: remove parallel/duplicate edges between the ---
-            # --- same node pair (e.g. one IF-THEN and one RT on the same pair) ---
+            # Dedup parallel edges
             seen_pairs = set()
             deduped_elements = []
             for el in final_elements:
@@ -2268,11 +1879,7 @@ Do not place explanatory text after the JSON object.
                 deduped_elements.append(el)
             final_elements = deduped_elements
 
-            # --- CONNECTIVITY SAFETY NET: guarantee no isolated nodes ---
-            # Even with the prompt instruction, the model can occasionally leave
-            # a node without any edge. We connect any orphan node to the most
-            # recently processed node using a neutral thesaurus "RT" (Related
-            # Term) relation, so the rendered graph is always one connected whole.
+            # Connectivity safety net
             all_node_ids = [item["id"] for item in nodes_to_link]
             connected_ids = set()
             for el in final_elements:
@@ -2297,7 +1904,7 @@ Do not place explanatory text after the JSON object.
                     connected_ids.add(nid)
                 prev_id = nid
 
-            # --- RELATION-FAMILY DIAGNOSTIC (Thesaurus vs UML vs Logic) ---
+            # Relation-family diagnostic
             THESAURUS_TYPES = {"TT", "BT", "NT", "RT", "EQ", "AS", "IN"}
             LOGIC_TYPES = {"AND", "OR", "XOR", "NOT", "IF-THEN"}
             STRUCTURAL_TYPES = {"Generalization", "Specialization", "Containment",
@@ -2323,55 +1930,59 @@ Do not place explanatory text after the JSON object.
                         "and logic (AND/OR/IF-THEN) connections."
                     )
 
-            # --- [NOVO] Crime & Stress: prikaz metrik intenzivnosti stresa ---
             if cs_active:
                 render_stress_metrics(st, g_data.get("system_metrics"), calculate_systemic_stress, calculate_effective_energy)
 
-            # --- 5. FINAL DISPLAY: SEQUENTIAL INTERACTIVE SYNERGY REPORT ---
-
-            # 5a. GLOBAL SEMANTIC HIGHLIGHTER (Regex Highlighter)
+            # --- 5. FINAL DISPLAY ---
             final_interactive_report = full_report
             if nodes_to_link:
-                # Razvrstimo ključne besede po dolžini (daljše prej), da se krajše ne vmešavajo
                 sorted_keywords = sorted(nodes_to_link, key=lambda x: len(x['label']), reverse=True)
                 for item in sorted_keywords:
                     lbl = item['label']
                     if len(lbl) > 2:
                         g_url = urllib.parse.quote(lbl)
-                        # The link style ensures high visibility
                         link_html = f'<a href="https://www.google.com/search?q={g_url}" target="_blank" class="semantic-node-highlight">{lbl}<i class="google-icon">↗</i></a>'
-
-                        # Unicode-safe regex to catch terms in report
                         pattern = re.compile(rf'(?<!\w){re.escape(lbl)}(?!\w)', re.IGNORECASE | re.UNICODE)
-
-                        # Linkamo le PRVO pojavitev besede za čistočo
                         final_interactive_report = pattern.sub(link_html, final_interactive_report, count=1)
-# 5b. RENDERING THE INTERACTIVE REPORT
+
             st.subheader("🧱 INTEGRATED HIERARCHOLOGICAL REPORT")
             if biblio_data:
                 with st.expander("📚 EXTRACTED AUTHOR BACKGROUND", expanded=False):
                     st.markdown(biblio_data)
 
-            # Display the full linked report (P1 + P2)
-            # Display the full linked report (P1 + P2) - Sedaj brez surovega JSON kosa
+            # Show CU/IU classification result
+            st.info(f"**CU/IU Classification (2014 article principle):** CU {cu_iu['cu']} – {cu_iu['cu_label']} | IU: {cu_iu['iu']} (confidence: {cu_iu['confidence']})")
+
             st.markdown(final_interactive_report, unsafe_allow_html=True)
 
-            # 5c. INNOVATION DEEP-DIVE: DETAILED BREAKTHROUGH CATALOG
+            # Innovation deep-dive + grouping (2014 mind-map principle)
             if final_elements:
                 st.divider()
                 st.markdown("### 🚀 STRATEGIC INNOVATION DEEP-DIVE")
                 st.info("The following strategic breakthroughs have been synthesized from the multi-dimensional analysis above.")
 
-                # Extract innovations (diamonds) for detailed report-style display
                 innovations = [n['data'] for n in final_elements if n['data'].get('shape') == 'diamond']
 
                 if innovations:
+                    # Grouping + evaluation matrix (article 2014)
+                    eval_result = group_and_evaluate_innovations(innovations)
+                    
+                    st.markdown("#### 📊 Innovation Groups (inspired by 2014 mind map)")
+                    for group_name, items in eval_result["groups"].items():
+                        if items:
+                            with st.expander(f"{group_name} ({len(items)})", expanded=False):
+                                for inv in items:
+                                    st.markdown(f"- **{inv['label']}**: {inv.get('description', '')[:200]}...")
+
+                    st.markdown("#### 🧮 Simple Evaluation Matrix (social / semantic-cognitive / IT)")
+                    matrix = eval_result["matrix"]
+                    st.write(f"- Social domain score: **{matrix['social']}**")
+                    st.write(f"- Semantic-cognitive domain score: **{matrix['semantic_cognitive']}**")
+                    st.write(f"- IT domain score: **{matrix['IT']}**")
+
                     for inv in innovations:
                         g_url = urllib.parse.quote(inv['label'])
-                        # Fetch the precise description generated by the model
                         detailed_desc = inv.get('description', "Detailed strategic analysis is available in the integrated report above.")
-
-                        # High-End Report Style Card
                         st.markdown(f"""
                         <div style="background-color: #ffffff; border-left: 6px solid #fd7e14; padding: 25px; border-radius: 15px; box-shadow: 0 6px 15px rgba(0,0,0,0.1); border: 1px solid #eee; margin-bottom: 25px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -2387,7 +1998,6 @@ Do not place explanatory text after the JSON object.
                 else:
                     st.warning("No specific 'Diamond' innovations were found. Review the structural graph for implicit breakthroughs.")
 
-                # 5d. MINIMALIST SYSTEM LEGEND (FINAL ARCHITECTURE)
                 st.markdown("""
                 <div style="font-size: 0.78em; color: #444; background: #ffffff; padding: 15px 25px; border-radius: 15px; border: 1px solid #e9ecef; margin-top: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
@@ -2407,7 +2017,6 @@ Do not place explanatory text after the JSON object.
                 </div>
                 """, unsafe_allow_html=True)
 
-                # 5e. FINAL GRAPH RENDERING (Z DINAMIČNO PERSPEKTIVO)
                 st.subheader(f"🕸️ HYBRID SEMANTIC SYSTEM MAP ({graph_perspective.upper()} VIEW)")
                 render_cytoscape_network(
                     final_elements, 
@@ -2415,7 +2024,6 @@ Do not place explanatory text after the JSON object.
                     container_id=f"cy_{int(time.time())}"
                 )
 
-                # --- REPORT EXPORT: COMPLETE REPORT + GRAPH (HTML only) ---
                 export_html = build_html_report(final_interactive_report, final_elements, graph_perspective)
                 st.download_button(
                     "🌐 EXPORT COMPLETE REPORT + GRAPH (HTML)",
@@ -2426,15 +2034,15 @@ Do not place explanatory text after the JSON object.
                     key="export_complete_html"
                 )
 
-                # --- NOVO: SHRANJEVANJE ZA GALERIJO (DODANO NA KONEC POROČILA) ---
                 st.session_state.final_graph_elements = final_elements
                 st.session_state.report_ready = True
 
         except Exception as e:
             st.error(f"❌ Pipeline Failure: {str(e)}")
 
+
 # =============================================================================
-# 6. MULTI-PERSPECTIVE GALLERY (SEQUENTIAL EXPORT)
+# 6. MULTI-PERSPECTIVE GALLERY
 # =============================================================================
 
 if st.session_state.get('report_ready') and 'final_graph_elements' in st.session_state:
@@ -2465,6 +2073,7 @@ if st.session_state.get('report_ready') and 'final_graph_elements' in st.session
     with tab4:
         st.markdown("**Grid View:** Structured inspection of the same semantic architecture.")
         render_cytoscape_network(st.session_state.final_graph_elements, layout_type="grid", container_id="gal_grid")
+
 
 # =============================================================================
 # 7. FOOTER
