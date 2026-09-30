@@ -747,6 +747,44 @@ STRUCTURAL_TYPES = {"Generalization", "Specialization", "Containment",
 KNOWLEDGE_BASE["Science fields"].update(EXTRA_SCIENCE_FIELDS)
 HUMAN_THINKING_METAMODEL["nodes"].update(CRIME_STRESS_METAMODEL_NODES)
 
+
+# =============================================================================
+# 3.4 SIDEBAR LOGO HELPERS
+# =============================================================================
+def get_svg_base64(svg_str):
+    """Encode the inline SVG so Streamlit can render it reliably in the sidebar."""
+    return base64.b64encode(svg_str.encode("utf-8")).decode("utf-8")
+
+# Original 3D relief logo: pyramid + tree. Kept inline so the app has no external
+# asset dependency and cannot fail because an image file is missing.
+SVG_3D_RELIEF = """
+<svg width="240" height="240" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <filter id="reliefShadow" x="-20%" y="-20%" width="150%" height="150%">
+            <feDropShadow dx="4" dy="4" stdDeviation="3" flood-color="#000" flood-opacity="0.4"/>
+        </filter>
+        <linearGradient id="pyramidSide" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#e0e0e0;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#bdbdbd;stop-opacity:1" />
+        </linearGradient>
+        <linearGradient id="treeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:#66bb6a;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#2e7d32;stop-opacity:1" />
+        </linearGradient>
+    </defs>
+    <circle cx="120" cy="120" r="100" fill="#f0f0f0" stroke="#000000" stroke-width="4" filter="url(#reliefShadow)" />
+    <path d="M120 40 L50 180 L120 200 Z" fill="url(#pyramidSide)" />
+    <path d="M120 40 L190 180 L120 200 Z" fill="#9e9e9e" />
+    <rect x="116" y="110" width="8" height="70" rx="2" fill="#5d4037" />
+    <circle cx="120" cy="85" r="30" fill="url(#treeGrad)" filter="url(#reliefShadow)" />
+    <circle cx="95" cy="125" r="22" fill="#43a047" filter="url(#reliefShadow)" />
+    <circle cx="145" cy="125" r="22" fill="#43a047" filter="url(#reliefShadow)" />
+    <rect x="70" y="170" width="20" height="12" rx="2" fill="#1565c0" filter="url(#reliefShadow)" />
+    <rect x="150" y="170" width="20" height="12" rx="2" fill="#c62828" filter="url(#reliefShadow)" />
+    <rect x="110" y="185" width="20" height="12" rx="2" fill="#f9a825" filter="url(#reliefShadow)" />
+</svg>
+"""
+
 # =============================================================================
 # 4. KONČNI POPRAVLJEN SIDEBAR (Z SAMBANOVO IN UNIKATNIMI KLJUČI)
 # =============================================================================
