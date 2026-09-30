@@ -361,64 +361,6 @@ def render_crime_stress_mode(st):
     )
 
 
-def render_stress_calculator(st, calc_stress, calc_energy, initial_energy=2500):
-    """
-    Optional calculator for the book's stress-intensity method. Stores the result in
-    st.session_state["cs_measured"] (dict) or removes it if input is incomplete.
-    calc_stress / calc_energy = the existing calculate_systemic_stress / calculate_effective_energy.
-    """
-    with st.expander("📏 Stress Intensity Calculator (optional, Petrič method §4.5.1)", expanded=False):
-        st.caption("Enter opinion counts from your own survey/interviews. Leave zeros to skip.")
-        n0 = st.number_input("N0 — number of respondents", min_value=0, value=0, step=1, key="cs_n0")
-        cols = st.columns(3)
-        labels = [("PF", "positive factors"), ("SF", "stress factors"), ("PR", "proposals for reducing stress")]
-        F = {}
-        for col, (code, name) in zip(cols, labels):
-            with col:
-                f0 = st.number_input(f"{code}: total opinions f0 ({name})", min_value=0, value=0, step=1, key=f"cs_f0_{code}")
-                fr = st.number_input(f"{code}: distinct opinions fr", min_value=0, value=0, step=1, key=f"cs_fr_{code}")
-                F[code] = opinion_real_factor(f0, n0, fr)
-        if all(v > 0 for v in F.values()):
-            deg = calc_stress(F["PF"], F["SF"], F["PR"])
-            eff, pct = calc_energy(deg, initial_energy)
-            st.session_state["cs_measured"] = {
-                "f_pf": F["PF"], "f_sf": F["SF"], "f_pr": F["PR"],
-                "degrees": deg, "energy": eff, "efficiency": pct,
-            }
-            st.success(
-                f"σ = {deg:.2f} °S — {classify_stress_intensity(deg)} | "
-                f"effective energy {eff:.0f} kcal ({pct:.1f}%)"
-            )
-            st.caption("This value will be passed to Phase 1 as user-measured data.")
-        else:
-            st.session_state.pop("cs_measured", None)
-
-
-def render_stress_metrics(st, model_metrics, calc_stress, calc_energy, initial_energy=2500):
-    """
-    Show stress metrics after the pipeline. Prefers user-measured data; otherwise shows
-    the LLM's system_metrics clearly labelled as illustrative.
-    """
-    measured = st.session_state.get("cs_measured")
-    if measured:
-        st.caption(
-            f"🧪 Measured stress intensity: {measured['degrees']:.2f} °S "
-            f"({classify_stress_intensity(measured['degrees'])}); effective energy "
-            f"{measured['energy']:.0f} kcal ({measured['efficiency']:.1f}%)."
-        )
-        return
-    try:
-        m = model_metrics or {}
-        pf, sf, pr = float(m["f_pf"]), float(m["f_sf"]), float(m["f_pr"])
-    except (KeyError, TypeError, ValueError):
-        return
-    deg = calc_stress(pf, sf, pr)
-    eff, pct = calc_energy(deg, initial_energy)
-    st.caption(
-        f"⚠️ Model-estimated (illustrative, NOT empirical) stress intensity: {deg:.2f} °S; "
-        f"effective energy {eff:.0f} kcal ({pct:.1f}%). Use the calculator with real data for measurement."
-    )
-
 # =============================================================================
 # 0. GLOBAL CONFIGURATION & SESSION DATE (FEBRUARY 24, 2026)
 # =============================================================================
@@ -1646,7 +1588,6 @@ st.divider()
 
 # --- [NOVO] CRIME & STRESS PREVENTION MODULE (izbirnik + kalkulator) ---
 cs_mode = render_crime_stress_mode(st)
-render_stress_calculator(st, calculate_systemic_stress, calculate_effective_energy)
 st.divider()
 
 # DUAL INQUIRY INTERFACE
