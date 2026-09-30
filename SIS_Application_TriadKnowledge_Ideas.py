@@ -278,48 +278,6 @@ Domain rules (extend, do not replace, the innovation structure and output format
 """
 
 
-def measured_stress_note(f_pf, f_sf, f_pr, degrees, effective_energy, efficiency_pct):
-    """Optional note that injects user-measured stress data into the Phase 1 input."""
-    return (
-        "\n\n[MEASURED STRESS INTENSITY - user-supplied opinion data, Petrič method]\n"
-        f"F_PF={f_pf:.3f}, F_SF={f_sf:.3f}, F_PR={f_pr:.3f} -> "
-        f"stress intensity {degrees:.2f} °S ({classify_stress_intensity(degrees)}); "
-        f"effective energy {effective_energy:.0f} kcal ({efficiency_pct:.1f}% of baseline). "
-        "Treat as an organizational indicator, not a physiological measurement."
-    )
-
-
-# =============================================================================
-# 8. STRESS QUANTIFICATION (§4.5.1) - extends the existing calculate_* functions
-# =============================================================================
-def opinion_real_factor(f0, n0, fr, k_t=1.0, rho_t=10.0):
-    """
-    F0 = (K0 * rho0) / (Kt * rho_t)
-      rho0 = f0 / N0   (opinion density: opinions per respondent)
-      K0   = f0 / fr   (opinion complexity: total / distinct opinions)
-      Kt = 1, rho_t = 10 opinions per respondent (theoretical maximum).
-    Returns 0.0 for invalid input.
-    """
-    try:
-        f0, n0, fr = float(f0), float(n0), float(fr)
-        if f0 <= 0 or n0 <= 0 or fr <= 0 or fr > f0:
-            return 0.0
-        return ((f0 / fr) * (f0 / n0)) / (k_t * rho_t)
-    except (TypeError, ValueError):
-        return 0.0
-
-
-def classify_stress_intensity(degrees):
-    """
-    PROVISIONAL bands (thirds of the 0-90 °S range). The book confirms only that
-    32.76 °S is 'moderate'; its full classification scale is not reproduced in the
-    short version, so replace these thresholds if you have the original scale.
-    """
-    if degrees < 30:
-        return "low (provisional band)"
-    if degrees < 60:
-        return "moderate (provisional band)"
-    return "high (provisional band)"
 
 
 # =============================================================================
@@ -361,69 +319,13 @@ def render_crime_stress_mode(st):
     )
 
 
-def render_stress_calculator(st, calc_stress, calc_energy, initial_energy=2500):
-    """
-    Optional calculator for the book's stress-intensity method. Stores the result in
-    st.session_state["cs_measured"] (dict) or removes it if input is incomplete.
-    calc_stress / calc_energy = the existing calculate_systemic_stress / calculate_effective_energy.
-    """
-    with st.expander("📏 Stress Intensity Calculator (optional, Petrič method §4.5.1)", expanded=False):
-        st.caption("Enter opinion counts from your own survey/interviews. Leave zeros to skip.")
-        n0 = st.number_input("N0 — number of respondents", min_value=0, value=0, step=1, key="cs_n0")
-        cols = st.columns(3)
-        labels = [("PF", "positive factors"), ("SF", "stress factors"), ("PR", "proposals for reducing stress")]
-        F = {}
-        for col, (code, name) in zip(cols, labels):
-            with col:
-                f0 = st.number_input(f"{code}: total opinions f0 ({name})", min_value=0, value=0, step=1, key=f"cs_f0_{code}")
-                fr = st.number_input(f"{code}: distinct opinions fr", min_value=0, value=0, step=1, key=f"cs_fr_{code}")
-                F[code] = opinion_real_factor(f0, n0, fr)
-        if all(v > 0 for v in F.values()):
-            deg = calc_stress(F["PF"], F["SF"], F["PR"])
-            eff, pct = calc_energy(deg, initial_energy)
-            st.session_state["cs_measured"] = {
-                "f_pf": F["PF"], "f_sf": F["SF"], "f_pr": F["PR"],
-                "degrees": deg, "energy": eff, "efficiency": pct,
-            }
-            st.success(
-                f"σ = {deg:.2f} °S — {classify_stress_intensity(deg)} | "
-                f"effective energy {eff:.0f} kcal ({pct:.1f}%)"
-            )
-            st.caption("This value will be passed to Phase 1 as user-measured data.")
-        else:
-            st.session_state.pop("cs_measured", None)
-
-
-def render_stress_metrics(st, model_metrics, calc_stress, calc_energy, initial_energy=2500):
-    """
-    Show stress metrics after the pipeline. Prefers user-measured data; otherwise shows
-    the LLM's system_metrics clearly labelled as illustrative.
-    """
-    measured = st.session_state.get("cs_measured")
-    if measured:
-        st.caption(
-            f"🧪 Measured stress intensity: {measured['degrees']:.2f} °S "
-            f"({classify_stress_intensity(measured['degrees'])}); effective energy "
-            f"{measured['energy']:.0f} kcal ({measured['efficiency']:.1f}%)."
-        )
-        return
-    try:
-        m = model_metrics or {}
-        pf, sf, pr = float(m["f_pf"]), float(m["f_sf"]), float(m["f_pr"])
-    except (KeyError, TypeError, ValueError):
-        return
-    deg = calc_stress(pf, sf, pr)
-    eff, pct = calc_energy(deg, initial_energy)
-    st.caption(
-        f"⚠️ Model-estimated (illustrative, NOT empirical) stress intensity: {deg:.2f} °S; "
-        f"effective energy {eff:.0f} kcal ({pct:.1f}%). Use the calculator with real data for measurement."
-    )
 
 # =============================================================================
 # 0. GLOBAL CONFIGURATION & SESSION DATE (FEBRUARY 24, 2026)
 # =============================================================================
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v24.6.0-GOOGLE-GEMINI-ONLY-FIXED"
+VERSION_CODE = "v24.7.0-GOOGLE-AI-STUDIO-PROMPT-COACH"
+GOOGLE_AI_STUDIO_URL = "https://aistudio.google.com/"
 
 # =============================================================================
 # INITIALIZATION FIX: Preprečuje AttributeError pri zagonu in resetiranju
@@ -834,57 +736,6 @@ def fetch_author_bibliographies(author_input):
 
 import math
 
-def calculate_systemic_stress(f_pf, f_sf, f_pr):
-    """
-    Implements Dr. Petrič's Stress Intensity formula (Page 60).
-    σ0SF = arcsin(sqrt((FSF * FPR) / FPF))
-    """
-    try:
-        # Convert to float and ensure f_pf (Positive Factors) isn't zero to avoid crash
-        pf = float(f_pf)
-        sf = float(f_sf)
-        pr = float(f_pr)
-        
-        if pf <= 0: pf = 0.001 
-        
-        # Calculate the ratio
-        ratio = (sf * pr) / pf
-        
-        # MATH SAFETY: sqrt() needs positive, arcsin() needs value between -1 and 1
-        clamped_ratio = max(0.0, min(ratio, 1.0))
-        
-        stress_rad = math.asin(math.sqrt(clamped_ratio))
-        
-        # Returns the result in "Stress Degrees" (°S) as defined in the book
-        return math.degrees(stress_rad)
-    except Exception:
-        return 0.0
-
-def calculate_effective_energy(stress_intensity, initial_potential=2500):
-    """
-    Implements the Energy Loss Index (W_EP) from Page 61 of the book.
-    W_EP = Initial_Energy - (Initial_Energy * (Stress_Intensity / 90))
-    2500 Kcal is the default baseline used in Dr. Petrič's example.
-    """
-    try:
-        # The book defines 90°S as the theoretical maximum stress
-        max_stress = 90.0
-        
-        # Calculate the proportion of energy lost
-        loss_ratio = stress_intensity / max_stress
-        
-        # Ensure ratio stays within logical bounds [0, 1]
-        loss_ratio = max(0.0, min(loss_ratio, 1.0))
-        
-        # Calculate remaining (effective) energy
-        effective_energy = initial_potential - (initial_potential * loss_ratio)
-        
-        # Efficiency percentage
-        efficiency_pct = (effective_energy / initial_potential) * 100
-        
-        return round(effective_energy, 2), round(efficiency_pct, 1)
-    except Exception:
-        return 0.0, 0.0
 
 # =============================================================================
 # 2. ARCHITECTURAL ONTOLOGIES (IMA & MA) - EXHAUSTIVE EXPANSION
@@ -1375,6 +1226,12 @@ with st.sidebar:
         key="side_google_gemini_v2026",
         help="Google AI Studio / Gemini API key."
     )
+    st.link_button(
+        "✨ Open Google AI Studio — Free Prompt Coach",
+        GOOGLE_AI_STUDIO_URL,
+        use_container_width=True,
+        help="Open Google AI Studio to review and improve future SIS prompts."
+    )
 
     # Google-only language-model catalog.  The list intentionally contains
     # current Gemini 3.x models plus the established Gemini 2.5 family and
@@ -1564,6 +1421,177 @@ const cy = cytoscape({{
  layout: {json.dumps({"name":"cose","fit":True,"padding":50})}
 }});
 </script></body></html>"""
+# =============================================================================
+# 3.10 GOOGLE AI STUDIO PROMPT COACH
+# =============================================================================
+PROMPT_COACH_CRITERIA = [
+    "Conceptual novelty",
+    "Systemic architecture",
+    "Interdisciplinary integration",
+    "Practicality",
+    "Clarity",
+]
+
+def build_google_ai_studio_prompt_coach(
+    user_query, idea_query, sel_sciences, sel_paradigms, sel_models,
+    sel_methods, sel_tools, selected_techniques, expertise, goal_context,
+    report_text="", graph_elements=None,
+):
+    """Build a copy-ready meta-prompt for Google AI Studio."""
+    graph_elements = graph_elements or []
+    node_count = sum(
+        1 for el in graph_elements
+        if isinstance(el, dict) and "source" not in el.get("data", {})
+    )
+    edge_count = sum(
+        1 for el in graph_elements
+        if isinstance(el, dict) and "source" in el.get("data", {})
+    )
+    relation_types = sorted({
+        str(el.get("data", {}).get("rel_type"))
+        for el in graph_elements
+        if isinstance(el, dict)
+        and "source" in el.get("data", {})
+        and el.get("data", {}).get("rel_type")
+    })
+    current_report = report_text.strip() if report_text else "[No previous SIS report is available yet.]"
+    if len(current_report) > 14000:
+        current_report = current_report[:14000] + "\n[Report excerpt truncated for prompt coaching.]"
+
+    return f"""You are a senior prompt engineer and research-methodology reviewer.
+Improve future prompts for the SIS Universal Knowledge Synthesizer so that its
+REPORT and SEMANTIC GRAPH become stronger across these five dimensions:
+1. Conceptual novelty
+2. Systemic architecture
+3. Interdisciplinary integration
+4. Practicality
+5. Clarity
+
+Do not simply make the prompt longer. Remove ambiguity, redundancy and generic
+instructions. Preserve the SIS architecture:
+Phase 1 IMA knowledge synthesis -> Phase 2 MA innovation -> integrated report -> semantic graph.
+
+CURRENT RESEARCH INQUIRY:
+{user_query or "[not entered]"}
+
+CURRENT INNOVATION PROMPT:
+{idea_query or "[not entered]"}
+
+CURRENT SIS CONFIGURATION:
+- Science fields: {", ".join(sel_sciences) if sel_sciences else "[none selected]"}
+- Scientific paradigms: {", ".join(sel_paradigms) if sel_paradigms else "[none selected]"}
+- Structural models: {", ".join(sel_models) if sel_models else "[none selected]"}
+- Methodology: {", ".join(sel_methods) if sel_methods else "[none selected]"}
+- Tools: {", ".join(sel_tools) if sel_tools else "[none selected]"}
+- Ideation frameworks: {", ".join(selected_techniques) if selected_techniques else "[none selected]"}
+- Expertise: {expertise}
+- Strategic goal: {goal_context}
+
+GRAPH REQUIREMENTS:
+- The graph must represent the same reasoning as the report.
+- Prefer a sparse, meaningful semantic architecture over graph density.
+- Every node must have a defensible role in the report.
+- Avoid invented/decorative nodes and artificial bridge edges.
+- Keep the graph connected when the evidence supports connectivity.
+- Use human-readable edge labels and correct causal direction.
+- Use thesaurus, UML/structural and logical relations only when justified.
+- Treat Association and Constraints as first-class structural possibilities when
+  the source material actually supports them.
+- Make interdisciplinary connections visible without fabricating relationships.
+- Avoid redundant parallel edges and unnecessary graph complexity.
+
+FIVE-DIMENSION DESIGN RULES:
+- Conceptual novelty: require genuine synthesis/transformation, not restatement;
+  separate novelty from unsupported speculation.
+- Systemic architecture: require explicit hierarchy, dependencies, constraints,
+  contradictions and transformation chains where supported.
+- Interdisciplinary integration: require specific contributions from at least two
+  relevant fields and identify genuine bridges, tensions or complementarities.
+- Practicality: require implementable next steps, measurable effects and realistic
+  constraints rather than generic recommendations.
+- Clarity: require readable sections, precise terminology and direct report-to-graph
+  correspondence.
+
+CURRENT GRAPH SNAPSHOT:
+- Nodes: {node_count}
+- Edges: {edge_count}
+- Relation types: {", ".join(relation_types) if relation_types else "[none]"}
+
+CURRENT REPORT:
+--- BEGIN REPORT ---
+{current_report}
+--- END REPORT ---
+
+Return exactly these sections:
+
+### PROMPT DIAGNOSIS
+Identify the most important weaknesses in the current research/innovation prompt.
+
+### REPORT IMPROVEMENTS
+Give precise prompt rules that improve the report without unnecessary verbosity or hallucination.
+
+### GRAPH IMPROVEMENTS
+Give precise prompt rules that improve semantic fidelity, architecture,
+interdisciplinary visibility, relation correctness and readability.
+
+### REVISED FUTURE PROMPT
+Write one complete, copy-ready prompt for the next SIS run. It must be more
+precise than the current prompt without unnecessarily duplicating SIS system instructions.
+
+### GOOGLE AI STUDIO FOLLOW-UP
+Give three short follow-up instructions:
+1. strengthen conceptual novelty,
+2. strengthen systemic/interdisciplinary architecture,
+3. strengthen practicality and clarity.
+
+Do not use an overall score or declare a winner. Explain concrete improvements.
+"""
+
+def render_google_ai_studio_prompt_coach(st):
+    """Render the free Google AI Studio connection and coaching prompt."""
+    coach_prompt = build_google_ai_studio_prompt_coach(
+        st.session_state.get("coach_user_query", ""),
+        st.session_state.get("coach_idea_query", ""),
+        st.session_state.get("coach_sel_sciences", []),
+        st.session_state.get("coach_sel_paradigms", []),
+        st.session_state.get("coach_sel_models", []),
+        st.session_state.get("coach_sel_methods", []),
+        st.session_state.get("coach_sel_tools", []),
+        st.session_state.get("coach_selected_techniques", []),
+        st.session_state.get("coach_expertise", "Expert"),
+        st.session_state.get("coach_goal_context", "Scientific Research"),
+        st.session_state.get("last_integrated_report", ""),
+        st.session_state.get("last_graph_elements", []),
+    )
+    with st.expander("✨ Google AI Studio Prompt Coach — improve future SIS prompts", expanded=False):
+        st.markdown(
+            "**Purpose:** prepare a copy-ready meta-prompt for the free Google AI Studio "
+            "interface to improve future SIS prompts for **conceptual novelty, systemic "
+            "architecture, interdisciplinary integration, practicality and clarity**."
+        )
+        st.link_button(
+            "🚀 OPEN GOOGLE AI STUDIO",
+            GOOGLE_AI_STUDIO_URL,
+            use_container_width=True,
+        )
+        st.caption(
+            "This feature prepares the coaching prompt locally in SIS. It does not make "
+            "an additional SIS API request; Google AI Studio is opened separately."
+        )
+        st.text_area(
+            "📋 COPY THIS PROMPT INTO GOOGLE AI STUDIO",
+            value=coach_prompt,
+            height=520,
+        )
+        st.download_button(
+            "💾 DOWNLOAD PROMPT AS TXT",
+            data=coach_prompt,
+            file_name="SIS_Google_AI_Studio_Prompt_Coach.txt",
+            mime="text/plain",
+            use_container_width=True,
+            key="download_ai_studio_coach_prompt",
+        )
+
 
 # --- MAIN PAGE CONTENT ---
 st.markdown('<h1 class="main-header-gradient">🧱 SIS Universal Knowledge Synthesizer</h1>', unsafe_allow_html=True)
@@ -1644,9 +1672,8 @@ else:
     st.info(f"**Active Hybrid Strategy:** {combined_desc}")
 st.divider()
 
-# --- [NOVO] CRIME & STRESS PREVENTION MODULE (izbirnik + kalkulator) ---
+# --- CRIME & STRESS PREVENTION MODULE ---
 cs_mode = render_crime_stress_mode(st)
-render_stress_calculator(st, calculate_systemic_stress, calculate_effective_energy)
 st.divider()
 
 # DUAL INQUIRY INTERFACE
@@ -1655,6 +1682,19 @@ with col_inq1:
     user_query = st.text_area("❓ STEP 1: Research Inquiry (for GOOGLE GEMINI):", placeholder="Fact-based Foundational Inquiry...", height=200)
 with col_inq2:
     idea_query = st.text_area("💡 STEP 2: Innovation Prompt (for GOOGLE GEMINI):", placeholder="Targets for innovative idea production...", height=200)
+
+# Store current controls for the optional Google AI Studio Prompt Coach.
+st.session_state.coach_user_query = user_query
+st.session_state.coach_idea_query = idea_query
+st.session_state.coach_sel_sciences = sel_sciences
+st.session_state.coach_sel_paradigms = sel_paradigms
+st.session_state.coach_sel_models = sel_models
+st.session_state.coach_sel_methods = sel_methods
+st.session_state.coach_sel_tools = sel_tools
+st.session_state.coach_selected_techniques = selected_techniques
+st.session_state.coach_expertise = expertise
+st.session_state.coach_goal_context = goal_context
+
 # --- POPRAVEK KORAK 1: Branje vsebine datoteke ---
 # --- KORAK 1: File Upload with English Translation ---
 with col_inq3:
@@ -1673,6 +1713,8 @@ with col_inq3:
 # =============================================================================
 # 5. SYNERGY EXECUTION ENGINE (GOOGLE GEMINI / GEMMA ONLY)
 # =============================================================================
+
+render_google_ai_studio_prompt_coach(st)
 
 def google_generate(client, model_id, system_prompt, user_content, temperature, max_retries=4):
     """Single Google GenAI gateway. No third-party LLM providers.
@@ -1794,14 +1836,6 @@ INTERFACE PARAMETERS:
             file_context_str = f"\n\n[FILE CONTEXT]:\n{file_content}" if file_content else ""
             biblio_context = f"\n\n[AUTHOR RESEARCH BACKGROUND]:\n{biblio_data}" if biblio_data else ""
             full_ai_input = f"{active_context}\nUSER RESEARCH INQUIRY:\n{user_query}{file_context_str}{biblio_context}"
-
-            # --- [NOVO] Izmerjena intenzivnost stresa (če jo je uporabnik vnesel v kalkulator) ---
-            cs_measured = st.session_state.get("cs_measured")
-            if cs_active and cs_measured:
-                full_ai_input += measured_stress_note(
-                    cs_measured["f_pf"], cs_measured["f_sf"], cs_measured["f_pr"],
-                    cs_measured["degrees"], cs_measured["energy"], cs_measured["efficiency"]
-                )
 
             google_client = genai.Client(api_key=google_api_key)
 
@@ -2323,10 +2357,6 @@ Do not place explanatory text after the JSON object.
                         "and logic (AND/OR/IF-THEN) connections."
                     )
 
-            # --- [NOVO] Crime & Stress: prikaz metrik intenzivnosti stresa ---
-            if cs_active:
-                render_stress_metrics(st, g_data.get("system_metrics"), calculate_systemic_stress, calculate_effective_energy)
-
             # --- 5. FINAL DISPLAY: SEQUENTIAL INTERACTIVE SYNERGY REPORT ---
 
             # 5a. GLOBAL SEMANTIC HIGHLIGHTER (Regex Highlighter)
@@ -2346,7 +2376,11 @@ Do not place explanatory text after the JSON object.
 
                         # Linkamo le PRVO pojavitev besede za čistočo
                         final_interactive_report = pattern.sub(link_html, final_interactive_report, count=1)
-# 5b. RENDERING THE INTERACTIVE REPORT
+# Persist latest report and graph for the Google AI Studio Prompt Coach.
+            st.session_state.last_integrated_report = final_interactive_report
+            st.session_state.last_graph_elements = final_elements
+
+            # 5b. RENDERING THE INTERACTIVE REPORT
             st.subheader("🧱 INTEGRATED HIERARCHOLOGICAL REPORT")
             if biblio_data:
                 with st.expander("📚 EXTRACTED AUTHOR BACKGROUND", expanded=False):
@@ -2471,5 +2505,6 @@ if st.session_state.get('report_ready') and 'final_graph_elements' in st.session
 # =============================================================================
 st.divider()
 st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | {SYSTEM_DATE}")
+
 
 
