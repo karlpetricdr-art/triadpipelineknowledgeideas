@@ -14,352 +14,6 @@ import streamlit.components.v1 as components
 
 
 # =============================================================================
-# [NOVO] CRIME & STRESS PREVENTION MODULE (vgrajen; prej crime_stress_module.py)
-# Vsebina izhaja iz: K. Petrič (2026), Hierarchology and Hierarchography (Short version),
-# §4.5 stres, §4.8 intrige, §4.9 kriminaliteta, §7.2 intervencije in etika, §7.3 revščina.
-# Modul je dodatek: ne spreminja obstoječih funkcij, promptov ali grafa.
-# =============================================================================
-# =============================================================================
-# 1. KNOWLEDGE: STRESS (§4.5.1, §4.5.4, §4.6, §4.8)
-# =============================================================================
-STRESS_KNOWLEDGE = {
-    "Stress as systemic indicator": "Stress is both an individual experience and a societal indicator of organizational/institutional dysfunction; the book compares it in significance to environmental degradation and structural unemployment.",
-    "Eustress vs. distress": "Moderate stress (eustress) improves concentration, motivation and performance; the problem is stress that is excessive, chronic and hard to control.",
-    "Person-environment interaction": "Stress emerges from the relation between environmental demands and an individual's capacity to respond; it is neither purely external nor purely internal.",
-    "Biological-social mismatch": "Human physiology changes slowly while social change accelerates (urbanization, information load, consumer culture), producing an 'illusion of comfort': more physical convenience, more psychological burden.",
-    "Dominant social stressors": "Fear, coercion, interpersonal conflict, uncertainty, excessive workload, poor communication, unequal treatment, workplace bullying, unrealistic expectations, lack of autonomy.",
-    "Weak physical stressors": "In the book's empirical study noise, smell, temperature and lighting contributed relatively little compared with social and performance-related stressors.",
-    "Institutional stress generators": "Rigid bureaucracy, excessive procedures, ineffective communication channels, inadequate leadership and authoritarian management suppress autonomy and cause frustration, alienation and exhaustion.",
-    "Physiological consequences": "Headaches, cardiovascular disorders, digestive problems, sleep disturbance, chronic fatigue, weakened immunity.",
-    "Psychological consequences": "Anxiety disorders, depression, emotional instability, helplessness, reduced motivation, lower life satisfaction.",
-    "Social consequences": "Absenteeism, workplace conflict, burnout, substance abuse, family instability, weakened social cohesion.",
-    "Stress -> deviance (hypothesis)": "Persistent distress MAY contribute to aggression, corruption, abuse of authority and unethical behaviour by reducing the capacity for rational and ethical decision-making. The book frames this as complex and multidimensional, not deterministic.",
-    "Mental illness as process": "Vulnerability + prolonged pressure + weak support accumulate until a threshold is crossed; early signs are sleep disturbance, irritability, restlessness, emotional fatigue.",
-    "Stigma": "Labeling, exclusion and devaluation of people in psychological distress; it deepens distress and blocks help-seeking.",
-    "Intrigue": "Concealed, indirect influence in asymmetrical hierarchies; erodes trust, drains collective energy ('social waste') and is an adaptation to institutions rewarding image over substance.",
-}
-
-# =============================================================================
-# 2. KNOWLEDGE: CRIME (§4.9, §7.2)
-# =============================================================================
-CRIME_KNOWLEDGE = {
-    "Multidimensional causation": "Criminality emerges from interacting biological, psychological, sociological, economic, legal, technological, environmental and informational factors; no single discipline explains it.",
-    "Three-Cosmos Model of Harm": "Microcosm = genes, neurons, hormones, microorganisms; Mesocosm = families, organizations, institutions, communities; Macrocosm = ecological, climatic, planetary influences.",
-    "Mesocosmic bias": "Empirical finding: respondents from all disciplines focus mainly on mesocosmic (social/institutional) explanations; micro- and macrocosmic explanations are under-represented, likely due to measurement convenience rather than actual importance.",
-    "Disciplinary divergence": "Applied sciences diverge most from the classical sociological view (predictive analytics, data mining, AI, complex networks); knowledge on crime stays fragmented across disciplines.",
-    "Unified anomaly theory": "Crime externalizes disorder into the social environment; pollution externalizes it into nature. Both shift costs onto others and are diagnostic indicators of systemic imbalance.",
-    "Legality vs. harm": "Legal definitions of crime do not always match the magnitude of harm; legal but harmful activity (e.g. large-scale pollution) may exceed criminal harm.",
-    "Civilizational profiling": "Offender profiling (motives, needs, incentives) can be extended to institutions and industries; short-term reward orientation appears at individual and collective levels.",
-    "Information pollution": "Disinformation, manipulative algorithms and attention-capturing technologies contaminate cognitive ecosystems and can indirectly amplify crime.",
-    "Ecology of motivation": "Behaviour follows reward/punishment systems around survival, comfort, status, power, meaning and belonging; persistent harm is often motivational, not technological.",
-    "Regeneration paradigm": "Shift from extraction to regeneration: resilience over short-term gain, cooperation over exploitation, systemic intelligence over isolated expertise.",
-    "Poverty as high-entropy state": "Poverty framed as chronic biological stress (HPA axis, allostatic load) plus 'cognitive scarcity' that impairs decisions and entrenches deprivation cycles.",
-}
-
-# =============================================================================
-# 3. INTERVENTION ARCHETYPES (§7.2.5, §7.3) - AI-generated HYPOTHESES, not validated
-# =============================================================================
-INTERVENTION_ARCHETYPES = {
-    "Environmental entrainment therapy": {
-        "desc": "Urban design that stabilizes collective circadian rhythm and cortisol regulation (light-dark cycles, natural soundscapes, thermal regulation, green infrastructure).",
-        "stress_path": "environment -> neuroendocrine stress system -> lower arousal",
-        "crime_path": "lower stress -> lower impulsivity/aggression -> fewer social conflicts",
-        "caution": "Book's own data show physical stressors weaker than social ones: treat as hypothesis to be tested, not assumed.",
-    },
-    "Regenerative biotic city": {
-        "desc": "Urban forests, algae-based purification, biophilic architecture as active contributors to mental health and social stability.",
-        "stress_path": "green/biophilic exposure -> recovery from cognitive load",
-        "crime_path": "social stability and cohesion -> lower crime opportunity/motivation",
-        "caution": "Benefits may be unevenly distributed (green gentrification); monitor equity.",
-    },
-    "Neuro-empathy training": {
-        "desc": "Non-invasive, consent-based empathy training in conflict simulations for police, rehabilitation and violence-prevention programs.",
-        "stress_path": "emotion-regulation practice under simulated stress",
-        "crime_path": "fewer escalations, better decisions under stress, higher public trust",
-        "caution": "Consent, no coercive neuro-monitoring, human oversight.",
-    },
-    "Gut-brain axis intervention": {
-        "desc": "Microbiome/nutrition-based regulation of serotonin precursors to lower aggression thresholds.",
-        "stress_path": "gut-brain axis -> mood/stress reactivity",
-        "crime_path": "lower aggression threshold (population-level, not individual prediction)",
-        "caution": "Strong biological-reductionism risk; requires clinical validation and ethics review.",
-    },
-    "Quantum-inspired associative analytics": {
-        "desc": "Associative reasoning systems detecting nonlinear links between stress markers and social outcomes.",
-        "stress_path": "early detection of aggregate stress patterns",
-        "crime_path": "proactive planning before escalation",
-        "caution": "Algorithmic bias and surveillance risk; use only aggregated, privacy-preserving data.",
-    },
-    "NeuroPoverty Index (NPI)": {
-        "desc": "Measures neurological stress load (cortisol, HRV) as an indicator of economic distress instead of income/GDP alone.",
-        "stress_path": "biomarker-based community stress load",
-        "crime_path": "targets prevention where structural deprivation drives risk",
-        "caution": "Biomarker data are highly sensitive: on-device processing / differential privacy / aggregate-only reporting.",
-    },
-    "Poverty-Proofing Infrastructure (PPI / PRUP)": {
-        "desc": "Poverty-resilient urban planning: green infrastructure, decentralized resources, biophilic design; identify 'criticality' tipping points.",
-        "stress_path": "lower allostatic load through resource access",
-        "crime_path": "fewer deprivation-driven offences via structural resilience",
-        "caution": "Needs local participation and longitudinal evaluation.",
-    },
-}
-
-# =============================================================================
-# 4. ETHICAL SAFEGUARDS (§7.2.8) AND EVALUATION CRITERIA (§7.2.4)
-# =============================================================================
-ETHICAL_SAFEGUARDS = {
-    "Privacy and surveillance": "Biosensors, neuro-monitoring and stress analytics threaten civil liberties: require democratic oversight, consent, data minimization.",
-    "Algorithmic bias": "Crime-prediction systems can reproduce social inequality: require transparency, accountability, bias audits and human oversight.",
-    "Biological reductionism": "Crime is never reducible to neurophysiology; it emerges from culture, inequality, trauma, institutions, history and environment.",
-    "Dependence on AI": "AI is an assistive cognitive tool; ethical reasoning, empathy and democratic accountability remain human responsibilities.",
-    "Technological limitations": "Hallucinations, contextual instability and incomplete causal understanding remain; ideas are hypotheses until empirically validated.",
-}
-
-EVALUATION_CRITERIA = [
-    "Conceptual novelty",
-    "Interdisciplinary integration",
-    "System architecture quality",
-    "Practical applicability",
-    "Clarity and coherence",
-]
-
-# =============================================================================
-# 5. CANONICAL RELATIONS (hints for the semantic graph; use ONLY if supported by text)
-#    (source, target, rel_type, human-readable label)
-# =============================================================================
-STRESS_CRIME_PATHWAYS = [
-    ("Social stressors", "Chronic distress", "IF-THEN", "generate"),
-    ("Chronic distress", "Reduced ethical decision capacity", "IF-THEN", "weakens"),
-    ("Reduced ethical decision capacity", "Aggression / deviance risk", "IF-THEN", "raises"),
-    ("Bureaucratic hierarchy", "Social stressors", "IF-THEN", "amplifies"),
-    ("Poverty", "Allostatic load", "IF-THEN", "increases"),
-    ("Microcosm", "Three-Cosmos Model", "BT", "is part of"),
-    ("Mesocosm", "Three-Cosmos Model", "BT", "is part of"),
-    ("Macrocosm", "Three-Cosmos Model", "BT", "is part of"),
-    ("Stress", "Crime", "AS", "associated with (hypothesis)"),
-    ("Stigma", "Help-seeking", "NOT", "blocks"),
-    ("Regenerative city", "Chronic distress", "NOT", "mitigates"),
-]
-
-# =============================================================================
-# 6. EXTENSIONS OF EXISTING ONTOLOGIES (merge with .update(), nothing is removed)
-# =============================================================================
-# Science fields named in the book's 100-iteration crime/stress study (§7.2.4)
-# that are missing in KNOWLEDGE_BASE["Science fields"].
-EXTRA_SCIENCE_FIELDS = {
-    "Urbanism": {
-        "cat": "Applied/Social",
-        "methods": ["Spatial Analysis", "Participatory Planning", "Environmental Design Evaluation", "Post-Occupancy Evaluation"],
-        "tools": ["GIS", "Noise/Light Mapping", "Space Syntax", "Urban Digital Twins"],
-        "facets": ["Green Infrastructure", "Biophilic Design", "Public Space", "Crime Prevention Through Environmental Design"],
-    },
-    "Environmental Science": {
-        "cat": "Natural/Applied",
-        "methods": ["Environmental Monitoring", "Exposure Assessment", "Life-Cycle Assessment", "Ecosystem Services Valuation"],
-        "tools": ["Air/Water Sensors", "Remote Sensing", "Satellite Imagery", "Biosensors"],
-        "facets": ["Pollution", "Environmental Health", "Ecosystem Resilience", "Climate Adaptation"],
-    },
-}
-
-# Book's 100-iteration crime/stress field set (§7.2.4) - preset for the multiselect.
-CRIME_STRESS_SCIENCE_PRESET = [
-    "Criminology", "Sociology", "Neuroscience", "Psychology", "Psychiatry",
-    "Medicine", "Biology", "Computer Science", "Library Science", "Engineering",
-    "Urbanism", "Environmental Science", "Philosophy", "Economics",
-    "Legal science", "Geography",
-]
-
-# Additional IMA metamodel nodes (same structure as HUMAN_THINKING_METAMODEL["nodes"])
-CRIME_STRESS_METAMODEL_NODES = {
-    "Stress (eustress/distress)": {"color": "#F4A261", "shape": "rectangle",
-        "desc": "Person-environment strain: moderate stress mobilizes, chronic distress drains energy and degrades ethical decision-making; also a societal indicator."},
-    "Allostatic load": {"color": "#E9C46A", "shape": "rectangle",
-        "desc": "Cumulative physiological burden of persistent stressors (HPA axis); links poverty, stress and cognitive scarcity."},
-    "Harmful behavior / crime": {"color": "#E76F51", "shape": "rectangle",
-        "desc": "Multi-causal outcome across micro-, meso- and macrocosm; a diagnostic indicator of systemic imbalance rather than only an individual defect."},
-    "Preventive intervention": {"color": "#2A9D8F", "shape": "rectangle",
-        "desc": "Environmental, institutional or educational measure acting before escalation; evaluated by novelty, integration, architecture, applicability, clarity."},
-    "Ethical safeguard": {"color": "#FFC000", "shape": "rectangle",
-        "desc": "Concrete protection against surveillance, bias, reductionism and over-reliance on AI (consent, aggregation, audits, human oversight)."},
-}
-
-# =============================================================================
-# 7. RELEVANCE DETECTION + PROMPT ADDENDA
-# =============================================================================
-_CS_PATTERN = re.compile(
-    r"(crim|kriminal|violen|nasilj|delinq|offen[cs]|prestop|stres|stress|burnout|izgorel|"
-    r"aggress|agresi|anxiet|tesnob|allostatic|mental health|dušev|duševn)",
-    re.IGNORECASE | re.UNICODE,
-)
-
-CS_MODES = ["Auto (detect from inquiry)", "Always on", "Off"]
-
-
-def crime_stress_should_activate(mode, *texts):
-    """mode: one of CS_MODES. Returns True if the module should be injected."""
-    if mode == "Always on":
-        return True
-    if mode == "Off":
-        return False
-    return any(t and _CS_PATTERN.search(t) for t in texts)
-
-
-def _digest(d):
-    return "\n".join(f"   • {k}: {v}" for k, v in d.items())
-
-
-def build_phase1_addendum():
-    """Text PREPENDED to the Phase 1 system prompt (so the output-format rules stay last). Adds NO new section headers."""
-    return f"""
-
-### CRIME & STRESS THEMATIC REINFORCEMENT (Phase 1)
-Domain knowledge to use ONLY where relevant to the inquiry (source: Petrič 2026).
-STRESS:
-{_digest(STRESS_KNOWLEDGE)}
-CRIME:
-{_digest(CRIME_KNOWLEDGE)}
-
-Rules for this domain (apply inside the existing seven sections; do not add headers):
-- Treat stress and crime as MULTI-CAUSAL. In section 3 explicitly assign factors to
-  microcosm (genes, neurons, hormones, microbiome), mesocosm (family, workplace,
-  institutions, community) and macrocosm (ecology, climate, planetary). Explicitly
-  check for MESOCOSMIC BIAS: state which micro/macro explanations were neglected.
-- Separate eustress from distress, and individual stress from stress as a SYSTEMIC
-  indicator of organizational dysfunction.
-- Present stress -> crime/deviance links as plausible, non-deterministic HYPOTHESES.
-  Never claim direct causation; put them on the interpretation side of section 6.
-- In section 4 list cross-disciplinary tension points, including: (a) social vs.
-  physical stressors (the source study found physical stressors weak), (b) biological
-  vs. sociological explanations of crime, (c) legality vs. actual harm.
-- In section 5 include the ethical constraints: privacy/surveillance, algorithmic
-  bias, biological reductionism, dependence on AI, technological limitations.
-- In section 7 state which stress pathway and which crime pathway Phase 2 must address.
-"""
-
-
-def build_phase2_addendum():
-    """Text PREPENDED to the Phase 2 system prompt (so the JSON output rules stay last). Keeps the existing bullet structure."""
-    interventions = "\n".join(
-        f"   • {k}: {v['desc']} [stress: {v['stress_path']}; crime: {v['crime_path']}; caution: {v['caution']}]"
-        for k, v in INTERVENTION_ARCHETYPES.items()
-    )
-    safeguards = _digest(ETHICAL_SAFEGUARDS)
-    pathways = "\n".join(f"   • {s} --{r}--> {t}  ({l})" for s, t, r, l in STRESS_CRIME_PATHWAYS)
-    criteria = ", ".join(EVALUATION_CRITERIA)
-    return f"""
-
-### CRIME & STRESS THEMATIC REINFORCEMENT (Phase 2)
-Reference archetypes from prior work (AI-generated HYPOTHESES, not validated). Use
-them only as inspiration; do NOT copy them. A valid innovation must be a genuine
-transformation of the Phase 1 findings:
-{interventions}
-
-Domain rules (extend, do not replace, the innovation structure and output format given further below):
-- Every innovation must state in "Expected effect" TWO separate lines: the STRESS-side
-  effect and the CRIME/HARM-side effect, each with one measurable indicator and how it
-  would be evaluated. If it addresses only one side, say so and justify.
-- Name the level(s) it acts on (micro/meso/macro). At least one innovation must act
-  on the macrocosm or microcosm, not only on the mesocosm, to counter mesocosmic bias.
-- Prefer ENVIRONMENT-, INSTITUTION- and POLICY-level interventions and aggregated
-  indicators over individual-level prediction or profiling of persons.
-- Reject or reframe any idea that relies on individual-level crime prediction,
-  covert biometric monitoring or coercive neuro-intervention.
-- Whenever an idea touches health, biometric, behavioral or predictive data, the
-  Safeguards bullet must name a concrete mechanism (on-device aggregation, differential
-  privacy, informed consent, bias audit, human-in-the-loop) and address these risks:
-{safeguards}
-- Self-rate each innovation 1-10 on: {criteria}. Show the numbers in the
-  "Expected effect" bullet only as a rough self-assessment, never as evidence.
-- Graph guidance: if the inquiry names stress and/or crime, each MUST have its own
-  star (goal/outcome) node, and innovations must connect to them with labels such as
-  "mitigates", "prevents", "reduces". Keep micro/meso/macro in node descriptions.
-  Canonical relations you MAY reuse ONLY when the report text supports them:
-{pathways}
-"""
-
-
-def measured_stress_note(f_pf, f_sf, f_pr, degrees, effective_energy, efficiency_pct):
-    """Optional note that injects user-measured stress data into the Phase 1 input."""
-    return (
-        "\n\n[MEASURED STRESS INTENSITY - user-supplied opinion data, Petrič method]\n"
-        f"F_PF={f_pf:.3f}, F_SF={f_sf:.3f}, F_PR={f_pr:.3f} -> "
-        f"stress intensity {degrees:.2f} °S ({classify_stress_intensity(degrees)}); "
-        f"effective energy {effective_energy:.0f} kcal ({efficiency_pct:.1f}% of baseline). "
-        "Treat as an organizational indicator, not a physiological measurement."
-    )
-
-
-# =============================================================================
-# 8. STRESS QUANTIFICATION (§4.5.1) - extends the existing calculate_* functions
-# =============================================================================
-def opinion_real_factor(f0, n0, fr, k_t=1.0, rho_t=10.0):
-    """
-    F0 = (K0 * rho0) / (Kt * rho_t)
-      rho0 = f0 / N0   (opinion density: opinions per respondent)
-      K0   = f0 / fr   (opinion complexity: total / distinct opinions)
-      Kt = 1, rho_t = 10 opinions per respondent (theoretical maximum).
-    Returns 0.0 for invalid input.
-    """
-    try:
-        f0, n0, fr = float(f0), float(n0), float(fr)
-        if f0 <= 0 or n0 <= 0 or fr <= 0 or fr > f0:
-            return 0.0
-        return ((f0 / fr) * (f0 / n0)) / (k_t * rho_t)
-    except (TypeError, ValueError):
-        return 0.0
-
-
-def classify_stress_intensity(degrees):
-    """
-    PROVISIONAL bands (thirds of the 0-90 °S range). The book confirms only that
-    32.76 °S is 'moderate'; its full classification scale is not reproduced in the
-    short version, so replace these thresholds if you have the original scale.
-    """
-    if degrees < 30:
-        return "low (provisional band)"
-    if degrees < 60:
-        return "moderate (provisional band)"
-    return "high (provisional band)"
-
-
-# =============================================================================
-# 9. STREAMLIT UI HELPERS (receive `st`; no streamlit import needed here)
-# =============================================================================
-def render_crime_stress_sidebar(st):
-    """Call inside `with st.sidebar:` after the existing Knowledge Explorer expanders."""
-    with st.expander("🛡️ Crime & Stress Prevention Ontology", expanded=False):
-        st.markdown("**Stress (§4.5):**")
-        for k, v in STRESS_KNOWLEDGE.items():
-            st.markdown(f"• **{k}**: {v}")
-        st.markdown("---")
-        st.markdown("**Crime & harm (§4.9):**")
-        for k, v in CRIME_KNOWLEDGE.items():
-            st.markdown(f"• **{k}**: {v}")
-        st.markdown("---")
-        st.markdown("**Intervention archetypes (hypotheses, §7.2.5, §7.3):**")
-        for k, d in INTERVENTION_ARCHETYPES.items():
-            st.markdown(f"• **{k}**: {d['desc']} *Caution: {d['caution']}*")
-        st.markdown("---")
-        st.markdown("**Ethical safeguards (§7.2.8):**")
-        for k, v in ETHICAL_SAFEGUARDS.items():
-            st.markdown(f"• **{k}**: {v}")
-        st.markdown("---")
-        st.markdown("**Evaluation criteria:** " + ", ".join(EVALUATION_CRITERIA))
-        st.markdown("**Science preset (§7.2.4):** " + ", ".join(CRIME_STRESS_SCIENCE_PRESET))
-
-
-def render_crime_stress_mode(st):
-    """Main-page selector. Returns one of CS_MODES."""
-    return st.selectbox(
-        "🛡️ Crime & Stress Prevention module:",
-        CS_MODES,
-        index=0,
-        key="cs_module_mode_v2026",
-        help="Auto: activates when the inquiry mentions crime, violence, stress, burnout... "
-             "Adds domain knowledge, ethical safeguards and dual (stress + crime) outcome "
-             "requirements to Phase 1 and Phase 2 prompts. Existing pipeline is unchanged.",
-    )
-
 
 # =============================================================================
 # 0. GLOBAL CONFIGURATION & SESSION DATE (FEBRUARY 24, 2026)
@@ -1291,11 +945,6 @@ STRUCTURAL_TYPES = {"Generalization", "Specialization", "Containment",
                      "Realization", "Composition", "Aggregation",
                      "Dependency", "Conflict"}
 
-# =============================================================================
-# 3.3 [NOVO] CRIME & STRESS THEMATIC EXTENSION (samo dodaja; nič ne odstrani)
-# =============================================================================
-KNOWLEDGE_BASE["Science fields"].update(EXTRA_SCIENCE_FIELDS)
-HUMAN_THINKING_METAMODEL["nodes"].update(CRIME_STRESS_METAMODEL_NODES)
 
 # =============================================================================
 # 4. KONČNI POPRAVLJEN SIDEBAR (Z SAMBANOVO IN UNIKATNIMI KLJUČI)
@@ -1445,8 +1094,6 @@ with st.sidebar:
         for m, d in KNOWLEDGE_BASE["Structural models"].items(): 
             st.markdown(f"**{m}**: {d}")
 
-    # --- [NOVO] Crime & Stress Prevention Ontology (expander) ---
-    render_crime_stress_sidebar(st)
 
 # =============================================================================
 # 3.9 REPORT EXPORT HELPERS
@@ -1586,9 +1233,6 @@ else:
     st.info(f"**Active Hybrid Strategy:** {combined_desc}")
 st.divider()
 
-# --- [NOVO] CRIME & STRESS PREVENTION MODULE (izbirnik + kalkulator) ---
-cs_mode = render_crime_stress_mode(st)
-st.divider()
 
 # DUAL INQUIRY INTERFACE
 col_inq1, col_inq2, col_inq3 = st.columns([2, 2, 1])
@@ -1726,23 +1370,6 @@ INTERFACE PARAMETERS:
 - Strategic Goal: {goal_context}
 """
 
-            # --- [NOVO] Ali je aktiven Crime & Stress Prevention modul? ---
-            cs_active = crime_stress_should_activate(cs_mode, user_query, idea_query)
-
-            with st.spinner('🔍 Accessing ORCID research background...'):
-                biblio_data = fetch_author_bibliographies(target_authors) if target_authors else ""
-
-            file_context_str = f"\n\n[FILE CONTEXT]:\n{file_content}" if file_content else ""
-            biblio_context = f"\n\n[AUTHOR RESEARCH BACKGROUND]:\n{biblio_data}" if biblio_data else ""
-            full_ai_input = f"{active_context}\nUSER RESEARCH INQUIRY:\n{user_query}{file_context_str}{biblio_context}"
-
-            # --- [NOVO] Izmerjena intenzivnost stresa (če jo je uporabnik vnesel v kalkulator) ---
-            cs_measured = st.session_state.get("cs_measured")
-            if cs_active and cs_measured:
-                full_ai_input += measured_stress_note(
-                    cs_measured["f_pf"], cs_measured["f_sf"], cs_measured["f_pr"],
-                    cs_measured["degrees"], cs_measured["energy"], cs_measured["efficiency"]
-                )
 
             google_client = genai.Client(api_key=google_api_key)
 
@@ -1791,9 +1418,6 @@ Return, using these as literal markdown section headers, in this order:
 
 Do not generate innovations in Phase 1.
 """
-            # --- [NOVO] Crime & Stress tematska okrepitev Faze 1 (prepended) ---
-            if cs_active:
-                phase1_system_prompt = build_phase1_addendum() + phase1_system_prompt
 
             with st.spinner(f'PHASE 1: IMA synthesis with {p1_model_label}...'):
                 phase1_synthesis = google_generate(
@@ -2036,9 +1660,6 @@ Then valid JSON only:
 Use standard JSON with double quotes. Escape internal quotes correctly.
 Do not place explanatory text after the JSON object.
 """
-            # --- [NOVO] Crime & Stress tematska okrepitev Faze 2 (prepended) ---
-            if cs_active:
-                phase2_system_prompt = build_phase2_addendum() + phase2_system_prompt
 
             with st.spinner(f'PHASE 2: MA innovation with {p2_model_label}...'):
                 phase2_user_content = (
@@ -2264,9 +1885,6 @@ Do not place explanatory text after the JSON object.
                         "and logic (AND/OR/IF-THEN) connections."
                     )
 
-            # --- [NOVO] Crime & Stress: prikaz metrik intenzivnosti stresa ---
-            if cs_active:
-                render_stress_metrics(st, g_data.get("system_metrics"), calculate_systemic_stress, calculate_effective_energy)
 
             # --- 5. FINAL DISPLAY: SEQUENTIAL INTERACTIVE SYNERGY REPORT ---
 
