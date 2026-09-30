@@ -278,465 +278,6 @@ Domain rules (extend, do not replace, the innovation structure and output format
 """
 
 
-
-
-# =============================================================================
-# 9. STREAMLIT UI HELPERS (receive `st`; no streamlit import needed here)
-# =============================================================================
-def render_crime_stress_sidebar(st):
-    """Call inside `with st.sidebar:` after the existing Knowledge Explorer expanders."""
-    with st.expander("🛡️ Crime & Stress Prevention Ontology", expanded=False):
-        st.markdown("**Stress (§4.5):**")
-        for k, v in STRESS_KNOWLEDGE.items():
-            st.markdown(f"• **{k}**: {v}")
-        st.markdown("---")
-        st.markdown("**Crime & harm (§4.9):**")
-        for k, v in CRIME_KNOWLEDGE.items():
-            st.markdown(f"• **{k}**: {v}")
-        st.markdown("---")
-        st.markdown("**Intervention archetypes (hypotheses, §7.2.5, §7.3):**")
-        for k, d in INTERVENTION_ARCHETYPES.items():
-            st.markdown(f"• **{k}**: {d['desc']} *Caution: {d['caution']}*")
-        st.markdown("---")
-        st.markdown("**Ethical safeguards (§7.2.8):**")
-        for k, v in ETHICAL_SAFEGUARDS.items():
-            st.markdown(f"• **{k}**: {v}")
-        st.markdown("---")
-        st.markdown("**Evaluation criteria:** " + ", ".join(EVALUATION_CRITERIA))
-        st.markdown("**Science preset (§7.2.4):** " + ", ".join(CRIME_STRESS_SCIENCE_PRESET))
-
-
-def render_crime_stress_mode(st):
-    """Main-page selector. Returns one of CS_MODES."""
-    return st.selectbox(
-        "🛡️ Crime & Stress Prevention module:",
-        CS_MODES,
-        index=0,
-        key="cs_module_mode_v2026",
-        help="Auto: activates when the inquiry mentions crime, violence, stress, burnout... "
-             "Adds domain knowledge, ethical safeguards and dual (stress + crime) outcome "
-             "requirements to Phase 1 and Phase 2 prompts. Existing pipeline is unchanged.",
-    )
-
-
-
-# =============================================================================
-# 0. GLOBAL CONFIGURATION & SESSION DATE (FEBRUARY 24, 2026)
-# =============================================================================
-SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v24.7.0-GOOGLE-AI-STUDIO-PROMPT-COACH"
-GOOGLE_AI_STUDIO_URL = "https://aistudio.google.com/"
-
-# =============================================================================
-# INITIALIZATION FIX: Preprečuje AttributeError pri zagonu in resetiranju
-# =============================================================================
-if 'show_user_guide' not in st.session_state:
-    st.session_state.show_user_guide = False
-
-# Zagotovimo, da so vsi ključi prisotni v session_state pred prvo uporabo
-if 'phase1_synthesis' not in st.session_state:
-    st.session_state.phase1_synthesis = ""
-
-st.set_page_config(
-    page_title=f"SIS Universal Knowledge Synthesizer - {SYSTEM_DATE}",
-    page_icon="🌳",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
-# --- NUCLEAR CSS OVERRIDE: OBLITERATING SIDEBAR ARTIFACTS & FIXING VISIBILITY ---
-# Targets the 'keyboard_double_arrow_right' artifact and forced navy-black contrast.
-# This section ensures the Knowledge Explorer is perfectly visible.
-st.markdown("""
-<style>
-    /* 1. OBLITERATE ARROW ARTIFACTS & SIDEBAR ICONS */
-    /* Hides the specific Streamlit containers where "keyboard_double_arrow_right" appears as text */
-    [data-testid="stSidebar"] [data-testid="stIcon"],
-    [data-testid="stSidebar"] button[data-testid="stSidebarCollapseButton"],
-    [data-testid="stSidebar"] .st-emotion-cache-16idsys,
-    [data-testid="stSidebar"] .st-emotion-cache-6qob1r,
-    [data-testid="stSidebar"] span[data-testid="stExpanderIcon"],
-    [data-testid="stSidebar"] svg[class*="st-emotion-cache"] {
-        display: none !important;
-        visibility: hidden !important;
-        width: 0 !important;
-        height: 0 !important;
-        opacity: 0 !important;
-    }
-
-    /* 2. FORCE SIDEBAR VISIBILITY & HIGH CONTRAST */
-    [data-testid="stSidebar"] {
-        background-color: #fcfcfc !important;
-        border-right: 2px solid #e9ecef !important;
-        min-width: 380px !important;
-    }
-
-    /* Force all sidebar text to be deep black/navy for perfect visibility */
-    [data-testid="stSidebar"] .stMarkdown p, 
-    [data-testid="stSidebar"] .stMarkdown li,
-    [data-testid="stSidebar"] label,
-    [data-testid="stSidebar"] .stExpander p,
-    [data-testid="stSidebar"] .stExpander li,
-    [data-testid="stSidebar"] .stMarkdown span,
-    [data-testid="stSidebar"] .stMarkdown div {
-        color: #ffffff !important; /* Maximum Contrast */
-        font-size: 0.98em !important;
-        font-weight: 500 !important;
-        line-height: 1.6 !important;
-        opacity: 1 !important;
-    }
-
-    /* 3. RE-STYLE EXPANDERS FOR PROFESSIONAL DENSITY */
-    .stExpander {
-        background-color: #A9A9A9 !important;
-        border: 1px solid #d8e2dc !important;
-        border-radius: 12px !important;
-        margin-bottom: 12px !important;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important;
-    }
-    
-    .stExpander details summary p {
-        color: #1d3557 !important;
-        font-weight: 800 !important;
-        font-size: 1.05em !important;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    /* 4. CONTENT HIGHLIGHTING & NAVIGATION */
-    .semantic-node-highlight {
-        color: #2a9d8f;
-        font-weight: bold;
-        border-bottom: 2px solid #2a9d8f;
-        padding: 0 2px;
-        background-color: #f0fdfa;
-        border-radius: 4px;
-        transition: all 0.3s ease;
-        text-decoration: none !important;
-    }
-    .semantic-node-highlight:hover {
-        background-color: #ccfbf1;
-        color: #264653;
-        border-bottom: 2px solid #e76f51;
-    }
-    
-    .author-search-link {
-        color: #1d3557;
-        font-weight: bold;
-        text-decoration: none;
-        border-bottom: 1px double #457b9d;
-        padding: 0 1px;
-    }
-    .author-search-link:hover {
-        color: #e63946;
-        background-color: #f1faee;
-    }
-    
-    .google-icon {
-        font-size: 0.75em;
-        vertical-align: super;
-        margin-left: 2px;
-        color: #457b9d;
-        opacity: 0.8;
-    }
-
-    .stMarkdown {
-        line-height: 1.9;
-        font-size: 1.05em;
-    }
-
-    /* 5. ARCHITECTURAL FOCUS BOXES */
-    .metamodel-box {
-        padding: 25px;
-        border-radius: 15px;
-        background-color: #f8f9fa;
-        border-left: 8px solid #00B0F0;
-        margin-bottom: 20px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-    }
-    .mental-approach-box {
-        padding: 25px;
-        border-radius: 15px;
-        background-color: #f0f7ff;
-        border-left: 8px solid #6366f1;
-        margin-bottom: 30px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-    }
-    
-    .main-header-gradient {
-        background: linear-gradient(90deg, #1d3557, #457b9d);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-weight: 800;
-        font-size: 2.8rem;
-    }
-
-    .date-badge {
-        background-color: #1d3557;
-        color: white;
-        padding: 12px 20px;
-        border-radius: 50px;
-        font-size: 1em;
-        font-weight: 800;
-        margin-bottom: 30px;
-        display: block;
-        text-align: center;
-        box-shadow: 0 4px 15px rgba(29, 53, 87, 0.3);
-        letter-spacing: 1px;
-    }
-
-    .sidebar-logo-container {
-        display: flex;
-        justify-content: center;
-        padding: 10px 0;
-        margin-bottom: 5px;
-    }
-
-    .stButton>button {
-        width: 100%;
-        border-radius: 10px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        transition: all 0.3s ease;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-def get_svg_base64(svg_str):
-    """Encodes SVG for reliable display in Streamlit sidebar."""
-    return base64.b64encode(svg_str.encode('utf-8')).decode('utf-8')
-
-# --- LOGOTIP: ORIGINAL 3D RELIEF (PYRAMID & TREE RESTORED EXACTLY) ---
-SVG_3D_RELIEF = """
-<svg width="240" height="240" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-        <filter id="reliefShadow" x="-20%" y="-20%" width="150%" height="150%">
-            <feDropShadow dx="4" dy="4" stdDeviation="3" flood-color="#000" flood-opacity="0.4"/>
-        </filter>
-        <linearGradient id="pyramidSide" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#e0e0e0;stop-opacity:1" />
-            <stop offset="100%" style="stop-color:#bdbdbd;stop-opacity:1" />
-        </linearGradient>
-        <linearGradient id="treeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" style="stop-color:#66bb6a;stop-opacity:1" />
-            <stop offset="100%" style="stop-color:#2e7d32;stop-opacity:1" />
-        </linearGradient>
-    </defs>
-    <circle cx="120" cy="120" r="100" fill="#f0f0f0" stroke="#000000" stroke-width="4" filter="url(#reliefShadow)" />
-    <path d="M120 40 L50 180 L120 200 Z" fill="url(#pyramidSide)" />
-    <path d="M120 40 L190 180 L120 200 Z" fill="#9e9e9e" />
-    <rect x="116" y="110" width="8" height="70" rx="2" fill="#5d4037" />
-    <circle cx="120" cy="85" r="30" fill="url(#treeGrad)" filter="url(#reliefShadow)" />
-    <circle cx="95" cy="125" r="22" fill="#43a047" filter="url(#reliefShadow)" />
-    <circle cx="145" cy="125" r="22" fill="#43a047" filter="url(#reliefShadow)" />
-    <rect x="70" y="170" width="20" height="12" rx="2" fill="#1565c0" filter="url(#reliefShadow)" />
-    <rect x="150" y="170" width="20" height="12" rx="2" fill="#c62828" filter="url(#reliefShadow)" />
-    <rect x="110" y="185" width="20" height="12" rx="2" fill="#f9a825" filter="url(#reliefShadow)" />
-</svg>
-"""
-
-# =============================================================================
-# 1. CORE RENDERING ENGINES & DATA FETCHING
-# =============================================================================
-
-def render_cytoscape_network(elements, layout_type="hierarchical", container_id="cy_canvas"):
-    """
-    Posodobljen motor z več perspektivami (Multi-Perspective Layout Engine).
-    Vključuje UML, ISO Thesaurus in Logične konektorje (AND, OR, XOR, NOT, IF-THEN).
-    """
-
-    # Mapiranje Python izbire v Cytoscape JS konfiguracije
-    layout_configs = {
-        "organic": """{ 
-            name: 'cose', 
-            idealEdgeLength: 120, 
-            nodeOverlap: 50, 
-            refresh: 20, 
-            fit: true, 
-            padding: 50, 
-            nodeRepulsion: 1000000,
-            edgeElasticity: 100,
-            nestingFactor: 1.2,
-            numIter: 1500
-        }""",
-        "hierarchical": """{ 
-            name: 'breadthfirst', 
-            directed: true, 
-            padding: 50, 
-            circle: false, 
-            spacingFactor: 1.75,
-            maximal: true
-        }""",
-        "circular": """{ 
-            name: 'circle', 
-            padding: 50, 
-            radius: 400,
-            spacingFactor: 0.8
-        }""",
-        "concentric": """{ 
-            name: 'concentric', 
-            minNodeSpacing: 60, 
-            concentric: function(node){ return node.data('size'); },
-            levelWidth: function(nodes){ return 10; },
-            padding: 50
-        }""",
-        "grid": """{ 
-            name: 'grid', 
-            rows: 5, 
-            padding: 50, 
-            spacingFactor: 1.2 
-        }"""
-    }
-
-    selected_layout = layout_configs.get(layout_type, layout_configs["hierarchical"])
-
-    cyto_html = f"""
-    <div style="position: relative; width: 100%;">
-        <div style="position: absolute; top: 15px; right: 15px; z-index: 1000; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end;">
-            <button id="zoom_in_{container_id}" style="padding: 8px 11px; background: #1d3557; color: white; border: none; border-radius: 7px; cursor: pointer; font-weight: 800;">＋ Zoom In</button>
-            <button id="zoom_out_{container_id}" style="padding: 8px 11px; background: #457b9d; color: white; border: none; border-radius: 7px; cursor: pointer; font-weight: 800;">− Zoom Out</button>
-            <button id="zoom_fit_{container_id}" style="padding: 8px 11px; background: #2a9d8f; color: white; border: none; border-radius: 7px; cursor: pointer; font-weight: 800;">⛶ Fit</button>
-            <button id="save_btn_{container_id}" style="padding: 8px 11px; background: #1d3557; color: white; border: none; border-radius: 7px; cursor: pointer; font-weight: 800;">💾 PNG</button>
-        </div>
-        <div id="{container_id}" style="width: 100%; height: 850px; background: #ffffff; border-radius: 20px; border: 1px solid #e0e0e0; box-shadow: 0 10px 40px rgba(0,0,0,0.08);"></div>
-    </div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {{
-            var cy = cytoscape({{
-                container: document.getElementById('{container_id}'),
-                elements: {json.dumps(elements)},
-                style: [
-                    {{
-                        selector: 'node',
-                        style: {{
-                            'label': 'data(label)',
-                            'text-valign': 'center',
-                            'text-halign': 'center',
-                            'color': '#1d3557',
-                            'background-color': 'data(color)',
-                            'width': 'data(size)',
-                            'height': 'data(size)',
-                            'shape': 'data(shape)',
-                            'font-size': '12px',
-                            'font-weight': 'bold',
-                            'text-wrap': 'wrap',
-                            'text-max-width': '80px',
-                            'border-width': 3,
-                            'border-color': '#ffffff',
-                            'border-opacity': 0.8,
-                            'text-outline-color': '#ffffff',
-                            'text-outline-width': 2,
-                            'box-shadow': '0 4px 10px rgba(0,0,0,0.2)'
-                        }}
-                    }},
-                    {{
-                        selector: 'edge',
-                        style: {{
-                            'width': 2,
-                            'line-color': 'data(color)',
-                            'label': 'data(rel_type)',
-                            'font-size': '9px',
-                            'font-weight': 'bold',
-                            'color': '#2a9d8f',
-                            'curve-style': 'unbundled-bezier',
-                            'control-point-step-size': 40,
-                            'target-arrow-color': 'data(color)',
-                            'target-arrow-shape': 'vee',
-                            'text-background-opacity': 1,
-                            'text-background-color': '#ffffff',
-                            'text-background-padding': '3px',
-                            'text-background-shape': 'roundrectangle',
-                            'edge-distances': 'node-position',
-                            'opacity': 0.8
-                        }}
-                    }},
-                    /* --- UML NOTACIJA --- */
-                    {{ selector: 'edge[rel_type="Generalization"]', style: {{ 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow', 'width': 3 }} }},
-                    {{ selector: 'edge[rel_type="Realization"]', style: {{ 'line-style': 'dashed', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'hollow' }} }},
-                    {{ selector: 'edge[rel_type="Composition"]', style: {{ 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'filled', 'width': 4 }} }},
-                    {{ selector: 'edge[rel_type="Aggregation"]', style: {{ 'source-arrow-shape': 'diamond', 'source-arrow-fill': 'hollow', 'width': 3 }} }},
-                    {{ selector: 'edge[rel_type="Dependency"]', style: {{ 'line-style': 'dashed', 'target-arrow-shape': 'vee' }} }},
-                    {{ selector: 'edge[rel_type="Conflict"]', style: {{ 'width': 6, 'line-color': '#b91d1d', 'line-style': 'solid', 'target-arrow-color': '#b91d1d', 'target-arrow-shape': 'triangle-cross', 'source-arrow-shape': 'triangle-cross', 'source-arrow-color': '#b91d1d' }} }},
-                    {{ selector: 'edge[rel_type="Specialization"]', style: {{ 'line-style': 'dashed', 'line-color': '#000000', 'target-arrow-shape': 'triangle', 'target-arrow-fill': 'filled', 'target-arrow-color': '#000000', 'width': 2 }} }},
-                    {{ selector: 'edge[rel_type="Containment"]', style: {{ 'line-color': '#1d3557', 'target-arrow-shape': 'circle', 'target-arrow-color': '#1d3557', 'target-arrow-fill': 'hollow', 'width': 4 }} }},
-                    
-                    /* --- ISO THESAURUS --- */
-                    {{ selector: 'edge[rel_type="TT"]', style: {{ 'width': 6, 'line-color': '#1d3557' }} }},
-                    {{ selector: 'edge[rel_type="BT"]', style: {{ 'width': 4, 'line-color': '#1d3557' }} }},
-                    {{ selector: 'edge[rel_type="NT"]', style: {{ 'width': 4, 'line-color': '#1d3557' }} }},
-                    {{ selector: 'edge[rel_type="EQ"]', style: {{ 'line-style': 'double', 'width': 5, 'line-color': '#f1c40f' }} }},
-                    {{ selector: 'edge[rel_type="RT"]', style: {{ 'line-style': 'dotted', 'width': 2, 'line-color': '#2a9d8f', 'target-arrow-shape': 'none' }} }},
-                    {{ selector: 'edge[rel_type="AS"]', style: {{ 'line-style': 'dashed', 'width': 2, 'line-color': '#7b2cb1' }} }},
-                    {{ selector: 'edge[rel_type="IN"]', style: {{ 'line-style': 'dotted', 'width': 3, 'line-color': '#0077b6', 'target-arrow-shape': 'triangle' }} }},
-                    
-                    /* --- LOGIČNI KONEKTORJI (Decision Logic) --- */
-                    {{ selector: 'edge[rel_type="AND"]', style: {{ 'width': 5, 'line-color': '#00FF00', 'target-arrow-color': '#00FF00', 'target-arrow-shape': 'triangle' }} }},
-                    {{ selector: 'edge[rel_type="OR"]', style: {{ 'width': 3, 'line-color': '#00BFFF', 'line-style': 'dashed', 'target-arrow-color': '#00BFFF', 'target-arrow-shape': 'vee' }} }},
-                    {{ selector: 'edge[rel_type="XOR"]', style: {{ 'width': 4, 'line-color': '#FF8C00', 'line-style': 'double', 'target-arrow-color': '#FF8C00', 'target-arrow-shape': 'diamond' }} }},
-                    {{ selector: 'edge[rel_type="NOT"]', style: {{ 'width': 4, 'line-color': '#FF0000', 'line-style': 'dashed', 'target-arrow-color': '#FF0000', 'target-arrow-shape': 'tee' }} }},
-                    {{ selector: 'edge[rel_type="IF-THEN"]', style: {{ 'width': 4, 'line-color': '#FFD700', 'target-arrow-color': '#FFD700', 'target-arrow-shape': 'triangle', 'arrow-scale': 1.3 }} }},
-
-                    /* Poudarek na zvezdah (Macro cilji) */
-                    {{ selector: 'node[shape="star"]', style: {{ 'font-size': '16px', 'width': 130, 'height': 130, 'border-width': 5, 'border-color': '#FFD700' }} }}
-                ],
-                layout: {selected_layout}
-            }});
-
-            document.getElementById('zoom_in_{container_id}').addEventListener('click', function() {{
-                cy.zoom({{ level: Math.min(cy.zoom() * 1.25, 4), renderedPosition: {{ x: cy.width()/2, y: cy.height()/2 }} }});
-            }});
-            document.getElementById('zoom_out_{container_id}').addEventListener('click', function() {{
-                cy.zoom({{ level: Math.max(cy.zoom() / 1.25, 0.15), renderedPosition: {{ x: cy.width()/2, y: cy.height()/2 }} }});
-            }});
-            document.getElementById('zoom_fit_{container_id}').addEventListener('click', function() {{
-                cy.fit(undefined, 50);
-            }});
-            document.getElementById('save_btn_{container_id}').addEventListener('click', function() {{
-                var png64 = cy.png({{full: true, bg: 'white', scale: 2}});
-                var link = document.createElement('a');
-                var timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-                link.href = png64;
-                link.download = 'hierarchograph_{layout_type}_' + timestamp + '.png';
-                link.click();
-            }});
-        }});
-    </script>
-    """
-    components.html(cyto_html, height=900)
-
-import math # Move all imports to the top of your script if possible
-
-def fetch_author_bibliographies(author_input):
-    if not author_input: return ""
-    author_list = [a.strip() for a in author_input.split(",")]
-    comprehensive_biblio = ""
-    headers = {"Accept": "application/json"}
-    for auth in author_list:
-        try:
-            # FIX: URL-encode the author name so non-ASCII characters (č, š, ž, ...)
-            # don't break the request ('ascii' codec can't encode character error).
-            s_res = requests.get(f"https://pub.orcid.org/v3.0/search/?q={urllib.parse.quote(auth)}", headers=headers, timeout=6).json()
-            if s_res.get('result'):
-                orcid_id = s_res['result'][0]['orcid-identifier']['path']
-                r_res = requests.get(f"https://pub.orcid.org/v3.0/{orcid_id}/record", headers=headers, timeout=6).json()
-                works = r_res.get('activities-summary', {}).get('works', {}).get('group', [])
-                comprehensive_biblio += f"#### 🆔 ORCID: {auth.upper()} ({orcid_id})\n"
-                for work in works[:12]:
-                    summary = work.get('work-summary', [{}])[0]
-                    title = summary.get('title', {}).get('title', {}).get('value', 'Unknown Title')
-                    pub_date = summary.get('publication-date')
-                    year = pub_date.get('year', {}).get('value', 'n.d.') if pub_date else 'n.d.'
-                    comprehensive_biblio += f"- **{year}**: {title}\n"
-                comprehensive_biblio += "\n---\n"
-        except Exception: 
-            pass # Ignore API errors to keep the app running
-    return comprehensive_biblio
-
-import math
-
-
 # =============================================================================
 # 2. ARCHITECTURAL ONTOLOGIES (IMA & MA) - EXHAUSTIVE EXPANSION
 # =============================================================================
@@ -1198,7 +739,7 @@ THESAURUS_TYPES = {"TT", "BT", "NT", "RT", "EQ", "AS", "IN"}
 LOGIC_TYPES = {"AND", "OR", "XOR", "NOT", "IF-THEN"}
 STRUCTURAL_TYPES = {"Generalization", "Specialization", "Containment",
                      "Realization", "Composition", "Aggregation",
-                     "Dependency", "Conflict"}
+                     "Dependency", "Conflict", "Association", "Constraint"}
 
 # =============================================================================
 # 3.3 [NOVO] CRIME & STRESS THEMATIC EXTENSION (samo dodaja; nič ne odstrani)
@@ -1226,12 +767,14 @@ with st.sidebar:
         key="side_google_gemini_v2026",
         help="Google AI Studio / Gemini API key."
     )
+
     st.link_button(
-        "✨ Open Google AI Studio — Free Prompt Coach",
+        "✨ OPEN GOOGLE AI STUDIO",
         GOOGLE_AI_STUDIO_URL,
         use_container_width=True,
-        help="Open Google AI Studio to review and improve future SIS prompts."
+        key="side_google_ai_studio_link"
     )
+    st.caption("External Prompt Coach: free AI Studio interface; usage limits and data terms depend on Google's current service tier.")
 
     # Google-only language-model catalog.  The list intentionally contains
     # current Gemini 3.x models plus the established Gemini 2.5 family and
@@ -1406,6 +949,8 @@ const cy = cytoscape({{
  {{selector:'edge[rel_type="Aggregation"]',style:{{'source-arrow-shape':'diamond','source-arrow-fill':'hollow','width':3}}}},
  {{selector:'edge[rel_type="Dependency"]',style:{{'line-style':'dashed','target-arrow-shape':'vee'}}}},
  {{selector:'edge[rel_type="Conflict"]',style:{{'width':6,'line-color':'#b91d1d'}}}},
+ {{selector:'edge[rel_type="Association"]',style:{{'line-style':'dotted','target-arrow-shape':'none','width':3}}}},
+ {{selector:'edge[rel_type="Constraint"]',style:{{'line-style':'dashed','target-arrow-shape':'tee','width':4}}}},
  {{selector:'edge[rel_type="Specialization"]',style:{{'line-style':'dashed','target-arrow-shape':'triangle'}}}},
  {{selector:'edge[rel_type="Containment"]',style:{{'target-arrow-shape':'circle','width':4}}}},
  {{selector:'edge[rel_type="TT"]',style:{{'width':6}}}},
@@ -1421,177 +966,6 @@ const cy = cytoscape({{
  layout: {json.dumps({"name":"cose","fit":True,"padding":50})}
 }});
 </script></body></html>"""
-# =============================================================================
-# 3.10 GOOGLE AI STUDIO PROMPT COACH
-# =============================================================================
-PROMPT_COACH_CRITERIA = [
-    "Conceptual novelty",
-    "Systemic architecture",
-    "Interdisciplinary integration",
-    "Practicality",
-    "Clarity",
-]
-
-def build_google_ai_studio_prompt_coach(
-    user_query, idea_query, sel_sciences, sel_paradigms, sel_models,
-    sel_methods, sel_tools, selected_techniques, expertise, goal_context,
-    report_text="", graph_elements=None,
-):
-    """Build a copy-ready meta-prompt for Google AI Studio."""
-    graph_elements = graph_elements or []
-    node_count = sum(
-        1 for el in graph_elements
-        if isinstance(el, dict) and "source" not in el.get("data", {})
-    )
-    edge_count = sum(
-        1 for el in graph_elements
-        if isinstance(el, dict) and "source" in el.get("data", {})
-    )
-    relation_types = sorted({
-        str(el.get("data", {}).get("rel_type"))
-        for el in graph_elements
-        if isinstance(el, dict)
-        and "source" in el.get("data", {})
-        and el.get("data", {}).get("rel_type")
-    })
-    current_report = report_text.strip() if report_text else "[No previous SIS report is available yet.]"
-    if len(current_report) > 14000:
-        current_report = current_report[:14000] + "\n[Report excerpt truncated for prompt coaching.]"
-
-    return f"""You are a senior prompt engineer and research-methodology reviewer.
-Improve future prompts for the SIS Universal Knowledge Synthesizer so that its
-REPORT and SEMANTIC GRAPH become stronger across these five dimensions:
-1. Conceptual novelty
-2. Systemic architecture
-3. Interdisciplinary integration
-4. Practicality
-5. Clarity
-
-Do not simply make the prompt longer. Remove ambiguity, redundancy and generic
-instructions. Preserve the SIS architecture:
-Phase 1 IMA knowledge synthesis -> Phase 2 MA innovation -> integrated report -> semantic graph.
-
-CURRENT RESEARCH INQUIRY:
-{user_query or "[not entered]"}
-
-CURRENT INNOVATION PROMPT:
-{idea_query or "[not entered]"}
-
-CURRENT SIS CONFIGURATION:
-- Science fields: {", ".join(sel_sciences) if sel_sciences else "[none selected]"}
-- Scientific paradigms: {", ".join(sel_paradigms) if sel_paradigms else "[none selected]"}
-- Structural models: {", ".join(sel_models) if sel_models else "[none selected]"}
-- Methodology: {", ".join(sel_methods) if sel_methods else "[none selected]"}
-- Tools: {", ".join(sel_tools) if sel_tools else "[none selected]"}
-- Ideation frameworks: {", ".join(selected_techniques) if selected_techniques else "[none selected]"}
-- Expertise: {expertise}
-- Strategic goal: {goal_context}
-
-GRAPH REQUIREMENTS:
-- The graph must represent the same reasoning as the report.
-- Prefer a sparse, meaningful semantic architecture over graph density.
-- Every node must have a defensible role in the report.
-- Avoid invented/decorative nodes and artificial bridge edges.
-- Keep the graph connected when the evidence supports connectivity.
-- Use human-readable edge labels and correct causal direction.
-- Use thesaurus, UML/structural and logical relations only when justified.
-- Treat Association and Constraints as first-class structural possibilities when
-  the source material actually supports them.
-- Make interdisciplinary connections visible without fabricating relationships.
-- Avoid redundant parallel edges and unnecessary graph complexity.
-
-FIVE-DIMENSION DESIGN RULES:
-- Conceptual novelty: require genuine synthesis/transformation, not restatement;
-  separate novelty from unsupported speculation.
-- Systemic architecture: require explicit hierarchy, dependencies, constraints,
-  contradictions and transformation chains where supported.
-- Interdisciplinary integration: require specific contributions from at least two
-  relevant fields and identify genuine bridges, tensions or complementarities.
-- Practicality: require implementable next steps, measurable effects and realistic
-  constraints rather than generic recommendations.
-- Clarity: require readable sections, precise terminology and direct report-to-graph
-  correspondence.
-
-CURRENT GRAPH SNAPSHOT:
-- Nodes: {node_count}
-- Edges: {edge_count}
-- Relation types: {", ".join(relation_types) if relation_types else "[none]"}
-
-CURRENT REPORT:
---- BEGIN REPORT ---
-{current_report}
---- END REPORT ---
-
-Return exactly these sections:
-
-### PROMPT DIAGNOSIS
-Identify the most important weaknesses in the current research/innovation prompt.
-
-### REPORT IMPROVEMENTS
-Give precise prompt rules that improve the report without unnecessary verbosity or hallucination.
-
-### GRAPH IMPROVEMENTS
-Give precise prompt rules that improve semantic fidelity, architecture,
-interdisciplinary visibility, relation correctness and readability.
-
-### REVISED FUTURE PROMPT
-Write one complete, copy-ready prompt for the next SIS run. It must be more
-precise than the current prompt without unnecessarily duplicating SIS system instructions.
-
-### GOOGLE AI STUDIO FOLLOW-UP
-Give three short follow-up instructions:
-1. strengthen conceptual novelty,
-2. strengthen systemic/interdisciplinary architecture,
-3. strengthen practicality and clarity.
-
-Do not use an overall score or declare a winner. Explain concrete improvements.
-"""
-
-def render_google_ai_studio_prompt_coach(st):
-    """Render the free Google AI Studio connection and coaching prompt."""
-    coach_prompt = build_google_ai_studio_prompt_coach(
-        st.session_state.get("coach_user_query", ""),
-        st.session_state.get("coach_idea_query", ""),
-        st.session_state.get("coach_sel_sciences", []),
-        st.session_state.get("coach_sel_paradigms", []),
-        st.session_state.get("coach_sel_models", []),
-        st.session_state.get("coach_sel_methods", []),
-        st.session_state.get("coach_sel_tools", []),
-        st.session_state.get("coach_selected_techniques", []),
-        st.session_state.get("coach_expertise", "Expert"),
-        st.session_state.get("coach_goal_context", "Scientific Research"),
-        st.session_state.get("last_integrated_report", ""),
-        st.session_state.get("last_graph_elements", []),
-    )
-    with st.expander("✨ Google AI Studio Prompt Coach — improve future SIS prompts", expanded=False):
-        st.markdown(
-            "**Purpose:** prepare a copy-ready meta-prompt for the free Google AI Studio "
-            "interface to improve future SIS prompts for **conceptual novelty, systemic "
-            "architecture, interdisciplinary integration, practicality and clarity**."
-        )
-        st.link_button(
-            "🚀 OPEN GOOGLE AI STUDIO",
-            GOOGLE_AI_STUDIO_URL,
-            use_container_width=True,
-        )
-        st.caption(
-            "This feature prepares the coaching prompt locally in SIS. It does not make "
-            "an additional SIS API request; Google AI Studio is opened separately."
-        )
-        st.text_area(
-            "📋 COPY THIS PROMPT INTO GOOGLE AI STUDIO",
-            value=coach_prompt,
-            height=520,
-        )
-        st.download_button(
-            "💾 DOWNLOAD PROMPT AS TXT",
-            data=coach_prompt,
-            file_name="SIS_Google_AI_Studio_Prompt_Coach.txt",
-            mime="text/plain",
-            use_container_width=True,
-            key="download_ai_studio_coach_prompt",
-        )
-
 
 # --- MAIN PAGE CONTENT ---
 st.markdown('<h1 class="main-header-gradient">🧱 SIS Universal Knowledge Synthesizer</h1>', unsafe_allow_html=True)
@@ -1672,7 +1046,7 @@ else:
     st.info(f"**Active Hybrid Strategy:** {combined_desc}")
 st.divider()
 
-# --- CRIME & STRESS PREVENTION MODULE ---
+# --- [NOVO] CRIME & STRESS PREVENTION MODULE (izbirnik + kalkulator) ---
 cs_mode = render_crime_stress_mode(st)
 st.divider()
 
@@ -1682,19 +1056,6 @@ with col_inq1:
     user_query = st.text_area("❓ STEP 1: Research Inquiry (for GOOGLE GEMINI):", placeholder="Fact-based Foundational Inquiry...", height=200)
 with col_inq2:
     idea_query = st.text_area("💡 STEP 2: Innovation Prompt (for GOOGLE GEMINI):", placeholder="Targets for innovative idea production...", height=200)
-
-# Store current controls for the optional Google AI Studio Prompt Coach.
-st.session_state.coach_user_query = user_query
-st.session_state.coach_idea_query = idea_query
-st.session_state.coach_sel_sciences = sel_sciences
-st.session_state.coach_sel_paradigms = sel_paradigms
-st.session_state.coach_sel_models = sel_models
-st.session_state.coach_sel_methods = sel_methods
-st.session_state.coach_sel_tools = sel_tools
-st.session_state.coach_selected_techniques = selected_techniques
-st.session_state.coach_expertise = expertise
-st.session_state.coach_goal_context = goal_context
-
 # --- POPRAVEK KORAK 1: Branje vsebine datoteke ---
 # --- KORAK 1: File Upload with English Translation ---
 with col_inq3:
@@ -1713,8 +1074,6 @@ with col_inq3:
 # =============================================================================
 # 5. SYNERGY EXECUTION ENGINE (GOOGLE GEMINI / GEMMA ONLY)
 # =============================================================================
-
-render_google_ai_studio_prompt_coach(st)
 
 def google_generate(client, model_id, system_prompt, user_content, temperature, max_retries=4):
     """Single Google GenAI gateway. No third-party LLM providers.
@@ -1765,6 +1124,378 @@ def google_generate(client, model_id, system_prompt, user_content, temperature, 
             raise
 
     raise RuntimeError(f"Google Gemini API ni na voljo po {max_retries} poskusih: {last_exc}")
+
+
+# =============================================================================
+# 3.10 GOOGLE AI STUDIO PROMPT COACH + IN-APP OPTIMIZATION + GRAPH PREFLIGHT
+# =============================================================================
+PROMPT_COACH_CRITERIA = [
+    "Conceptual novelty",
+    "Systemic architecture",
+    "Interdisciplinary integration",
+    "Practicality",
+    "Clarity",
+]
+
+
+def _coach_graph_snapshot(graph_elements, max_chars=18000):
+    """Compact, deterministic graph representation for the Prompt Coach."""
+    if not graph_elements:
+        return "[NO GRAPH AVAILABLE]"
+    nodes = []
+    edges = []
+    for el in graph_elements:
+        data = el.get("data", {}) if isinstance(el, dict) else {}
+        if "source" in data and "target" in data:
+            edges.append({
+                "source": data.get("source"),
+                "target": data.get("target"),
+                "rel_type": data.get("rel_type"),
+                "label": data.get("label", ""),
+            })
+        elif data.get("id"):
+            nodes.append({
+                "id": data.get("id"),
+                "label": data.get("label", ""),
+                "shape": data.get("shape", ""),
+                "description": data.get("description", ""),
+            })
+    payload = json.dumps({"nodes": nodes, "edges": edges}, ensure_ascii=False, indent=2)
+    return payload[:max_chars]
+
+
+def build_google_ai_studio_prompt_coach(
+    research_inquiry,
+    innovation_prompt,
+    report_text,
+    graph_elements,
+    science_fields,
+    paradigms,
+    structural_models,
+    methodology,
+    tools,
+    ideation_frameworks,
+    expertise,
+    strategic_goal,
+    graph_perspective,
+):
+    """Build a copy-ready meta-prompt for Google AI Studio's stronger models."""
+    report = report_text or "[NO REPORT AVAILABLE]"
+    graph = _coach_graph_snapshot(graph_elements)
+    return f"""
+You are an expert scientific prompt engineer, knowledge-architecture reviewer,
+and semantic-graph auditor. Your task is to improve the FUTURE SIS prompts,
+not merely to rewrite the current report.
+
+IMPORTANT: Do not give an overall score, ranking, winner, or vague praise.
+Identify concrete defects, explain why they matter, and produce executable
+replacement prompts for STEP 1 and STEP 2.
+
+QUALITY CRITERIA
+1. Conceptual novelty
+2. Systemic architecture
+3. Interdisciplinary integration
+4. Practicality
+5. Clarity
+
+CURRENT STEP 1 — RESEARCH INQUIRY
+{research_inquiry or "[empty]"}
+
+CURRENT STEP 2 — INNOVATION PROMPT
+{innovation_prompt or "[empty]"}
+
+CONFIGURATION
+Science fields: {", ".join(science_fields) or "[none]"}
+Scientific paradigms: {", ".join(paradigms) or "[none]"}
+Structural models: {", ".join(structural_models) or "[none]"}
+Methodology: {", ".join(methodology) or "[none]"}
+Tools: {", ".join(tools) or "[none]"}
+Ideation frameworks: {", ".join(ideation_frameworks) or "[none]"}
+Expertise: {expertise}
+Strategic goal: {strategic_goal}
+Graph perspective: {graph_perspective}
+
+CURRENT REPORT
+{report[:30000]}
+
+CURRENT GRAPH SNAPSHOT
+{graph}
+
+AUDIT THESE KNOWN FAILURE MODES
+- reversed IF-THEN causal arrows;
+- mixing goals, states, problems, interventions, and outcomes;
+- methodological terminology appearing as if it were empirical content;
+- invented or decorative nodes/edges;
+- forced graph connectivity and relation-family quotas;
+- redundant parallel edges;
+- vague edge labels;
+- unsupported interdisciplinary claims;
+- innovation ideas that are not traceable to Phase 1 findings;
+- excessive abstraction that reduces practical applicability;
+- unclear distinctions between evidence, interpretation, hypothesis, and proposal.
+
+GRAPH SEMANTIC RULES
+For every IF-THEN edge, read it aloud as: "If <source>, then <target>."
+The source must be a cause, condition, mechanism, or enabler; the target must
+be the resulting effect, state, outcome, or consequence. If that reading is not
+literally defensible, flag and correct the direction.
+
+UML Association and Constraint are first-class relation possibilities. Use them
+ONLY when the report genuinely supports an association or a constraint. Never
+insert them merely to make the graph look sophisticated.
+
+Thesaurus relations (TT/BT/NT/RT/EQ/AS/IN), logical relations (AND/OR/XOR/NOT/
+IF-THEN), and UML/structural relations are semantic tools, not quotas. Prefer a
+sparse, traceable graph over a dense graph with methodological noise.
+
+REQUIRED OUTPUT
+### PROMPT DIAGNOSIS
+Give the most important prompt defects, grouped by the five quality criteria.
+
+### REPORT IMPROVEMENTS
+Give concrete instructions that would make future Phase 1/Phase 2 output more
+novel, systemic, interdisciplinary, practical, and clear without inventing facts.
+
+### GRAPH IMPROVEMENTS
+List each detected graph problem with source node, target node, relation type,
+problem, and corrected direction/type when correction is justified.
+
+### REVISED FUTURE PROMPT — STEP 1
+Provide one complete copy-ready STEP 1 prompt.
+
+### REVISED FUTURE PROMPT — STEP 2
+Provide one complete copy-ready STEP 2 prompt.
+
+### GOOGLE AI STUDIO FOLLOW-UP
+Give a short checklist for testing the revised prompts in a stronger model,
+including what evidence would count as an actual improvement. Do not use a score
+or ranking as evidence by itself.
+""".strip()
+
+
+def optimize_prompt_in_app(google_client, coach_prompt, model_id):
+    """Use the configured Google model to turn the Coach meta-prompt into two ready-to-run prompts."""
+    system_instruction = """
+You are the SIS Prompt Optimization Engine. Return ONLY the complete revised
+future prompts requested by the user. Preserve the user's scientific intent and
+terminology. Do not invent evidence. Separate STEP 1 and STEP 2 clearly.
+Correct causal direction, goal/state confusion, methodological noise, unsupported
+interdisciplinary claims, and graph instructions. Prefer sparse semantic graphs
+and require UML Association/Constraint only when justified.
+""".strip()
+    return google_generate(
+        google_client,
+        model_id,
+        system_instruction,
+        coach_prompt,
+        temperature=0.25,
+        max_retries=4,
+    )
+
+
+def validate_graph_preflight(graph_elements):
+    """Deterministic pre-flight audit. It warns; it does not silently rewrite the graph."""
+    warnings = []
+    if not graph_elements:
+        return warnings
+
+    nodes = {}
+    edges = []
+    for el in graph_elements:
+        data = el.get("data", {}) if isinstance(el, dict) else {}
+        if "source" in data and "target" in data:
+            edges.append(data)
+        elif data.get("id"):
+            nodes[data["id"]] = data
+
+    # 1) Basic structural integrity.
+    for e in edges:
+        src = nodes.get(e.get("source"), {}).get("label", e.get("source", "?"))
+        tgt = nodes.get(e.get("target"), {}).get("label", e.get("target", "?"))
+        if e.get("source") not in nodes or e.get("target") not in nodes:
+            warnings.append(
+                f"⚠️ Manjkajoč vozlišče pri povezavi '{src}' → '{tgt}'."
+            )
+
+        rel = str(e.get("rel_type", "")).upper()
+        label = str(e.get("label", "")).strip()
+        if rel and label.upper() == rel:
+            warnings.append(
+                f"⚠️ Nejasna oznaka povezave '{src}' → '{tgt}': label je le '{label}'."
+            )
+
+        if rel == "IF-THEN":
+            # Conservative lexical audit: these are warnings, not semantic verdicts.
+            source_l = src.lower()
+            target_l = tgt.lower()
+            outcome_terms = (
+                "outcome", "result", "effect", "risk", "problem", "harm", "stress",
+                "distress", "crime", "deviance", "failure", "increase", "decrease",
+                "reduction", "improvement", "load", "conflict", "aggression",
+            )
+            intervention_terms = (
+                "reduce", "prevent", "mitigate", "intervention", "strategy", "solution",
+                "training", "therapy", "policy", "framework", "model", "innovation",
+            )
+            if any(t in source_l for t in outcome_terms) and any(t in target_l for t in intervention_terms):
+                warnings.append(
+                    f"⚠️ Možna obrnjena vzročnost pri IF-THEN: '{src}' → '{tgt}'. "
+                    "Preverite, ali je vir res pogoj/vzrok in cilj posledica/izid."
+                )
+            if any(t in source_l for t in intervention_terms) and any(t in target_l for t in ("problem", "risk", "harm", "stress", "crime", "failure")):
+                warnings.append(
+                    f"⚠️ Možna semantična zamenjava pri IF-THEN: '{src}' → '{tgt}'. "
+                    "Intervencija je običajno mehanizem, cilj pa izboljšanje ali zmanjšanje problema; preverite smer."
+                )
+
+    # 2) Duplicate parallel edges.
+    seen = set()
+    for e in edges:
+        key = (e.get("source"), e.get("target"), e.get("rel_type"), e.get("label"))
+        if key in seen:
+            warnings.append(
+                f"⚠️ Podvojena povezava: {e.get('source')} → {e.get('target')} ({e.get('rel_type')})."
+            )
+        seen.add(key)
+
+    # 3) Forced-connectivity diagnostic. This is intentionally only a warning.
+    degree = {nid: 0 for nid in nodes}
+    for e in edges:
+        if e.get("source") in degree:
+            degree[e["source"]] += 1
+        if e.get("target") in degree:
+            degree[e["target"]] += 1
+    for nid, d in degree.items():
+        if d == 0:
+            label = nodes[nid].get("label", nid)
+            warnings.append(
+                f"ℹ️ Izolirano vozlišče '{label}'. Preverite, ali je res pomembno; "
+                "ne ustvarjajte umetne povezave samo zaradi povezljivosti."
+            )
+
+    # 4) Goal/state/intervention wording collision.
+    goal_words = ("goal", "cilj", "vision", "mission", "objective")
+    state_words = ("state", "condition", "stanje", "problem", "risk", "outcome")
+    for nid, n in nodes.items():
+        label = str(n.get("label", ""))
+        low = label.lower()
+        if any(g in low for g in goal_words) and any(s in low for s in state_words):
+            warnings.append(
+                f"ℹ️ Preverite mešanje cilja in stanja v vozlišču '{label}'."
+            )
+
+    # Keep the UI useful instead of flooding it with repeated diagnostics.
+    unique = []
+    seen_text = set()
+    for w in warnings:
+        if w not in seen_text:
+            unique.append(w)
+            seen_text.add(w)
+    return unique[:30]
+
+
+def render_google_ai_studio_prompt_coach(st, google_api_key, p1_model, p2_model):
+    """Render the Coach only after a report and graph exist."""
+    report = st.session_state.get("last_integrated_report", "")
+    graph = st.session_state.get("final_graph_elements", [])
+    if not report or not graph:
+        return
+
+    with st.expander("✨ GOOGLE AI STUDIO PROMPT COACH — IMPROVE FUTURE PROMPTS", expanded=False):
+        st.markdown(
+            "Use the current report and graph as a learning cycle. The Coach diagnoses "
+            "prompt weaknesses and prepares revised STEP 1 and STEP 2 prompts."
+        )
+        st.link_button("🚀 OPEN GOOGLE AI STUDIO", GOOGLE_AI_STUDIO_URL, use_container_width=True)
+        st.caption(
+            "External AI Studio remains available for stronger-model review. The in-app Coach below "
+            "uses your configured Google API key and therefore follows the API quota/billing terms of that key."
+        )
+
+        coach_prompt = build_google_ai_studio_prompt_coach(
+            st.session_state.get("last_user_query", ""),
+            st.session_state.get("last_idea_query", ""),
+            report,
+            graph,
+            st.session_state.get("coach_sciences", []),
+            st.session_state.get("coach_paradigms", []),
+            st.session_state.get("coach_models", []),
+            st.session_state.get("coach_methods", []),
+            st.session_state.get("coach_tools", []),
+            st.session_state.get("coach_techniques", []),
+            st.session_state.get("coach_expertise", "Expert"),
+            st.session_state.get("coach_goal", "Scientific Research"),
+            st.session_state.get("coach_perspective", "organic"),
+        )
+
+        st.text_area(
+            "Copy-ready meta-prompt for Google AI Studio:",
+            value=coach_prompt,
+            height=360,
+            key="google_ai_studio_coach_prompt_view",
+        )
+        st.download_button(
+            "⬇️ DOWNLOAD COACH META-PROMPT",
+            data=coach_prompt,
+            file_name="SIS_Google_AI_Studio_Prompt_Coach.txt",
+            mime="text/plain",
+            use_container_width=True,
+            key="download_google_ai_studio_coach_prompt",
+        )
+
+        st.markdown("#### 🧠 In-App AI Coach")
+        coach_model_options = {
+            "Gemini 2.5 Pro": "gemini-2.5-pro",
+            "Gemini 3.7 Flash": "gemini-3.7-flash",
+            "Gemini 3.5 Flash-Lite": "gemini-3.5-flash-lite",
+            "Gemini 3.1 Flash-Lite": "gemini-3.1-flash-lite",
+        }
+        default_idx = 0 if "Gemini 2.5 Pro" in coach_model_options else 0
+        coach_model_label = st.selectbox(
+            "Coach model:", list(coach_model_options.keys()), index=default_idx,
+            key="in_app_coach_model",
+            help="Use a stronger model when available. API quota/availability depends on your Google account and selected model."
+        )
+
+        if st.button(
+            "🧠 ANALYZE AND IMPROVE STEP 1 & STEP 2 WITH AI COACH",
+            use_container_width=True,
+            key="run_in_app_prompt_coach",
+        ):
+            if not google_api_key:
+                st.error("❌ Google Gemini API key is required for the in-app Coach.")
+            else:
+                try:
+                    client = genai.Client(api_key=google_api_key)
+                    with st.spinner("🧠 AI Coach analyzes the latest report and graph..."):
+                        optimized = optimize_prompt_in_app(
+                            client,
+                            coach_prompt,
+                            coach_model_options[coach_model_label],
+                        )
+                    st.session_state.optimized_future_prompts = optimized
+                    st.success("✅ AI Coach je pripravil izboljšane prihodnje pozive za STEP 1 in STEP 2.")
+                except Exception as exc:
+                    st.error(f"❌ AI Coach Failure: {exc}")
+
+        if st.session_state.get("optimized_future_prompts"):
+            st.text_area(
+                "🔧 AI Coach — revised future STEP 1 & STEP 2 prompts:",
+                value=st.session_state.optimized_future_prompts,
+                height=520,
+                key="optimized_future_prompts_view",
+            )
+            st.download_button(
+                "⬇️ DOWNLOAD REVISED FUTURE PROMPTS",
+                data=st.session_state.optimized_future_prompts,
+                file_name="SIS_Revised_Future_STEP1_STEP2_Prompts.txt",
+                mime="text/plain",
+                use_container_width=True,
+                key="download_revised_future_prompts",
+            )
+
+        st.markdown("#### 🔍 Current five-dimension review focus")
+        st.write(" • ".join(PROMPT_COACH_CRITERIA))
 
 
 if st.button("🚀 EXECUTE MULTI-DIMENSIONAL GOOGLE GEMINI PIPELINE", use_container_width=True, key="exec_pipeline_v2026"):
@@ -2025,7 +1756,7 @@ A) THESAURUS FAMILY (ISO 25964 style — use for conceptual/terminological links
 
 B) STRUCTURAL/UML FAMILY (use for architectural or compositional links):
    Generalization, Specialization, Containment, Realization, Composition,
-   Aggregation, Dependency, Conflict
+   Aggregation, Dependency, Conflict, Association, Constraint
 
 C) OPERATIONAL LOGIC FAMILY (use for decision/causal/conditional links —
    especially between an IMA finding, a contradiction, an MA, and an innovation):
@@ -2033,11 +1764,12 @@ C) OPERATIONAL LOGIC FAMILY (use for decision/causal/conditional links —
    XOR (mutually exclusive choices), NOT (negation/exclusion),
    IF-THEN (conditional/causal trigger)
 
-MANDATORY DIVERSITY RULE (quantitative, not optional): of the total edges,
-AT LEAST 25% must be Thesaurus-family and AT LEAST 25% must be Operational
-Logic-family. The remainder may be Structural/UML. For example, in a graph
-with 20 edges, at least 5 must be thesaurus and at least 5 must be logic type.
-A graph that fails this ratio is INVALID and must be corrected before output.
+SEMANTIC RELATION DIVERSITY (quality rule, not a forced quota): use Thesaurus,
+Operational Logic and UML/Structural relations when the source material genuinely
+supports them. Do NOT manufacture relations merely to satisfy a numerical ratio.
+Semantic validity, traceability and causal correctness always take precedence over
+relation-family diversity. A sparse graph with fewer valid relations is preferable
+to a dense graph containing methodological noise.
 
 CAUSAL DIRECTION DISCIPLINE (this is where most graphs break):
 - For every IF-THEN edge: source = the cause/enabler/condition, target = the
@@ -2075,8 +1807,9 @@ SENSITIVE-DOMAIN SAFEGUARDS:
 
 SELF-CHECK BEFORE YOU OUTPUT THE JSON (do this silently, then output only the
 corrected result): confirm (1) every important report entity is present as a
-node, (2) no node is invented beyond the report, (3) no node is isolated,
-(4) the thesaurus/logic edge-ratio rule is satisfied, (5) shapes are used
+node, (2) no node is invented beyond the report, (3) every retained node has a
+clear reason to exist even if it is not connected, (4) relation-family diversity
+is semantically justified rather than quota-driven, (5) shapes are used
 consistently as the semantic code above — the star belongs to the actual named
 problem/goal, never to a methodology, (6) every IF-THEN / Dependency arrow
 points cause→effect and reads correctly aloud, (7) every named problem/outcome
@@ -2092,12 +1825,11 @@ GRAPH LIMITS:
 - Every edge must connect existing node IDs.
 - No artificial bridge edges.
 - No duplicate or semantically redundant edges.
-- MANDATORY CONNECTIVITY: every single node must appear in at least one edge —
-  zero isolated/orphan nodes are allowed. Before finishing, mentally verify that
-  the node set and edge set together form ONE connected graph (no separate
-  disconnected islands). If a node would otherwise be isolated, connect it with
-  the most semantically honest relation available (thesaurus RT/AS is usually
-  the safe default for a loose but real connection).
+- CONNECTIVITY IS NOT A GOAL BY ITSELF: every edge must be semantically justified.
+  Do not create artificial bridge edges merely to make one connected component.
+  An isolated node may be removed if it is not essential, or retained only when
+  it is a genuinely important standalone finding that cannot be honestly linked.
+  Never use RT/AS as a generic filler connection.
 
 GEOMETRY:
 star=Goals, hexagon=Science Fields, diamond=Innovations,
@@ -2111,7 +1843,6 @@ At the end output:
 
 Then valid JSON only:
 {{
-  "system_metrics": {{"f_pf": 0.70, "f_sf": 0.40, "f_pr": 0.30}},
   "nodes": [
     {{
       "id": "n1",
@@ -2147,7 +1878,7 @@ Do not place explanatory text after the JSON object.
             # Always initialize these containers before any conditional JSON parsing.
             # The previous version could reach the highlighter with undefined
             # nodes_to_link/final_elements, causing Pipeline Failure.
-            g_data = {"nodes": [], "edges": [], "system_metrics": {}}
+            g_data = {"nodes": [], "edges": []}
             nodes_to_link = []
             final_elements = []
 
@@ -2302,41 +2033,12 @@ Do not place explanatory text after the JSON object.
                 deduped_elements.append(el)
             final_elements = deduped_elements
 
-            # --- CONNECTIVITY SAFETY NET: guarantee no isolated nodes ---
-            # Even with the prompt instruction, the model can occasionally leave
-            # a node without any edge. We connect any orphan node to the most
-            # recently processed node using a neutral thesaurus "RT" (Related
-            # Term) relation, so the rendered graph is always one connected whole.
-            all_node_ids = [item["id"] for item in nodes_to_link]
-            connected_ids = set()
-            for el in final_elements:
-                d = el.get("data", {})
-                if "source" in d:
-                    connected_ids.add(d.get("source"))
-                    connected_ids.add(d.get("target"))
-            prev_id = None
-            for nid in all_node_ids:
-                if nid not in connected_ids and prev_id is not None:
-                    final_elements.append({
-                        "data": {
-                            "id": f"auto_link_{nid}",
-                            "source": prev_id,
-                            "target": nid,
-                            "rel_type": "RT",
-                            "color": "#2A9D8F",
-                            "weight": 1.0,
-                            "label": "RT"
-                        }
-                    })
-                    connected_ids.add(nid)
-                prev_id = nid
-
-            # --- RELATION-FAMILY DIAGNOSTIC (Thesaurus vs UML vs Logic) ---
+                        # --- RELATION-FAMILY DIAGNOSTIC (Thesaurus vs UML vs Logic) ---
             THESAURUS_TYPES = {"TT", "BT", "NT", "RT", "EQ", "AS", "IN"}
             LOGIC_TYPES = {"AND", "OR", "XOR", "NOT", "IF-THEN"}
             STRUCTURAL_TYPES = {"Generalization", "Specialization", "Containment",
                                  "Realization", "Composition", "Aggregation",
-                                 "Dependency", "Conflict"}
+                                 "Dependency", "Conflict", "Association", "Constraint"}
             edge_rel_types = [el["data"]["rel_type"] for el in final_elements if "source" in el.get("data", {})]
             n_thesaurus = sum(1 for r in edge_rel_types if r in THESAURUS_TYPES)
             n_logic = sum(1 for r in edge_rel_types if r in LOGIC_TYPES)
@@ -2349,13 +2051,10 @@ Do not place explanatory text after the JSON object.
                     f"Structural/UML: {n_structural} ({n_structural/total_edges:.0%}) | "
                     f"Operational Logic: {n_logic} ({n_logic/total_edges:.0%})"
                 )
-                if n_thesaurus / total_edges < 0.20 or n_logic / total_edges < 0.20:
-                    st.warning(
-                        "⚠️ The generated graph leans too heavily on structural/UML relations "
-                        "(target: ≥25% thesaurus, ≥25% operational logic). Try re-running Phase 2, "
-                        "or nudge the Innovation Prompt to explicitly request thesaurus (BT/NT/RT/EQ) "
-                        "and logic (AND/OR/IF-THEN) connections."
-                    )
+                st.caption(
+                    "Relation-family mix is diagnostic only; semantic validity and traceability "
+                    "take precedence over any numerical quota."
+                )
 
             # --- 5. FINAL DISPLAY: SEQUENTIAL INTERACTIVE SYNERGY REPORT ---
 
@@ -2376,11 +2075,7 @@ Do not place explanatory text after the JSON object.
 
                         # Linkamo le PRVO pojavitev besede za čistočo
                         final_interactive_report = pattern.sub(link_html, final_interactive_report, count=1)
-# Persist latest report and graph for the Google AI Studio Prompt Coach.
-            st.session_state.last_integrated_report = final_interactive_report
-            st.session_state.last_graph_elements = final_elements
-
-            # 5b. RENDERING THE INTERACTIVE REPORT
+# 5b. RENDERING THE INTERACTIVE REPORT
             st.subheader("🧱 INTEGRATED HIERARCHOLOGICAL REPORT")
             if biblio_data:
                 with st.expander("📚 EXTRACTED AUTHOR BACKGROUND", expanded=False):
@@ -2460,12 +2155,44 @@ Do not place explanatory text after the JSON object.
                     key="export_complete_html"
                 )
 
-                # --- NOVO: SHRANJEVANJE ZA GALERIJO (DODANO NA KONEC POROČILA) ---
+                # --- SAVE THE COMPLETED RUN FOR THE POST-REPORT LEARNING CYCLE ---
                 st.session_state.final_graph_elements = final_elements
+                st.session_state.last_integrated_report = final_interactive_report
+                st.session_state.last_user_query = user_query
+                st.session_state.last_idea_query = idea_query
+                st.session_state.coach_sciences = list(sel_sciences)
+                st.session_state.coach_paradigms = list(sel_paradigms)
+                st.session_state.coach_models = list(sel_models)
+                st.session_state.coach_methods = list(sel_methods)
+                st.session_state.coach_tools = list(sel_tools)
+                st.session_state.coach_techniques = list(selected_techniques)
+                st.session_state.coach_expertise = expertise
+                st.session_state.coach_goal = goal_context
+                st.session_state.coach_perspective = graph_perspective
+                st.session_state.graph_preflight_warnings = validate_graph_preflight(final_elements)
+                # A new pipeline run starts a new optimization cycle.
+                st.session_state.pop("optimized_future_prompts", None)
                 st.session_state.report_ready = True
 
         except Exception as e:
             st.error(f"❌ Pipeline Failure: {str(e)}")
+
+# =============================================================================
+# 5f. POST-REPORT QUALITY GATE + GOOGLE AI STUDIO PROMPT COACH
+# =============================================================================
+if st.session_state.get("report_ready") and st.session_state.get("last_integrated_report"):
+    st.divider()
+    st.subheader("🛡️ PRE-FLIGHT GRAPH VALIDATOR")
+    preflight = st.session_state.get("graph_preflight_warnings", [])
+    if preflight:
+        st.warning("The validator found items that deserve human review before treating the graph as semantically final.")
+        for item in preflight:
+            st.markdown(f"- {item}")
+    else:
+        st.success("✅ No deterministic structural warnings were detected. This is a pre-flight check, not empirical validation of the graph.")
+
+    # IMPORTANT: the Coach is deliberately rendered HERE, after report + graph exist.
+    render_google_ai_studio_prompt_coach(st, google_api_key, p1_model, p2_model)
 
 # =============================================================================
 # 6. MULTI-PERSPECTIVE GALLERY (SEQUENTIAL EXPORT)
