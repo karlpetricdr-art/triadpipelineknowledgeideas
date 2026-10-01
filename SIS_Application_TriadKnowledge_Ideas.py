@@ -690,9 +690,9 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
                     {{ selector: 'edge[rel_type="IN"]', style: {{ 'line-style': 'dotted', 'width': 3, 'line-color': '#0077b6', 'target-arrow-shape': 'triangle' }} }},
                     
                     /* --- CONTROL / FEEDBACK --- */
-                    { selector: 'edge[rel_type="NEG-FEEDBACK"]', style: { 'width': 5, 'line-color': '#6A4C93', 'target-arrow-color': '#6A4C93', 'target-arrow-shape': 'tee', 'line-style': 'dashed', 'curve-style': 'bezier' } },
-                    { selector: 'edge[evidence="hypothesis"]', style: { 'line-style': 'dotted', 'opacity': 0.72 } },
-                    { selector: 'edge[evidence="future-test"]', style: { 'line-style': 'dotted', 'opacity': 0.58 } },
+                    {{ selector: 'edge[rel_type="NEG-FEEDBACK"]', style: {{ 'width': 5, 'line-color': '#6A4C93', 'target-arrow-color': '#6A4C93', 'target-arrow-shape': 'tee', 'line-style': 'dashed', 'curve-style': 'bezier' }} }},
+                    {{ selector: 'edge[evidence="hypothesis"]', style: {{ 'line-style': 'dotted', 'opacity': 0.72 }} }},
+                    {{ selector: 'edge[evidence="future-test"]', style: {{ 'line-style': 'dotted', 'opacity': 0.58 }} }},
 
                     /* --- LOGIČNI KONEKTORJI (Decision Logic) --- */
                     {{ selector: 'edge[rel_type="AND"]', style: {{ 'width': 5, 'line-color': '#00FF00', 'target-arrow-color': '#00FF00', 'target-arrow-shape': 'triangle' }} }},
