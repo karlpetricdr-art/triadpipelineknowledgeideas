@@ -278,50 +278,6 @@ Domain rules (extend, do not replace, the innovation structure and output format
 """
 
 
-def measured_stress_note(f_pf, f_sf, f_pr, degrees, effective_energy, efficiency_pct):
-    """Optional note that injects user-measured stress data into the Phase 1 input."""
-    return (
-        "\n\n[MEASURED STRESS INTENSITY - user-supplied opinion data, Petrič method]\n"
-        f"F_PF={f_pf:.3f}, F_SF={f_sf:.3f}, F_PR={f_pr:.3f} -> "
-        f"stress intensity {degrees:.2f} °S ({classify_stress_intensity(degrees)}); "
-        f"effective energy {effective_energy:.0f} kcal ({efficiency_pct:.1f}% of baseline). "
-        "Treat as an organizational indicator, not a physiological measurement."
-    )
-
-
-# =============================================================================
-# 8. STRESS QUANTIFICATION (§4.5.1) - extends the existing calculate_* functions
-# =============================================================================
-def opinion_real_factor(f0, n0, fr, k_t=1.0, rho_t=10.0):
-    """
-    F0 = (K0 * rho0) / (Kt * rho_t)
-      rho0 = f0 / N0   (opinion density: opinions per respondent)
-      K0   = f0 / fr   (opinion complexity: total / distinct opinions)
-      Kt = 1, rho_t = 10 opinions per respondent (theoretical maximum).
-    Returns 0.0 for invalid input.
-    """
-    try:
-        f0, n0, fr = float(f0), float(n0), float(fr)
-        if f0 <= 0 or n0 <= 0 or fr <= 0 or fr > f0:
-            return 0.0
-        return ((f0 / fr) * (f0 / n0)) / (k_t * rho_t)
-    except (TypeError, ValueError):
-        return 0.0
-
-
-def classify_stress_intensity(degrees):
-    """
-    PROVISIONAL bands (thirds of the 0-90 °S range). The book confirms only that
-    32.76 °S is 'moderate'; its full classification scale is not reproduced in the
-    short version, so replace these thresholds if you have the original scale.
-    """
-    if degrees < 30:
-        return "low (provisional band)"
-    if degrees < 60:
-        return "moderate (provisional band)"
-    return "high (provisional band)"
-
-
 # =============================================================================
 # 9. STREAMLIT UI HELPERS (receive `st`; no streamlit import needed here)
 # =============================================================================
@@ -360,70 +316,11 @@ def render_crime_stress_mode(st):
              "requirements to Phase 1 and Phase 2 prompts. Existing pipeline is unchanged.",
     )
 
-
-def render_stress_calculator(st, calc_stress, calc_energy, initial_energy=2500):
-    """
-    Optional calculator for the book's stress-intensity method. Stores the result in
-    st.session_state["cs_measured"] (dict) or removes it if input is incomplete.
-    calc_stress / calc_energy = the existing calculate_systemic_stress / calculate_effective_energy.
-    """
-    with st.expander("📏 Stress Intensity Calculator (optional, Petrič method §4.5.1)", expanded=False):
-        st.caption("Enter opinion counts from your own survey/interviews. Leave zeros to skip.")
-        n0 = st.number_input("N0 — number of respondents", min_value=0, value=0, step=1, key="cs_n0")
-        cols = st.columns(3)
-        labels = [("PF", "positive factors"), ("SF", "stress factors"), ("PR", "proposals for reducing stress")]
-        F = {}
-        for col, (code, name) in zip(cols, labels):
-            with col:
-                f0 = st.number_input(f"{code}: total opinions f0 ({name})", min_value=0, value=0, step=1, key=f"cs_f0_{code}")
-                fr = st.number_input(f"{code}: distinct opinions fr", min_value=0, value=0, step=1, key=f"cs_fr_{code}")
-                F[code] = opinion_real_factor(f0, n0, fr)
-        if all(v > 0 for v in F.values()):
-            deg = calc_stress(F["PF"], F["SF"], F["PR"])
-            eff, pct = calc_energy(deg, initial_energy)
-            st.session_state["cs_measured"] = {
-                "f_pf": F["PF"], "f_sf": F["SF"], "f_pr": F["PR"],
-                "degrees": deg, "energy": eff, "efficiency": pct,
-            }
-            st.success(
-                f"σ = {deg:.2f} °S — {classify_stress_intensity(deg)} | "
-                f"effective energy {eff:.0f} kcal ({pct:.1f}%)"
-            )
-            st.caption("This value will be passed to Phase 1 as user-measured data.")
-        else:
-            st.session_state.pop("cs_measured", None)
-
-
-def render_stress_metrics(st, model_metrics, calc_stress, calc_energy, initial_energy=2500):
-    """
-    Show stress metrics after the pipeline. Prefers user-measured data; otherwise shows
-    the LLM's system_metrics clearly labelled as illustrative.
-    """
-    measured = st.session_state.get("cs_measured")
-    if measured:
-        st.caption(
-            f"🧪 Measured stress intensity: {measured['degrees']:.2f} °S "
-            f"({classify_stress_intensity(measured['degrees'])}); effective energy "
-            f"{measured['energy']:.0f} kcal ({measured['efficiency']:.1f}%)."
-        )
-        return
-    try:
-        m = model_metrics or {}
-        pf, sf, pr = float(m["f_pf"]), float(m["f_sf"]), float(m["f_pr"])
-    except (KeyError, TypeError, ValueError):
-        return
-    deg = calc_stress(pf, sf, pr)
-    eff, pct = calc_energy(deg, initial_energy)
-    st.caption(
-        f"⚠️ Model-estimated (illustrative, NOT empirical) stress intensity: {deg:.2f} °S; "
-        f"effective energy {eff:.0f} kcal ({pct:.1f}%). Use the calculator with real data for measurement."
-    )
-
 # =============================================================================
 # 0. GLOBAL CONFIGURATION & SESSION DATE (FEBRUARY 24, 2026)
 # =============================================================================
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v24.6.0-GOOGLE-GEMINI-ONLY-FIXED"
+VERSION_CODE = "v24.7.0-GOOGLE-GEMINI-ONLY-SINGLE-GRAPH"
 
 # =============================================================================
 # INITIALIZATION FIX: Preprečuje AttributeError pri zagonu in resetiranju
@@ -598,6 +495,24 @@ st.markdown("""
         letter-spacing: 1px;
         transition: all 0.3s ease;
     }
+
+    /* 6. REPORT OVERVIEW CARD (descriptive reporting) */
+    .report-overview {
+        background: #ffffff;
+        border: 1px solid #e9ecef;
+        border-left: 8px solid #1d3557;
+        border-radius: 15px;
+        padding: 20px 28px;
+        margin-bottom: 25px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        color: #1d3557;
+        line-height: 1.7;
+    }
+    .report-overview b { color: #1d3557; }
+    .report-overview .ro-title {
+        font-size: 0.8em; font-weight: 800; letter-spacing: 1px;
+        text-transform: uppercase; color: #457b9d; margin-bottom: 8px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -638,59 +553,60 @@ SVG_3D_RELIEF = """
 # 1. CORE RENDERING ENGINES & DATA FETCHING
 # =============================================================================
 
-def render_cytoscape_network(elements, layout_type="hierarchical", container_id="cy_canvas"):
-    """
-    Posodobljen motor z več perspektivami (Multi-Perspective Layout Engine).
-    Vključuje UML, ISO Thesaurus in Logične konektorje (AND, OR, XOR, NOT, IF-THEN).
-    """
+# Three selectable views of ONE graph (switched client-side, no Streamlit rerun).
+GRAPH_VIEWS = ["organic", "hierarchical", "circular"]
+GRAPH_VIEW_LABELS = {"organic": "🌿 Organic view", "hierarchical": "🌲 Hierarchical view", "circular": "⭕ Circular view"}
 
-    # Mapiranje Python izbire v Cytoscape JS konfiguracije
-    layout_configs = {
-        "organic": """{ 
-            name: 'cose', 
-            idealEdgeLength: 120, 
-            nodeOverlap: 50, 
-            refresh: 20, 
-            fit: true, 
-            padding: 50, 
-            nodeRepulsion: 1000000,
-            edgeElasticity: 100,
-            nestingFactor: 1.2,
-            numIter: 1500
-        }""",
-        "hierarchical": """{ 
-            name: 'breadthfirst', 
-            directed: true, 
-            padding: 50, 
-            circle: false, 
-            spacingFactor: 1.75,
-            maximal: true
-        }""",
-        "circular": """{ 
-            name: 'circle', 
-            padding: 50, 
-            radius: 400,
-            spacingFactor: 0.8
-        }""",
-        "concentric": """{ 
-            name: 'concentric', 
-            minNodeSpacing: 60, 
-            concentric: function(node){ return node.data('size'); },
-            levelWidth: function(nodes){ return 10; },
-            padding: 50
-        }""",
-        "grid": """{ 
-            name: 'grid', 
-            rows: 5, 
-            padding: 50, 
-            spacingFactor: 1.2 
-        }"""
+LAYOUTS_JS = """{
+    organic: {
+        name: 'cose',
+        idealEdgeLength: 120,
+        nodeOverlap: 50,
+        refresh: 20,
+        fit: true,
+        padding: 50,
+        nodeRepulsion: 1000000,
+        edgeElasticity: 100,
+        nestingFactor: 1.2,
+        numIter: 1500
+    },
+    hierarchical: {
+        name: 'breadthfirst',
+        directed: true,
+        padding: 50,
+        circle: false,
+        spacingFactor: 1.75,
+        maximal: true,
+        fit: true
+    },
+    circular: {
+        name: 'circle',
+        padding: 50,
+        radius: 400,
+        spacingFactor: 0.8,
+        fit: true
     }
+}"""
 
-    selected_layout = layout_configs.get(layout_type, layout_configs["hierarchical"])
+
+def render_cytoscape_network(elements, layout_type="organic", container_id="cy_canvas"):
+    """
+    Single interactive graph with three switchable views (Organic / Hierarchical / Circular).
+    The view switch runs in the browser, so the report is never re-generated.
+    Includes UML, ISO Thesaurus and Logic connectors (AND, OR, XOR, NOT, IF-THEN).
+    """
+    initial_view = layout_type if layout_type in GRAPH_VIEWS else "organic"
+
+    view_buttons = "".join(
+        f'<button id="view_{v}_{container_id}" style="padding: 8px 11px; background: #6366f1; color: white; border: none; border-radius: 7px; cursor: pointer; font-weight: 800;">{GRAPH_VIEW_LABELS[v]}</button>'
+        for v in GRAPH_VIEWS
+    )
 
     cyto_html = f"""
     <div style="position: relative; width: 100%;">
+        <div style="position: absolute; top: 15px; left: 15px; z-index: 1000; display: flex; gap: 6px; flex-wrap: wrap;">
+            {view_buttons}
+        </div>
         <div style="position: absolute; top: 15px; right: 15px; z-index: 1000; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end;">
             <button id="zoom_in_{container_id}" style="padding: 8px 11px; background: #1d3557; color: white; border: none; border-radius: 7px; cursor: pointer; font-weight: 800;">＋ Zoom In</button>
             <button id="zoom_out_{container_id}" style="padding: 8px 11px; background: #457b9d; color: white; border: none; border-radius: 7px; cursor: pointer; font-weight: 800;">− Zoom Out</button>
@@ -702,6 +618,10 @@ def render_cytoscape_network(elements, layout_type="hierarchical", container_id=
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {{
+            var layouts = {LAYOUTS_JS};
+            var currentView = '{initial_view}';
+            var viewNames = ['organic', 'hierarchical', 'circular'];
+
             var cy = cytoscape({{
                 container: document.getElementById('{container_id}'),
                 elements: {json.dumps(elements)},
@@ -779,8 +699,26 @@ def render_cytoscape_network(elements, layout_type="hierarchical", container_id=
                     /* Poudarek na zvezdah (Macro cilji) */
                     {{ selector: 'node[shape="star"]', style: {{ 'font-size': '16px', 'width': 130, 'height': 130, 'border-width': 5, 'border-color': '#FFD700' }} }}
                 ],
-                layout: {selected_layout}
+                layout: layouts[currentView]
             }});
+
+            function highlightActiveView() {{
+                viewNames.forEach(function(v) {{
+                    var b = document.getElementById('view_' + v + '_{container_id}');
+                    if (!b) return;
+                    b.style.opacity = (v === currentView) ? '1' : '0.55';
+                    b.style.outline = (v === currentView) ? '3px solid #FFD700' : 'none';
+                }});
+            }}
+            function switchView(v) {{
+                currentView = v;
+                highlightActiveView();
+                cy.layout(layouts[v]).run();
+            }}
+            viewNames.forEach(function(v) {{
+                document.getElementById('view_' + v + '_{container_id}').addEventListener('click', function() {{ switchView(v); }});
+            }});
+            highlightActiveView();
 
             document.getElementById('zoom_in_{container_id}').addEventListener('click', function() {{
                 cy.zoom({{ level: Math.min(cy.zoom() * 1.25, 4), renderedPosition: {{ x: cy.width()/2, y: cy.height()/2 }} }});
@@ -796,7 +734,7 @@ def render_cytoscape_network(elements, layout_type="hierarchical", container_id=
                 var link = document.createElement('a');
                 var timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
                 link.href = png64;
-                link.download = 'hierarchograph_{layout_type}_' + timestamp + '.png';
+                link.download = 'hierarchograph_' + currentView + '_' + timestamp + '.png';
                 link.click();
             }});
         }});
@@ -1414,14 +1352,14 @@ with st.sidebar:
 
     st.divider()
 
-    # --- NOVO: IZBIRA PERSPEKTIVE GRAFA ---
+    # --- IZBIRA PERSPEKTIVE GRAFA (začetni pogled; v grafu samem je možno preklapljati) ---
     st.subheader("🎨 GRAPH PERSPECTIVE")
     graph_perspective = st.selectbox(
-        "Select Visual Layout Engine:",
-        options=["organic", "hierarchical", "concentric", "circular", "grid"],
+        "Initial Graph View:",
+        options=["organic", "hierarchical", "circular"],
         index=0,
         format_func=lambda x: x.capitalize() + " View",
-        help="Organic: naravna tematska struktura | Hierarchical: drevesna struktura | Concentric: Macro-Meso-Micro | Circular: relacije | Grid: pregled",
+        help="Začetni pogled enega samega grafa. Med pogledi (Organic / Hierarchical / Circular) lahko preklapljate neposredno v grafu.",
         key="side_graph_layout_v2026"
     )
 
@@ -1517,26 +1455,36 @@ def _report_plain_text(markdown_text):
     return html.unescape(cleaned)
 
 def build_html_report(report_text, graph_elements, perspective):
-    """Build a self-contained HTML report with an interactive Cytoscape graph."""
+    """Build a self-contained HTML report with ONE interactive Cytoscape graph (3 switchable views)."""
     graph_json = json.dumps(graph_elements, ensure_ascii=False)
     report_html = report_text or ""
+    initial_view = perspective if perspective in GRAPH_VIEWS else "organic"
     return f"""<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <title>SIS Universal Knowledge Synthesizer Report</title>
 <style>
 body{{font-family:Arial,Helvetica,sans-serif;margin:40px;color:#1d3557;line-height:1.6}}
 .report{{max-width:1200px;margin:auto}}
-.graph{{width:100%;height:850px;border:1px solid #ddd;border-radius:16px;margin-top:25px}}
+.graph{{width:100%;height:850px;border:1px solid #ddd;border-radius:16px;margin-top:10px}}
+.viewbar{{display:flex;gap:8px;margin-top:20px}}
+.viewbar button{{padding:8px 14px;background:#6366f1;color:#fff;border:none;border-radius:7px;cursor:pointer;font-weight:800}}
 h1,h2,h3{{color:#1d3557}}
 </style></head><body><div class="report">
 <h1>SIS Universal Knowledge Synthesizer Report</h1>
 <div>{report_html}</div>
-<h2>Hybrid Semantic System Map — {html.escape(perspective.upper())} VIEW</h2>
+<h2>Hybrid Semantic System Map</h2>
+<div class="viewbar">
+  <button id="v_organic">🌿 Organic view</button>
+  <button id="v_hierarchical">🌲 Hierarchical view</button>
+  <button id="v_circular">⭕ Circular view</button>
+</div>
 <div id="cy" class="graph"></div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
 <script>
 const elements = {graph_json};
+const layouts = {LAYOUTS_JS};
+let currentView = '{initial_view}';
 const cy = cytoscape({{
  container: document.getElementById('cy'),
  elements: elements,
@@ -1561,7 +1509,13 @@ const cy = cytoscape({{
  {{selector:'edge[rel_type="NOT"]',style:{{'width':4,'line-style':'dashed'}}}},
  {{selector:'edge[rel_type="IF-THEN"]',style:{{'width':4}}}}
  ],
- layout: {json.dumps({"name":"cose","fit":True,"padding":50})}
+ layout: layouts[currentView]
+}});
+['organic','hierarchical','circular'].forEach(function(v){{
+  document.getElementById('v_'+v).addEventListener('click', function(){{
+    currentView = v;
+    cy.layout(layouts[v]).run();
+  }});
 }});
 </script></body></html>"""
 
@@ -1575,7 +1529,7 @@ if st.session_state.show_user_guide:
     1. **Key Input**: Enter your Google Gemini API key and select Google models for Phase 1 and Phase 2.
     2. **Research Foundation (Step 1)**: Google Gemini performs structural synthesis using Integrated Metamodel Architecture (IMA).
     3. **Innovation Prompt (Step 2)**: Google Gemini takes the Phase 1 foundation and generates useful innovative ideas using Mental Approaches (MA) logic.
-    4. **Visualization**: The interactive 18D graph maps structural facts against generative ideas.
+    4. **Visualization**: One interactive graph maps structural facts against generative ideas; switch between Organic, Hierarchical and Circular view directly in the graph.
     """)
 
 # REFERENCE ARCHITECTURE BOXES
@@ -1644,9 +1598,8 @@ else:
     st.info(f"**Active Hybrid Strategy:** {combined_desc}")
 st.divider()
 
-# --- [NOVO] CRIME & STRESS PREVENTION MODULE (izbirnik + kalkulator) ---
+# --- [NOVO] CRIME & STRESS PREVENTION MODULE (samo izbirnik) ---
 cs_mode = render_crime_stress_mode(st)
-render_stress_calculator(st, calculate_systemic_stress, calculate_effective_energy)
 st.divider()
 
 # DUAL INQUIRY INTERFACE
@@ -1734,6 +1687,9 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL GOOGLE GEMINI PIPELINE", use_contai
         st.warning("⚠️ Please select at least one innovation technique for Phase 2.")
     else:
         try:
+            # Clear any previous report so only the new one is shown.
+            st.session_state.pop("report_data", None)
+
             ima_nodes_list = "\n".join(
                 [f"   • {node.upper()}: {data['desc']}" for node, data in HUMAN_THINKING_METAMODEL["nodes"].items()]
             )
@@ -1795,14 +1751,6 @@ INTERFACE PARAMETERS:
             biblio_context = f"\n\n[AUTHOR RESEARCH BACKGROUND]:\n{biblio_data}" if biblio_data else ""
             full_ai_input = f"{active_context}\nUSER RESEARCH INQUIRY:\n{user_query}{file_context_str}{biblio_context}"
 
-            # --- [NOVO] Izmerjena intenzivnost stresa (če jo je uporabnik vnesel v kalkulator) ---
-            cs_measured = st.session_state.get("cs_measured")
-            if cs_active and cs_measured:
-                full_ai_input += measured_stress_note(
-                    cs_measured["f_pf"], cs_measured["f_sf"], cs_measured["f_pr"],
-                    cs_measured["degrees"], cs_measured["energy"], cs_measured["efficiency"]
-                )
-
             google_client = genai.Client(api_key=google_api_key)
 
             # ---------------- PHASE 1: IMA ----------------
@@ -1829,6 +1777,12 @@ Requirements:
 11. Explicitly identify at least 2-3 cross-disciplinary tension points, contradictions
     or knowledge gaps between the selected science fields — these become the raw
     material for innovation in Phase 2.
+12. DESCRIPTIVE REPORTING STYLE: write as a readable explanatory report, not as a
+    list of fragments. Begin section 1 with a 2-3 sentence plain-language summary
+    ("In brief: ...") of the problem and the goal. In every section, introduce the
+    content with one connecting sentence, explain WHY each important point matters
+    (not only WHAT it is), and use **bold** for the key concepts when first named.
+    Bullets must be full, self-explanatory sentences.
 
 Selected sciences: {', '.join(sel_sciences)}
 Selected paradigms: {', '.join(sel_paradigms)}
@@ -1890,6 +1844,13 @@ SELECTED METHODOLOGY:
 SELECTED TOOLS:
 {', '.join(sel_tools)}
 
+DESCRIPTIVE REPORTING STYLE (the written report is the ONLY place where the
+innovations are described, so it must be complete, explanatory and readable on
+its own — there is no separate innovation catalog after the report):
+- Write in full, connected sentences. Explain WHY each step of the chain follows
+  from the previous one, not only WHAT it is. Use **bold** for key concepts when
+  first named. Avoid fragments and keyword lists.
+
 Start the report with a short "### Executive Synthesis" section (max 6 sentences)
 naming the single most important interdisciplinary insight connecting the
 selected science fields — this is the thread the rest of the report follows.
@@ -1898,6 +1859,10 @@ For each of 3–4 innovations, use this exact literal markdown structure so the
 report stays clear and scannable:
 
 #### Innovation N: <short, concrete, punchy name>
+- **In plain words:** 3–5 sentences telling, in everyday language, what this
+  innovation is, what problem it addresses, how it would work and why it is
+  different from existing approaches (a short narrative a non-specialist could
+  follow).
 - **IMA finding:** ...
 - **Limitation/contradiction:** ...
 - **Mental Approach used:** ...
@@ -1917,6 +1882,14 @@ report stays clear and scannable:
   mechanism, not just the word "privacy". Omit this bullet only if truly not
   applicable.
 - **Expected effect:** ...
+
+After the last innovation, and BEFORE the semantic graph JSON, write a closing
+section "### Integrated Conclusion and Roadmap" containing three short labeled
+paragraphs: **How the innovations fit together** (how they reinforce or
+complement one another and which Phase 1 contradictions they jointly resolve),
+**Suggested order of implementation** (what to do first, second, third and why),
+and **Open questions and risks** (what remains uncertain and what must be
+validated empirically).
 
 Prioritize innovations that combine at least two of the selected science fields in
 a non-obvious way over single-field extensions. Reject any innovation that is just
@@ -2111,8 +2084,6 @@ Do not place explanatory text after the JSON object.
 
             # --- 4. PROCESS RESULTS ---
             # Always initialize these containers before any conditional JSON parsing.
-            # The previous version could reach the highlighter with undefined
-            # nodes_to_link/final_elements, causing Pipeline Failure.
             g_data = {"nodes": [], "edges": [], "system_metrics": {}}
             nodes_to_link = []
             final_elements = []
@@ -2127,9 +2098,7 @@ Do not place explanatory text after the JSON object.
 
             innovation_text = re.sub(r'```json|```', '', innovation_text)
 
-            # Parse the model-generated semantic graph.  Do this before any
-            # node/edge rendering; the previous version extracted json_raw but
-            # never assigned it to g_data.
+            # Parse the model-generated semantic graph.
             if json_raw.strip():
                 try:
                     cleaned_json = json_raw.strip()
@@ -2269,10 +2238,6 @@ Do not place explanatory text after the JSON object.
             final_elements = deduped_elements
 
             # --- CONNECTIVITY SAFETY NET: guarantee no isolated nodes ---
-            # Even with the prompt instruction, the model can occasionally leave
-            # a node without any edge. We connect any orphan node to the most
-            # recently processed node using a neutral thesaurus "RT" (Related
-            # Term) relation, so the rendered graph is always one connected whole.
             all_node_ids = [item["id"] for item in nodes_to_link]
             connected_ids = set()
             for el in final_elements:
@@ -2298,38 +2263,24 @@ Do not place explanatory text after the JSON object.
                 prev_id = nid
 
             # --- RELATION-FAMILY DIAGNOSTIC (Thesaurus vs UML vs Logic) ---
-            THESAURUS_TYPES = {"TT", "BT", "NT", "RT", "EQ", "AS", "IN"}
-            LOGIC_TYPES = {"AND", "OR", "XOR", "NOT", "IF-THEN"}
-            STRUCTURAL_TYPES = {"Generalization", "Specialization", "Containment",
-                                 "Realization", "Composition", "Aggregation",
-                                 "Dependency", "Conflict"}
             edge_rel_types = [el["data"]["rel_type"] for el in final_elements if "source" in el.get("data", {})]
             n_thesaurus = sum(1 for r in edge_rel_types if r in THESAURUS_TYPES)
             n_logic = sum(1 for r in edge_rel_types if r in LOGIC_TYPES)
             n_structural = sum(1 for r in edge_rel_types if r in STRUCTURAL_TYPES)
+            rel_caption = ""
+            rel_warning = False
             if edge_rel_types:
                 total_edges = len(edge_rel_types)
-                st.caption(
+                rel_caption = (
                     f"🔗 Relation mix in graph ({total_edges} edges) — "
                     f"Thesaurus: {n_thesaurus} ({n_thesaurus/total_edges:.0%}) | "
                     f"Structural/UML: {n_structural} ({n_structural/total_edges:.0%}) | "
                     f"Operational Logic: {n_logic} ({n_logic/total_edges:.0%})"
                 )
                 if n_thesaurus / total_edges < 0.20 or n_logic / total_edges < 0.20:
-                    st.warning(
-                        "⚠️ The generated graph leans too heavily on structural/UML relations "
-                        "(target: ≥25% thesaurus, ≥25% operational logic). Try re-running Phase 2, "
-                        "or nudge the Innovation Prompt to explicitly request thesaurus (BT/NT/RT/EQ) "
-                        "and logic (AND/OR/IF-THEN) connections."
-                    )
+                    rel_warning = True
 
-            # --- [NOVO] Crime & Stress: prikaz metrik intenzivnosti stresa ---
-            if cs_active:
-                render_stress_metrics(st, g_data.get("system_metrics"), calculate_systemic_stress, calculate_effective_energy)
-
-            # --- 5. FINAL DISPLAY: SEQUENTIAL INTERACTIVE SYNERGY REPORT ---
-
-            # 5a. GLOBAL SEMANTIC HIGHLIGHTER (Regex Highlighter)
+            # --- GLOBAL SEMANTIC HIGHLIGHTER (Regex Highlighter) ---
             final_interactive_report = full_report
             if nodes_to_link:
                 # Razvrstimo ključne besede po dolžini (daljše prej), da se krajše ne vmešavajo
@@ -2346,125 +2297,109 @@ Do not place explanatory text after the JSON object.
 
                         # Linkamo le PRVO pojavitev besede za čistočo
                         final_interactive_report = pattern.sub(link_html, final_interactive_report, count=1)
-# 5b. RENDERING THE INTERACTIVE REPORT
-            st.subheader("🧱 INTEGRATED HIERARCHOLOGICAL REPORT")
-            if biblio_data:
-                with st.expander("📚 EXTRACTED AUTHOR BACKGROUND", expanded=False):
-                    st.markdown(biblio_data)
 
-            # Display the full linked report (P1 + P2)
-            # Display the full linked report (P1 + P2) - Sedaj brez surovega JSON kosa
-            st.markdown(final_interactive_report, unsafe_allow_html=True)
+            # --- REPORT OVERVIEW CARD (descriptive header of the report) ---
+            def _esc_join(items):
+                return html.escape(", ".join(items)) if items else "—"
 
-            # 5c. INNOVATION DEEP-DIVE: DETAILED BREAKTHROUGH CATALOG
-            if final_elements:
-                st.divider()
-                st.markdown("### 🚀 STRATEGIC INNOVATION DEEP-DIVE")
-                st.info("The following strategic breakthroughs have been synthesized from the multi-dimensional analysis above.")
+            overview_html = (
+                '<div class="report-overview">'
+                '<div class="ro-title">Report overview</div>'
+                f'<b>Date:</b> {html.escape(SYSTEM_DATE)} &nbsp;|&nbsp; '
+                f'<b>Strategic goal:</b> {html.escape(goal_context)} &nbsp;|&nbsp; '
+                f'<b>Expertise:</b> {html.escape(expertise)}<br>'
+                f'<b>Science fields:</b> {_esc_join(sel_sciences)}<br>'
+                f'<b>Paradigms:</b> {_esc_join(sel_paradigms)} &nbsp;|&nbsp; '
+                f'<b>Structural models:</b> {_esc_join(sel_models)}<br>'
+                f'<b>Ideation frameworks:</b> {_esc_join(selected_techniques)}<br>'
+                f'<b>Models:</b> Phase 1 — {html.escape(p1_model_label)}; Phase 2 — {html.escape(p2_model_label)}'
+                + ('<br><b>Domain module:</b> Crime &amp; Stress Prevention (active)' if cs_active else '')
+                + '</div>'
+            )
 
-                # Extract innovations (diamonds) for detailed report-style display
-                innovations = [n['data'] for n in final_elements if n['data'].get('shape') == 'diamond']
-
-                if innovations:
-                    for inv in innovations:
-                        g_url = urllib.parse.quote(inv['label'])
-                        # Fetch the precise description generated by the model
-                        detailed_desc = inv.get('description', "Detailed strategic analysis is available in the integrated report above.")
-
-                        # High-End Report Style Card
-                        st.markdown(f"""
-                        <div style="background-color: #ffffff; border-left: 6px solid #fd7e14; padding: 25px; border-radius: 15px; box-shadow: 0 6px 15px rgba(0,0,0,0.1); border: 1px solid #eee; margin-bottom: 25px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                                <span style="background-color: #fff4ed; color: #fd7e14; padding: 5px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; border: 1px solid #fd7e14;">Strategic Breakthrough</span>
-                                <a href="https://www.google.com/search?q={g_url}" target="_blank" style="text-decoration: none; color: #457b9d; font-size: 0.85em; font-weight: 600;">Technical Search ↗</a>
-                            </div>
-                            <h2 style="margin: 0 0 15px 0; color: #1d3557; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">{inv['label']}</h2>
-                            <div style="color: #333; font-size: 1.05em; line-height: 1.7; border-top: 1px solid #f0f0f0; padding-top: 15px;">
-                                {detailed_desc}
-                            </div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                else:
-                    st.warning("No specific 'Diamond' innovations were found. Review the structural graph for implicit breakthroughs.")
-
-                # 5d. MINIMALIST SYSTEM LEGEND (FINAL ARCHITECTURE)
-                st.markdown("""
-                <div style="font-size: 0.78em; color: #444; background: #ffffff; padding: 15px 25px; border-radius: 15px; border: 1px solid #e9ecef; margin-top: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-                        <div>
-                            <b style="color: #1d3557; text-transform: uppercase; letter-spacing: 1px;">Nodes (Geometry):</b><br>
-                            ⭐ Goal | ⬢ Domain | 💠 Innovation | △ Process | ▭ Data | ⬣ Rule | ⭔ Bio
-                        </div>
-                        <div style="height: 30px; width: 1px; background: #dee2e6; display: block;"></div>
-                        <div>
-                            <b style="color: #1d3557; text-transform: uppercase; letter-spacing: 1px;">Semantic Layers:</b><br>
-                            <span style="color:#1d3557;">⬤ Hierarchical (ISO)</span> | 
-                            <span style="color:#7b2cb1;">⬤ Associative</span> | 
-                            <span style="color:#2a9d8f;">⬤ Related</span> | 
-                            <span style="color:#f1c40f;">⬤ Equivalence</span>
-                        </div>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-
-                # 5e. FINAL GRAPH RENDERING (Z DINAMIČNO PERSPEKTIVO)
-                st.subheader(f"🕸️ HYBRID SEMANTIC SYSTEM MAP ({graph_perspective.upper()} VIEW)")
-                render_cytoscape_network(
-                    final_elements, 
-                    layout_type=graph_perspective, 
-                    container_id=f"cy_{int(time.time())}"
-                )
-
-                # --- REPORT EXPORT: COMPLETE REPORT + GRAPH (HTML only) ---
-                export_html = build_html_report(final_interactive_report, final_elements, graph_perspective)
-                st.download_button(
-                    "🌐 EXPORT COMPLETE REPORT + GRAPH (HTML)",
-                    data=export_html,
-                    file_name=f"SIS_Universal_Knowledge_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html",
-                    mime="text/html",
-                    use_container_width=True,
-                    key="export_complete_html"
-                )
-
-                # --- NOVO: SHRANJEVANJE ZA GALERIJO (DODANO NA KONEC POROČILA) ---
-                st.session_state.final_graph_elements = final_elements
-                st.session_state.report_ready = True
+            # --- Persist everything so the report survives Streamlit reruns ---
+            # (e.g. clicking the download button). Rendering happens below.
+            st.session_state.report_data = {
+                "report_html": final_interactive_report,
+                "overview_html": overview_html,
+                "biblio": biblio_data,
+                "elements": final_elements,
+                "rel_caption": rel_caption,
+                "rel_warning": rel_warning,
+                "perspective": graph_perspective,
+                "run_id": int(time.time()),
+            }
 
         except Exception as e:
             st.error(f"❌ Pipeline Failure: {str(e)}")
 
 # =============================================================================
-# 6. MULTI-PERSPECTIVE GALLERY (SEQUENTIAL EXPORT)
+# 6. REPORT + SINGLE GRAPH (rendered once, from session state)
 # =============================================================================
+_rd = st.session_state.get("report_data")
+if _rd:
+    st.subheader("🧱 INTEGRATED HIERARCHOLOGICAL REPORT")
+    st.markdown(_rd["overview_html"], unsafe_allow_html=True)
 
-if st.session_state.get('report_ready') and 'final_graph_elements' in st.session_state:
-    st.divider()
-    st.markdown('<h2 style="color: #1d3557; text-align: center;">🖼️ MULTI-PERSPECTIVE GRAPH GALLERY</h2>', unsafe_allow_html=True)
-    st.info("💡 **SEQUENTIAL SAVING INSTRUCTIONS:** Below are tabs featuring different visual perspectives of the same knowledge synthesis. Please open each tab individually and click the **EXPORT PNG** button to save all 5 architectural versions to your local drive.")
+    if _rd["biblio"]:
+        with st.expander("📚 EXTRACTED AUTHOR BACKGROUND", expanded=False):
+            st.markdown(_rd["biblio"])
 
-    tab0, tab1, tab2, tab3, tab4 = st.tabs([
-        "🌿 ORGANIC", "🌲 HIERARCHICAL", "🎯 CONCENTRIC", "⭕ CIRCULAR", "🔲 GRID"
-    ])
+    if _rd["rel_caption"]:
+        st.caption(_rd["rel_caption"])
+        if _rd["rel_warning"]:
+            st.warning(
+                "⚠️ The generated graph leans too heavily on structural/UML relations "
+                "(target: ≥25% thesaurus, ≥25% operational logic). Try re-running Phase 2, "
+                "or nudge the Innovation Prompt to explicitly request thesaurus (BT/NT/RT/EQ) "
+                "and logic (AND/OR/IF-THEN) connections."
+            )
 
-    with tab0:
-        st.markdown("**Organic View:** Force-directed natural clustering — related concepts gravitate together, ideal for spotting emergent interdisciplinary clusters.")
-        render_cytoscape_network(st.session_state.final_graph_elements, layout_type="organic", container_id="gal_organic")
+    # Full linked report (Phase 1 + Phase 2): the single place where findings and innovations are described.
+    st.markdown(_rd["report_html"], unsafe_allow_html=True)
 
-    with tab1:
-        st.markdown("**Hierarchical View:** Primary IMA → MA structure and semantic dependencies.")
-        render_cytoscape_network(st.session_state.final_graph_elements, layout_type="hierarchical", container_id="gal_hierarchical")
+    if _rd["elements"]:
+        st.divider()
 
-    with tab2:
-        st.markdown("**Concentric View:** Macro–Meso–Micro systemic organization.")
-        render_cytoscape_network(st.session_state.final_graph_elements, layout_type="concentric", container_id="gal_concentric")
+        # MINIMALIST SYSTEM LEGEND
+        st.markdown("""
+        <div style="font-size: 0.78em; color: #444; background: #ffffff; padding: 15px 25px; border-radius: 15px; border: 1px solid #e9ecef; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                <div>
+                    <b style="color: #1d3557; text-transform: uppercase; letter-spacing: 1px;">Nodes (Geometry):</b><br>
+                    ⭐ Goal | ⬢ Domain | 💠 Innovation | △ Process | ▭ Data | ⬣ Rule | ⭔ Bio
+                </div>
+                <div style="height: 30px; width: 1px; background: #dee2e6; display: block;"></div>
+                <div>
+                    <b style="color: #1d3557; text-transform: uppercase; letter-spacing: 1px;">Semantic Layers:</b><br>
+                    <span style="color:#1d3557;">⬤ Hierarchical (ISO)</span> | 
+                    <span style="color:#7b2cb1;">⬤ Associative</span> | 
+                    <span style="color:#2a9d8f;">⬤ Related</span> | 
+                    <span style="color:#f1c40f;">⬤ Equivalence</span>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-    with tab3:
-        st.markdown("**Circular View:** Relational interdependence without an organic force layout.")
-        render_cytoscape_network(st.session_state.final_graph_elements, layout_type="circular", container_id="gal_circular")
+        # THE ONE AND ONLY GRAPH (Organic / Hierarchical / Circular switch inside the graph)
+        st.subheader("🕸️ HYBRID SEMANTIC SYSTEM MAP")
+        st.caption("Preklapljajte med pogledi Organic, Hierarchical in Circular z gumbi v zgornjem levem kotu grafa.")
+        render_cytoscape_network(
+            _rd["elements"],
+            layout_type=_rd["perspective"],
+            container_id=f"cy_{_rd['run_id']}"
+        )
 
-    with tab4:
-        st.markdown("**Grid View:** Structured inspection of the same semantic architecture.")
-        render_cytoscape_network(st.session_state.final_graph_elements, layout_type="grid", container_id="gal_grid")
+        # --- REPORT EXPORT: COMPLETE REPORT + GRAPH (HTML only) ---
+        export_html = build_html_report(_rd["report_html"], _rd["elements"], _rd["perspective"])
+        st.download_button(
+            "🌐 EXPORT COMPLETE REPORT + GRAPH (HTML)",
+            data=export_html,
+            file_name=f"SIS_Universal_Knowledge_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html",
+            mime="text/html",
+            use_container_width=True,
+            key="export_complete_html"
+        )
 
 # =============================================================================
 # 7. FOOTER
