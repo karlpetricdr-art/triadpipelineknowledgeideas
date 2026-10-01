@@ -1267,6 +1267,18 @@ The graph must be a DENSELY WOVEN NETWORK, not a collection of loose chains:
 - Close semantic loops: goals (stars) must receive NEG-FEEDBACK style IF-THEN edges back into the system core.
 - No isolated islands: every sub-network must connect to the main structure.
 - Target edge density: at least 1.5 edges per node.
+
+### STRICT JSON FORMAT (MANDATORY)
+Output EXACTLY this structure (use these field names, nothing else):
+{{
+  "nodes": [
+    {{"id": "n1", "label": "Human-readable Name", "shape": "hexagon", "color": "#1d3557", "description": "One-sentence role of the node."}}
+  ],
+  "edges": [
+    {{"id": "e1", "source": "n1", "target": "n2", "rel_type": "BT"}}
+  ]
+}}
+Rules: 'id' must be unique and referenced by 'source'/'target'; 'label' must be unique; at least 12 nodes and 18 edges; use only the relation codes listed above.
 """
                 # IZVEDBA KLICA NA GOOGLE GEMINI API
                 innovation_raw = google_generate(
