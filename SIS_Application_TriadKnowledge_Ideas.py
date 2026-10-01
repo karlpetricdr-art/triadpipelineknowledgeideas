@@ -593,7 +593,7 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
     """
     Single interactive graph with three switchable views (Organic / Hierarchical / Circular).
     The view switch runs in the browser, so the report is never re-generated.
-    Includes UML, ISO Thesaurus and Logic connectors (AND, OR, XOR, NOT, IF-THEN).
+    Includes UML, ISO Thesaurus, operational logic and NEG-FEEDBACK connectors.
     """
     initial_view = layout_type if layout_type in GRAPH_VIEWS else "organic"
 
@@ -654,7 +654,7 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
                         style: {{
                             'width': 2,
                             'line-color': 'data(color)',
-                            'label': 'data(rel_type)',
+                            'label': 'data(label)',
                             'font-size': '9px',
                             'font-weight': 'bold',
                             'color': '#2a9d8f',
@@ -689,6 +689,11 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
                     {{ selector: 'edge[rel_type="AS"]', style: {{ 'line-style': 'dashed', 'width': 2, 'line-color': '#7b2cb1' }} }},
                     {{ selector: 'edge[rel_type="IN"]', style: {{ 'line-style': 'dotted', 'width': 3, 'line-color': '#0077b6', 'target-arrow-shape': 'triangle' }} }},
                     
+                    /* --- CONTROL / FEEDBACK --- */
+                    { selector: 'edge[rel_type="NEG-FEEDBACK"]', style: { 'width': 5, 'line-color': '#6A4C93', 'target-arrow-color': '#6A4C93', 'target-arrow-shape': 'tee', 'line-style': 'dashed', 'curve-style': 'bezier' } },
+                    { selector: 'edge[evidence="hypothesis"]', style: { 'line-style': 'dotted', 'opacity': 0.72 } },
+                    { selector: 'edge[evidence="future-test"]', style: { 'line-style': 'dotted', 'opacity': 0.58 } },
+
                     /* --- LOGIČNI KONEKTORJI (Decision Logic) --- */
                     {{ selector: 'edge[rel_type="AND"]', style: {{ 'width': 5, 'line-color': '#00FF00', 'target-arrow-color': '#00FF00', 'target-arrow-shape': 'triangle' }} }},
                     {{ selector: 'edge[rel_type="OR"]', style: {{ 'width': 3, 'line-color': '#00BFFF', 'line-style': 'dashed', 'target-arrow-color': '#00BFFF', 'target-arrow-shape': 'vee' }} }},
@@ -1286,6 +1291,227 @@ LOGIC_TYPES = {"AND", "OR", "XOR", "NOT", "IF-THEN"}
 STRUCTURAL_TYPES = {"Generalization", "Specialization", "Containment",
                      "Realization", "Composition", "Aggregation",
                      "Dependency", "Conflict"}
+# System-dynamics relation. This is deliberately distinct from logical NOT.
+CONTROL_TYPES = {"NEG-FEEDBACK"}
+ALL_RELATION_TYPES = THESAURUS_TYPES | LOGIC_TYPES | STRUCTURAL_TYPES | CONTROL_TYPES
+
+RELATION_FAMILY = {
+    **{r: "Thesaurus" for r in THESAURUS_TYPES},
+    **{r: "Operational Logic" for r in LOGIC_TYPES},
+    **{r: "Structural/UML" for r in STRUCTURAL_TYPES},
+    **{r: "Control/Feedback" for r in CONTROL_TYPES},
+}
+
+RELATION_LABEL_DEFAULTS = {
+    "TT": "top-level concept",
+    "BT": "has broader term",
+    "NT": "has narrower term",
+    "RT": "is related to",
+    "AS": "is associatively linked to",
+    "EQ": "denotes the same concept as",
+    "IN": "is an instance of",
+    "AND": "is jointly required with",
+    "OR": "provides an alternative to",
+    "XOR": "excludes the alternative",
+    "NOT": "negates or excludes",
+    "IF-THEN": "enables / causes",
+    "NEG-FEEDBACK": "counteracts / attenuates",
+    "Generalization": "generalizes",
+    "Specialization": "specializes",
+    "Containment": "contains",
+    "Realization": "realizes",
+    "Composition": "is composed of",
+    "Aggregation": "aggregates",
+    "Dependency": "depends on",
+    "Conflict": "conflicts with",
+}
+
+
+def normalize_relation_type(value):
+    raw = str(value or "").strip()
+    aliases = {
+        "IFTHEN": "IF-THEN",
+        "IF_THEN": "IF-THEN",
+        "IF THEN": "IF-THEN",
+        "NEGATIVE-FEEDBACK": "NEG-FEEDBACK",
+        "NEGATIVE_FEEDBACK": "NEG-FEEDBACK",
+        "FEEDBACK-NEG": "NEG-FEEDBACK",
+        "FEEDBACK": "NEG-FEEDBACK",
+    }
+    return aliases.get(raw.upper(), raw)
+
+
+def lint_semantic_graph(g_data, max_nodes=30, max_edges=60):
+    """Semantic validator between Gemini JSON and Cytoscape.
+
+    The linter removes malformed or semantically unsupported edges, normalizes
+    relation codes, records evidence status and diagnostics, but NEVER invents
+    RT/other bridge edges merely to make the graph connected or to satisfy a
+    diversity quota. Semantic validity has priority over numerical diversity.
+    """
+    warnings = []
+    errors = []
+    removed_edges = 0
+
+    if not isinstance(g_data, dict):
+        return {"nodes": [], "edges": [], "system_metrics": {}}, {
+            "warnings": ["Graph root is not a JSON object."],
+            "errors": [], "removed_edges": 0,
+            "family_counts": {}, "components": 0
+        }
+
+    nodes = g_data.get("nodes", [])
+    edges = g_data.get("edges", [])
+    nodes = nodes if isinstance(nodes, list) else []
+    edges = edges if isinstance(edges, list) else []
+
+    valid_shapes = {"star", "hexagon", "diamond", "triangle", "octagon", "ellipse", "rectangle"}
+    clean_nodes = []
+    node_ids = set()
+
+    for i, node in enumerate(nodes[:max_nodes]):
+        if not isinstance(node, dict):
+            continue
+        node_id = str(node.get("id") or f"n{i+1}")
+        label = str(node.get("label") or "").strip()
+        if not label:
+            warnings.append(f"Node {node_id} removed because it has no label.")
+            continue
+        if node_id in node_ids:
+            warnings.append(f"Duplicate node removed: {node_id}")
+            continue
+        shape = str(node.get("shape") or "rectangle")
+        if shape not in valid_shapes:
+            warnings.append(f"Invalid shape for '{label}'; changed to rectangle.")
+            shape = "rectangle"
+        node_ids.add(node_id)
+        clean_nodes.append({
+            **node,
+            "id": node_id,
+            "label": label,
+            "shape": shape,
+            "description": str(node.get("description") or "")
+        })
+
+    clean_edges = []
+    seen_pairs = set()
+
+    for edge in edges:
+        if not isinstance(edge, dict):
+            removed_edges += 1
+            continue
+        source = str(edge.get("source") or "")
+        target = str(edge.get("target") or "")
+        rel = normalize_relation_type(edge.get("rel_type"))
+
+        if source not in node_ids or target not in node_ids:
+            removed_edges += 1
+            warnings.append(f"Edge removed: unknown node {source!r} or {target!r}.")
+            continue
+        if rel not in ALL_RELATION_TYPES:
+            removed_edges += 1
+            warnings.append(f"Unsupported relation removed: {rel}")
+            continue
+
+        # Keep one semantic relation between a node pair. Direction is retained
+        # for directed relations, but reversed duplicates are also prevented.
+        pair = frozenset((source, target))
+        if pair in seen_pairs and source != target:
+            removed_edges += 1
+            warnings.append(f"Parallel semantic edge removed: {source} ↔ {target}")
+            continue
+        seen_pairs.add(pair)
+
+        evidence = str(edge.get("evidence") or "inferred").lower().strip()
+        if evidence not in {"explicit", "inferred", "hypothesis", "future-test"}:
+            evidence = "inferred"
+
+        label = str(edge.get("label") or "").strip()
+        if not label or label.upper() == rel.upper():
+            label = RELATION_LABEL_DEFAULTS.get(rel, rel.lower())
+
+        clean_edges.append({
+            **edge,
+            "source": source,
+            "target": target,
+            "rel_type": rel,
+            "label": label,
+            "evidence": evidence,
+            "family": RELATION_FAMILY[rel]
+        })
+
+    # Prefer explicit evidence, then hypotheses, then inferred links when an
+    # unusually large graph has to be reduced.
+    if len(clean_edges) > max_edges:
+        priority = {"explicit": 3, "hypothesis": 2, "future-test": 2, "inferred": 1}
+        clean_edges.sort(key=lambda e: priority.get(e.get("evidence"), 1), reverse=True)
+        clean_edges = clean_edges[:max_edges]
+        warnings.append(f"Graph reduced to maximum {max_edges} edges.")
+
+    family_counts = {
+        "Thesaurus": 0,
+        "Operational Logic": 0,
+        "Structural/UML": 0,
+        "Control/Feedback": 0
+    }
+    for edge in clean_edges:
+        family_counts[edge["family"]] += 1
+
+    total = len(clean_edges)
+    if total:
+        for family in ("Thesaurus", "Operational Logic"):
+            share = family_counts[family] / total
+            if share < 0.25:
+                warnings.append(
+                    f"{family} diversity below 25% ({share:.0%}); no artificial edges were created."
+                )
+
+    # Basic semantic-direction checks. The linter flags suspicious directions
+    # rather than silently reversing model output.
+    node_labels = {n["id"]: n["label"] for n in clean_nodes}
+    for edge in clean_edges:
+        rel = edge["rel_type"]
+        if rel in {"IF-THEN", "Dependency", "Realization", "AND", "OR"} and edge["source"] == edge["target"]:
+            warnings.append(f"Self-loop is suspicious for {rel}: {node_labels.get(edge['source'], edge['source'])}.")
+        if rel == "NEG-FEEDBACK" and edge["source"] == edge["target"]:
+            warnings.append("NEG-FEEDBACK self-loop detected; verify that a genuine regulation mechanism exists.")
+
+    # Connected-component diagnostic only. No artificial bridge is inserted.
+    adjacency = {nid: set() for nid in node_ids}
+    for edge in clean_edges:
+        adjacency[edge["source"]].add(edge["target"])
+        adjacency[edge["target"]].add(edge["source"])
+    components = 0
+    unseen = set(node_ids)
+    while unseen:
+        components += 1
+        stack = [unseen.pop()]
+        while stack:
+            cur = stack.pop()
+            for nxt in adjacency.get(cur, set()):
+                if nxt in unseen:
+                    unseen.remove(nxt)
+                    stack.append(nxt)
+
+    isolated = [nid for nid in node_ids if not adjacency[nid]]
+    if isolated:
+        warnings.append(
+            "Isolated nodes remain; they were NOT artificially connected: " +
+            ", ".join(node_labels.get(n, n) for n in isolated)
+        )
+
+    return {
+        "nodes": clean_nodes,
+        "edges": clean_edges,
+        "system_metrics": g_data.get("system_metrics", {})
+    }, {
+        "warnings": warnings,
+        "errors": errors,
+        "removed_edges": removed_edges,
+        "family_counts": family_counts,
+        "components": components,
+        "isolated": isolated
+    }
 
 # =============================================================================
 # 3.3 [NOVO] CRIME & STRESS THEMATIC EXTENSION (samo dodaja; nič ne odstrani)
@@ -1490,7 +1716,7 @@ const cy = cytoscape({{
  elements: elements,
  style: [
  {{selector:'node',style:{{'label':'data(label)','text-valign':'center','text-halign':'center','color':'#1d3557','background-color':'data(color)','width':'data(size)','height':'data(size)','shape':'data(shape)','font-size':'12px','font-weight':'bold','text-wrap':'wrap','text-max-width':'80px','border-width':3,'border-color':'#fff','text-outline-color':'#fff','text-outline-width':2}}}},
- {{selector:'edge',style:{{'width':2,'line-color':'data(color)','label':'data(rel_type)','font-size':'9px','font-weight':'bold','color':'#2a9d8f','curve-style':'unbundled-bezier','target-arrow-color':'data(color)','target-arrow-shape':'vee','text-background-opacity':1,'text-background-color':'#fff','text-background-padding':'3px'}}}},
+ {{selector:'edge',style:{{'width':2,'line-color':'data(color)','label':'data(label)','font-size':'9px','font-weight':'bold','color':'#2a9d8f','curve-style':'unbundled-bezier','target-arrow-color':'data(color)','target-arrow-shape':'vee','text-background-opacity':1,'text-background-color':'#fff','text-background-padding':'3px'}}}},
  {{selector:'edge[rel_type="Generalization"]',style:{{'target-arrow-shape':'triangle','target-arrow-fill':'hollow','width':3}}}},
  {{selector:'edge[rel_type="Realization"]',style:{{'line-style':'dashed','target-arrow-shape':'triangle','target-arrow-fill':'hollow'}}}},
  {{selector:'edge[rel_type="Composition"]',style:{{'source-arrow-shape':'diamond','source-arrow-fill':'filled','width':4}}}},
@@ -1507,7 +1733,10 @@ const cy = cytoscape({{
  {{selector:'edge[rel_type="OR"]',style:{{'width':3,'line-style':'dashed'}}}},
  {{selector:'edge[rel_type="XOR"]',style:{{'width':4,'line-style':'double'}}}},
  {{selector:'edge[rel_type="NOT"]',style:{{'width':4,'line-style':'dashed'}}}},
- {{selector:'edge[rel_type="IF-THEN"]',style:{{'width':4}}}}
+ {{selector:'edge[rel_type="IF-THEN"]',style:{{'width':4}}}},
+ {{selector:'edge[rel_type="NEG-FEEDBACK"]',style:{{'width':5,'line-color':'#6A4C93','target-arrow-color':'#6A4C93','target-arrow-shape':'tee','line-style':'dashed'}}}},
+ {{selector:'edge[evidence="hypothesis"]',style:{{'line-style':'dotted','opacity':0.72}}}},
+ {{selector:'edge[evidence="future-test"]',style:{{'line-style':'dotted','opacity':0.58}}}}
  ],
  layout: layouts[currentView]
 }});
@@ -1951,32 +2180,50 @@ follow it exactly):
   (Sociology is broad; Informal Power Structures is its narrower concept).
   [Sociology] --BT--> [Informal Power Structures] would be WRONG (backwards).
 
-RELATION TYPES — you MUST draw from all three families below, not just UML.
+RELATION TYPES — build a genuinely heterogeneous semantic graph from four families.
 Pick the family that actually fits the semantic meaning of each edge; never
 default to UML/structural types just because they are familiar.
 
 A) THESAURUS FAMILY (ISO 25964 style — use for conceptual/terminological links):
-   - TT (Top Term) / BT (Broader Term) / NT (Narrower Term): taxonomic level jumps
-   - EQ (Equivalence): two labels denote the same concept
-   - RT (Related Term): loosely associated concepts, no hierarchy
-   - AS (Associative): non-taxonomic thematic association
-   - IN (Instance-of): a concrete case of a general class
+   - TT, BT, NT, EQ, RT, AS, IN
 
-B) STRUCTURAL/UML FAMILY (use for architectural or compositional links):
+B) STRUCTURAL/UML FAMILY (use for architectural/action/compositional links):
    Generalization, Specialization, Containment, Realization, Composition,
    Aggregation, Dependency, Conflict
 
-C) OPERATIONAL LOGIC FAMILY (use for decision/causal/conditional links —
-   especially between an IMA finding, a contradiction, an MA, and an innovation):
-   AND (joint necessary conditions), OR (alternative sufficient paths),
-   XOR (mutually exclusive choices), NOT (negation/exclusion),
-   IF-THEN (conditional/causal trigger)
+C) OPERATIONAL LOGIC FAMILY (use for reasoning, conditions and causal structure):
+   AND, OR, XOR, NOT, IF-THEN
 
-MANDATORY DIVERSITY RULE (quantitative, not optional): of the total edges,
-AT LEAST 25% must be Thesaurus-family and AT LEAST 25% must be Operational
-Logic-family. The remainder may be Structural/UML. For example, in a graph
-with 20 edges, at least 5 must be thesaurus and at least 5 must be logic type.
-A graph that fails this ratio is INVALID and must be corrected before output.
+D) CONTROL/FEEDBACK FAMILY:
+   NEG-FEEDBACK = a genuine negative regulatory feedback relation that
+   counteracts or attenuates the state that initiated the intervention.
+   NEG-FEEDBACK is NOT logical NOT. Use it only when a closed regulatory
+   mechanism is actually stated or clearly implied by the report.
+
+LOGICAL GATES:
+When AND/OR/XOR/NOT represents a genuine multi-condition proposition, you may
+create a dedicated octagon node labelled AND, OR, XOR or NOT as a logical gate.
+Incoming edges represent operands/conditions and the outgoing IF-THEN edge
+represents the consequence. Do not use an AND edge merely as decoration.
+
+SEMANTIC DIVERSITY TARGET (NOT A FABRICATION RULE):
+Aim approximately for 25–35% Thesaurus relations and 25–35% Operational Logic
+relations when the report genuinely supports them. The remaining relations may
+be UML/Structural and Control/Feedback. These percentages are diagnostic targets,
+NOT quotas. NEVER invent a relation merely to satisfy a percentage. Scientific
+semantic correctness has priority over numerical diversity.
+
+MEASUREMENT BRIDGE:
+When the supplied material supports a physical, biological, environmental or
+temporal parameter, represent it explicitly where useful: parameter name, symbol,
+unit and measurement meaning. Examples include wavelength λ (nm), sound level
+L_Aeq (dB), temperature T (°C), HRV RMSSD (ms), heart rate HR (bpm), or delay τ
+(ms/s). NEVER invent numerical values. If a value is not supplied, mark the
+parameter as a proposed future measurement.
+
+EPISTEMIC STATUS:
+Distinguish observed/reported fact, interpretation, hypothesis and future test.
+Use edge field evidence = explicit | inferred | hypothesis | future-test.
 
 CAUSAL DIRECTION DISCIPLINE (this is where most graphs break):
 - For every IF-THEN edge: source = the cause/enabler/condition, target = the
@@ -1987,6 +2234,19 @@ CAUSAL DIRECTION DISCIPLINE (this is where most graphs break):
 - The same left-to-right cause→effect discipline applies to Dependency,
   Realization and AND/OR edges: source is the precondition, target is what
   depends on or results from it.
+
+NEGATIVE-FEEDBACK CLOSURE:
+When an innovation is described as reducing, buffering, attenuating, restoring or
+otherwise counteracting a stress/problem state, look for an actual closed-loop
+mechanism. If supported, represent the intervention → NEG-FEEDBACK → regulated
+state cycle. Do not manufacture loops for visual richness.
+
+PREDICATE LOGIC DISCIPLINE:
+- IF-THEN: source = cause/enabler/condition; target = effect/outcome.
+- AND/OR/XOR/NOT: use as genuine logical operators; if the proposition has more
+  than two operands, prefer an explicit octagon gate node.
+- NOT means logical negation/exclusion, never merely 'reduces', 'blocks' or
+  'mitigates'. Use IF-THEN or NEG-FEEDBACK for those meanings when justified.
 
 TARGET-OUTCOME TRACEABILITY (do not lose the original problem):
 - Any concrete negative condition, risk, symptom, or problem named in the
@@ -2129,156 +2389,114 @@ Do not place explanatory text after the JSON object.
                 f"{innovation_text}"
             )
 
-            # --- NODE COUNT CONTROL (10–80) ---
-            # Preserve the selected maximum number of nodes and remove orphaned edges.
-            if isinstance(g_data.get("nodes"), list):
-                g_data["nodes"] = g_data["nodes"][:graph_node_count]
-                valid_node_ids = {
-                    str(n.get("id", f"n{i}"))
-                    for i, n in enumerate(g_data["nodes"])
-                }
-                g_data["edges"] = [
-                    e for e in g_data.get("edges", [])
-                    if str(e.get("source")) in valid_node_ids
-                    and str(e.get("target")) in valid_node_ids
-                ]
+            # --- SEMANTIC LINTER + GRAPH MATERIALIZATION ---
+            # The linter sits between Gemini and Cytoscape. It validates the
+            # graph, normalizes relation types and records epistemic status.
+            # It NEVER invents bridge edges merely to improve visual density.
+            max_graph_nodes = max(10, int(graph_node_count))
+            max_graph_edges = max(45, min(120, max_graph_nodes * 2))
+            g_data, graph_lint = lint_semantic_graph(
+                g_data,
+                max_nodes=max_graph_nodes,
+                max_edges=max_graph_edges
+            )
 
-            # --- PROCESIRANJE VOZLIŠČ Z DINAMIČNO VELIKOSTJO ---
-            if g_data.get("nodes"):
-                for n in g_data.get("nodes", []):
-                    lbl = n.get("label", "Node")
-                    nid = n.get("id", f"n{lbl}")
-                    n_color = n.get("color", "#DDEBF7")
-                    n_shape = n.get("shape", "rectangle")
+            nodes_to_link = []
+            final_elements = []
 
-                    # Velikostna hierarhija glede na obliko
-                    if n_shape == 'star': n_size = 125
-                    elif n_shape == 'diamond': n_size = 110
-                    elif n_shape == 'octagon': n_size = 105
-                    elif n_shape == 'hexagon': n_size = 100
-                    elif n_shape == 'triangle': n_size = 95
-                    elif n_shape == 'ellipse': n_size = 90
-                    else: n_size = 85
+            # --- MATERIALIZE NODES ---
+            for n in g_data.get("nodes", []):
+                lbl = n.get("label", "Node")
+                nid = str(n.get("id", f"n{len(nodes_to_link)+1}"))
+                n_color = n.get("color", "#DDEBF7")
+                n_shape = n.get("shape", "rectangle")
 
-                    nodes_to_link.append({"id": nid, "label": lbl})
-                    final_elements.append({
-                        "data": {"id": nid, "label": lbl, "color": n_color, "shape": n_shape, "size": n_size, "description": n.get("description", "Detail breakdown in report.")}
-                    })
+                if n_shape == 'star': n_size = 125
+                elif n_shape == 'diamond': n_size = 110
+                elif n_shape == 'octagon': n_size = 105
+                elif n_shape == 'hexagon': n_size = 100
+                elif n_shape == 'triangle': n_size = 95
+                elif n_shape == 'ellipse': n_size = 90
+                else: n_size = 85
 
-                # --- PROCESIRANJE POVEZAV (UML + THESAURUS + LOGIC) ---
-                for e in g_data.get("edges", []):
-                    rel = e.get("rel_type", "Association")
+                nodes_to_link.append({"id": nid, "label": lbl})
+                final_elements.append({
+                    "data": {
+                        "id": nid,
+                        "label": lbl,
+                        "color": n_color,
+                        "shape": n_shape,
+                        "size": n_size,
+                        "description": n.get("description", "Detail breakdown in report.")
+                    }
+                })
 
-                    # A) UML IN STRUKTURNA LOGIKA (Rdeča/Črna/Modra skala)
-                    if rel in ["Generalization", "Realization", "Composition", "Aggregation", "Dependency", "Specialization", "Containment", "Conflict"]:
-                        if rel == "Conflict":
-                            e_color = "#b91d1d"  # Temno rdeča za trčenje/spor
-                        elif rel == "Specialization":
-                            e_color = "#000000"  # Črna za dedukcijo
-                        elif rel == "Containment":
-                            e_color = "#1D3557"  # Temno modra za "Scientific Cage"
-                        elif rel == "Generalization":
-                            e_color = "#E63946"  # UML rdeča
-                        elif rel == "Realization":
-                            e_color = "#E63946"  # UML rdeča
-                        else:
-                            e_color = "#E63946"  # Privzeta UML rdeča (Dependency, Aggregation...)
+            # --- MATERIALIZE EDGES ---
+            edge_colors = {
+                "Conflict": "#b91d1d",
+                "Specialization": "#000000",
+                "Containment": "#1D3557",
+                "Generalization": "#E63946",
+                "Realization": "#E63946",
+                "Composition": "#C1121F",
+                "Aggregation": "#E76F51",
+                "Dependency": "#E63946",
+                "BT": "#1D3557", "NT": "#1D3557", "TT": "#1D3557",
+                "IN": "#0077B6", "AS": "#7B2CB1", "EQ": "#F1C40F",
+                "RT": "#2A9D8F",
+                "AND": "#00A651", "OR": "#00BFFF",
+                "XOR": "#FF8C00", "NOT": "#D00000",
+                "IF-THEN": "#C9A227",
+                "NEG-FEEDBACK": "#6A4C93",
+            }
 
-                    # B) ISO THESAURUS (Hierarhologija - Modra/Vijolična skala)
-                    elif rel in ["BT", "NT", "TT"]:
-                        e_color = "#1D3557"  # Temno modra (Nivoji)
-                    elif rel == "IN":
-                        e_color = "#0077B6"  # Svetlo modra (Instanca)
-                    elif rel == "AS":
-                        e_color = "#7B2CB1"  # Vijolična (Asociativna)
-                    elif rel == "EQ":
-                        e_color = "#F1C40F"  # Rumena (Ekvivalenca)
-                    elif rel == "RT":
-                        e_color = "#2A9D8F"  # Zelena (Povezano)
+            for e in g_data.get("edges", []):
+                rel = normalize_relation_type(e.get("rel_type", "RT"))
+                final_elements.append({
+                    "data": {
+                        "id": e.get("id", f"e{len(final_elements)}"),
+                        "source": e.get("source"),
+                        "target": e.get("target"),
+                        "rel_type": rel,
+                        "family": RELATION_FAMILY.get(rel, "Unknown"),
+                        "evidence": e.get("evidence", "inferred"),
+                        "color": edge_colors.get(rel, "#ADB5BD"),
+                        "weight": e.get("weight", 1.0),
+                        "label": e.get("label") or RELATION_LABEL_DEFAULTS.get(rel, rel)
+                    }
+                })
 
-                    # C) LOGIČNI KONEKTORJI (Decision Logic - Neon skala)
-                    elif rel == "AND":
-                        e_color = "#00FF00"  # Neon zelena
-                    elif rel == "OR":
-                        e_color = "#00BFFF"  # Svetlo modra
-                    elif rel == "XOR":
-                        e_color = "#FF8C00"  # Oranžna
-                    elif rel == "NOT":
-                        e_color = "#FF0000"  # Rdeča
-                    elif rel == "IF-THEN":
-                        e_color = "#FFD700"  # Zlata
-
-                    else:
-                        e_color = "#ADB5BD"  # Če tipa ne pozna = Siva
-
-                    final_elements.append({
-                        "data": {
-                            "id": e.get("id", f"e{len(final_elements)}"),
-                            "source": e.get("source"),
-                            "target": e.get("target"),
-                            "rel_type": rel,
-                            "color": e_color,
-                            "weight": e.get("weight", 1.0),
-                            "label": e.get("label", rel)
-                        }
-                    })
-
-            # --- DEDUP SAFETY NET: remove parallel/duplicate edges between the ---
-            # --- same node pair (e.g. one IF-THEN and one RT on the same pair) ---
-            seen_pairs = set()
-            deduped_elements = []
-            for el in final_elements:
-                d = el.get("data", {})
-                if "source" in d:
-                    pair_key = frozenset({d.get("source"), d.get("target")})
-                    if pair_key in seen_pairs:
-                        continue
-                    seen_pairs.add(pair_key)
-                deduped_elements.append(el)
-            final_elements = deduped_elements
-
-            # --- CONNECTIVITY SAFETY NET: guarantee no isolated nodes ---
-            all_node_ids = [item["id"] for item in nodes_to_link]
-            connected_ids = set()
-            for el in final_elements:
-                d = el.get("data", {})
-                if "source" in d:
-                    connected_ids.add(d.get("source"))
-                    connected_ids.add(d.get("target"))
-            prev_id = None
-            for nid in all_node_ids:
-                if nid not in connected_ids and prev_id is not None:
-                    final_elements.append({
-                        "data": {
-                            "id": f"auto_link_{nid}",
-                            "source": prev_id,
-                            "target": nid,
-                            "rel_type": "RT",
-                            "color": "#2A9D8F",
-                            "weight": 1.0,
-                            "label": "RT"
-                        }
-                    })
-                    connected_ids.add(nid)
-                prev_id = nid
-
-            # --- RELATION-FAMILY DIAGNOSTIC (Thesaurus vs UML vs Logic) ---
-            edge_rel_types = [el["data"]["rel_type"] for el in final_elements if "source" in el.get("data", {})]
+            # --- RELATION-FAMILY DIAGNOSTIC ---
+            edge_rel_types = [
+                el["data"]["rel_type"]
+                for el in final_elements
+                if "source" in el.get("data", {})
+            ]
             n_thesaurus = sum(1 for r in edge_rel_types if r in THESAURUS_TYPES)
             n_logic = sum(1 for r in edge_rel_types if r in LOGIC_TYPES)
             n_structural = sum(1 for r in edge_rel_types if r in STRUCTURAL_TYPES)
+            n_feedback = sum(1 for r in edge_rel_types if r in CONTROL_TYPES)
+
             rel_caption = ""
             rel_warning = False
             if edge_rel_types:
                 total_edges = len(edge_rel_types)
                 rel_caption = (
-                    f"🔗 Relation mix in graph ({total_edges} edges) — "
+                    f"🔗 Relation mix ({total_edges} edges) — "
                     f"Thesaurus: {n_thesaurus} ({n_thesaurus/total_edges:.0%}) | "
-                    f"Structural/UML: {n_structural} ({n_structural/total_edges:.0%}) | "
-                    f"Operational Logic: {n_logic} ({n_logic/total_edges:.0%})"
+                    f"UML: {n_structural} ({n_structural/total_edges:.0%}) | "
+                    f"Logic: {n_logic} ({n_logic/total_edges:.0%}) | "
+                    f"Feedback: {n_feedback} ({n_feedback/total_edges:.0%})"
                 )
-                if n_thesaurus / total_edges < 0.20 or n_logic / total_edges < 0.20:
-                    rel_warning = True
+                # Warning is diagnostic, never a reason to fabricate edges.
+                rel_warning = (
+                    n_thesaurus / total_edges < 0.25 or
+                    n_logic / total_edges < 0.25
+                )
+
+            lint_warning_text = "\n".join(
+                f"• {w}" for w in graph_lint.get("warnings", [])[:12]
+            )
 
             # --- GLOBAL SEMANTIC HIGHLIGHTER (Regex Highlighter) ---
             final_interactive_report = full_report
@@ -2326,6 +2544,7 @@ Do not place explanatory text after the JSON object.
                 "elements": final_elements,
                 "rel_caption": rel_caption,
                 "rel_warning": rel_warning,
+                "graph_lint": graph_lint,
                 "perspective": graph_perspective,
                 "run_id": int(time.time()),
             }
@@ -2349,14 +2568,29 @@ if _rd:
         st.caption(_rd["rel_caption"])
         if _rd["rel_warning"]:
             st.warning(
-                "⚠️ The generated graph leans too heavily on structural/UML relations "
-                "(target: ≥25% thesaurus, ≥25% operational logic). Try re-running Phase 2, "
-                "or nudge the Innovation Prompt to explicitly request thesaurus (BT/NT/RT/EQ) "
-                "and logic (AND/OR/IF-THEN) connections."
+                "⚠️ Relation-family diversity is below the 25% diagnostic target for "
+                "Thesaurus and/or Operational Logic. The system does NOT fabricate edges "
+                "to satisfy the target; semantic validity has priority."
             )
 
     # Full linked report (Phase 1 + Phase 2): the single place where findings and innovations are described.
     st.markdown(_rd["report_html"], unsafe_allow_html=True)
+
+    # --- SEMANTIC LINTER DIAGNOSTIC ---
+    _lint = _rd.get("graph_lint", {})
+    if _lint.get("warnings") or _lint.get("removed_edges", 0):
+        with st.expander("🧪 GRAPH SEMANTIC VALIDATION", expanded=False):
+            fc = _lint.get("family_counts", {})
+            st.markdown(
+                f"**Components:** {_lint.get('components', 0)}  |  "
+                f"**Removed invalid/redundant edges:** {_lint.get('removed_edges', 0)}  |  "
+                f"**Thesaurus:** {fc.get('Thesaurus', 0)}  |  "
+                f"**Logic:** {fc.get('Operational Logic', 0)}  |  "
+                f"**UML:** {fc.get('Structural/UML', 0)}  |  "
+                f"**Feedback:** {fc.get('Control/Feedback', 0)}"
+            )
+            if _lint.get("warnings"):
+                st.markdown("\n".join(f"- {w}" for w in _lint["warnings"][:15]))
 
     if _rd["elements"]:
         st.divider()
@@ -2375,7 +2609,8 @@ if _rd:
                     <span style="color:#1d3557;">⬤ Hierarchical (ISO)</span> | 
                     <span style="color:#7b2cb1;">⬤ Associative</span> | 
                     <span style="color:#2a9d8f;">⬤ Related</span> | 
-                    <span style="color:#f1c40f;">⬤ Equivalence</span>
+                    <span style="color:#f1c40f;">⬤ Equivalence</span> |
+        <span style="color:#6a4c93;">⬤ Negative feedback</span>
                 </div>
             </div>
         </div>
