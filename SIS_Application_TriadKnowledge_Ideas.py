@@ -14,7 +14,7 @@ import streamlit.components.v1 as components
 # 0. GLOBAL CONFIGURATION & SESSION DATE (FEBRUARY 24, 2026)
 # =============================================================================
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v22.9.0-ULTRA-SYNERGY-GOOGLE-GEMINI-ONLY"
+VERSION_CODE = "v22.10.0-ULTRA-SYNERGY-GOOGLE-GEMINI-ONLY-LEAN"
 
 # =============================================================================
 # INITIALIZATION FIX: Preprečuje AttributeError pri zagonu in resetiranju
@@ -362,9 +362,6 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
                     {{ selector: 'edge[rel_type="XOR"]', style: {{ 'width': 5, 'line-color': '#FF8C00', 'line-style': 'double', 'target-arrow-color': '#FF8C00', 'target-arrow-shape': 'diamond' }} }},
                     {{ selector: 'edge[rel_type="NOT"]', style: {{ 'width': 5, 'line-color': '#FF0000', 'line-style': 'dashed', 'target-arrow-color': '#FF0000', 'target-arrow-shape': 'tee' }} }},
                     {{ selector: 'edge[rel_type="IF-THEN"]', style: {{ 'width': 5, 'line-color': '#FFD700', 'target-arrow-color': '#FFD700', 'target-arrow-shape': 'triangle', 'arrow-scale': 1.5 }} }},
-
-                    /* --- 5. EPIPLEXITY (TRANS-CAGE FUSION) --- */
-                    {{ selector: 'edge[rel_type="EX"]', style: {{ 'width': 9, 'line-color': '#ff00ff', 'line-style': 'dashed', 'target-arrow-shape': 'star', 'target-arrow-color': '#ff00ff', 'arrow-scale': 2.0, 'opacity': 1 }} }},
 
                     /* --- GEOMETRIC TAXONOMY (Shapes & Specialized Sizes) --- */
                     {{ selector: 'node[shape="star"]', style: {{ 'width': 140, 'height': 140, 'border-width': 6, 'border-color': '#FFD700', 'font-size': '16px' }} }},
@@ -857,20 +854,6 @@ IDEATION_TECHNIQUES = {
     "Synectics": "Use direct, personal, and symbolic analogies to make the strange familiar and the familiar strange."
 }
 # =============================================================================
-# 3.2 EPIPLEXITY KNOWLEDGE FRAMEWORK
-# =============================================================================
-EPIPLEXITY_FRAMEWORK = {
-    "definition": "The measure of interdisciplinary structural density. It quantifies the 'depth' of fusion between disparate scientific fields to break through 'Scientific Cages'.",
-    "logic_levels": {
-        "Linear (Low)": "Multidisciplinary: Fields exist side-by-side with minimal interaction (simple borrowing).",
-        "Integrated (Medium)": "Interdisciplinary: Fields share methods and terminology, creating a bridge.",
-        "Synergetic (High)": "Transdisciplinary: Fields merge to create a new, hybrid 'Scientific Cage' with emergent properties and radical innovation."
-    },
-    "epiplexic_connectors": [
-        "Semantic Overlap", "Methodological Transfer", "Hierarchical Fusion", "Paradigm Collision"
-    ]
-}
-# =============================================================================
 # 4. KONČNI POPRAVLJEN SIDEBAR (Z UNIKATNIMI KLJUČI) — GOOGLE GEMINI ONLY
 # =============================================================================
 with st.sidebar:
@@ -1057,33 +1040,11 @@ with r2c2: sel_models = st.multiselect("5. Structural Models:", list(KNOWLEDGE_B
 with r2c3: goal_context = st.selectbox("6. Strategic Project Goal:", ["Scientific Research", "Problem Solving", "Educational", "Policy Making"])
 
 # ============================================================================= 
-# 🧬 INTEGRIRAN NADZOR: EPIPLEXITY & STRATEGIJA (OČIŠČENA VERZIJA)
+# 🧬 INTEGRIRAN NADZOR: INOVACIJSKA STRATEGIJA (OČIŠČENA VERZIJA)
 # ============================================================================= 
 st.divider()
 
-# --- 1. DEL: EPIPLEXITY ENGINE (Nadzor fuzije znanosti) --- 
-st.markdown("### 🌀 EPIPLEXITY ENGINE")
-epiplexity_active = st.toggle(
-    "Activate Epiplexity Protocol", 
-    value=True, 
-    help="Izklopi za standardno interdisciplinarno mapiranje brez transdisciplinarne fuzije.",
-    key="unique_master_toggle_final"
-)
-
-if epiplexity_active:
-    epiplexity_intensity = st.select_slider(
-        "Set Epiplexity Fusion Depth:",
-        options=["Linear", "Integrated", "Synergetic"],
-        value="Integrated",
-        key="unique_fusion_slider_final"
-    )
-else:
-    st.info("🚫 Epiplexity Engine is SHUT DOWN. AI will use standard logic.")
-    epiplexity_intensity = "None"
-
-st.divider()
-
-# --- 2. DEL: INNOVATION STRATEGY (Kreativni miselni okvirji) --- 
+# --- INNOVATION STRATEGY (Kreativni miselni okvirji) --- 
 st.markdown("### 🧬 INNOVATION STRATEGY")
 selected_techniques = st.multiselect(
     "Select Strategic Ideation Frameworks (Pick one or more):", 
@@ -1242,35 +1203,13 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             # --- 3. PHASE 2: GOOGLE GEMINI (Innovation - npr. Gemini 3.7/3.8 Flash) ---
             with st.spinner(f'PHASE 2: Generating innovations with {p2_model_label}...'):
 
-                # --- PRIPRAVA POGOJNEGA PROTOKOLA (Logika za Shut Down) ---
-                if epiplexity_active:
-                    # Aktiviran Epiplexity (Transdisciplinarna fuzija)
-                    epiplexity_logic_text = EPIPLEXITY_FRAMEWORK['logic_levels'].get(
-                        epiplexity_intensity + ' (Low)' if epiplexity_intensity == 'Linear' else 
-                        epiplexity_intensity + ' (Medium)' if epiplexity_intensity == 'Integrated' else 
-                        epiplexity_intensity + ' (High)', "Integrated Logic"
-                    )
-
-                    protocol_snippet = f"""
-### EPIPLEXITY PROTOCOL ACTIVATED ###
-Fusion Depth: {epiplexity_intensity}
-Logic: {epiplexity_logic_text}
-
-Mandatory Task: Identify 'Epiplexity Peaks'—points where at least three of the selected science fields ({', '.join(sel_sciences)}) intersect. 
-Use 'EX' (Epiplexity Crossover) relations for these high-energy fusion links.
+                # --- STANDARDNI INTERDISCIPLINARNI PROTOKOL (Epiplexity odstranjen) ---
+                protocol_snippet = """
+### INTERDISCIPLINARY MAPPING PROTOCOL ###
+Focus: High-density interdisciplinary mapping.
+Constraint: Maintain clear boundaries between scientific disciplines.
+Use 'BT', 'NT', 'RT', or 'AS' relations for cross-domain links.
 """
-                    ex_logic_matrix = "D) EPIPLEXITY LOGIC: 'EX' (Epiplexity Crossover): Use specifically for links that represent high-energy fusion or bridge-building between disparate sciences."
-                    json_edge_example = "EX"
-                else:
-                    # Izklopljen Epiplexity (Standardna znanost)
-                    protocol_snippet = """
-### STANDARD SCIENTIFIC PROTOCOL ###
-Focus: Standard interdisciplinary mapping. 
-Constraint: Maintain clear boundaries between scientific disciplines. 
-Do NOT use 'EX' (Epiplexity Crossover) relations. Use standard 'BT', 'NT', or 'AS' relations only.
-"""
-                    ex_logic_matrix = ""
-                    json_edge_example = "AS"
 
                 # --- IZGRADNJA SISTEMSKEGA NAVODILA ---
                 samba_sys_prompt = f"""
@@ -1283,8 +1222,13 @@ You are the SIS Lead Strategic Innovation Architect.
 
 {protocol_snippet}
 
-### GEOMETRIC TAXONOMY (Strict Shapes)
-Assign shapes based on logical level:
+### ANTI-REDUNDANCY RULES (STRICT)
+- Every innovation in the report must be UNIQUE: no repeated, rephrased, overlapping, or near-duplicate ideas.
+- Each innovation must add a genuinely NEW insight, method, or mechanism — never a restatement of a previous point.
+- Each node in the graph must appear exactly once (no duplicate labels).
+
+### GEOMETRIC TAXONOMY (Strict Shapes — Use ALL of them)
+Assign shapes based on logical level and MAXIMIZE geometric diversity — every shape must be used at least once:
 - 'star': Ultimate Goals
 - 'hexagon': Science Domains
 - 'diamond': Innovations
@@ -1294,10 +1238,19 @@ Assign shapes based on logical level:
 - 'rectangle': Specific Facts
 
 ### RELATIONSHIP MATRIX
-Use ALL available logic: TT, BT, NT, IN, RT, AS, EQ, Generalization, Specialization, Realization, Composition, Aggregation, Dependency, Conflict, Containment, HA, AND, OR, XOR, NOT, IF-THEN, and EX.
+Use ALL available logic: TT, BT, NT, IN, RT, AS, EQ, Generalization, Specialization, Realization, Composition, Aggregation, Dependency, Conflict, Containment, HA, AND, OR, XOR, NOT, and IF-THEN.
+
+### CONNECTIVITY MANDATE (Connectionist Richness — Critical)
+The graph must be a DENSELY WOVEN NETWORK, not a collection of loose chains:
+- EVERY node MUST have at least 2 edges (in + out combined); ideally 3–5.
+- Use AT LEAST 6 DIFFERENT relation types across the graph — do not fall back on one dominant type.
+- Actively create LATERAL (RT/AS) edges between innovations, and cross-domain edges (Dependency, HA) between different science fields.
+- Close semantic loops: goals (stars) must receive NEG-FEEDBACK style IF-THEN edges back into the system core.
+- No isolated islands: every sub-network must connect to the main structure.
+- Target edge density: at least 1.5 edges per node.
 """
                 # IZVEDBA KLICA NA GOOGLE GEMINI API
-                cerebras_innovation = google_generate(
+                innovation_raw = google_generate(
                     google_client,
                     p2_model,
                     samba_sys_prompt,
@@ -1312,12 +1265,12 @@ Use ALL available logic: TT, BT, NT, IN, RT, AS, EQ, Generalization, Specializat
             g_data = {"nodes": [], "edges": []}
 
             # Ločevanje človeškega poročila od JSON podatkov (da koda ne smeti poročila)
-            if "### SEMANTIC_GRAPH_JSON" in cerebras_innovation:
-                parts = cerebras_innovation.split("### SEMANTIC_GRAPH_JSON")
+            if "### SEMANTIC_GRAPH_JSON" in innovation_raw:
+                parts = innovation_raw.split("### SEMANTIC_GRAPH_JSON")
                 innovation_text = parts[0]
                 json_raw = parts[1]
             else:
-                innovation_text = cerebras_innovation
+                innovation_text = innovation_raw
                 json_raw = ""
 
             # Sestavljanje končnega poročila (P1 + P2) brez JSON kode
@@ -1327,7 +1280,7 @@ Use ALL available logic: TT, BT, NT, IN, RT, AS, EQ, Generalization, Specializat
             final_elements = []
 
             # Napredno iskanje in varnostno čiščenje JSON-a znotraj surovega izhoda
-            json_match = re.search(r'(\{.*"nodes".*\})', json_raw if json_raw else cerebras_innovation, re.DOTALL | re.IGNORECASE)
+            json_match = re.search(r'(\{.*"nodes".*\})', json_raw if json_raw else innovation_raw, re.DOTALL | re.IGNORECASE)
 
             if json_match:
                 try:
@@ -1344,9 +1297,15 @@ Use ALL available logic: TT, BT, NT, IN, RT, AS, EQ, Generalization, Specializat
 
             # --- PROCESIRANJE VOZLIŠČ Z IZRAZITO GEOMETRIJSKO TAKSONOMIJO ---
             if g_data.get("nodes"):
+                seen_labels = {}  # Deduplikacija vozlišč (istega labela le enkrat)
                 for n in g_data.get("nodes", []):
                     lbl = n.get("label", "Node")
                     nid = str(n.get("id", f"n{lbl}"))
+                    # ANTI-REDUNDANCA: preskočimo podvojena vozlišča (isti label)
+                    label_key = lbl.strip().lower()
+                    if label_key in seen_labels:
+                        continue
+                    seen_labels[label_key] = nid
                     n_color = n.get("color", "#DDEBF7")
                     n_shape = str(n.get("shape", "rectangle")).lower()  # Prisilimo v male črke za Cytoscape
 
@@ -1354,7 +1313,7 @@ Use ALL available logic: TT, BT, NT, IN, RT, AS, EQ, Generalization, Specializat
                     if n_shape == 'star': 
                         n_size = 145 # Makro-vizija (Cilji)
                     elif n_shape == 'diamond': 
-                        n_size = 125 # Inovacije (Epiplexic Cores)
+                        n_size = 125 # Inovacije (Innovation Cores)
                     elif n_shape == 'hexagon': 
                         n_size = 115 # Znanstvene domene
                     elif n_shape == 'octagon': 
@@ -1391,7 +1350,6 @@ Use ALL available logic: TT, BT, NT, IN, RT, AS, EQ, Generalization, Specializat
                     "equivalence": "EQ", "synonym": "EQ",
                     "instance": "IN", "example": "IN",
                     "hierarchical-associative": "HA", "hybrid": "HA",
-                    "epiplexity": "EX", "crossover": "EX",
                     "is a type of": "Specialization", "subtype": "Specialization",
                     "generalization": "Generalization", "superclass": "Generalization",
                     "composition": "Composition", "aggregation": "Aggregation",
@@ -1400,11 +1358,32 @@ Use ALL available logic: TT, BT, NT, IN, RT, AS, EQ, Generalization, Specializat
                     "if-then": "IF-THEN", "if then": "IF-THEN",
                 }
 
+                seen_edges = set()  # Deduplikacija povezav (isti par + relacija)
                 for e in g_data.get("edges", []):
                     # Pridobimo surovo relacijo in jo očistimo
                     raw_rel = str(e.get("rel_type", "AS")).strip().lower()
                     # Če je AI uporabil polno besedo, jo skrajšamo v kodo
                     rel = rel_map.get(raw_rel, e.get("rel_type", "AS"))
+
+                    # --- POVEZLJIVOSTNA OKREPITEV: preslikava label/ID v veljavne ID-je vozlišč ---
+                    src_raw = str(e.get("source", "")).strip()
+                    tgt_raw = str(e.get("target", "")).strip()
+                    # AI včasih kot source/target poda label namesto ID — preslikamo
+                    src = seen_labels.get(src_raw.lower(), src_raw)
+                    tgt = seen_labels.get(tgt_raw.lower(), tgt_raw)
+                    # Varnostno: preslikamo tudi velike začetnice (labeli kot ID-ji)
+                    if src not in seen_labels.values() and src_raw.lower() in seen_labels:
+                        src = seen_labels[src_raw.lower()]
+                    if tgt not in seen_labels.values() and tgt_raw.lower() in seen_labels:
+                        tgt = seen_labels[tgt_raw.lower()]
+                    # Odstranimo povezave na neobstoječa vozlišča ali zankice
+                    if src not in seen_labels.values() or tgt not in seen_labels.values() or src == tgt:
+                        continue
+                    # Odstranimo podvojene povezave (isti par v isti smeri z isto relacijo)
+                    edge_key = (src, tgt, rel)
+                    if edge_key in seen_edges:
+                        continue
+                    seen_edges.add(edge_key)
 
                     # BARVNA MATRICA (Povezana z render_cytoscape_network stili)
                     # 1. RIGIDNA HIERARHIJA IN DEDNOST (Temno modra)
@@ -1425,10 +1404,7 @@ Use ALL available logic: TT, BT, NT, IN, RT, AS, EQ, Generalization, Specializat
                     # 6. SISTEMSKA NAPETOST IN KONFLIKT (Rdeča)
                     elif rel == "Conflict":
                         e_color = "#B91D1D"
-                    # 7. EPIPLEXITY RADIKALNA FUZIJA (Neon Magenta)
-                    elif rel == "EX":
-                        e_color = "#FF00FF"
-                    # 8. LOGIČNA VRATA (Neon barve)
+                    # 7. LOGIČNA VRATA (Neon barve)
                     elif rel == "AND":
                         e_color = "#00FF00"
                     elif rel == "IF-THEN":
@@ -1443,12 +1419,38 @@ Use ALL available logic: TT, BT, NT, IN, RT, AS, EQ, Generalization, Specializat
                     final_elements.append({
                         "data": { 
                             "id": str(e.get("id", f"e{len(final_elements)}")),
-                            "source": e.get("source"), 
-                            "target": e.get("target"), 
+                            "source": src, 
+                            "target": tgt, 
                             "rel_type": rel,  # TUKAJ JE ZDAJ KRATICA (npr. AS)
                             "color": e_color 
                         }
                     })
+
+                # --- POVEZLJIVOSTNA OKREPITEV: samodejni mostovi za izolirana vozlišča ---
+                connected = set()
+                for el in final_elements:
+                    d = el.get("data", {})
+                    if "source" in d:
+                        connected.add(d["source"]); connected.add(d["target"])
+                all_node_ids = [el["data"]["id"] for el in final_elements if "label" in el.get("data", {})]
+                hexagon_ids = [el["data"]["id"] for el in final_elements if el.get("data", {}).get("shape") == "hexagon"]
+                bridge_anchor = hexagon_ids[0] if hexagon_ids else (all_node_ids[0] if all_node_ids else None)
+                bridged_count = 0
+                for nid in all_node_ids:
+                    if nid not in connected and bridge_anchor and nid != bridge_anchor:
+                        # Izolirano vozlišče povežemo z asociativno RT povezavo z najbližjo domeno
+                        final_elements.append({
+                            "data": {
+                                "id": f"e_bridge_{nid}",
+                                "source": nid,
+                                "target": bridge_anchor,
+                                "rel_type": "RT",
+                                "color": "#2A9D8F"
+                            }
+                        })
+                        bridged_count += 1
+                if bridged_count:
+                    st.caption(f"🔗 Connectivity reinforcement: {bridged_count} isolated node(s) auto-bridged into the network (RT).")
 
             # --- 5. FINAL DISPLAY: SEQUENTIAL INTERACTIVE SYNERGY REPORT ---
 
@@ -1470,42 +1472,27 @@ Use ALL available logic: TT, BT, NT, IN, RT, AS, EQ, Generalization, Specializat
                         # Linkamo le PRVO pojavitev besede za čistočo
                         final_interactive_report = pattern.sub(link_html, final_interactive_report, count=1)
 
-            # --- NOVO: EPIPLEXITY ANALYTICS DASHBOARD (Pogojni izpis) ---
-            if epiplexity_active:
+            # --- NOVO: GRAF KVALITETNE METRIKE POVEZLJIVOSTI (namesto Epiplexity) ---
+            if final_elements:
+                edge_els = [e for e in final_elements if 'source' in e.get('data', {})]
+                node_els = [n for n in final_elements if 'label' in n.get('data', {})]
+                n_nodes = len(node_els)
+                n_edges = len(edge_els)
+                rel_types = len(set(e['data']['rel_type'] for e in edge_els))
+                shapes_used = len(set(n['data'].get('shape') for n in node_els))
+                density = (n_edges / n_nodes) if n_nodes > 0 else 0
+
                 st.divider()
-
-                # Izračun metrik iz pripravljenih elementov grafa
-                ex_edges = [e for e in final_elements if e.get('data', {}).get('rel_type') == 'EX']
-                total_edges = [e for e in final_elements if 'source' in e.get('data', {})]
-                conflict_edges = [e for e in final_elements if e.get('data', {}).get('rel_type') == 'Conflict']
-
-                ex_count = len(ex_edges)
-                total_count = len(total_edges)
-                epiplexity_score = (ex_count / total_count * 100) if total_count > 0 else 0
-
-                # Prikaz nadzorne plošče z metrikami
-                st.markdown("### 📊 EPIPLEXITY ANALYTICS")
-                m1, m2, m3 = st.columns(3)
-
-                with m1:
-                    st.metric("Epiplexity Score", f"{epiplexity_score:.1f}%", 
-                              help="Odstotek povezav, ki so transdisciplinarne (EX). Višji score pomeni močnejšo sintezo.")
-                with m2:
-                    st.metric("Cage Breakers", ex_count, 
-                              help="Število prebojev, ki so presegli omejitve posameznih znanosti preko EX povezav.")
-                with m3:
-                    st.metric("Systemic Tension", len(conflict_edges), 
-                              help="Število identificiranih konfliktov (Conflict) med paradigmami na grafu.")
-
-                # Vizualni indikator (Progress Bar) za gostoto sinteze
-                progress_color = "green" if epiplexity_score > 20 else "orange" if epiplexity_score > 10 else "red"
-                st.markdown(f"""
-                <div style="width: 100%; background-color: #eee; border-radius: 10px; margin-bottom: 20px;">
-                    <div style="width: {min(epiplexity_score * 2, 100)}%; background-color: {progress_color}; padding: 5px; border-radius: 10px; text-align: center; color: white; font-weight: bold; font-size: 0.8em;">
-                        SYNTHESIS DENSITY: {epiplexity_score:.1f}%
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown("### 📊 GRAPH CONNECTIVITY & GEOMETRY METRICS")
+                k1, k2, k3, k4 = st.columns(4)
+                with k1:
+                    st.metric("Nodes / Edges", f"{n_nodes} / {n_edges}")
+                with k2:
+                    st.metric("Edge Density", f"{density:.2f}", help="Povprečno število povezav na vozlišče. Cilj: ≥ 1.5.")
+                with k3:
+                    st.metric("Relation Types", rel_types, help="Število različnih semantičnih relacij v grafu. Cilj: ≥ 6.")
+                with k4:
+                    st.metric("Geometric Shapes", f"{shapes_used}/7", help="Uporabljene geometrijske oblike iz taksonomije.")
 
             # 5b. RENDERING THE INTERACTIVE REPORT
             st.subheader("🧱 INTEGRATED HIERARCHOLOGICAL REPORT")
@@ -1516,38 +1503,11 @@ Use ALL available logic: TT, BT, NT, IN, RT, AS, EQ, Generalization, Specializat
             # Display the full linked report (P1 + P2)
             st.markdown(final_interactive_report, unsafe_allow_html=True)
 
-            # 5c. INNOVATION DEEP-DIVE: DETAILED BREAKTHROUGH CATALOG
+            # 5c. (ODSTRANJENO: STRATEGIC INNOVATION DEEP-DIVE — podvojene inovativne ideje
+            #      so bile odstranjene; vsaka inovacija je opisana izključno v poročilu ali na grafu.)
+
+            # 5d. MINIMALIST SYSTEM LEGEND (FINAL ARCHITECTURE)
             if final_elements:
-                st.divider()
-                st.markdown("### 🚀 STRATEGIC INNOVATION DEEP-DIVE")
-                st.info("The following strategic breakthroughs have been synthesized from the multi-dimensional analysis above.")
-
-                # Extract innovations (diamonds) for detailed report-style display
-                innovations = [n['data'] for n in final_elements if n['data'].get('shape') == 'diamond']
-
-                if innovations:
-                    for inv in innovations:
-                        g_url = urllib.parse.quote(inv['label'])
-                        # Fetch the precise description generated by the model
-                        detailed_desc = inv.get('description', "Detailed strategic analysis is available in the integrated report above.")
-
-                        # High-End Report Style Card
-                        st.markdown(f"""
-                        <div style="background-color: #ffffff; border-left: 6px solid #fd7e14; padding: 25px; border-radius: 15px; box-shadow: 0 6px 15px rgba(0,0,0,0.1); border: 1px solid #eee; margin-bottom: 25px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                                <span style="background-color: #fff4ed; color: #fd7e14; padding: 5px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; border: 1px solid #fd7e14;">Strategic Breakthrough</span>
-                                <a href="https://www.google.com/search?q={g_url}" target="_blank" style="text-decoration: none; color: #457b9d; font-size: 0.85em; font-weight: 600;">Technical Search ↗</a>
-                            </div>
-                            <h2 style="margin: 0 0 15px 0; color: #1d3557; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">{inv['label']}</h2>
-                            <div style="color: #333; font-size: 1.05em; line-height: 1.7; border-top: 1px solid #f0f0f0; padding-top: 15px;">
-                                {detailed_desc}
-                            </div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                else:
-                    st.warning("No specific 'Diamond' innovations were found. Review the structural graph for implicit breakthroughs.")
-
-                # 5d. MINIMALIST SYSTEM LEGEND (FINAL ARCHITECTURE)
                 st.markdown("""
                 <div style="font-size: 0.78em; color: #444; background: #ffffff; padding: 15px 25px; border-radius: 15px; border: 1px solid #e9ecef; margin-top: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
@@ -1575,48 +1535,14 @@ Use ALL available logic: TT, BT, NT, IN, RT, AS, EQ, Generalization, Specializat
                     container_id=f"cy_{int(time.time())}"
                 )
 
-                # --- NOVO: SHRANJEVANJE ZA GALERIJO (DODANO NA KONEC POROČILA) ---
+                # (ODSTRANJENO: galerija redundantnih grafov — spodaj je en sam končni graf.)
                 st.session_state.final_graph_elements = final_elements
-                st.session_state.report_ready = True
 
         except Exception as e:
             st.error(f"❌ Pipeline Failure: {str(e)}")
 
 # ============================================================================= 
-# 6. MULTI-PERSPECTIVE GALLERY (SEQUENTIAL EXPORT)
-# ============================================================================= 
-
-if st.session_state.get('report_ready') and 'final_graph_elements' in st.session_state:
-    st.divider()
-    st.markdown('<h2 style="color: #1d3557; text-align: center;">🖼️ MULTI-PERSPECTIVE GRAPH GALLERY</h2>', unsafe_allow_html=True)
-    st.info("💡 **NAVODILO ZA ZAPOREDNO SHRANJEVANJE:** Spodaj so zavihki z različnimi vizualnimi perspektivami istega znanja. Odprite posamezen zavihek in kliknite gumb **EXPORT PNG**, da shranite vseh 5 verzij na svoj disk.")
-
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
-        "🌿 ORGANIC", "🌲 HIERARCHICAL", "⭕ CIRCULAR", "🎯 CONCENTRIC", "🔲 GRID"
-    ])
-
-    with tab1:
-        st.markdown("**Organic View:** Najboljše za odkrivanje naravnih tematskih sklopov.")
-        render_cytoscape_network(st.session_state.final_graph_elements, layout_type="organic", container_id="gal_organic")
-
-    with tab2:
-        st.markdown("**Hierarchical View:** Logično drevo od splošnega k specifičnemu.")
-        render_cytoscape_network(st.session_state.final_graph_elements, layout_type="hierarchical", container_id="gal_hierarchical")
-
-    with tab3:
-        st.markdown("**Circular View:** Fokus na relacijah in krožni soodvisnosti.")
-        render_cytoscape_network(st.session_state.final_graph_elements, layout_type="circular", container_id="gal_circular")
-
-    with tab4:
-        st.markdown("**Concentric View:** Razporeditev po sistemski pomembnosti (Jedro).")
-        render_cytoscape_network(st.session_state.final_graph_elements, layout_type="concentric", container_id="gal_concentric")
-
-    with tab5:
-        st.markdown("**Grid View:** Pregledna poravnava vseh prvin.")
-        render_cytoscape_network(st.session_state.final_graph_elements, layout_type="grid", container_id="gal_grid")
-
-# ============================================================================= 
-# 7. FOOTER
+# 6. FOOTER
 # ============================================================================= 
 st.divider()
 st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | {SYSTEM_DATE}")
