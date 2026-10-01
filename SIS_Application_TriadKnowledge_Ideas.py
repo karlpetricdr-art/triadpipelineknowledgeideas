@@ -1728,6 +1728,16 @@ HOW TO REPAIR — RE-CLASSIFY, DO NOT INVENT:
 - Do NOT invent facts that are absent from the report. If you cannot ground a
   relation in the report text, do not add it.
 - Keep at most ONE edge between any pair of nodes.
+- Fix the three most common systemic defects when present:
+  (a) [Innovation] --"is a type of"--> [Science Field] is WRONG: re-encode as
+      Dependency with label "grounded in" / "applies principles from";
+      taxonomy (Specialization, "is a type of") only between concepts of the
+      same kind (e.g. Allostatic Overload -> Physiological Exhaustion);
+  (b) goal/outcome stars must be wired back into the system core through a
+      closed NEG-FEEDBACK loop (restore -> stabilize -> feed back into the
+      innovation or the measured state) when the report supports it;
+  (c) innovations/methods described as operating together must have a lateral
+      RT/AS edge labelled "works with" / "coordinates with".
 - Every edge "label" must be a short human-readable verb phrase (never a bare
   code like "IN" or "BT").
 - Keep evidence = explicit | inferred | hypothesis | future-test where known.
@@ -2470,6 +2480,41 @@ This is an extraction requirement, not a numerical quota: when supported by the
 report, encode the UML relation rather than weakening it to RT/AS/IF-THEN. Never
 invent a UML relation merely to increase diversity.
 
+RELATION-SEMANTIC CORRECTNESS RULES (these specific errors cost the most
+quality points — audit every edge against them):
+- INNOVATION -> SCIENCE FIELD: an innovation is NOT a type of a discipline.
+  Never encode [Innovation] --Generalization/Specialization/"is a type of"-->
+  [Science Field]. The correct relation is Dependency with a human-readable
+  label such as "grounded in" or "applies principles from" (source = the
+  innovation, target = the field it draws on). Example:
+  [NeuroPoverty Index] --Dependency, "grounded in"--> [Neuroscience].
+- TAXONOMY (Generalization/Specialization, "is a type of") is reserved for
+  genuine subtype-of relationships between CONCEPTS of the same kind, e.g.
+  [Allostatic Overload] --Specialization, "is a type of"--> [Physiological
+  Exhaustion]. If the two nodes are of different categories (innovation vs.
+  field, method vs. fact), a taxonomy edge is wrong.
+- CONCEPT -> DISCIPLINE links use IN ("is an instance of") or BT/NT only when
+  the text genuinely places the concept inside the discipline's scope.
+
+FEEDBACK-LOOP CLOSURE (systemic rigor — the graph must be a SYSTEM, not a
+tree): goal/outcome star nodes must be wired BACK into the core of the system,
+not left as terminal decorations. Look for the closed causal-regulatory cycle
+described or implied in the report and encode it explicitly, e.g.:
+[Innovation] --IF-THEN, "restores"--> [Executive Function] --IF-THEN,
+"stabilizes"--> [Regulatory State] --NEG-FEEDBACK, "feeds back into"-->
+[Innovation / Goal Star]. Aim for at least one genuine NEG-FEEDBACK cycle per
+major outcome star when the report supports it (roughly a quarter of the
+innovation-related edges should participate in closed loops). Do not fabricate
+loops the report does not support.
+
+LATERAL INTEGRATION ("works with"): when two innovations, methods or
+components are described as operating TOGETHER (complementing, coordinating,
+being combined in a pipeline), connect them laterally with an RT/AS edge
+labelled "works with", "combined with" or "coordinates with" — do not leave
+them connected only through a shared parent. Every innovation named in the
+report should be semantically reachable from every other innovation through
+at most one intermediary node.
+
 C) OPERATIONAL LOGIC FAMILY (use for reasoning, conditions and causal structure):
    AND, OR, XOR, NOT, IF-THEN
 
@@ -2581,7 +2626,11 @@ from Phase 1 has a corresponding outcome node linked to the innovation that
 addresses it, (8) every edge "label" is a human-readable phrase, never a bare
 code, (9) no two nodes are connected by more than one parallel edge,
 (10) every BT/NT edge follows the direction convention above (BT: source is
-narrower → target is broader; NT: source is broader → target is narrower).
+narrower → target is broader; NT: source is broader → target is narrower),
+(11) NO innovation-to-science-field edge uses a taxonomy relation — they are
+Dependency ("grounded in"), (12) each goal star closes back into the system
+via at least one NEG-FEEDBACK loop where the report supports it, and (13)
+cooperating innovations are linked laterally ("works with").
 
 GRAPH LIMITS:
 - Maximum 30 nodes.
