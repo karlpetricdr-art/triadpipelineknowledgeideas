@@ -137,8 +137,8 @@ STRESS_CRIME_PATHWAYS = [
     ("Mesocosm", "Three-Cosmos Model", "BT", "is part of"),
     ("Macrocosm", "Three-Cosmos Model", "BT", "is part of"),
     ("Stress", "Crime", "AS", "associated with (hypothesis)"),
-    ("Stigma", "Help-seeking", "NOT", "blocks"),
-    ("Regenerative city", "Chronic distress", "NOT", "mitigates"),
+    ("Stigma", "Help-seeking", "IF-THEN", "reduces help-seeking"),
+    ("Regenerative city", "Chronic distress", "IF-THEN", "mitigates chronic distress"),
 ]
 
 # =============================================================================
@@ -1327,6 +1327,22 @@ RELATION_LABEL_DEFAULTS = {
 }
 
 
+UML_RELATION_PRIORITY = {"Composition":10,"Aggregation":9,"Containment":8,"Generalization":8,"Specialization":8,"Realization":8,"Dependency":7,"Conflict":7}
+UML_CUE_RULES = {
+ "Composition": ("composed of","essential part","integral part","cannot exist independently","lifecycle depends on","made up of"),
+ "Aggregation": ("consists of","aggregates","collection of","group of","independent component","independently exists"),
+ "Containment": ("contains","contained in","within","inside","embedded in","includes a subsystem","hosts"),
+ "Dependency": ("depends on","requires","uses","relies on","needs","dependent on","requires access to"),
+ "Realization": ("implements","implementation of","realizes","realisation of","implements the specification","implements the method"),
+ "Generalization": ("generalizes","is a general category","broader class","superclass","general concept"),
+ "Specialization": ("specializes","special case of","subtype","subclass","specific implementation","specialized form"),
+ "Conflict": ("conflicts with","contradicts","incompatible with","mutually incompatible","opposes","constraint conflict")
+}
+def _edge_semantic_text(edge):
+ return " ".join(str(edge.get(k) or "") for k in ("label","description","relation","meaning","evidence")).lower()
+def _uml_cue_score(rel, edge):
+ return sum(1 for cue in UML_CUE_RULES.get(rel,()) if cue in _edge_semantic_text(edge))
+
 def normalize_relation_type(value):
     raw = str(value or "").strip()
     aliases = {
@@ -1413,14 +1429,9 @@ def lint_semantic_graph(g_data, max_nodes=30, max_edges=60):
             warnings.append(f"Unsupported relation removed: {rel}")
             continue
 
-        # Keep one semantic relation between a node pair. Direction is retained
-        # for directed relations, but reversed duplicates are also prevented.
+        # Candidate edges are resolved after normalization so a generic RT/AS/IF-THEN
+        # cannot hide a more informative UML relation for the same pair.
         pair = frozenset((source, target))
-        if pair in seen_pairs and source != target:
-            removed_edges += 1
-            warnings.append(f"Parallel semantic edge removed: {source} ↔ {target}")
-            continue
-        seen_pairs.add(pair)
 
         evidence = str(edge.get("evidence") or "inferred").lower().strip()
         if evidence not in {"explicit", "inferred", "hypothesis", "future-test"}:
@@ -1439,6 +1450,26 @@ def lint_semantic_graph(g_data, max_nodes=30, max_edges=60):
             "evidence": evidence,
             "family": RELATION_FAMILY[rel]
         })
+
+    # Resolve parallel candidates. Prefer an explicit UML relation when the
+    # report actually describes structure/action; otherwise prefer evidence strength.
+    grouped = {}
+    for edge in clean_edges:
+        grouped.setdefault(frozenset((edge["source"], edge["target"])), []).append(edge)
+    resolved_edges = []
+    ev_prio = {"explicit":4,"hypothesis":3,"future-test":2,"inferred":1}
+    fam_prio = {"Control/Feedback":4,"Structural/UML":3,"Operational Logic":2,"Thesaurus":1}
+    for pair, candidates in grouped.items():
+        if len(candidates) == 1:
+            resolved_edges.append(candidates[0]); continue
+        def score(e):
+            return (fam_prio.get(e["family"],0), UML_RELATION_PRIORITY.get(e["rel_type"],0)+_uml_cue_score(e["rel_type"],e), ev_prio.get(e["evidence"],1))
+        winner=max(candidates,key=score); resolved_edges.append(winner)
+        for loser in candidates:
+            if loser is not winner:
+                removed_edges += 1
+                warnings.append(f"Parallel relation resolved for {loser['source']} ↔ {loser['target']}: kept {winner['rel_type']} over {loser['rel_type']}.")
+    clean_edges = resolved_edges
 
     # Prefer explicit evidence, then hypotheses, then inferred links when an
     # unusually large graph has to be reduced.
@@ -2191,6 +2222,22 @@ B) STRUCTURAL/UML FAMILY (use for architectural/action/compositional links):
    Generalization, Specialization, Containment, Realization, Composition,
    Aggregation, Dependency, Conflict
 
+UML EXTRACTION PROTOCOL: inspect every important concept pair before choosing
+RT/AS/IF-THEN. UML represents a different semantic dimension. Use Composition
+for essential whole-part lifecycle structure; Aggregation for independently
+existing components collected into a whole; Containment for inclusion/embedded
+subsystems; Dependency when one element requires or uses another; Realization
+when an implementation realizes a specification or method; Generalization for
+a broad category/superclass; Specialization for a concrete subtype; Conflict
+for explicitly incompatible requirements, mechanisms or constraints.
+For Phase 2 innovations actively inspect these supported patterns:
+innovation -> Dependency -> resource/tool/method; innovation -> Composition or
+Aggregation -> component; innovation -> Realization -> methodology/specification;
+innovation -> Containment -> subsystem; constraint -> Conflict -> innovation.
+This is an extraction requirement, not a numerical quota: when supported by the
+report, encode the UML relation rather than weakening it to RT/AS. Never invent
+a UML relation merely to increase diversity.
+
 C) OPERATIONAL LOGIC FAMILY (use for reasoning, conditions and causal structure):
    AND, OR, XOR, NOT, IF-THEN
 
@@ -2447,6 +2494,11 @@ Do not place explanatory text after the JSON object.
                 "AND": "#00A651", "OR": "#00BFFF",
                 "XOR": "#FF8C00", "NOT": "#D00000",
                 "IF-THEN": "#C9A227",
+                "NEG-FEEDBACK": "#6A4C93",
+                "Generalization": "#8E44AD", "Specialization": "#8E44AD",
+                "Composition": "#1D3557", "Aggregation": "#457B9D",
+                "Containment": "#1D3557", "Realization": "#E63946",
+                "Dependency": "#6C757D", "Conflict": "#B91D1D",
                 "NEG-FEEDBACK": "#6A4C93",
             }
 
