@@ -1801,6 +1801,17 @@ with st.sidebar:
     }
 
     st.subheader("🤖 Sequential Google Model Selection")
+    # [KLJUČNI POPRAVEK] Thinking level: "low" je povzročal plitve grafe in
+    # šibka poročila. Privzeto "High" vrne kakovost, kakršno je imela starejša
+    # različica (ocene 9,6–9,8 po petih merilih).
+    thinking_level = st.selectbox(
+        "🧠 Gemini 3.x Thinking Level:",
+        ["High", "Medium", "Low", "Default (API)"],
+        index=0,
+        help="Stopnja notranjega razmišljanja za Gemini 3.x modele. 'Low' povzroči "
+             "plitke povezave in revnejše grafe; 'High' daje najboljše rezultate.",
+        key="side_thinking_level_v2026"
+    )
     p1_model_label = st.selectbox(
         "Phase 1 Model (IMA Structure):",
         list(GOOGLE_MODELS.keys()), index=4,
@@ -1839,10 +1850,13 @@ with st.sidebar:
     # [NOVO] Stikalo za samodejni repair grafa, če raznolikost ni izpolnjena
     graph_auto_repair = st.toggle(
         "🛠️ Auto-repair graph diversity:",
-        value=True,
-        help="Če izdelan graf ne vsebuje dovolj tezaver-, UML- in logičnih povezav "
-             "(oziroma vsebuje preveč IF-THEN), sistem samodejno zažene en dodaten "
-             "Gemini klic, ki graf prekodira z pravimi tipi relacij.",
+        value=False,
+        help="DIAGNOSTIKA: raznolikost relacij se vedno preveri in prikaže v "
+             "expanderju 'Graph Diversity Audit'. Če vklopite to stikalo, bo "
+             "sistem ob neizpolnjenih zahtevah zagnal en dodaten Gemini klic, ki "
+             "prekodira relacije. Privzeto IZKLOPJENO: pri visokem thinking "
+             "level Gemini sam proizvede raznolike povezave, repair pa lahko "
+             "graf semantično osiromaši.",
         key="side_graph_auto_repair_v2026"
     )
 
@@ -2104,7 +2118,7 @@ with col_inq3:
 # 5. SYNERGY EXECUTION ENGINE (GOOGLE GEMINI / GEMMA ONLY)
 # =============================================================================
 
-def google_generate(client, model_id, system_prompt, user_content, temperature, max_retries=4):
+def google_generate(client, model_id, system_prompt, user_content, temperature, max_retries=4, thinking_level="High"):
     """Single Google GenAI gateway. No third-party LLM providers.
 
     Includes automatic retry with exponential backoff for transient server-side
@@ -2118,9 +2132,10 @@ def google_generate(client, model_id, system_prompt, user_content, temperature, 
         "system_instruction": system_prompt,
         "temperature": temperature,
     }
-    if model_id.startswith("gemini-3"):
+    # [KLJUČNI POPRAVEK] thinking_level ni več vsiljen kot "low".
+    if model_id.startswith("gemini-3") and thinking_level and thinking_level.startswith(("High", "Medium", "Low")):
         try:
-            config_kwargs["thinking_config"] = types.ThinkingConfig(thinking_level="low")
+            config_kwargs["thinking_config"] = types.ThinkingConfig(thinking_level=thinking_level.lower())
         except Exception:
             pass
 
@@ -2288,7 +2303,7 @@ Do not generate innovations in Phase 1.
             with st.spinner(f'PHASE 1: IMA synthesis with {p1_model_label}...'):
                 phase1_synthesis = google_generate(
                     google_client, p1_model, phase1_system_prompt,
-                    full_ai_input, temperature=0.40
+                    full_ai_input, temperature=0.40, thinking_level=thinking_level
                 )
                 st.session_state.phase1_synthesis = phase1_synthesis
 
@@ -2464,33 +2479,31 @@ D) CONTROL/FEEDBACK FAMILY:
    NEG-FEEDBACK is NOT logical NOT. Use it only when a closed regulatory
    mechanism is actually stated or clearly implied by the report.
 
-MANDATORY RELATION DIVERSITY CONTRACT (HARD REQUIREMENTS — the graph is
-automatically audited; a graph that violates these WILL be regenerated):
-- THESAURUS FAMILY: include AT LEAST 4 edges using thesaurus codes
-  (TT, BT, NT, RT, AS, EQ, IN) and AT LEAST 3 DISTINCT codes among them.
-  Example: one BT, one NT, one AS, one IN.
-- UML/STRUCTURAL FAMILY: include AT LEAST 4 edges using UML relations
-  (Composition, Aggregation, Containment, Dependency, Realization,
-  Generalization, Specialization, Conflict) and AT LEAST 3 DISTINCT types
-  among them. Innovations naturally support Dependency (on tools/methods),
-  Realization (of a methodology), Composition/Aggregation (of components),
-  and constraints naturally support Conflict.
-- OPERATIONAL LOGIC: include AT LEAST 2 edges with AND/OR/XOR/NOT (genuine
-  logical operators, not decoration) IN ADDITION to your IF-THEN edges.
-- IF-THEN CAP: IF-THEN edges must make up AT MOST 40% of all edges. If you
-  find yourself writing another IF-THEN, stop and ask whether the relation is
-  actually a BT/NT/AS/RT/EQ/IN, a UML relation, a logic gate, or a
-  NEG-FEEDBACK loop — encode it with its PROPER type.
-- CONTROL/FEEDBACK: include AT LEAST 1 NEG-FEEDBACK edge whenever any
-  innovation is described as reducing, buffering or regulating a problem state
-  (a closed intervention -> regulated state -> counteracting signal loop).
-- GEOMETRY DIVERSITY: the node set must use AT LEAST 5 distinct shapes from
-  the semantic geometry code (star, hexagon, diamond, triangle, octagon,
-  ellipse, rectangle).
-- A graph consisting mostly of IF-THEN edges is INVALID and will be rejected.
-  The single most common defect is encoding taxonomic links (BT/NT), component
-  structure (Composition/Aggregation), tool usage (Dependency) and conceptual
-  association (AS/RT) as IF-THEN. Encode each relation with its proper type.
+SEMANTIC DIVERSITY TARGET (NOT A FABRICATION RULE):
+Aim approximately for 25–35% Thesaurus relations and 25–35% Operational Logic
+relations when the report genuinely supports them. The remaining relations may
+be UML/Structural and Control/Feedback. These percentages are diagnostic
+targets, NOT quotas. NEVER invent a relation merely to satisfy a percentage.
+Scientific semantic correctness has priority over numerical diversity. The most
+common defect is collapsing taxonomic links (BT/NT), component structure
+(Composition/Aggregation), tool usage (Dependency) and conceptual association
+(AS/RT) into IF-THEN — encode each relation with its PROPER type, and the
+diversity follows naturally from a well-reasoned graph.
+
+QUALITY BAR — SELF-EVALUATION BEFORE OUTPUT (do this silently first):
+The final deliverable is scored 0.00–10.00 on five criteria:
+(1) Conceptual novelty of the ideas,
+(2) System architecture quality of the report AND the graph,
+(3) Interdisciplinary integration of the selected science fields,
+(4) Practical applicability of the ideas,
+(5) Clarity and coherence of the report.
+Internally draft, critique against these five criteria and improve the report
+and graph until EVERY criterion would earn at least 9.5/10. Weak, generic or
+fragmented output is unacceptable. Then, at the very end of the written report
+(BEFORE ### SEMANTIC_GRAPH_JSON), add a short section
+"### Quality Self-Assessment" listing each criterion with your 0.00–10.00
+rating and one sentence of justification. Do not inflate the ratings: if a
+criterion genuinely falls below 9.5, state honestly what is missing.
 
 LOGICAL GATES:
 When AND/OR/XOR/NOT represents a genuine multi-condition proposition, you may
@@ -2560,19 +2573,15 @@ SENSITIVE-DOMAIN SAFEGUARDS:
 SELF-CHECK BEFORE YOU OUTPUT THE JSON (do this silently, then output only the
 corrected result): confirm (1) every important report entity is present as a
 node, (2) no node is invented beyond the report, (3) no node is isolated,
-(4) the MANDATORY RELATION DIVERSITY CONTRACT is satisfied — at least 4
-thesaurus edges with 3 distinct codes, at least 4 UML edges with 3 distinct
-types, at least 2 AND/OR/XOR/NOT edges, IF-THEN at most 40%, at least 1
-NEG-FEEDBACK where an innovation regulates a problem state, at least 5 distinct
-shapes, (5) shapes are used consistently as the semantic code above — the star
-belongs to the actual named problem/goal, never to a methodology, (6) every
-IF-THEN / Dependency arrow points cause→effect and reads correctly aloud,
-(7) every named problem/outcome from Phase 1 has a corresponding outcome node
-linked to the innovation that addresses it, (8) every edge "label" is a
-human-readable phrase, never a bare code, (9) no two nodes are connected by
-more than one parallel edge, (10) every BT/NT edge follows the direction
-convention above (BT: source is narrower → target is broader; NT: source is
-broader → target is narrower).
+(4) the thesaurus/logic edge-ratio rule is satisfied, (5) shapes are used
+consistently as the semantic code above — the star belongs to the actual named
+problem/goal, never to a methodology, (6) every IF-THEN / Dependency arrow
+points cause→effect and reads correctly aloud, (7) every named problem/outcome
+from Phase 1 has a corresponding outcome node linked to the innovation that
+addresses it, (8) every edge "label" is a human-readable phrase, never a bare
+code, (9) no two nodes are connected by more than one parallel edge,
+(10) every BT/NT edge follows the direction convention above (BT: source is
+narrower → target is broader; NT: source is broader → target is narrower).
 
 GRAPH LIMITS:
 - Maximum 30 nodes.
@@ -2628,7 +2637,7 @@ Do not place explanatory text after the JSON object.
                 )
                 google_innovation = google_generate(
                     google_client, p2_model, phase2_system_prompt,
-                    phase2_user_content, temperature=0.85
+                    phase2_user_content, temperature=0.85, thinking_level=thinking_level
                 )
 
             # --- 4. PROCESS RESULTS ---
@@ -2680,7 +2689,7 @@ Do not place explanatory text after the JSON object.
                     try:
                         repair_output = google_generate(
                             google_client, p2_model, repair_system_prompt,
-                            repair_user_content, temperature=0.30
+                            repair_user_content, temperature=0.40, thinking_level=thinking_level
                         )
                         repaired_g, repair_err = parse_graph_json(repair_output)
                         if repaired_g is not None and isinstance(repaired_g.get("nodes"), list):
