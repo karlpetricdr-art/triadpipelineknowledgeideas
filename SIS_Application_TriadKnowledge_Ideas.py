@@ -14,7 +14,7 @@ import streamlit.components.v1 as components
 # 0. GLOBAL CONFIGURATION & SESSION DATE (FEBRUARY 24, 2026)
 # =============================================================================
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v22.10.0-ULTRA-SYNERGY-GOOGLE-GEMINI-ONLY-LEAN"
+VERSION_CODE = "v22.11.0-ULTRA-SYNERGY-GOOGLE-GEMINI-ONLY-LEAN"
 
 # =============================================================================
 # INITIALIZATION FIX: Preprečuje AttributeError pri zagonu in resetiranju
@@ -1237,13 +1237,32 @@ Assign shapes based on logical level and MAXIMIZE geometric diversity — every 
 - 'ellipse': Human Factors
 - 'rectangle': Specific Facts
 
-### RELATIONSHIP MATRIX
-Use ALL available logic: TT, BT, NT, IN, RT, AS, EQ, Generalization, Specialization, Realization, Composition, Aggregation, Dependency, Conflict, Containment, HA, AND, OR, XOR, NOT, and IF-THEN.
+### RELATIONSHIP MATRIX (Maximum Semantic Diversity)
+Use the FULL semantic spectrum and DIVERSIFY actively — never let one relation type dominate:
+
+A) THESAURUS LOGIC (ISO 25964) — use ALL where semantically valid:
+- 'TT' (Top Term), 'BT' (Broader Term), 'NT' (Narrower Term): hierarchical taxonomic chains
+- 'RT' (Related Term): lateral associative links between concepts and innovations
+- 'AS' (Associative): cooperating innovations / cross-domain partnerships
+- 'EQ' (Equivalence): synonyms and concept alignments across fields
+- 'IN' (Instance): concrete examples of abstract categories
+
+B) UML 2.5 STRUCTURAL LOGIC — use ALL where semantically valid:
+- 'Composition': whole-part links where parts cannot exist without the whole
+- 'Aggregation': whole-part links where parts remain independent
+- 'Containment': structural nesting (e.g. elements inside the Scientific Cage)
+- 'Dependency': innovation grounded in a science field or method
+- 'Realization': implementation of a goal or abstract concept
+- 'Generalization': abstraction from specific to general
+- 'Specialization': derivation from general to specific
+- 'Conflict': tension or incompatibility between paradigms/goals
+
+C) ADDITIONAL LOGIC: HA, AND, OR, XOR, NOT, IF-THEN — for hybrid and decision edges.
 
 ### CONNECTIVITY MANDATE (Connectionist Richness — Critical)
 The graph must be a DENSELY WOVEN NETWORK, not a collection of loose chains:
 - EVERY node MUST have at least 2 edges (in + out combined); ideally 3–5.
-- Use AT LEAST 6 DIFFERENT relation types across the graph — do not fall back on one dominant type.
+- Use AT LEAST 10 DIFFERENT relation types across the graph (thesaurus + UML families combined); do not fall back on one dominant type.
 - Actively create LATERAL (RT/AS) edges between innovations, and cross-domain edges (Dependency, HA) between different science fields.
 - Close semantic loops: goals (stars) must receive NEG-FEEDBACK style IF-THEN edges back into the system core.
 - No isolated islands: every sub-network must connect to the main structure.
@@ -1471,28 +1490,6 @@ The graph must be a DENSELY WOVEN NETWORK, not a collection of loose chains:
 
                         # Linkamo le PRVO pojavitev besede za čistočo
                         final_interactive_report = pattern.sub(link_html, final_interactive_report, count=1)
-
-            # --- NOVO: GRAF KVALITETNE METRIKE POVEZLJIVOSTI (namesto Epiplexity) ---
-            if final_elements:
-                edge_els = [e for e in final_elements if 'source' in e.get('data', {})]
-                node_els = [n for n in final_elements if 'label' in n.get('data', {})]
-                n_nodes = len(node_els)
-                n_edges = len(edge_els)
-                rel_types = len(set(e['data']['rel_type'] for e in edge_els))
-                shapes_used = len(set(n['data'].get('shape') for n in node_els))
-                density = (n_edges / n_nodes) if n_nodes > 0 else 0
-
-                st.divider()
-                st.markdown("### 📊 GRAPH CONNECTIVITY & GEOMETRY METRICS")
-                k1, k2, k3, k4 = st.columns(4)
-                with k1:
-                    st.metric("Nodes / Edges", f"{n_nodes} / {n_edges}")
-                with k2:
-                    st.metric("Edge Density", f"{density:.2f}", help="Povprečno število povezav na vozlišče. Cilj: ≥ 1.5.")
-                with k3:
-                    st.metric("Relation Types", rel_types, help="Število različnih semantičnih relacij v grafu. Cilj: ≥ 6.")
-                with k4:
-                    st.metric("Geometric Shapes", f"{shapes_used}/7", help="Uporabljene geometrijske oblike iz taksonomije.")
 
             # 5b. RENDERING THE INTERACTIVE REPORT
             st.subheader("🧱 INTEGRATED HIERARCHOLOGICAL REPORT")
