@@ -2730,6 +2730,3 @@ if _rd:
 # =============================================================================
 st.divider()
 st.caption(f"SIS Universal Knowledge Synthesizer | {VERSION_CODE} | {SYSTEM_DATE}")
-
-
-
