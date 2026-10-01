@@ -320,7 +320,7 @@ def render_crime_stress_mode(st):
 # 0. GLOBAL CONFIGURATION & SESSION DATE (FEBRUARY 24, 2026)
 # =============================================================================
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v24.7.0-GOOGLE-GEMINI-ONLY-SINGLE-GRAPH"
+VERSION_CODE = "v24.8.0-GOOGLE-GEMINI-ONLY-SINGLE-GRAPH-DIVERSE"
 
 # =============================================================================
 # INITIALIZATION FIX: Preprečuje AttributeError pri zagonu in resetiranju
@@ -1545,6 +1545,213 @@ def lint_semantic_graph(g_data, max_nodes=30, max_edges=60):
     }
 
 # =============================================================================
+# 3.2.1 [NOVO] GRAPH DIVERSITY GUARD — obvezna raznolikost relacij in oblik
+# =============================================================================
+# Težava: Gemini je proizvajal skoraj izključno IF-THEN povezave, tezaver
+# (TT/BT/NT/RT/AS/EQ/IN) in UML povezave pa so bile redke ali odsotne.
+# Ta mehanizem v treh plasteh zagotavlja grafe, kakršni so v priponki:
+#   (1) Phase 2 prompt zahteva OBVEZNE kvote po družinah relacij;
+#   (2) check_graph_diversity() po parsanju preveri, ali so kvote izpolnjene;
+#   (3) če niso, en sam samodejni REPAIR klic ponovno proizvede JSON grafa
+#       z izrecno zahtevo po manjkajočih družinah (vedno temelji na poročilu).
+# =============================================================================
+GRAPH_DIVERSITY_RULES = {
+    "min_thesaurus_edges": 4,        # skupno št. tezaver-povezav
+    "min_thesaurus_distinct": 3,    # različnih kod (TT/BT/NT/RT/AS/EQ/IN)
+    "min_uml_edges": 4,              # skupno št. UML/strukturh povezav
+    "min_uml_distinct": 3,           # različnih UML tipov
+    "min_logic_edges": 2,            # AND/OR/XOR/NOT (IF-THEN se šteje ločeno)
+    "max_ifthen_share": 0.40,        # IF-THEN največ 40 % vseh povezav
+    "min_distinct_shapes": 5,        # raznolike geometrijske oblike vozlišč
+}
+
+
+def check_graph_diversity(g_data):
+    """Preveri, ali graf izpolnjuje obvezne kvote raznolikosti relacij in oblik.
+
+    Vrne (ok, metrics, failures):
+      ok       - True, če so vse kvote izpolnjene
+      metrics  - slovar števcev za prikaz/diagnostiko
+      failures - seznam opisov manjkajočih zahtev (za repair prompt)
+    """
+    nodes = g_data.get("nodes") or []
+    edges = g_data.get("edges") or []
+    nodes = nodes if isinstance(nodes, list) else []
+    edges = edges if isinstance(edges, list) else []
+
+    rels = [normalize_relation_type(e.get("rel_type")) for e in edges
+            if isinstance(e, dict) and normalize_relation_type(e.get("rel_type")) in ALL_RELATION_TYPES]
+    shapes = {str(n.get("shape") or "rectangle") for n in nodes if isinstance(n, dict)}
+
+    thes = [r for r in rels if r in THESAURUS_TYPES]
+    uml = [r for r in rels if r in STRUCTURAL_TYPES]
+    logic_non_ifthen = [r for r in rels if r in LOGIC_TYPES and r != "IF-THEN"]
+    ifthen = [r for r in rels if r == "IF-THEN"]
+    feedback = [r for r in rels if r in CONTROL_TYPES]
+
+    total = len(rels)
+    metrics = {
+        "total_edges": total,
+        "thesaurus_edges": len(thes),
+        "thesaurus_distinct": sorted(set(thes)),
+        "uml_edges": len(uml),
+        "uml_distinct": sorted(set(uml)),
+        "logic_non_ifthen": len(logic_non_ifthen),
+        "ifthen_edges": len(ifthen),
+        "ifthen_share": round(len(ifthen) / total, 2) if total else 0.0,
+        "feedback_edges": len(feedback),
+        "distinct_shapes": sorted(shapes),
+    }
+
+    failures = []
+    R = GRAPH_DIVERSITY_RULES
+    if total == 0:
+        failures.append("The graph contains no valid edges at all.")
+    if len(thes) < R["min_thesaurus_edges"]:
+        failures.append(
+            f"Thesaurus family (TT/BT/NT/RT/AS/EQ/IN) is under-represented: only {len(thes)} edge(s); "
+            f"at least {R['min_thesaurus_edges']} are required, using at least {R['min_thesaurus_distinct']} "
+            f"distinct codes."
+        )
+    if len(set(thes)) < R["min_thesaurus_distinct"]:
+        failures.append(
+            f"Only {len(set(thes))} distinct thesaurus code(s) in use; at least "
+            f"{R['min_thesaurus_distinct']} different codes from TT, BT, NT, RT, AS, EQ, IN are required."
+        )
+    if len(uml) < R["min_uml_edges"]:
+        failures.append(
+            f"UML/Structural family (Composition, Aggregation, Containment, Dependency, Realization, "
+            f"Generalization, Specialization, Conflict) is under-represented: only {len(uml)} edge(s); "
+            f"at least {R['min_uml_edges']} are required, using at least {R['min_uml_distinct']} distinct types."
+        )
+    if len(set(uml)) < R["min_uml_distinct"]:
+        failures.append(
+            f"Only {len(set(uml))} distinct UML type(s) in use; at least {R['min_uml_distinct']} "
+            f"different UML types are required."
+        )
+    if len(logic_non_ifthen) < R["min_logic_edges"]:
+        failures.append(
+            f"Operational Logic family (AND/OR/XOR/NOT) is under-represented: only "
+            f"{len(logic_non_ifthen)} edge(s); at least {R['min_logic_edges']} are required."
+        )
+    if total and len(ifthen) / total > R["max_ifthen_share"]:
+        failures.append(
+            f"IF-THEN edges dominate the graph ({len(ifthen)}/{total} = "
+            f"{len(ifthen)/total:.0%}). Reduce IF-THEN to at most "
+            f"{R['max_ifthen_share']:.0%} of edges and express the other relations with their "
+            f"proper types (thesaurus BT/NT/RT/AS/EQ/IN, UML Composition/Aggregation/Containment/"
+            f"Dependency/Realization/Generalization/Specialization/Conflict, logic AND/OR/XOR/NOT, "
+            f"control NEG-FEEDBACK)."
+        )
+    if len(shapes) < R["min_distinct_shapes"]:
+        failures.append(
+            f"Node geometry is too uniform: only {len(shapes)} distinct shape(s) "
+            f"({', '.join(sorted(shapes))}); at least {R['min_distinct_shapes']} different shapes are "
+            f"required (star=goal, hexagon=science field, diamond=innovation, triangle=process/method, "
+            f"octagon=rule/contradiction, ellipse=human/biological entity, rectangle=fact/component)."
+        )
+
+    return (len(failures) == 0), metrics, failures
+
+
+def parse_graph_json(text):
+    """Robustno izlušči in parsaj JSON semantičnega grafa iz odgovora modela.
+
+    Vrne (g_data_or_None, error_or_None).
+    """
+    if not text or not str(text).strip():
+        return None, "Empty graph text."
+    cleaned = str(text).strip()
+    cleaned = re.sub(r'^```(?:json)?\s*', '', cleaned, flags=re.I)
+    cleaned = re.sub(r'\s*```$', '', cleaned)
+    if "### SEMANTIC_GRAPH_JSON" in cleaned:
+        cleaned = cleaned.split("### SEMANTIC_GRAPH_JSON", 1)[1]
+    match = re.search(r'\{.*\}', cleaned, re.DOTALL)
+    if not match:
+        return None, "No JSON object found in the model output."
+    cleaned = match.group(0)
+    cleaned = re.sub(r',\s*([}\]])', r'\1', cleaned)
+    try:
+        parsed = json.loads(cleaned)
+        if isinstance(parsed, dict):
+            return parsed, None
+        return None, "Parsed JSON is not an object."
+    except Exception as exc:
+        return None, str(exc)
+
+
+def build_graph_repair_system_prompt(failures):
+    """System prompt za samodejni REPAIR klic, ki graf naredi raznolikega.
+
+    Ključno: popravljati je treba SAMO način KODIRANJA relacij (rel_type) in
+    oblike vozlišč — ne vsebine poročila. Vse povezave morajo ostati
+    utemeljene v istem besedilu poročila.
+    """
+    failure_text = "\n".join(f"- {f}" for f in failures)
+    return f"""
+You are the SIS Semantic Graph Auditor. A knowledge graph was generated from a
+report, but it FAILED the relation-family and geometry diversity requirements.
+Your ONLY task is to re-encode the SAME graph so that the relations are expressed
+with their PROPER semantic types instead of collapsing everything into IF-THEN,
+and so that node shapes follow the geometry code consistently.
+
+AUDIT FINDINGS (what must be fixed):
+{failure_text}
+
+HOW TO REPAIR — RE-CLASSIFY, DO NOT INVENT:
+- Keep the same node set (you may correct shapes to match the geometry code:
+  star=actual goal/outcome, hexagon=science field, diamond=innovation,
+  triangle=process/method/framework, octagon=rule/constraint/contradiction,
+  ellipse=human/biological/social entity, rectangle=fact/finding/component).
+- Re-examine EVERY edge against the report text. Most IF-THEN edges in such
+  graphs are actually mis-encoded instances of proper relation types:
+  * if the source is a narrower concept belonging to a broader concept -> BT
+    (source narrower -> target broader);
+  * if the source is a broader concept containing a narrower one -> NT
+    (source broader -> target narrower);
+  * if two concepts are closely associated in the text -> AS or RT;
+  * if two labels denote the same concept -> EQ;
+  * if a node is a concrete instance/example of a category -> IN;
+  * if the report says an innovation is composed of / built from components
+    -> Composition (essential) or Aggregation (independent components);
+  * if a subsystem is embedded/contained in a system -> Containment;
+  * if an innovation requires/uses a tool, resource or method -> Dependency;
+  * if an innovation implements a methodology or specification -> Realization;
+  * if a concept is a broad category of another -> Generalization;
+  * if it is a special case/subtype -> Specialization;
+  * if two requirements/mechanisms are explicitly incompatible -> Conflict;
+  * if an intervention genuinely counteracts/regulates a state in a closed
+    loop -> NEG-FEEDBACK;
+  * only genuine cause/enabler -> effect relations remain IF-THEN;
+  * real joint conditions -> AND; real alternatives -> OR; genuine exclusions
+    -> XOR; genuine logical negation -> NOT.
+- Do NOT invent facts that are absent from the report. If you cannot ground a
+  relation in the report text, do not add it.
+- Keep at most ONE edge between any pair of nodes.
+- Every edge "label" must be a short human-readable verb phrase (never a bare
+  code like "IN" or "BT").
+- Keep evidence = explicit | inferred | hypothesis | future-test where known.
+- Respect the direction conventions: BT source narrower -> target broader;
+  NT source broader -> target narrower; IF-THEN source cause -> target effect.
+- Keep the graph connected: every node must appear in at least one edge.
+- Maximum 30 nodes and 45 edges.
+
+OUTPUT FORMAT: output ONLY the corrected JSON object (no markdown, no
+explanations), with exactly this structure:
+{{
+  "system_metrics": {{"f_pf": 0.70, "f_sf": 0.40, "f_pr": 0.30}},
+  "nodes": [
+    {{"id": "n1", "label": "Example", "shape": "diamond", "color": "#fd7e14",
+      "description": "Short semantic description"}}
+  ],
+  "edges": [
+    {{"source": "n1", "target": "n2", "rel_type": "Dependency", "label": "depends on", "evidence": "explicit"}}
+  ]
+}}
+"""
+
+
+# =============================================================================
 # 3.3 [NOVO] CRIME & STRESS THEMATIC EXTENSION (samo dodaja; nič ne odstrani)
 # =============================================================================
 KNOWLEDGE_BASE["Science fields"].update(EXTRA_SCIENCE_FIELDS)
@@ -1629,6 +1836,16 @@ with st.sidebar:
         help="Set the maximum number of nodes displayed in the semantic graph."
     )
 
+    # [NOVO] Stikalo za samodejni repair grafa, če raznolikost ni izpolnjena
+    graph_auto_repair = st.toggle(
+        "🛠️ Auto-repair graph diversity:",
+        value=True,
+        help="Če izdelan graf ne vsebuje dovolj tezaver-, UML- in logičnih povezav "
+             "(oziroma vsebuje preveč IF-THEN), sistem samodejno zažene en dodaten "
+             "Gemini klic, ki graf prekodira z pravimi tipi relacij.",
+        key="side_graph_auto_repair_v2026"
+    )
+
     st.divider()
 
     # 5. Reset in Guide Gumbi (Dodani unikatni ključi)
@@ -1692,7 +1909,7 @@ with st.sidebar:
 
         st.markdown("---")
         st.markdown("**Hierarchography Methods:**")
-        st.write(", ".join(HIERARCHOLOGY_ONTOLOGY["hierarchography_tools"]))
+        st.markdown(", ".join(HIERARCHOLOGY_ONTOLOGY["hierarchography_tools"]))
 
     with st.expander("🏗️ Structural Model Context", expanded=False):
         for m, d in KNOWLEDGE_BASE["Structural models"].items(): 
@@ -2235,8 +2452,8 @@ innovation -> Dependency -> resource/tool/method; innovation -> Composition or
 Aggregation -> component; innovation -> Realization -> methodology/specification;
 innovation -> Containment -> subsystem; constraint -> Conflict -> innovation.
 This is an extraction requirement, not a numerical quota: when supported by the
-report, encode the UML relation rather than weakening it to RT/AS. Never invent
-a UML relation merely to increase diversity.
+report, encode the UML relation rather than weakening it to RT/AS/IF-THEN. Never
+invent a UML relation merely to increase diversity.
 
 C) OPERATIONAL LOGIC FAMILY (use for reasoning, conditions and causal structure):
    AND, OR, XOR, NOT, IF-THEN
@@ -2247,18 +2464,39 @@ D) CONTROL/FEEDBACK FAMILY:
    NEG-FEEDBACK is NOT logical NOT. Use it only when a closed regulatory
    mechanism is actually stated or clearly implied by the report.
 
+MANDATORY RELATION DIVERSITY CONTRACT (HARD REQUIREMENTS — the graph is
+automatically audited; a graph that violates these WILL be regenerated):
+- THESAURUS FAMILY: include AT LEAST 4 edges using thesaurus codes
+  (TT, BT, NT, RT, AS, EQ, IN) and AT LEAST 3 DISTINCT codes among them.
+  Example: one BT, one NT, one AS, one IN.
+- UML/STRUCTURAL FAMILY: include AT LEAST 4 edges using UML relations
+  (Composition, Aggregation, Containment, Dependency, Realization,
+  Generalization, Specialization, Conflict) and AT LEAST 3 DISTINCT types
+  among them. Innovations naturally support Dependency (on tools/methods),
+  Realization (of a methodology), Composition/Aggregation (of components),
+  and constraints naturally support Conflict.
+- OPERATIONAL LOGIC: include AT LEAST 2 edges with AND/OR/XOR/NOT (genuine
+  logical operators, not decoration) IN ADDITION to your IF-THEN edges.
+- IF-THEN CAP: IF-THEN edges must make up AT MOST 40% of all edges. If you
+  find yourself writing another IF-THEN, stop and ask whether the relation is
+  actually a BT/NT/AS/RT/EQ/IN, a UML relation, a logic gate, or a
+  NEG-FEEDBACK loop — encode it with its PROPER type.
+- CONTROL/FEEDBACK: include AT LEAST 1 NEG-FEEDBACK edge whenever any
+  innovation is described as reducing, buffering or regulating a problem state
+  (a closed intervention -> regulated state -> counteracting signal loop).
+- GEOMETRY DIVERSITY: the node set must use AT LEAST 5 distinct shapes from
+  the semantic geometry code (star, hexagon, diamond, triangle, octagon,
+  ellipse, rectangle).
+- A graph consisting mostly of IF-THEN edges is INVALID and will be rejected.
+  The single most common defect is encoding taxonomic links (BT/NT), component
+  structure (Composition/Aggregation), tool usage (Dependency) and conceptual
+  association (AS/RT) as IF-THEN. Encode each relation with its proper type.
+
 LOGICAL GATES:
 When AND/OR/XOR/NOT represents a genuine multi-condition proposition, you may
 create a dedicated octagon node labelled AND, OR, XOR or NOT as a logical gate.
 Incoming edges represent operands/conditions and the outgoing IF-THEN edge
 represents the consequence. Do not use an AND edge merely as decoration.
-
-SEMANTIC DIVERSITY TARGET (NOT A FABRICATION RULE):
-Aim approximately for 25–35% Thesaurus relations and 25–35% Operational Logic
-relations when the report genuinely supports them. The remaining relations may
-be UML/Structural and Control/Feedback. These percentages are diagnostic targets,
-NOT quotas. NEVER invent a relation merely to satisfy a percentage. Scientific
-semantic correctness has priority over numerical diversity.
 
 MEASUREMENT BRIDGE:
 When the supplied material supports a physical, biological, environmental or
@@ -2322,15 +2560,19 @@ SENSITIVE-DOMAIN SAFEGUARDS:
 SELF-CHECK BEFORE YOU OUTPUT THE JSON (do this silently, then output only the
 corrected result): confirm (1) every important report entity is present as a
 node, (2) no node is invented beyond the report, (3) no node is isolated,
-(4) the thesaurus/logic edge-ratio rule is satisfied, (5) shapes are used
-consistently as the semantic code above — the star belongs to the actual named
-problem/goal, never to a methodology, (6) every IF-THEN / Dependency arrow
-points cause→effect and reads correctly aloud, (7) every named problem/outcome
-from Phase 1 has a corresponding outcome node linked to the innovation that
-addresses it, (8) every edge "label" is a human-readable phrase, never a bare
-code, (9) no two nodes are connected by more than one parallel edge,
-(10) every BT/NT edge follows the direction convention above (BT: source is
-narrower → target is broader; NT: source is broader → target is narrower).
+(4) the MANDATORY RELATION DIVERSITY CONTRACT is satisfied — at least 4
+thesaurus edges with 3 distinct codes, at least 4 UML edges with 3 distinct
+types, at least 2 AND/OR/XOR/NOT edges, IF-THEN at most 40%, at least 1
+NEG-FEEDBACK where an innovation regulates a problem state, at least 5 distinct
+shapes, (5) shapes are used consistently as the semantic code above — the star
+belongs to the actual named problem/goal, never to a methodology, (6) every
+IF-THEN / Dependency arrow points cause→effect and reads correctly aloud,
+(7) every named problem/outcome from Phase 1 has a corresponding outcome node
+linked to the innovation that addresses it, (8) every edge "label" is a
+human-readable phrase, never a bare code, (9) no two nodes are connected by
+more than one parallel edge, (10) every BT/NT edge follows the direction
+convention above (BT: source is narrower → target is broader; NT: source is
+broader → target is narrower).
 
 GRAPH LIMITS:
 - Maximum 30 nodes.
@@ -2406,28 +2648,59 @@ Do not place explanatory text after the JSON object.
             innovation_text = re.sub(r'```json|```', '', innovation_text)
 
             # Parse the model-generated semantic graph.
-            if json_raw.strip():
-                try:
-                    cleaned_json = json_raw.strip()
-                    cleaned_json = re.sub(r'^```(?:json)?\s*', '', cleaned_json, flags=re.I)
-                    cleaned_json = re.sub(r'\s*```$', '', cleaned_json)
-                    match = re.search(r'\{.*\}', cleaned_json, re.DOTALL)
-                    if match:
-                        cleaned_json = match.group(0)
-                    cleaned_json = re.sub(r',\s*([}\]])', r'\1', cleaned_json)
-                    parsed = json.loads(cleaned_json)
-                    if isinstance(parsed, dict):
-                        g_data = parsed
-                except Exception as parse_exc:
-                    # Keep the textual report usable even if the model emitted
-                    # malformed JSON. The graph simply remains empty.
-                    st.warning(f"⚠️ Semantic graph JSON could not be parsed; report retained. ({parse_exc})")
+            parsed_g, parse_err = parse_graph_json(json_raw)
+            if parsed_g is not None:
+                g_data = parsed_g
+            elif json_raw.strip():
+                # Keep the textual report usable even if the model emitted
+                # malformed JSON. The graph simply remains empty.
+                st.warning(f"⚠️ Semantic graph JSON could not be parsed; report retained. ({parse_err})")
 
             # Validate graph structure defensively.
             if not isinstance(g_data.get("nodes"), list):
                 g_data["nodes"] = []
             if not isinstance(g_data.get("edges"), list):
                 g_data["edges"] = []
+
+            # --- [NOVO] DIVERSITY AUDIT + SAMODEJNI REPAIR KLIC ---
+            # Preveri obvezne kvote raznolikosti relacij in oblik. Če graf
+            # ne izpolnjuje zahtev (npr. preveč IF-THEN, premalo tezaver/UML),
+            # en dodaten Gemini klic prekodira isti graf s pravimi tipi relacij.
+            diversity_ok, diversity_metrics, diversity_failures = check_graph_diversity(g_data)
+
+            if not diversity_ok and g_data.get("nodes") and graph_auto_repair:
+                with st.spinner("🛠️ GRAPH DIVERSITY AUDIT: re-encoding relations (thesaurus / UML / logic)..."):
+                    repair_system_prompt = build_graph_repair_system_prompt(diversity_failures)
+                    repair_user_content = (
+                        f"PHASE 2 REPORT (grounding for every relation — do not go beyond it):\n"
+                        f"{innovation_text}\n\n"
+                        f"CURRENT GRAPH JSON (same node set; re-encode relation types and shapes):\n"
+                        f"{json.dumps(g_data, ensure_ascii=False)}"
+                    )
+                    try:
+                        repair_output = google_generate(
+                            google_client, p2_model, repair_system_prompt,
+                            repair_user_content, temperature=0.30
+                        )
+                        repaired_g, repair_err = parse_graph_json(repair_output)
+                        if repaired_g is not None and isinstance(repaired_g.get("nodes"), list):
+                            # Preveri, da je popravljen graf res boljši.
+                            ok2, metrics2, failures2 = check_graph_diversity(repaired_g)
+                            if ok2 or len(failures2) < len(diversity_failures):
+                                g_data = repaired_g
+                                diversity_ok, diversity_metrics, diversity_failures = ok2, metrics2, failures2
+                                st.success("✅ Graph diversity repair applied (proper relation types re-encoded).")
+                            else:
+                                st.warning("⚠️ Diversity repair did not improve the graph; original graph retained.")
+                        else:
+                            st.warning(f"⚠️ Diversity repair output could not be parsed; original graph retained. ({repair_err})")
+                    except Exception as repair_exc:
+                        st.warning(f"⚠️ Diversity repair call failed; original graph retained. ({repair_exc})")
+            elif not diversity_ok and g_data.get("nodes"):
+                st.warning(
+                    "⚠️ Graph diversity requirements are not met (see Graph Semantic Validation), "
+                    "and auto-repair is disabled in the sidebar."
+                )
 
             full_report = (
                 f"## 📚 Phase 1: IMA Structural Foundation (Google {p1_model_label})\n\n"
@@ -2480,25 +2753,20 @@ Do not place explanatory text after the JSON object.
 
             # --- MATERIALIZE EDGES ---
             edge_colors = {
-                "Conflict": "#b91d1d",
-                "Specialization": "#000000",
+                "Conflict": "#B91D1D",
+                "Specialization": "#8E44AD",
                 "Containment": "#1D3557",
-                "Generalization": "#E63946",
+                "Generalization": "#8E44AD",
                 "Realization": "#E63946",
-                "Composition": "#C1121F",
-                "Aggregation": "#E76F51",
-                "Dependency": "#E63946",
+                "Composition": "#1D3557",
+                "Aggregation": "#457B9D",
+                "Dependency": "#6C757D",
                 "BT": "#1D3557", "NT": "#1D3557", "TT": "#1D3557",
                 "IN": "#0077B6", "AS": "#7B2CB1", "EQ": "#F1C40F",
                 "RT": "#2A9D8F",
                 "AND": "#00A651", "OR": "#00BFFF",
                 "XOR": "#FF8C00", "NOT": "#D00000",
                 "IF-THEN": "#C9A227",
-                "NEG-FEEDBACK": "#6A4C93",
-                "Generalization": "#8E44AD", "Specialization": "#8E44AD",
-                "Composition": "#1D3557", "Aggregation": "#457B9D",
-                "Containment": "#1D3557", "Realization": "#E63946",
-                "Dependency": "#6C757D", "Conflict": "#B91D1D",
                 "NEG-FEEDBACK": "#6A4C93",
             }
 
@@ -2597,6 +2865,8 @@ Do not place explanatory text after the JSON object.
                 "rel_caption": rel_caption,
                 "rel_warning": rel_warning,
                 "graph_lint": graph_lint,
+                "diversity_metrics": diversity_metrics,
+                "diversity_failures": diversity_failures,
                 "perspective": graph_perspective,
                 "run_id": int(time.time()),
             }
@@ -2643,6 +2913,30 @@ if _rd:
             )
             if _lint.get("warnings"):
                 st.markdown("\n".join(f"- {w}" for w in _lint["warnings"][:15]))
+
+    # --- [NOVO] DIVERSITY AUDIT DIAGNOSTIC ---
+    _div = _rd.get("diversity_metrics") or {}
+    if _div:
+        with st.expander("🛠️ GRAPH DIVERSITY AUDIT", expanded=False):
+            st.markdown(
+                f"**Total edges:** {_div.get('total_edges', 0)}  |  "
+                f"**Thesaurus:** {_div.get('thesaurus_edges', 0)} "
+                f"({', '.join(_div.get('thesaurus_distinct', [])) or '—'})  |  "
+                f"**UML:** {_div.get('uml_edges', 0)} "
+                f"({', '.join(_div.get('uml_distinct', [])) or '—'})  |  "
+                f"**Logic (AND/OR/XOR/NOT):** {_div.get('logic_non_ifthen', 0)}  |  "
+                f"**IF-THEN:** {_div.get('ifthen_edges', 0)} ({_div.get('ifthen_share', 0):.0%})  |  "
+                f"**NEG-FEEDBACK:** {_div.get('feedback_edges', 0)}"
+            )
+            st.markdown(
+                "**Distinct shapes:** " + (", ".join(_div.get("distinct_shapes", [])) or "—")
+            )
+            _failures = _rd.get("diversity_failures") or []
+            if _failures:
+                st.markdown("**Unmet requirements (repair may already have been applied):**")
+                st.markdown("\n".join(f"- {f}" for f in _failures))
+            else:
+                st.success("✅ All relation-family and geometry diversity requirements are satisfied.")
 
     if _rd["elements"]:
         st.divider()
