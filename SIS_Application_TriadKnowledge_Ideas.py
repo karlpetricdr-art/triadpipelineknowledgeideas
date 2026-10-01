@@ -14,7 +14,7 @@ import streamlit.components.v1 as components
 # 0. GLOBAL CONFIGURATION & SESSION DATE (FEBRUARY 24, 2026)
 # =============================================================================
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v22.11.0-ULTRA-SYNERGY-GOOGLE-GEMINI-ONLY-LEAN"
+VERSION_CODE = "v22.13.0-ULTRA-SYNERGY-GOOGLE-GEMINI-ONLY-LEAN"
 
 # =============================================================================
 # INITIALIZATION FIX: Preprečuje AttributeError pri zagonu in resetiranju
@@ -281,7 +281,12 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
 
     cyto_html = f"""
     <div style="position: relative; width: 100%;">
-        <button id="save_btn_{container_id}" style="position: absolute; top: 15px; right: 15px; z-index: 1000; padding: 10px 15px; background: #1d3557; color: white; border: none; border-radius: 8px; cursor: pointer; font-family: sans-serif; font-size: 12px; font-weight: 800; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">💾 EXPORT {layout_type.upper()} PNG</button>
+        <div style="position: absolute; top: 15px; right: 15px; z-index: 1000; display: flex; gap: 6px;">
+            <button id="zoomin_btn_{container_id}" style="padding: 10px 15px; background: #1d3557; color: white; border: none; border-radius: 8px; cursor: pointer; font-family: sans-serif; font-size: 12px; font-weight: 800; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">➕ ZOOM IN</button>
+            <button id="zoomout_btn_{container_id}" style="padding: 10px 15px; background: #1d3557; color: white; border: none; border-radius: 8px; cursor: pointer; font-family: sans-serif; font-size: 12px; font-weight: 800; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">➖ ZOOM OUT</button>
+            <button id="fit_btn_{container_id}" style="padding: 10px 15px; background: #457b9d; color: white; border: none; border-radius: 8px; cursor: pointer; font-family: sans-serif; font-size: 12px; font-weight: 800; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">🎯 FIT</button>
+            <button id="save_btn_{container_id}" style="padding: 10px 15px; background: #2a9d8f; color: white; border: none; border-radius: 8px; cursor: pointer; font-family: sans-serif; font-size: 12px; font-weight: 800; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">💾 PNG</button>
+        </div>
         <div id="{container_id}" style="width: 100%; height: 850px; background: #ffffff; border-radius: 20px; border: 1px solid #e0e0e0; box-shadow: 0 10px 40px rgba(0,0,0,0.08);"></div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
@@ -375,6 +380,15 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
                 layout: {selected_layout}
             }});
 
+            document.getElementById('zoomin_btn_{container_id}').addEventListener('click', function() {{
+                cy.zoom({{level: cy.zoom() * 1.3, renderedPosition: {{ x: cy.width() / 2, y: cy.height() / 2 }}}});
+            }});
+            document.getElementById('zoomout_btn_{container_id}').addEventListener('click', function() {{
+                cy.zoom({{level: cy.zoom() / 1.3, renderedPosition: {{ x: cy.width() / 2, y: cy.height() / 2 }}}});
+            }});
+            document.getElementById('fit_btn_{container_id}').addEventListener('click', function() {{
+                cy.fit(undefined, 40);
+            }});
             document.getElementById('save_btn_{container_id}').addEventListener('click', function() {{
                 var png64 = cy.png({{full: true, bg: 'white', scale: 3}});
                 var link = document.createElement('a');
@@ -1310,35 +1324,74 @@ Rules: 'id' must be unique and referenced by 'source'/'target'; 'label' must be 
             nodes_to_link = []
             final_elements = []
 
-            # Napredno iskanje in varnostno čiščenje JSON-a znotraj surovega izhoda
-            json_match = re.search(r'(\{.*"nodes".*\})', json_raw if json_raw else innovation_raw, re.DOTALL | re.IGNORECASE)
+            # --- ROBUSTNO LOČEVANJE JSON OD BESEDILA (več strategij) ---
+            def parse_graph_json(raw_text):
+                """Modeli JSON včasih ovijejo v fence-e ali doda prozo okrog njega;
+                zato poskusimo več strategij ločevanja."""
+                candidates = []
+                raw_text = (raw_text or "").strip()
+                # 1. Odstranimo code-fence ovojnice
+                cleaned = re.sub(r'^```(?:json)?\s*', '', raw_text, flags=re.I)
+                cleaned = re.sub(r'\s*```\s*$', '', cleaned.strip())
+                # 2. Zgrabimo blok od prve '{' do zadnje '}'
+                start = cleaned.find('{')
+                end = cleaned.rfind('}')
+                if start != -1 and end > start:
+                    candidates.append(cleaned[start:end + 1])
+                # 3. Regex kot zasilna varianta (prvi blok, ki vsebuje 'nodes')
+                m = re.search(r'\{[\s\S]*?"nodes"[\s\S]*?\}', cleaned, re.IGNORECASE)
+                if m:
+                    candidates.append(m.group(0))
+                for cand in candidates:
+                    try:
+                        c = cand.replace('\r', '').replace('\t', ' ')
+                        c = re.sub(r',\s*([}\]])', r'\1', c)  # trailing vejice
+                        data = json.loads(c)
+                        if isinstance(data, dict) and "nodes" in data:
+                            return data
+                    except Exception:
+                        continue
+                return None
 
-            if json_match:
-                try:
-                    raw_json_str = json_match.group(1)
-                    # Odstranimo tudi morebitne odvečne code-fence znake
-                    raw_json_str = re.sub(r'^```(?:json)?\s*', '', raw_json_str.strip(), flags=re.I)
-                    raw_json_str = re.sub(r'\s*```$', '', raw_json_str)
-                    clean_json = raw_json_str.replace('\n', ' ').replace('\r', '').replace('\t', ' ')
-                    # Odstranimo trailing vejice, ki lomijo parser
-                    clean_json = re.sub(r',\s*([}\]])', r'\1', clean_json)
-                    g_data = json.loads(clean_json)
-                except Exception as json_err:
-                    st.warning(f"Note: Graph structure parsing issue: {json_err}")
+            g_data = parse_graph_json(json_raw) or parse_graph_json(innovation_raw) or {"nodes": [], "edges": []}
+            if not g_data.get("nodes"):
+                st.warning("Note: Graph structure could not be parsed — check the SEMANTIC_GRAPH_JSON block.")
 
             # --- PROCESIRANJE VOZLIŠČ Z IZRAZITO GEOMETRIJSKO TAKSONOMIJO ---
             if g_data.get("nodes"):
-                seen_labels = {}  # Deduplikacija vozlišč (istega labela le enkrat)
-                for n in g_data.get("nodes", []):
-                    lbl = n.get("label", "Node")
-                    nid = str(n.get("id", f"n{lbl}"))
-                    # ANTI-REDUNDANCA: preskočimo podvojena vozlišča (isti label)
-                    label_key = lbl.strip().lower()
+                # --- ROBUSTNO BRANJE POLJ: AI uporablja različna imena (label/name, id/node_id, shape/type) ---
+                def first_val(d, keys, default=None):
+                    for k in keys:
+                        if isinstance(d, dict) and d.get(k) not in (None, ""):
+                            return d[k]
+                    return default
+
+                # Vsi možni zapisi (id-ji in labeli) preslikani v končne ID-je vozlišč
+                node_id_alias = {}
+                seen_labels = {}  # label_key -> nid (deduplikacija vozlišč)
+                for idx, n in enumerate(g_data.get("nodes", [])):
+                    if not isinstance(n, dict):
+                        continue
+                    # Label: podpira 'label', 'name', 'title', 'node'
+                    lbl = str(first_val(n, ["label", "name", "title", "node"], f"Node {idx + 1}")).strip()
+                    # ID: podpira 'id', 'node_id', 'nodeId'; sicer unikaten nadomestni ID
+                    raw_id = first_val(n, ["id", "node_id", "nodeId"])
+                    nid = str(raw_id).strip() if raw_id not in (None, "") else f"n{idx}"
+
+                    # ANTI-REDUNDANCA: podvojena vozlišča (isti label) preskočimo,
+                    # a njihov ID preslikamo na obstoječe vozlišče, da povezave ostanejo veljavne.
+                    label_key = lbl.lower()
                     if label_key in seen_labels:
+                        node_id_alias[nid.lower()] = seen_labels[label_key]
+                        node_id_alias[label_key] = seen_labels[label_key]
                         continue
                     seen_labels[label_key] = nid
-                    n_color = n.get("color", "#DDEBF7")
-                    n_shape = str(n.get("shape", "rectangle")).lower()  # Prisilimo v male črke za Cytoscape
+                    node_id_alias[nid.lower()] = nid
+                    node_id_alias[label_key] = nid
+
+                    n_color = first_val(n, ["color", "colour"], "#DDEBF7")
+                    # Oblika: podpira 'shape', 'node_type', 'type', 'kind', 'geometry'
+                    n_shape = str(first_val(n, ["shape", "node_type", "type", "kind", "geometry"], "rectangle")).strip().lower()
 
                     # STROGA VELIKOSTNA HIERARHIJA (Preprečuje redukcijo na kroge)
                     if n_shape == 'star': 
@@ -1361,6 +1414,14 @@ Rules: 'id' must be unique and referenced by 'source'/'target'; 'label' must be 
                     nodes_to_link.append({"id": nid, "label": lbl})
                     final_elements.append({
                         "data": {
+                            "id": nid,
+                            "label": lbl,
+                            "color": n_color,
+                            "shape": n_shape,
+                            "size": n_size,
+                            "description": first_val(n, ["description", "desc", "details"], "Podroben razčlen v poročilu.")
+                        }
+                    })
                             "id": nid,
                             "label": lbl,
                             "color": n_color,
@@ -1390,28 +1451,36 @@ Rules: 'id' must be unique and referenced by 'source'/'target'; 'label' must be 
                 }
 
                 seen_edges = set()  # Deduplikacija povezav (isti par + relacija)
+                valid_node_ids = set(node_id_alias.values())
                 for e in g_data.get("edges", []):
-                    # Pridobimo surovo relacijo in jo očistimo
-                    raw_rel = str(e.get("rel_type", "AS")).strip().lower()
+                    if not isinstance(e, dict):
+                        continue
+                    # Relacija: podpira 'rel_type', 'relation', 'rel', 'relationship', 'type', 'edge_type'
+                    orig_rel = first_val(e, ["rel_type", "relation", "rel", "relationship", "type", "edge_type"], "AS")
+                    raw_rel = str(orig_rel).strip().lower()
                     # Če je AI uporabil polno besedo, jo skrajšamo v kodo
-                    rel = rel_map.get(raw_rel, e.get("rel_type", "AS"))
+                    rel = rel_map.get(raw_rel, orig_rel)
+                    # Normalizacija: 'tt' -> 'TT' ipd., da se povezava poveže s pravim stilom
+                    KNOWN_RELS = {"TT","BT","NT","IN","RT","AS","EQ","HA","AND","OR","XOR","NOT","IF-THEN",
+                                  "Generalization","Specialization","Realization","Composition","Aggregation",
+                                  "Dependency","Conflict","Containment"}
+                    rel_u = str(rel).strip().upper()
+                    if rel_u in KNOWN_RELS:
+                        rel = rel_u
+                    elif str(rel).strip() in KNOWN_RELS:
+                        rel = str(rel).strip()
 
-                    # --- POVEZLJIVOSTNA OKREPITEV: preslikava label/ID v veljavne ID-je vozlišč ---
-                    src_raw = str(e.get("source", "")).strip()
-                    tgt_raw = str(e.get("target", "")).strip()
-                    # AI včasih kot source/target poda label namesto ID — preslikamo
-                    src = seen_labels.get(src_raw.lower(), src_raw)
-                    tgt = seen_labels.get(tgt_raw.lower(), tgt_raw)
-                    # Varnostno: preslikamo tudi velike začetnice (labeli kot ID-ji)
-                    if src not in seen_labels.values() and src_raw.lower() in seen_labels:
-                        src = seen_labels[src_raw.lower()]
-                    if tgt not in seen_labels.values() and tgt_raw.lower() in seen_labels:
-                        tgt = seen_labels[tgt_raw.lower()]
+                    # --- POVEZLJIVOSTNA OKREPITEV: preslikava vseh zapisov v veljavne ID-je ---
+                    # Source/target: podpira 'source'/'from'/'src', 'target'/'to'/'tgt' (ID ali label)
+                    src_raw = str(first_val(e, ["source", "from", "src", "source_id", "sourceId"], "")).strip()
+                    tgt_raw = str(first_val(e, ["target", "to", "tgt", "target_id", "targetId"], "")).strip()
+                    src = node_id_alias.get(src_raw.lower(), src_raw if src_raw in valid_node_ids else None)
+                    tgt = node_id_alias.get(tgt_raw.lower(), tgt_raw if tgt_raw in valid_node_ids else None)
                     # Odstranimo povezave na neobstoječa vozlišča ali zankice
-                    if src not in seen_labels.values() or tgt not in seen_labels.values() or src == tgt:
+                    if not src or not tgt or src == tgt:
                         continue
                     # Odstranimo podvojene povezave (isti par v isti smeri z isto relacijo)
-                    edge_key = (src, tgt, rel)
+                    edge_key = (src, tgt, str(rel))
                     if edge_key in seen_edges:
                         continue
                     seen_edges.add(edge_key)
@@ -1536,6 +1605,47 @@ Rules: 'id' must be unique and referenced by 'source'/'target'; 'label' must be 
                 </div>
                 """, unsafe_allow_html=True)
 
+                # --- IZ RAZLIČNIH OMREŽIJ ENO OMREŽJE: fuzija čez več zagonov ---
+                # Vsak nov zagon se zlije s prejšnjimi grafi v eno akumulativno omrežje
+                # (deduplikacija po labelu vozlišč in po paru povezav).
+                def merge_networks(base_elements, new_elements):
+                    merged = []
+                    seen_n, seen_e = {}, set()
+                    # Najprej obstoječe (starejši pogoji imajo prednost pred prekrivnimi)
+                    for el in (base_elements or []):
+                        d = el.get("data", {})
+                        if "label" in d:
+                            seen_n[d["label"].strip().lower()] = d["id"]
+                            merged.append(el)
+                        elif "source" in d:
+                            key = (d["source"], d["target"], d.get("rel_type"))
+                            if key not in seen_e:
+                                seen_e.add(key)
+                                merged.append(el)
+                    # Nato nove elemente dodamo brez podvajanja
+                    for el in (new_elements or []):
+                        d = el.get("data", {})
+                        if "label" in d:
+                            lkey = d["label"].strip().lower()
+                            if lkey in seen_n:
+                                continue  # vozlišče že obstaja
+                            seen_n[lkey] = d["id"]
+                            merged.append(el)
+                        elif "source" in d:
+                            key = (d["source"], d["target"], d.get("rel_type"))
+                            if key in seen_e:
+                                continue
+                            seen_e.add(key)
+                            merged.append(el)
+                    return merged
+
+                prev_network = st.session_state.get('accumulated_network', [])
+                st.session_state.accumulated_network = merge_networks(prev_network, final_elements)
+                # Za prikaz uporabimo ZDRUŽENO omrežje (iz različnih omrežij eno omrežje)
+                final_elements = st.session_state.accumulated_network
+                if len(prev_network) > 0:
+                    st.success(f"🌐 Network Fusion: merged with previous run(s) — one unified network ({len(final_elements)} elements total). Use ♻️ RESET to start a fresh network.")
+
                 # 5e. FINAL GRAPH RENDERING (Z DINAMIČNO PERSPEKTIVO)
                 st.subheader(f"🕸️ HYBRID SEMANTIC SYSTEM MAP ({graph_perspective.upper()} VIEW)")
                 render_cytoscape_network(
@@ -1544,7 +1654,100 @@ Rules: 'id' must be unique and referenced by 'source'/'target'; 'label' must be 
                     container_id=f"cy_{int(time.time())}"
                 )
 
-                # (ODSTRANJENO: galerija redundantnih grafov — spodaj je en sam končni graf.)
+                # 5f. IZVOZ POROČILA IN GRAFA V SAMOSTOJNI HTML
+                def build_html_export(elements, report_md):
+                    """Skuha samostojno HTML datoteko: poročilo + interaktivni graf (Cytoscape)."""
+                    # Poročilo varno prek base64 (prepreči lomljenje zaradi narekovajev/znakov)
+                    report_b64 = base64.b64encode((report_md or "").encode("utf-8")).decode("ascii")
+                    elements_json = json.dumps(elements or [])
+                    layout_js = "cose"
+                    html = """<!DOCTYPE html>
+<html lang="sl">
+<head>
+<meta charset="utf-8">
+<title>SIS Universal Knowledge Synthesizer — Export __SYSDATE__</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+body { font-family: 'Segoe UI', Roboto, sans-serif; margin: 0; background: #f8f9fa; color: #1d3557; }
+header { background: linear-gradient(90deg, #1d3557, #457b9d); color: white; padding: 30px 40px; }
+header h1 { margin: 0; font-size: 1.8em; }
+#report { max-width: 1100px; margin: 30px auto; background: white; padding: 40px 50px; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); line-height: 1.8; }
+#cy { width: 100%; height: 800px; background: white; border-radius: 15px; border: 1px solid #e0e0e0; max-width: 1200px; margin: 0 auto 40px; }
+.toolbar { max-width: 1200px; margin: 0 auto 10px; display: flex; gap: 8px; }
+.toolbar button { padding: 10px 18px; background: #1d3557; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 800; font-size: 12px; }
+h2 { margin-top: 40px; text-align: center; }
+</style>
+</head>
+<body>
+<header><h1>🧱 SIS Universal Knowledge Synthesizer</h1><p>__SYSDATE__ | __VERSION__</p></header>
+<h2>📋 INTEGRATED HIERARCHOLOGICAL REPORT</h2>
+<div id="report"></div>
+<h2>🕸️ HYBRID SEMANTIC SYSTEM MAP</h2>
+<div class="toolbar">
+    <button onclick="zoomIn()">➕ ZOOM IN</button>
+    <button onclick="zoomOut()">➖ ZOOM OUT</button>
+    <button onclick="cy1.fit(undefined, 40)">🎯 FIT</button>
+    <button onclick="downloadPng()">💾 PNG</button>
+</div>
+<div id="cy"></div>
+<script>
+var cy1;
+function b64ToUtf8(b64) {
+    var bin = atob(b64);
+    var bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new TextDecoder('utf-8').decode(bytes);
+}
+document.getElementById('report').innerHTML = marked.parse(b64ToUtf8("__REPORT_B64__"));
+cy1 = cytoscape({
+    container: document.getElementById('cy'),
+    elements: __ELEMENTS__,
+    style: [
+        { selector: 'node', style: {
+            'label': 'data(label)', 'text-valign': 'center', 'text-halign': 'center',
+            'color': '#1d3557', 'background-color': 'data(color)',
+            'width': 'data(size)', 'height': 'data(size)', 'shape': 'data(shape)',
+            'font-size': '12px', 'font-weight': 'bold', 'text-wrap': 'wrap', 'text-max-width': '80px',
+            'border-width': 3, 'border-color': '#ffffff', 'text-outline-color': '#ffffff', 'text-outline-width': 2
+        }},
+        { selector: 'edge', style: {
+            'width': 2, 'line-color': 'data(color)', 'label': 'data(rel_type)', 'font-size': '9px',
+            'color': '#2a9d8f', 'curve-style': 'unbundled-bezier', 'control-point-step-size': 40,
+            'target-arrow-color': 'data(color)', 'target-arrow-shape': 'vee',
+            'text-background-opacity': 1, 'text-background-color': '#ffffff',
+            'text-background-padding': '3px', 'text-background-shape': 'roundrectangle', 'opacity': 0.8
+        }}
+    ],
+    layout: { name: '__LAYOUT__', idealEdgeLength: 120, nodeOverlap: 50, fit: true, padding: 50, nodeRepulsion: 1000000, animate: false }
+});
+function zoomIn() { cy1.zoom({ level: cy1.zoom() * 1.3, renderedPosition: { x: cy1.width() / 2, y: cy1.height() / 2 } }); }
+function zoomOut() { cy1.zoom({ level: cy1.zoom() / 1.3, renderedPosition: { x: cy1.width() / 2, y: cy1.height() / 2 } }); }
+function downloadPng() {
+    var link = document.createElement('a');
+    link.href = cy1.png({ full: true, bg: 'white', scale: 3 });
+    link.download = 'sis_universal_graph_export.png';
+    link.click();
+}
+</script>
+</body>
+</html>"""
+                    html = html.replace("__SYSDATE__", SYSTEM_DATE).replace("__VERSION__", VERSION_CODE)
+                    html = html.replace("__REPORT_B64__", report_b64)
+                    html = html.replace("__ELEMENTS__", elements_json)
+                    html = html.replace("__LAYOUT__", layout_js)
+                    return html
+
+                # Gumb za prenos samostojnega HTML (poročilo + graf v eni datoteki)
+                st.download_button(
+                    "🌐 EXPORT REPORT + GRAPH (HTML)",
+                    data=build_html_export(final_elements, full_report),
+                    file_name=f"sis_report_graph_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html",
+                    mime="text/html",
+                    use_container_width=True,
+                    key=f"html_export_btn_{int(time.time())}"
+                )
+
                 st.session_state.final_graph_elements = final_elements
 
         except Exception as e:
