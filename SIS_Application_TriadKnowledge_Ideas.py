@@ -16,6 +16,50 @@ import random
 import bleach
 import markdown
 
+# --- STREAMLIT STRANSKA VRSTICA IN FILTRIRANJE MODELOV ---
+st.sidebar.title("⚙️ Nastavitve in Modeli")
+
+# 1. Vnos Google API ključa v stransko vrstico
+api_key = st.sidebar.text_input("Vnesite svoj Google API ključ:", type="password")
+
+# Inicializacija session_state za ohranjanje seznama modelov med osveževanjem strani
+if "očiščeni_modeli" not in st.session_state:
+    st.session_state["očiščeni_modeli"] = []
+
+# 2. Gumb za osveževanje seznama modelov
+if st.sidebar.button("🔄 Osveži seznam modelov"):
+    if not api_key:
+        st.sidebar.error("⚠️ Prosimo, najprej vnesite API ključ!")
+    else:
+        try:
+            # Ustvarimo povezavo z vnesenim API ključem
+            client = genai.Client(api_key=api_key)
+            
+            # Pridobimo celoten seznam modelov z Googlovih strežnikov
+            vsi_modeli = client.models.list()
+            
+            # FILTRIRANJE: Izločimo vse elemente, ki vsebujejo besedo 'antigravity'
+            filtrirani = [
+                model.name for model in vsi_modeli 
+                if "antigravity" not in model.name.lower()
+            ]
+            
+            # Shranimo očiščen seznam v stanje seje
+            st.session_state["očiščeni_modeli"] = filtrirani
+            st.sidebar.success("Seznam modelov uspešno posodobljen!")
+            
+        except Exception as e:
+            st.sidebar.error(f"Napaka pri povezavi z API: {e}")
+
+# 3. Prikaz spustnega menija z očiščenimi modeli
+if st.session_state["očiščeni_modeli"]:
+    izbrani_model = st.sidebar.selectbox(
+        "Izberite model:", 
+        options=st.session_state["očiščeni_modeli"]
+    )
+else:
+    st.sidebar.warning("Seznam modelov je prazen. Vnesite ključ in kliknite 'Osveži seznam modelov'.")
+
 def safe_script_json(value):
     """Prevent generated data from terminating an HTML script element."""
     return json.dumps(value, ensure_ascii=False, allow_nan=False).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026").replace("\u2028", "\\u2028").replace("\u2029", "\\u2029")
