@@ -1422,14 +1422,6 @@ Rules: 'id' must be unique and referenced by 'source'/'target'; 'label' must be 
                             "description": first_val(n, ["description", "desc", "details"], "Podroben razčlen v poročilu.")
                         }
                     })
-                            "id": nid,
-                            "label": lbl,
-                            "color": n_color,
-                            "shape": n_shape,
-                            "size": n_size,
-                            "description": n.get("description", "Podroben razčlen v poročilu.")
-                        }
-                    })
 
                 # --- PROCESIRANJE POVEZAV (CELOTEN SPEKTER LOGIKE) ---
                 # Ta del popravi AI napake: npr. "Association" -> "AS"
