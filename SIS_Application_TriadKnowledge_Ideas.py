@@ -1636,6 +1636,10 @@ with st.sidebar:
     )
 
     st.subheader("🤖 Google model discovery")
+
+    # Seznam modelov, ki jih želimo izključiti iz izbire
+    EXCLUDED_MODELS = {"antigravity-preview-05-2026"}
+
     if st.button("Refresh available models", key="refresh_google_models"):
         if not google_api_key:
             st.warning("Enter an API key first.")
@@ -1646,13 +1650,23 @@ with st.sidebar:
                 for model in discovery_client.models.list():
                     actions = getattr(model, "supported_actions", None) or []
                     if "generateContent" in actions:
-                        available.append(model.name.removeprefix("models/"))
+                        model_id = model.name.removeprefix("models/")
+                        # Izločimo točen model ali katerikoli model z 'antigravity' v imenu
+                        if model_id not in EXCLUDED_MODELS and "antigravity" not in model_id.lower():
+                            available.append(model_id)
                 st.session_state["discovered_google_models"] = sorted(set(available))
             except Exception as exc:
                 st.warning(f"Model discovery failed: {type(exc).__name__}; use exact manual IDs.")
             finally:
                 discovery_client.close()
-    available_models = st.session_state.get("discovered_google_models", [])
+
+    # Preberemo modele in jih filtriramo še tukaj (odstrani model takoj, tudi iz obstoječe seje)
+    raw_models = st.session_state.get("discovered_google_models", [])
+    available_models = [
+        m for m in raw_models 
+        if m not in EXCLUDED_MODELS and "antigravity" not in m.lower()
+    ]
+
     if available_models:
         p1_model = st.selectbox("Phase 1 model", available_models, key="p1_discovered")
         p2_model = st.selectbox("Phase 2 model", available_models, key="p2_discovered")
