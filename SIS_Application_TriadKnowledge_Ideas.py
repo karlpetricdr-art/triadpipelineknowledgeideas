@@ -368,6 +368,38 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
                     {{ selector: 'edge[rel_type="NOT"]', style: {{ 'width': 5, 'line-color': '#FF0000', 'line-style': 'dashed', 'target-arrow-color': '#FF0000', 'target-arrow-shape': 'tee' }} }},
                     {{ selector: 'edge[rel_type="IF-THEN"]', style: {{ 'width': 5, 'line-color': '#FFD700', 'target-arrow-color': '#FFD700', 'target-arrow-shape': 'triangle', 'arrow-scale': 1.5 }} }},
 
+                    /* --- 5. MATHEMATICAL & DYNAMICAL CAUSALITY (9.9+ RATING) --- */
+                    {{
+                        selector: 'edge[rel_type="Causes(+)"]',
+                        style: {{
+                            'width': 5,
+                            'line-color': '#02c39a',
+                            'target-arrow-shape': 'triangle',
+                            'target-arrow-color': '#02c39a',
+                            'line-style': 'solid'
+                        }}
+                    }},
+                    {{
+                        selector: 'edge[rel_type="Inhibits(-)"]',
+                        style: {{
+                            'width': 5,
+                            'line-color': '#e63946',
+                            'target-arrow-shape': 'tee',
+                            'target-arrow-color': '#e63946',
+                            'line-style': 'solid'
+                        }}
+                    }},
+                    {{
+                        selector: 'edge[rel_type^="Triggers"]',
+                        style: {{
+                            'width': 6,
+                            'line-color': '#ffb703',
+                            'line-style': 'dashed',
+                            'target-arrow-shape': 'triangle-tee',
+                            'target-arrow-color': '#ffb703'
+                        }}
+                    }},
+
                     /* --- GEOMETRIC TAXONOMY (Shapes & Specialized Sizes) --- */
                     {{ selector: 'node[shape="star"]', style: {{ 'width': 140, 'height': 140, 'border-width': 6, 'border-color': '#FFD700', 'font-size': '16px' }} }},
                     {{ selector: 'node[shape="hexagon"]', style: {{ 'width': 100, 'height': 100, 'border-width': 4, 'border-color': '#1d3557' }} }},
@@ -1272,6 +1304,13 @@ B) UML 2.5 STRUCTURAL LOGIC — use ALL where semantically valid:
 - 'Conflict': tension or incompatibility between paradigms/goals
 
 C) ADDITIONAL LOGIC: HA, AND, OR, XOR, NOT, IF-THEN — for hybrid and decision edges.
+
+D) DYNAMICAL CAUSAL & MATHEMATICAL OPERATORS (MANDATORY FOR 9.9+ RATINGS):
+If state-space variables, thresholds, or ODEs are discussed:
+- 'Causes(+)': Reinforcing causal edge (e.g. Stressors -> Allostatic Load)
+- 'Inhibits(-)': Inhibitory or dampening edge (e.g. Executive Reserve -> Impulsive Breach)
+- 'Triggers(θ1)': Nonlinear threshold activation edge (Heaviside step trigger)
+- 'Flow': Stock-to-Flow dynamic transfer (dX/dt)
 
 ### CONNECTIVITY MANDATE (Connectionist Richness — Critical)
 The graph must be a DENSELY WOVEN NETWORK, not a collection of loose chains:
