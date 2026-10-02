@@ -1071,7 +1071,7 @@ def ensure_single_connected_network(elements):
         c_hub = hub_of(comp)
         new_elements.append({
             "data": {
-                "id": f"e_bridge_{c_hub}",
+                "id": f"e_bridge_{c_hub}_{len(new_elements)}",
                 "source": c_hub,
                 "target": main_hub,
                 "rel_type": "RT",
@@ -1879,34 +1879,72 @@ Rules: 'id' must be unique and referenced by 'source'/'target'; 'label' must be 
                 # Vsak nov zagon se zlije s prejšnjimi grafi v eno akumulativno omrežje
                 # (deduplikacija po labelu vozlišč in po paru povezav).
                 def merge_networks(base_elements, new_elements):
+                    # NOVO (v23.3): ID-preslikava pri fuziji — prej so se podvojena
+                    # vozlišča preskočila, njihove povezave pa so še vedno kazale na
+                    # neobstoječ ID -> Cytoscape jih je izpustil -> OSAMLJENI OTOKI.
+                    # Zdaj vse povezave novega zagoda preslikamo na veljavne ID-je.
                     merged = []
-                    seen_n, seen_e = {}, set()
-                    # Najprej obstoječe (starejši pogoji imajo prednost pred prekrivnimi)
+                    seen_labels = {}   # label_key -> obstoječi ID
+                    seen_ids = set()    # vsi veljavni ID-ji vozlišč
+                    seen_e = set()
+                    # 1. Obstoječi elementi (starejši pogoji imajo prednost)
                     for el in (base_elements or []):
                         d = el.get("data", {})
                         if "label" in d:
-                            seen_n[d["label"].strip().lower()] = d["id"]
+                            seen_labels[d["label"].strip().lower()] = d["id"]
+                            seen_ids.add(d["id"])
                             merged.append(el)
                         elif "source" in d:
                             key = (d["source"], d["target"], d.get("rel_type"))
                             if key not in seen_e:
                                 seen_e.add(key)
                                 merged.append(el)
-                    # Nato nove elemente dodamo brez podvajanja
+                    # 2. Nova vozlišča: podvojene preskočimo, a njihov ID preslikamo;
+                    #    trčenju ID-jev (npr. oba zagoda uporabita 'n1') se izognemo
+                    #    z novim unikatnim ID-jem — sicer Cytoscape podvojen vozlišče
+                    #    izpusti in njegove povezave propadejo (=> osamljeni otoki).
+                    id_map = {}  # ID novega zagoda -> kanonični (obstoječi ali nov) ID
                     for el in (new_elements or []):
                         d = el.get("data", {})
                         if "label" in d:
                             lkey = d["label"].strip().lower()
-                            if lkey in seen_n:
+                            if lkey in seen_labels:
+                                id_map[d["id"]] = seen_labels[lkey]
                                 continue  # vozlišče že obstaja
-                            seen_n[lkey] = d["id"]
+                            new_id = d["id"]
+                            if new_id in seen_ids:
+                                # ID že zaseden -> nov unikaten ID
+                                suffix = 2
+                                while f"{new_id}_m{suffix}" in seen_ids:
+                                    suffix += 1
+                                new_id = f"{new_id}_m{suffix}"
+                                nd = dict(d)
+                                nd["id"] = new_id
+                                el = {"data": nd}
+                            seen_labels[lkey] = new_id
+                            seen_ids.add(new_id)
+                            id_map[d["id"]] = new_id
                             merged.append(el)
-                        elif "source" in d:
-                            key = (d["source"], d["target"], d.get("rel_type"))
-                            if key in seen_e:
-                                continue
-                            seen_e.add(key)
-                            merged.append(el)
+                    # 3. Nove povezave: preslikamo source/target na veljavne ID-je;
+                    #    povezave na neobstoječa vozlišča ali zanke odstranimo.
+                    for el in (new_elements or []):
+                        d = el.get("data", {})
+                        if "label" in d:
+                            continue
+                        if "source" not in d:
+                            continue
+                        s = id_map.get(d["source"], d["source"])
+                        t = id_map.get(d["target"], d["target"])
+                        if s not in seen_ids or t not in seen_ids or s == t:
+                            continue
+                        key = (s, t, d.get("rel_type"))
+                        if key in seen_e:
+                            continue
+                        seen_e.add(key)
+                        nd = dict(d)
+                        nd["source"] = s
+                        nd["target"] = t
+                        merged.append({"data": nd})
                     return merged
 
                 prev_network = st.session_state.get('accumulated_network', [])
