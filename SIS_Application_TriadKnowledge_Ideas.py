@@ -14,7 +14,7 @@ import streamlit.components.v1 as components
 # 0. GLOBAL CONFIGURATION & SESSION DATE (FEBRUARY 24, 2026)
 # =============================================================================
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v23.2.0-ULTRA-SYNERGY-GOOGLE-GEMINI-ONLY-LEAN"
+VERSION_CODE = "v23.4.0-ULTRA-SYNERGY-GOOGLE-GEMINI-ONLY-LEAN"
 
 # =============================================================================
 # INITIALIZATION FIX: Preprečuje AttributeError pri zagonu in resetiranju
@@ -1015,71 +1015,106 @@ EDGE_REL_TYPES = [
 # --- NOVO (v23.2): CELOVITO POVEZANO OMREŽJE — združevanje osamljenih otočkov ---
 def ensure_single_connected_network(elements):
     """
-    Prepreči osamljene otočke: poišče vse povezane komponente (BFS po neusmerjeni
-    sosednosti) in vsako manjšo komponento poveže z mostom (RT) v največjo komponento.
-    Vrne (elements, število dodanih mostov, število komponent).
-    Vsaka komponenta se mostovi prek svojega 'hub' vozlišča (največja stopnja,
-    prednost heksagonom = znanstvene domene), da graf ostane semantično smiseln.
+    NOVO (v23.4): ZAGOTOVLJENO CELOVITO POVEZAN OMREŽJE (zemljevidni scenarij).
+    Trije mehanizmi:
+      1) BFS po komponentah: vsako osamljeno komponento (otoček) poveče z DVEMA
+         mostovoma (RT) v glavno komponento — prek hub-vozlišč — da se vizualno
+         dejansko stopi z glavnim omrežjem in ne izgleda kot ločen otok.
+      2) Minimalna stopnja 2: vsako vozlišče z manj kot 2 povezavami dobi
+         dodatno RT-povezavo do najbolj povezanega sosednjega hub-a (izključimo
+         vozlišča iste majhne komponente), kar prepreči 'viseče verige' in dvojice.
+      3) Varnostna preverba: če po mostovih graf še vedno ni ena sama komponenta
+         (teoretično nemogoče), se postopek ponovi (max 3 krogi).
+    Vrne (elements, skupno št. dodanih povezav, št. komponent na začetku).
     """
-    node_ids = [el["data"]["id"] for el in elements if "label" in el.get("data", {})]
-    edges = [el for el in elements if "source" in el.get("data", {})]
-    id_set = set(node_ids)
+    def _pass(els):
+        node_ids = [el["data"]["id"] for el in els if "label" in el.get("data", {})]
+        edge_list = [el for el in els if "source" in el.get("data", {})]
+        id_set = set(node_ids)
+        node_shape = {el["data"]["id"]: el.get("data", {}).get("shape") for el in els if "label" in el.get("data", {})}
 
-    # Neusmerjena sosednost (povezave na neobstoječa vozlišča se ignorirajo)
-    adj = {nid: set() for nid in node_ids}
-    for el in edges:
-        d = el.get("data", {})
-        s, t = d.get("source"), d.get("target")
-        if s in id_set and t in id_set and s != t:
-            adj[s].add(t)
-            adj[t].add(s)
+        adj = {nid: set() for nid in node_ids}
+        for el in edge_list:
+            d = el.get("data", {})
+            s, t = d.get("source"), d.get("target")
+            if s in id_set and t in id_set and s != t:
+                adj[s].add(t)
+                adj[t].add(s)
 
-    # Iskanje komponent (BFS)
-    visited = set()
-    components = []
-    for nid in node_ids:
-        if nid in visited:
-            continue
-        comp, queue = set(), [nid]
-        visited.add(nid)
-        while queue:
-            cur = queue.pop()
-            comp.add(cur)
-            for nb in adj[cur]:
-                if nb not in visited:
-                    visited.add(nb)
-                    queue.append(nb)
-        components.append(comp)
+        # BFS komponente
+        visited, components = set(), []
+        for nid in node_ids:
+            if nid in visited:
+                continue
+            comp, queue = set(), [nid]
+            visited.add(nid)
+            while queue:
+                cur = queue.pop()
+                comp.add(cur)
+                for nb in adj[cur]:
+                    if nb not in visited:
+                        visited.add(nb)
+                        queue.append(nb)
+            components.append(comp)
 
-    if len(components) <= 1:
-        return elements, 0, max(1, len(components))
+        def hub_of(comp, exclude=None):
+            exclude = exclude or set()
+            # Prednost heksagonom (znanstvene domene), nato največja stopnja
+            cands = [n for n in comp if n not in exclude]
+            if not cands:
+                cands = list(comp)
+            hexa = [n for n in cands if node_shape.get(n) == "hexagon"]
+            if hexa:
+                return hexa[0]
+            return max(cands, key=lambda x: len(adj[x]))
 
-    # Glavna komponenta = največja; prednost heksagonu kot sidru
-    def hub_of(comp):
-        hexagons = [el["data"]["id"] for el in elements
-                    if el.get("data", {}).get("id") in comp and el.get("data", {}).get("shape") == "hexagon"]
-        if hexagons:
-            return hexagons[0]
-        return max(comp, key=lambda x: len(adj[x]))
+        out = list(els)
+        added = 0
+        if len(components) > 1:
+            components.sort(key=len, reverse=True)
+            main_comp = components[0]
+            main_hub = hub_of(main_comp)
+            main_hub2 = hub_of(main_comp, exclude={main_hub})
+            for comp in components[1:]:
+                c_hub = hub_of(comp)
+                # Most 1: hub otočka -> glavni hub
+                out.append({"data": {"id": f"e_bridge_{c_hub}_{added}", "source": c_hub, "target": main_hub, "rel_type": "RT", "color": "#2A9D8F"}})
+                added += 1
+                # Most 2: drugo vozlišče otočka -> drugi hub glavne komponente
+                c_hub2 = hub_of(comp, exclude={c_hub})
+                if c_hub2 and main_hub2 and c_hub2 != main_hub2:
+                    out.append({"data": {"id": f"e_bridge_{c_hub2}_{added}", "source": c_hub2, "target": main_hub2, "rel_type": "RT", "color": "#2A9D8F"}})
+                    added += 1
 
-    components.sort(key=len, reverse=True)
-    main_hub = hub_of(components[0])
+        # Minimalna stopnja 2 za vsako vozlišče (prepreči viseče verige in dvojice)
+        degree = {nid: len(adj[nid]) for nid in node_ids}
+        global_hubs = sorted(node_ids, key=lambda x: -degree[x])[:3] if node_ids else []
+        for nid in node_ids:
+            if degree[nid] >= 2:
+                continue
+            needed = 2 - degree[nid]
+            for hub in global_hubs:
+                if needed <= 0:
+                    break
+                if hub == nid or hub in adj[nid]:
+                    continue
+                out.append({"data": {"id": f"e_deg_{nid}_{added}", "source": nid, "target": hub, "rel_type": "RT", "color": "#2A9D8F"}})
+                adj[nid].add(hub)
+                adj[hub].add(nid)
+                added += 1
+                needed -= 1
+        return out, added, len(components)
 
-    new_elements = list(elements)
-    added_bridges = 0
-    for comp in components[1:]:
-        c_hub = hub_of(comp)
-        new_elements.append({
-            "data": {
-                "id": f"e_bridge_{c_hub}_{len(new_elements)}",
-                "source": c_hub,
-                "target": main_hub,
-                "rel_type": "RT",
-                "color": "#2A9D8F"
-            }
-        })
-        added_bridges += 1
-    return new_elements, added_bridges, len(components)
+    current = elements
+    total_added = 0
+    last_comps = 1
+    for _round in range(3):
+        current, added, comps = _pass(current)
+        total_added += added
+        last_comps = comps
+        if added == 0:
+            break
+    return current, total_added, last_comps
 # =============================================================================
 # 4. KONČNI POPRAVLJEN SIDEBAR (Z UNIKATNIMI KLJUČI) — GOOGLE GEMINI ONLY
 # =============================================================================
@@ -1566,7 +1601,8 @@ If state-space variables, thresholds, or ODEs are discussed:
 
 ### CONNECTIVITY MANDATE (Connectionist Richness — Critical)
 The graph must be a DENSELY WOVEN NETWORK, not a collection of loose chains:
-- EVERY node MUST have at least 2 edges (in + out combined); ideally 3–5.
+- EVERY node MUST have at least 2 edges (in + out combined); ideally 3–5. NO exceptions — a node with 0 or 1 edge is a defect.
+- FORBIDDEN: isolated pairs (two nodes connected only to each other), dangling chain-ends, and small detached clusters.
 - Use AT LEAST 10 DIFFERENT relation types across the graph (thesaurus + UML families combined); do not fall back on one dominant type.
 - Actively create LATERAL (RT/AS) edges between innovations, and cross-domain edges (Dependency, HA) between different science fields.
 - Close semantic loops: goals (stars) must receive NEG-FEEDBACK style IF-THEN edges back into the system core.
@@ -1584,6 +1620,7 @@ Output EXACTLY this structure (use these field names, nothing else):
   ]
 }}
 Rules: 'id' must be unique and referenced by 'source'/'target'; 'label' must be unique; between {node_min} and {node_max} nodes and at least {edge_min} edges; use only the relation codes listed above{'; restrict relations to: ' + allowed_rels_str if selected_edge_types else ''}.
+FINAL SELF-CHECK before output: mentally traverse the graph — it MUST be ONE SINGLE CONNECTED COMPONENT (every node reachable from every other) with every node having degree >= 2. If not, add edges until it is.
 """
                 # IZVEDBA KLICA NA GOOGLE GEMINI API
                 innovation_raw = google_generate(
@@ -1819,8 +1856,11 @@ Rules: 'id' must be unique and referenced by 'source'/'target'; 'label' must be 
                         }
                     })
 
-                # --- NOVO (v23.2): preprečevanje osamljenih otočkov se izvede po fuziji
-                #     omrežij (spodaj), da je tudi ZDRUŽENO omrežje ena sama povezana celota.
+                # --- NOVO (v23.4): preprečevanje osamljenih otočkov se izvede DVAKRAT:
+                #     (1) takoj po obdelavi povezav na svežem zagonu in
+                #     (2) po fuziji omrežij (spodaj) — tako je TUDI združeno
+                #     omrežje ena sama povezana celota z minimalno stopnjo 2.
+                final_elements, _fresh_bridges, _fresh_comps = ensure_single_connected_network(final_elements)
 
             # --- 5. FINAL DISPLAY: SEQUENTIAL INTERACTIVE SYNERGY REPORT ---
 
