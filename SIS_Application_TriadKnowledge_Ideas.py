@@ -14,7 +14,7 @@ import streamlit.components.v1 as components
 # 0. GLOBAL CONFIGURATION & SESSION DATE (FEBRUARY 24, 2026)
 # =============================================================================
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v23.0.0-ULTRA-SYNERGY-GOOGLE-GEMINI-ONLY-LEAN-MODULAR"
+VERSION_CODE = "v23.2.0-ULTRA-SYNERGY-GOOGLE-GEMINI-ONLY-LEAN"
 
 # =============================================================================
 # INITIALIZATION FIX: Preprečuje AttributeError pri zagonu in resetiranju
@@ -228,7 +228,7 @@ SVG_3D_RELIEF = """
 # 1. CORE RENDERING ENGINES & DATA FETCHING
 # =============================================================================
 
-def render_cytoscape_network(elements, layout_type="organic", container_id="cy_canvas", modular=False):
+def render_cytoscape_network(elements, layout_type="organic", container_id="cy_canvas"):
     """
     ULTRA-SYNERGY Multi-Perspective Hierarhografski motor.
     Vključuje: ISO 25964 Thesaurus, UML 2.5 Standard, Petrič HA Logiko, Logic Gates in EX fuzijo.
@@ -279,29 +279,6 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
     }
 
     selected_layout = layout_configs.get(layout_type, layout_configs["organic"])
-
-    # --- NOVO (v23): Stili za modularne (compound) vozlišče-škatle ---
-    module_style_block = """
-                    {
-                        selector: 'node[module_box = "true"]',
-                        style: {
-                            'shape': 'roundrectangle',
-                            'background-color': 'data(color)',
-                            'background-opacity': 0.12,
-                            'border-width': 3,
-                            'border-style': 'dashed',
-                            'border-color': 'data(color)',
-                            'label': 'data(label)',
-                            'color': '#1d3557',
-                            'font-size': '15px',
-                            'font-weight': '900',
-                            'text-valign': 'top',
-                            'text-halign': 'center',
-                            'text-transform': 'uppercase',
-                            'padding': '28px',
-                            'font-family': 'sans-serif'
-                        }
-                    },""" if modular else ""
 
     cyto_html = f"""
     <div style="position: relative; width: 100%;">
@@ -362,7 +339,6 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
                             'opacity': 0.8
                         }}
                     }},
-                    {module_style_block}
                     
                     /* --- 1. ISO 25964 THESAURUS LOGIC --- */
                     {{ selector: 'edge[rel_type="TT"]', style: {{ 'width': 8, 'line-color': '#1d3557', 'target-arrow-shape': 'triangle', 'target-arrow-scale': 1.6 }} }},
@@ -1035,6 +1011,75 @@ EDGE_REL_TYPES = [
     "Composition", "Aggregation", "Dependency", "Conflict", "Containment",
     "Causes(+)", "Inhibits(-)", "Triggers(θ)"
 ]
+
+# --- NOVO (v23.2): CELOVITO POVEZANO OMREŽJE — združevanje osamljenih otočkov ---
+def ensure_single_connected_network(elements):
+    """
+    Prepreči osamljene otočke: poišče vse povezane komponente (BFS po neusmerjeni
+    sosednosti) in vsako manjšo komponento poveže z mostom (RT) v največjo komponento.
+    Vrne (elements, število dodanih mostov, število komponent).
+    Vsaka komponenta se mostovi prek svojega 'hub' vozlišča (največja stopnja,
+    prednost heksagonom = znanstvene domene), da graf ostane semantično smiseln.
+    """
+    node_ids = [el["data"]["id"] for el in elements if "label" in el.get("data", {})]
+    edges = [el for el in elements if "source" in el.get("data", {})]
+    id_set = set(node_ids)
+
+    # Neusmerjena sosednost (povezave na neobstoječa vozlišča se ignorirajo)
+    adj = {nid: set() for nid in node_ids}
+    for el in edges:
+        d = el.get("data", {})
+        s, t = d.get("source"), d.get("target")
+        if s in id_set and t in id_set and s != t:
+            adj[s].add(t)
+            adj[t].add(s)
+
+    # Iskanje komponent (BFS)
+    visited = set()
+    components = []
+    for nid in node_ids:
+        if nid in visited:
+            continue
+        comp, queue = set(), [nid]
+        visited.add(nid)
+        while queue:
+            cur = queue.pop()
+            comp.add(cur)
+            for nb in adj[cur]:
+                if nb not in visited:
+                    visited.add(nb)
+                    queue.append(nb)
+        components.append(comp)
+
+    if len(components) <= 1:
+        return elements, 0, max(1, len(components))
+
+    # Glavna komponenta = največja; prednost heksagonu kot sidru
+    def hub_of(comp):
+        hexagons = [el["data"]["id"] for el in elements
+                    if el.get("data", {}).get("id") in comp and el.get("data", {}).get("shape") == "hexagon"]
+        if hexagons:
+            return hexagons[0]
+        return max(comp, key=lambda x: len(adj[x]))
+
+    components.sort(key=len, reverse=True)
+    main_hub = hub_of(components[0])
+
+    new_elements = list(elements)
+    added_bridges = 0
+    for comp in components[1:]:
+        c_hub = hub_of(comp)
+        new_elements.append({
+            "data": {
+                "id": f"e_bridge_{c_hub}",
+                "source": c_hub,
+                "target": main_hub,
+                "rel_type": "RT",
+                "color": "#2A9D8F"
+            }
+        })
+        added_bridges += 1
+    return new_elements, added_bridges, len(components)
 # =============================================================================
 # 4. KONČNI POPRAVLJEN SIDEBAR (Z UNIKATNIMI KLJUČI) — GOOGLE GEMINI ONLY
 # =============================================================================
@@ -1150,23 +1195,6 @@ with st.sidebar:
         key="side_edge_types_multiselect_v23"
     )
 
-    # --- NOVO (v23): MODULARNI PRIKAZ GRAFA ---
-    st.subheader("🧩 MODULAR VIEW")
-    modular_view = st.checkbox(
-        "Enable Modular Graph Display (module boxes)",
-        value=False,
-        help="Vozlišča se združijo v barvne modularne škatle (gl. simbolično shemo Ga2): "
-             "Environmental Foundation, Biochemical Hierarchy, ATE, Systemic Core, Vision ipd.",
-        key="side_modular_view_v23"
-    )
-    module_grouping = st.selectbox(
-        "Group Modules By:",
-        options=["Node Color (semantic domains)", "Node Shape (logical level)", "Color + Shape (fine-grained)"],
-        index=0,
-        help="Barva = semantična domena (kot škatle v shemi) | Oblika = logična raven | Oboje = najfinejša delitev.",
-        key="side_module_grouping_v23"
-    )
-
     st.divider()
 
     # 5. Reset in Guide Gumbi (Dodani unikatni ključi)
@@ -1246,7 +1274,7 @@ if st.session_state.show_user_guide:
     1. **Key Input**: Enter your Google Gemini API key and select Google models for Phase 1 and Phase 2.
     2. **Research Foundation (Step 1)**: Google Gemini performs structural synthesis foundation using Integrated Metamodel Architecture (IMA).
     3. **Innovation Prompt (Step 2)**: Google Gemini takes the Phase 1 foundation and generates radical 'Useful Innovative Ideas' using Mental Approaches (MA) logic.
-    4. **Visualization**: The interactive 18D graph maps structural facts against generative ideas. Node count, edge types and modular view are set in the sidebar BEFORE running the two inquiries.
+    4. **Visualization**: The interactive 18D graph maps structural facts against generative ideas. Node count and edge types are set in the sidebar BEFORE running the two inquiries.
     """)
 
 # REFERENCE ARCHITECTURE BOXES
@@ -1344,74 +1372,6 @@ with col_inq3:
                 st.text(file_content[:300] + "...")
         except Exception as e:
             st.error(f"Error reading file: {e}")
-
-# ============================================================================= 
-# 4.9 NOVO (v23): GRADNJA MODULARNIH ELEMENTOV (compound škatle po shemi Ga2)
-# ============================================================================= 
-
-def build_modular_elements(elements, grouping="color"):
-    """
-    Združi vozlišča v modularne škatle (Cytoscape compound/parent vozlišča),
-    simbolično po shemi Ga2: vsak modul je barvna škatla z oznako in vozlišči znotraj.
-    grouping: 'color' (semantične domene), 'shape' (logične ravni) ali 'both'.
-    """
-    nodes = [el for el in elements if "label" in el.get("data", {}) and el["data"].get("shape") not in (None, "", "roundrectangle", "module")]
-    edges = [el for el in elements if "source" in el.get("data", {})]
-
-    def group_key(d):
-        if grouping == "shape":
-            return f"shape:{d.get('shape', 'rectangle')}"
-        elif grouping == "both":
-            return f"{d.get('color', '#ADB5BD')}|{d.get('shape', 'rectangle')}"
-        return f"color:{d.get('color', '#ADB5BD')}"
-
-    # Imena modulom glede na prevladujočo obliko (kot v shemi: cilji, domene, inovacije ...)
-    SHAPE_MODULE_NAMES = {
-        "star": "Strategic Goals Module",
-        "hexagon": "Science Domain Module",
-        "diamond": "Innovation Module",
-        "triangle": "Process Module",
-        "octagon": "Ethical Constraints Module",
-        "ellipse": "Human Factors Module",
-        "rectangle": "Facts & Data Module"
-    }
-
-    groups = {}
-    for el in nodes:
-        k = group_key(el["data"])
-        groups.setdefault(k, []).append(el)
-
-    new_elements = []
-    group_color = {}
-    for gi, (k, members) in enumerate(sorted(groups.items()), start=1):
-        g_color = members[0]["data"].get("color", "#ADB5BD")
-        shapes = {m["data"].get("shape") for m in members}
-        if len(shapes) == 1:
-            g_label = SHAPE_MODULE_NAMES.get(next(iter(shapes)), f"Module {gi}")
-        else:
-            # Mešana skupina: ime po barvni domeni (npr. 'Environmental Foundation')
-            g_label = f"Module {gi}"
-        if grouping == "shape":
-            g_color = "#1d3557"
-        mid = f"module_{gi}"
-        group_color[k] = mid
-        new_elements.append({
-            "data": {
-                "id": mid,
-                "label": g_label,
-                "color": g_color,
-                "shape": "roundrectangle",
-                "module_box": "true"
-            }
-        })
-        for m in members:
-            md = dict(m["data"])
-            md["parent"] = mid
-            new_elements.append({"data": md})
-
-    for e in edges:
-        new_elements.append(e)
-    return new_elements
 
 # ============================================================================= 
 # 5. SYNERGY EXECUTION ENGINE (PURE GOOGLE GEMINI SEQUENTIAL PIPELINE)
@@ -1560,12 +1520,6 @@ You are the SIS Lead Strategic Innovation Architect.
 
 {edge_restriction_block}
 
-### MODULAR STRUCTURE MANDATE
-Organize the graph into SEMANTIC MODULES (thematic clusters like 'Environmental Foundation', 
-'Systemic Core', 'Vision', thematic domain blocks). Assign each node a 'color' that reflects 
-its module (nodes of the same module share the same color) so the visualization can group 
-them into module boxes.
-
 ### ANTI-REDUNDANCY RULES (STRICT)
 - Every innovation in the report must be UNIQUE: no repeated, rephrased, overlapping, or near-duplicate ideas.
 - Each innovation must add a genuinely NEW insight, method, or mechanism — never a restatement of a previous point.
@@ -1616,7 +1570,7 @@ The graph must be a DENSELY WOVEN NETWORK, not a collection of loose chains:
 - Use AT LEAST 10 DIFFERENT relation types across the graph (thesaurus + UML families combined); do not fall back on one dominant type.
 - Actively create LATERAL (RT/AS) edges between innovations, and cross-domain edges (Dependency, HA) between different science fields.
 - Close semantic loops: goals (stars) must receive NEG-FEEDBACK style IF-THEN edges back into the system core.
-- No isolated islands: every sub-network must connect to the main structure.
+- No isolated islands (CRITICAL): the ENTIRE graph must form ONE SINGLE CONNECTED COMPONENT — every node must be reachable from every other node through some chain of edges. Never create disconnected sub-networks, chain-ends or free-floating clusters.
 - Target edge density: at least {target_edge_factor} edges per node.
 
 ### STRICT JSON FORMAT (MANDATORY)
@@ -1865,31 +1819,8 @@ Rules: 'id' must be unique and referenced by 'source'/'target'; 'label' must be 
                         }
                     })
 
-                # --- POVEZLJIVOSTNA OKREPITEV: samodejni mostovi za izolirana vozlišča ---
-                connected = set()
-                for el in final_elements:
-                    d = el.get("data", {})
-                    if "source" in d:
-                        connected.add(d["source"]); connected.add(d["target"])
-                all_node_ids = [el["data"]["id"] for el in final_elements if "label" in el.get("data", {})]
-                hexagon_ids = [el["data"]["id"] for el in final_elements if el.get("data", {}).get("shape") == "hexagon"]
-                bridge_anchor = hexagon_ids[0] if hexagon_ids else (all_node_ids[0] if all_node_ids else None)
-                bridged_count = 0
-                for nid in all_node_ids:
-                    if nid not in connected and bridge_anchor and nid != bridge_anchor:
-                        # Izolirano vozlišče povežemo z asociativno RT povezavo z najbližjo domeno
-                        final_elements.append({
-                            "data": {
-                                "id": f"e_bridge_{nid}",
-                                "source": nid,
-                                "target": bridge_anchor,
-                                "rel_type": "RT",
-                                "color": "#2A9D8F"
-                            }
-                        })
-                        bridged_count += 1
-                if bridged_count:
-                    st.caption(f"🔗 Connectivity reinforcement: {bridged_count} isolated node(s) auto-bridged into the network (RT).")
+                # --- NOVO (v23.2): preprečevanje osamljenih otočkov se izvede po fuziji
+                #     omrežij (spodaj), da je tudi ZDRUŽENO omrežje ena sama povezana celota.
 
             # --- 5. FINAL DISPLAY: SEQUENTIAL INTERACTIVE SYNERGY REPORT ---
 
@@ -1985,38 +1916,29 @@ Rules: 'id' must be unique and referenced by 'source'/'target'; 'label' must be 
                 if len(prev_network) > 0:
                     st.success(f"🌐 Network Fusion: merged with previous run(s) — one unified network ({len(final_elements)} elements total). Use ♻️ RESET to start a fresh network.")
 
-                # --- NOVO (v23): priprava elementov za prikaz (modularno ali navadno) ---
-                grouping_mode = {"Node Color (semantic domains)": "color", "Node Shape (logical level)": "shape", "Color + Shape (fine-grained)": "both"}.get(module_grouping, "color")
-                if modular_view:
-                    display_elements = build_modular_elements(final_elements, grouping=grouping_mode)
-                    st.caption(f"🧩 Modular view enabled: nodes grouped into module boxes by {module_grouping.lower()}.")
-                else:
-                    display_elements = final_elements
+                # --- NOVO (v23.2): CELOVITA POVEZANOST — združitev osamljenih otočkov ---
+                # Tudi po fuziji čez več zagonov graf ne sme imeti ločenih komponent:
+                # vsak osamljeni otoček se samodejno poveže (most RT) z glavno komponento.
+                final_elements, added_bridges, comp_count = ensure_single_connected_network(final_elements)
+                st.session_state.accumulated_network = final_elements
+                if added_bridges:
+                    st.caption(f"🔗 Connectivity reinforcement: {added_bridges} isolated island(s) out of {comp_count} components auto-bridged into one fully connected network (RT).")
 
                 # 5e. FINAL GRAPH RENDERING (Z DINAMIČNO PERSPEKTIVO)
-                view_title = f"🕸️ HYBRID SEMANTIC SYSTEM MAP ({graph_perspective.upper()} VIEW" + (" — MODULAR" if modular_view else "") + ")"
-                st.subheader(view_title)
+                st.subheader(f"🕸️ HYBRID SEMANTIC SYSTEM MAP ({graph_perspective.upper()} VIEW)")
                 render_cytoscape_network(
-                    display_elements, 
+                    final_elements, 
                     layout_type=graph_perspective, 
-                    container_id=f"cy_{int(time.time())}",
-                    modular=modular_view
+                    container_id=f"cy_{int(time.time())}"
                 )
 
                 # 5f. IZVOZ POROČILA IN GRAFA V SAMOSTOJNI HTML
-                def build_html_export(elements, report_md, modular=False):
+                def build_html_export(elements, report_md):
                     """Skuha samostojno HTML datoteko: poročilo + interaktivni graf (Cytoscape)."""
                     # Poročilo varno prek base64 (prepreči lomljenje zaradi narekovajev/znakov)
                     report_b64 = base64.b64encode((report_md or "").encode("utf-8")).decode("ascii")
                     elements_json = json.dumps(elements or [])
                     layout_js = "cose"
-                    module_style_js = """
-        { selector: 'node[module_box = "true"]', style: {
-            'shape': 'roundrectangle', 'background-color': 'data(color)', 'background-opacity': 0.12,
-            'border-width': 3, 'border-style': 'dashed', 'border-color': 'data(color)',
-            'label': 'data(label)', 'color': '#1d3557', 'font-size': '15px', 'font-weight': '900',
-            'text-valign': 'top', 'text-halign': 'center', 'text-transform': 'uppercase', 'padding': '28px'
-        }},""" if modular else ""
                     html = """<!DOCTYPE html>
 <html lang="sl">
 <head>
@@ -2067,7 +1989,6 @@ cy1 = cytoscape({
             'font-size': '12px', 'font-weight': 'bold', 'text-wrap': 'wrap', 'text-max-width': '80px',
             'border-width': 3, 'border-color': '#ffffff', 'text-outline-color': '#ffffff', 'text-outline-width': 2
         }},
-__MODULE_STYLE__
         { selector: 'edge', style: {
             'width': 2, 'line-color': 'data(color)', 'label': 'data(rel_type)', 'font-size': '9px',
             'color': '#2a9d8f', 'curve-style': 'unbundled-bezier', 'control-point-step-size': 40,
@@ -2093,13 +2014,12 @@ function downloadPng() {
                     html = html.replace("__REPORT_B64__", report_b64)
                     html = html.replace("__ELEMENTS__", elements_json)
                     html = html.replace("__LAYOUT__", layout_js)
-                    html = html.replace("__MODULE_STYLE__", module_style_js)
                     return html
 
                 # Gumb za prenos samostojnega HTML (poročilo + graf v eni datoteki)
                 st.download_button(
                     "🌐 EXPORT REPORT + GRAPH (HTML)",
-                    data=build_html_export(display_elements, full_report, modular=modular_view),
+                    data=build_html_export(final_elements, full_report),
                     file_name=f"sis_report_graph_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html",
                     mime="text/html",
                     use_container_width=True,
