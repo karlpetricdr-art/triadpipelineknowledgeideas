@@ -14,7 +14,7 @@ import streamlit.components.v1 as components
 # 0. GLOBAL CONFIGURATION & SESSION DATE (FEBRUARY 24, 2026)
 # =============================================================================
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v22.13.0-ULTRA-SYNERGY-GOOGLE-GEMINI-ONLY-LEAN"
+VERSION_CODE = "v23.0.0-ULTRA-SYNERGY-GOOGLE-GEMINI-ONLY-LEAN-MODULAR"
 
 # =============================================================================
 # INITIALIZATION FIX: Preprečuje AttributeError pri zagonu in resetiranju
@@ -228,11 +228,12 @@ SVG_3D_RELIEF = """
 # 1. CORE RENDERING ENGINES & DATA FETCHING
 # =============================================================================
 
-def render_cytoscape_network(elements, layout_type="organic", container_id="cy_canvas"):
+def render_cytoscape_network(elements, layout_type="organic", container_id="cy_canvas", modular=False):
     """
     ULTRA-SYNERGY Multi-Perspective Hierarhografski motor.
     Vključuje: ISO 25964 Thesaurus, UML 2.5 Standard, Petrič HA Logiko, Logic Gates in EX fuzijo.
     GEOMETRIJSKA TAKSONOMIJA: Zvezde, Heksagoni, Diamanti, Oktogoni, Trikotniki, Elipse, Pravokotniki.
+    NOVO (v23): Modularni prikaz (compound/module škatle po barvah vozlišč).
     """
 
     layout_configs = {
@@ -278,6 +279,29 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
     }
 
     selected_layout = layout_configs.get(layout_type, layout_configs["organic"])
+
+    # --- NOVO (v23): Stili za modularne (compound) vozlišče-škatle ---
+    module_style_block = """
+                    {
+                        selector: 'node[module_box = "true"]',
+                        style: {
+                            'shape': 'roundrectangle',
+                            'background-color': 'data(color)',
+                            'background-opacity': 0.12,
+                            'border-width': 3,
+                            'border-style': 'dashed',
+                            'border-color': 'data(color)',
+                            'label': 'data(label)',
+                            'color': '#1d3557',
+                            'font-size': '15px',
+                            'font-weight': '900',
+                            'text-valign': 'top',
+                            'text-halign': 'center',
+                            'text-transform': 'uppercase',
+                            'padding': '28px',
+                            'font-family': 'sans-serif'
+                        }
+                    },""" if modular else ""
 
     cyto_html = f"""
     <div style="position: relative; width: 100%;">
@@ -338,6 +362,7 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
                             'opacity': 0.8
                         }}
                     }},
+                    {module_style_block}
                     
                     /* --- 1. ISO 25964 THESAURUS LOGIC --- */
                     {{ selector: 'edge[rel_type="TT"]', style: {{ 'width': 8, 'line-color': '#1d3557', 'target-arrow-shape': 'triangle', 'target-arrow-scale': 1.6 }} }},
@@ -693,16 +718,33 @@ KNOWLEDGE_BASE = {
         "Hermeneutics": "Theory and methodology of interpretation, especially of texts and human actions.",
         "Relativism": "The view that truth and falsity, right and wrong, are products of social and historical contexts.",
         "Structuralism": "Elements of human culture must be understood in terms of their relationship to a broader system.",
-        "Post-Structuralism": "Critique of structuralism, emphasizing the instability of meaning and systems."
+        "Post-Structuralism": "Critique of structuralism, emphasizing the instability of meaning and systems.",
+        # --- NOVO (v23): dodatne pomembne znanstvene paradigme ---
+        "Instrumentalism": "Scientific theories are tools for prediction and control, not literal descriptions of reality.",
+        "Operationalism": "Scientific concepts are defined by the concrete operations used to measure them.",
+        "Bayesianism": "Rational belief updating through probability revision in the light of new evidence.",
+        "Materialism": "Everything that exists is ultimately grounded in physical matter and its interactions.",
+        "Idealism": "Reality is fundamentally mental or conceptually constructed.",
+        "Emergentism": "Higher-level phenomena arise with genuinely novel properties not reducible to their parts.",
+        "Determinism": "All events are fully determined by prior states of the system.",
+        "Probabilism": "Indeterminacy and stochastic processes are intrinsic features of nature, not artifacts of ignorance.",
+        "Functionalism": "Mental and social states are defined by their functional roles, not by their substrate.",
+        "Structural Realism": "Science captures the relational structure of the world, not its intrinsic nature.",
+        "Conventionalism": "Scientific principles are partly founded on agreed conventions chosen for convenience.",
+        "Naturalism": "Inquiry should be grounded in the methods of natural science, without supernatural explanations.",
+        "Anti-Foundationalism": "There is no certain, self-justifying basis of knowledge; justification is holistic and fallible.",
+        "Postmodernism": "Skepticism toward grand narratives and universal claims of objective truth.",
+        "Complexity Paradigm": "Reality is best modeled as complex adaptive systems with non-linear dynamics and emergence.",
+        "Interdisciplinarity": "Knowledge production through the integration and fusion of multiple disciplinary perspectives."
     },
     "Structural models": {
+        "Concepts": "Abstract constructs and conceptual building blocks.",
         "Causal Connections": "Chains of cause and effect mapping systemic causality.",
         "Principles & Relations": "Fundamental laws and the inter-relations between entities.",
         "Episodes & Sequences": "Temporal flow, historical timelines, and event ordering.",
         "Facts & Characteristics": "Raw data properties, attributes, and static descriptions.",
         "Generalizations": "Broad frameworks and high-level theoretical models.",
-        "Glossary": "Precise definitions and terminological clarity.",
-        "Concepts": "Abstract constructs and conceptual building blocks."
+        "Glossary": "Precise definitions and terminological clarity."
     },
     "Science fields": {
         "Mathematics": {
@@ -884,6 +926,91 @@ KNOWLEDGE_BASE = {
             "methods": ["Legal Hermeneutics", "Comparative Law", "Dogmatic Method", "Empirical Legal Research"], 
             "tools": ["Legislative Databases", "Case Law Archives", "Constitutional Records", "Westlaw"], 
             "facets": ["Jurisprudence", "Constitutional Law", "Criminal Law", "Civil Law", "International Law"]
+        },
+        # --- NOVO (v23): dodatna pomembna znanstvena področja ---
+        "Astronomy": {
+            "cat": "Natural",
+            "methods": ["Photometry", "Spectroscopy", "Astrometry", "Radio Interferometry"],
+            "tools": ["Telescopes (Optical/Radio)", "Space Probes", "CCD Imaging", "Planetarium SW"],
+            "facets": ["Astrophysics", "Cosmology", "Planetary Science", "Stellar Evolution"]
+        },
+        "Statistics": {
+            "cat": "Formal",
+            "methods": ["Hypothesis Testing", "Bayesian Inference", "Regression Modeling", "Design of Experiments"],
+            "tools": ["R", "SPSS", "JASP", "SAS"],
+            "facets": ["Biostatistics", "Multivariate Analysis", "Time-Series Analysis", "Non-parametric Methods"]
+        },
+        "Data Science": {
+            "cat": "Formal/Interdisciplinary",
+            "methods": ["Machine Learning", "Data Mining", "Feature Engineering", "Predictive Modeling"],
+            "tools": ["Python (scikit-learn)", "TensorFlow", "Jupyter", "Spark"],
+            "facets": ["Big Data Analytics", "Natural Language Processing", "Computer Vision", "Data Engineering"]
+        },
+        "Environmental Science": {
+            "cat": "Natural/Interdisciplinary",
+            "methods": ["Environmental Impact Assessment", "Life-Cycle Analysis", "Pollution Monitoring", "Ecosystem Modeling"],
+            "tools": ["GIS", "Environmental Sensors", "Satellite Imagery", "LIDAR"],
+            "facets": ["Sustainability Science", "Pollution Control", "Resource Management", "Climate Adaptation"]
+        },
+        "Pharmacy": {
+            "cat": "Applied/Natural",
+            "methods": ["Pharmacokinetics", "Drug Design", "Formulation Science", "Clinical Pharmacology"],
+            "tools": ["HPLC", "Dissolution Testers", "Molecular Docking SW", "Tablet Presses"],
+            "facets": ["Pharmacology", "Pharmaceutical Chemistry", "Toxicology", "Pharmacogenomics"]
+        },
+        "Veterinary Medicine": {
+            "cat": "Applied/Natural",
+            "methods": ["Clinical Examination", "Herd Health Management", "Diagnostic Imaging", "Epidemiological Surveillance"],
+            "tools": ["Veterinary Ultrasound", "Hematology Analyzers", "Digital Radiography"],
+            "facets": ["Companion Animal Medicine", "Food Safety", "Zoonotic Disease Control", "Veterinary Pathology"]
+        },
+        "Agricultural Science": {
+            "cat": "Applied/Natural",
+            "methods": ["Field Trials", "Crop Modeling", "Soil Analysis", "Selective Breeding"],
+            "tools": ["Greenhouse Facilities", "Soil Sensors", "Precision Agriculture Drones"],
+            "facets": ["Agronomy", "Horticulture", "Animal Science", "Agroecology"]
+        },
+        "Education Sciences": {
+            "cat": "Social/Applied",
+            "methods": ["Pedagogical Experiment", "Didactic Analysis", "Action Research", "Assessment Design"],
+            "tools": ["Learning Management Systems", "Assessment Rubrics", "Educational Analytics"],
+            "facets": ["Curriculum Theory", "Educational Psychology", "Instructional Design", "Adult Education"]
+        },
+        "Management Science": {
+            "cat": "Applied/Social",
+            "methods": ["Operations Research", "Scenario Planning", "Balanced Scorecard", "Case Study Analysis"],
+            "tools": ["ERP Systems", "Project Management SW", "BI Dashboards"],
+            "facets": ["Strategic Management", "Organizational Behavior", "Operations Management", "Innovation Management"]
+        },
+        "Logic": {
+            "cat": "Formal",
+            "methods": ["Formal Deduction", "Model Theory", "Proof Theory", "Modal Analysis"],
+            "tools": ["Proof Assistants (Coq/Lean)", "Truth Tables", "Theorem Provers"],
+            "facets": ["Classical Logic", "Modal Logic", "Non-classical Logic", "Computability Theory"]
+        },
+        "Communication Science": {
+            "cat": "Social",
+            "methods": ["Content Analysis", "Discourse Analysis", "Media Effects Research", "Audience Studies"],
+            "tools": ["Media Monitoring Tools", "Survey Platforms", "Social Network Analysis SW"],
+            "facets": ["Media Studies", "Rhetoric", "Digital Communication", "Journalism Studies"]
+        },
+        "Demography": {
+            "cat": "Social",
+            "methods": ["Census Analysis", "Cohort Analysis", "Migration Modeling", "Fertility Analysis"],
+            "tools": ["Population Registries", "Statistical Projections", "GIS"],
+            "facets": ["Fertility & Mortality", "Migration Studies", "Population Aging", "Population Projections"]
+        },
+        "Kinesiology": {
+            "cat": "Applied/Natural",
+            "methods": ["Motion Capture Analysis", "Exercise Testing", "Biomechanical Modeling", "Training Intervention Studies"],
+            "tools": ["Force Plates", "EMG", "Ergospirometry", "Motion Capture Systems"],
+            "facets": ["Sports Medicine", "Exercise Physiology", "Motor Control", "Sports Psychology"]
+        },
+        "Information Science": {
+            "cat": "Formal/Applied",
+            "methods": ["Information Retrieval Modeling", "Knowledge Graph Construction", "Ontology Engineering", "Bibliometrics"],
+            "tools": ["Search Engines", "Knowledge Graph DBs", "Citation Indexes", "RDF/OWL Tooling"],
+            "facets": ["Knowledge Organization", "Human-Information Interaction", "Informetrics", "Semantic Web"]
         }
     }
 }
@@ -899,6 +1026,15 @@ IDEATION_TECHNIQUES = {
     "Blue Ocean Strategy": "Identify ways to make the competition irrelevant by creating a new value space through 'Eliminate-Reduce-Raise-Create' logic.",
     "Synectics": "Use direct, personal, and symbolic analogies to make the strange familiar and the familiar strange."
 }
+
+# --- NOVO (v23): celoten spekter povezav za izbiro uporabnika ---
+EDGE_REL_TYPES = [
+    "TT", "BT", "NT", "IN", "RT", "AS", "EQ", "HA",
+    "AND", "OR", "XOR", "NOT", "IF-THEN",
+    "Generalization", "Specialization", "Realization",
+    "Composition", "Aggregation", "Dependency", "Conflict", "Containment",
+    "Causes(+)", "Inhibits(-)", "Triggers(θ)"
+]
 # =============================================================================
 # 4. KONČNI POPRAVLJEN SIDEBAR (Z UNIKATNIMI KLJUČI) — GOOGLE GEMINI ONLY
 # =============================================================================
@@ -983,6 +1119,54 @@ with st.sidebar:
         key="side_graph_layout_v2026"
     )
 
+    # --- NOVO (v23): DRSLNIK ZA ŠTEVILO VOZLIŠČ GRAFA ---
+    st.subheader("🎚️ GRAPH SIZE CONTROL")
+    target_node_count = st.slider(
+        "Target Number of Nodes:",
+        min_value=12,
+        max_value=150,
+        value=40,
+        step=2,
+        help="Ciljno število vozlišč, ki jih mora graf vsebovati (določimo ga PRED poizvedbama).",
+        key="side_node_count_slider_v23"
+    )
+    target_edge_factor = st.slider(
+        "Edge Density (edges per node):",
+        min_value=1.0,
+        max_value=4.0,
+        value=1.5,
+        step=0.1,
+        help="Kakovost povezanosti: več = gostejše, bolj povezano omrežje.",
+        key="side_edge_density_slider_v23"
+    )
+
+    # --- NOVO (v23): IZBIRA TIPOV POVEZAV ---
+    st.subheader("🔗 EDGE TYPE CONTROL")
+    selected_edge_types = st.multiselect(
+        "Included Relation Types (empty = all):",
+        options=EDGE_REL_TYPES,
+        default=[],
+        help="Izberite, katere semantične povezave naj graf vključuje. Prazno = vse.",
+        key="side_edge_types_multiselect_v23"
+    )
+
+    # --- NOVO (v23): MODULARNI PRIKAZ GRAFA ---
+    st.subheader("🧩 MODULAR VIEW")
+    modular_view = st.checkbox(
+        "Enable Modular Graph Display (module boxes)",
+        value=False,
+        help="Vozlišča se združijo v barvne modularne škatle (gl. simbolično shemo Ga2): "
+             "Environmental Foundation, Biochemical Hierarchy, ATE, Systemic Core, Vision ipd.",
+        key="side_modular_view_v23"
+    )
+    module_grouping = st.selectbox(
+        "Group Modules By:",
+        options=["Node Color (semantic domains)", "Node Shape (logical level)", "Color + Shape (fine-grained)"],
+        index=0,
+        help="Barva = semantična domena (kot škatle v shemi) | Oblika = logična raven | Oboje = najfinejša delitev.",
+        key="side_module_grouping_v23"
+    )
+
     st.divider()
 
     # 5. Reset in Guide Gumbi (Dodani unikatni ključi)
@@ -1062,7 +1246,7 @@ if st.session_state.show_user_guide:
     1. **Key Input**: Enter your Google Gemini API key and select Google models for Phase 1 and Phase 2.
     2. **Research Foundation (Step 1)**: Google Gemini performs structural synthesis foundation using Integrated Metamodel Architecture (IMA).
     3. **Innovation Prompt (Step 2)**: Google Gemini takes the Phase 1 foundation and generates radical 'Useful Innovative Ideas' using Mental Approaches (MA) logic.
-    4. **Visualization**: The interactive 18D graph maps structural facts against generative ideas.
+    4. **Visualization**: The interactive 18D graph maps structural facts against generative ideas. Node count, edge types and modular view are set in the sidebar BEFORE running the two inquiries.
     """)
 
 # REFERENCE ARCHITECTURE BOXES
@@ -1081,9 +1265,30 @@ with r1c2: sel_sciences = st.multiselect("2. Select Science Fields:", sorted(lis
 with r1c3: expertise = st.select_slider("3. Expertise Level:", ["Novice", "Intermediate", "Expert"], value="Expert")
 
 r2c1, r2c2, r2c3 = st.columns(3)
-with r2c1: sel_paradigms = st.multiselect("4. Scientific Paradigms:", list(KNOWLEDGE_BASE["Scientific paradigms"].keys()), default=["Rationalism"])
+with r2c1: sel_paradigms = st.multiselect("4. Scientific Paradigms:", list(KNOWLEDGE_BASE["Scientific paradigms"].keys()), default=["Rationalism", "Holism", "Systems Theory", "Critical Theory"])
 with r2c2: sel_models = st.multiselect("5. Structural Models:", list(KNOWLEDGE_BASE["Structural models"].keys()), default=["Concepts"])
 with r2c3: goal_context = st.selectbox("6. Strategic Project Goal:", ["Scientific Research", "Problem Solving", "Educational", "Policy Making"])
+
+# --- NOVO (v23): 7. METHODOLOGIES IN 8. TOOLS (se gradita iz izbranih znanstvenih polj) ---
+r3c1, r3c2 = st.columns(2)
+available_methods = sorted({m for s in sel_sciences for m in KNOWLEDGE_BASE["Science fields"].get(s, {}).get("methods", [])})
+available_tools = sorted({t for s in sel_sciences for t in KNOWLEDGE_BASE["Science fields"].get(s, {}).get("tools", [])})
+with r3c1:
+    sel_methodologies = st.multiselect(
+        "7. Methodologies:",
+        options=available_methods,
+        default=[],
+        help="Metodologije, pridobljene iz izbranih znanstvenih polj (točka 2).",
+        key="unique_methodologies_multiselect_v23"
+    )
+with r3c2:
+    sel_tools = st.multiselect(
+        "8. Tools:",
+        options=available_tools,
+        default=[],
+        help="Orodja in instrumenti, pridobljeni iz izbranih znanstvenih polj (točka 2).",
+        key="unique_tools_multiselect_v23"
+    )
 
 # ============================================================================= 
 # 🧬 INTEGRIRAN NADZOR: INOVACIJSKA STRATEGIJA (OČIŠČENA VERZIJA)
@@ -1139,6 +1344,74 @@ with col_inq3:
                 st.text(file_content[:300] + "...")
         except Exception as e:
             st.error(f"Error reading file: {e}")
+
+# ============================================================================= 
+# 4.9 NOVO (v23): GRADNJA MODULARNIH ELEMENTOV (compound škatle po shemi Ga2)
+# ============================================================================= 
+
+def build_modular_elements(elements, grouping="color"):
+    """
+    Združi vozlišča v modularne škatle (Cytoscape compound/parent vozlišča),
+    simbolično po shemi Ga2: vsak modul je barvna škatla z oznako in vozlišči znotraj.
+    grouping: 'color' (semantične domene), 'shape' (logične ravni) ali 'both'.
+    """
+    nodes = [el for el in elements if "label" in el.get("data", {}) and el["data"].get("shape") not in (None, "", "roundrectangle", "module")]
+    edges = [el for el in elements if "source" in el.get("data", {})]
+
+    def group_key(d):
+        if grouping == "shape":
+            return f"shape:{d.get('shape', 'rectangle')}"
+        elif grouping == "both":
+            return f"{d.get('color', '#ADB5BD')}|{d.get('shape', 'rectangle')}"
+        return f"color:{d.get('color', '#ADB5BD')}"
+
+    # Imena modulom glede na prevladujočo obliko (kot v shemi: cilji, domene, inovacije ...)
+    SHAPE_MODULE_NAMES = {
+        "star": "Strategic Goals Module",
+        "hexagon": "Science Domain Module",
+        "diamond": "Innovation Module",
+        "triangle": "Process Module",
+        "octagon": "Ethical Constraints Module",
+        "ellipse": "Human Factors Module",
+        "rectangle": "Facts & Data Module"
+    }
+
+    groups = {}
+    for el in nodes:
+        k = group_key(el["data"])
+        groups.setdefault(k, []).append(el)
+
+    new_elements = []
+    group_color = {}
+    for gi, (k, members) in enumerate(sorted(groups.items()), start=1):
+        g_color = members[0]["data"].get("color", "#ADB5BD")
+        shapes = {m["data"].get("shape") for m in members}
+        if len(shapes) == 1:
+            g_label = SHAPE_MODULE_NAMES.get(next(iter(shapes)), f"Module {gi}")
+        else:
+            # Mešana skupina: ime po barvni domeni (npr. 'Environmental Foundation')
+            g_label = f"Module {gi}"
+        if grouping == "shape":
+            g_color = "#1d3557"
+        mid = f"module_{gi}"
+        group_color[k] = mid
+        new_elements.append({
+            "data": {
+                "id": mid,
+                "label": g_label,
+                "color": g_color,
+                "shape": "roundrectangle",
+                "module_box": "true"
+            }
+        })
+        for m in members:
+            md = dict(m["data"])
+            md["parent"] = mid
+            new_elements.append({"data": md})
+
+    for e in edges:
+        new_elements.append(e)
+    return new_elements
 
 # ============================================================================= 
 # 5. SYNERGY EXECUTION ENGINE (PURE GOOGLE GEMINI SEQUENTIAL PIPELINE)
@@ -1216,6 +1489,8 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 - Target Science Fields: {', '.join(sel_sciences)}
                 - Applied Scientific Paradigms: {', '.join(sel_paradigms)}
                 - Structural Model Focus: {', '.join(sel_models)}
+                - Applied Methodologies (7): {', '.join(sel_methodologies) if sel_methodologies else 'auto-select from fields'}
+                - Applied Tools (8): {', '.join(sel_tools) if sel_tools else 'auto-select from fields'}
                 - Innovation Frameworks: {', '.join(selected_techniques)}
                 - Expertise Level: {expertise}
                 - Project Strategic Goal: {goal_context}
@@ -1246,10 +1521,25 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                 )
                 st.session_state.groq_synthesis = groq_synthesis
 
+            # --- NOVO (v23): dinamične omejitve velikosti grafa ---
+            node_min = max(12, int(target_node_count * 0.9))
+            node_max = int(target_node_count * 1.1)
+            edge_min = max(18, int(target_node_count * target_edge_factor))
+            allowed_rels_str = ", ".join(selected_edge_types) if selected_edge_types else "full spectrum (all codes listed above)"
+            edge_restriction_block = f"""
+### GRAPH SIZE MANDATE (USER-SET)
+- Generate between {node_min} and {node_max} nodes (target: {target_node_count}).
+- Generate at least {edge_min} edges (target density: {target_edge_factor} edges per node).
+""" + (f"""
+### RESTRICTED RELATION TYPES (USER-SET)
+- Use ONLY these relation codes: {allowed_rels_str}
+- Do NOT emit edges with any other relation type.
+""" if selected_edge_types else "")
+
             # --- 3. PHASE 2: GOOGLE GEMINI (Innovation - npr. Gemini 3.7/3.8 Flash) ---
             with st.spinner(f'PHASE 2: Generating innovations with {p2_model_label}...'):
 
-                # --- STANDARDNI INTERDISCIPLINARNI PROTOKOL (Epiplexity odstranjen) ---
+                # --- STANDARDNI INTERDISCIPLINARNI PROTOKOL (Epiplexity odstranjen) --- 
                 protocol_snippet = """
 ### INTERDISCIPLINARY MAPPING PROTOCOL ###
 Focus: High-density interdisciplinary mapping.
@@ -1267,6 +1557,14 @@ You are the SIS Lead Strategic Innovation Architect.
 3. MANDATORY: After your report is completely finished, provide the graph data as a single block starting EXACTLY with the header: ### SEMANTIC_GRAPH_JSON
 
 {protocol_snippet}
+
+{edge_restriction_block}
+
+### MODULAR STRUCTURE MANDATE
+Organize the graph into SEMANTIC MODULES (thematic clusters like 'Environmental Foundation', 
+'Systemic Core', 'Vision', thematic domain blocks). Assign each node a 'color' that reflects 
+its module (nodes of the same module share the same color) so the visualization can group 
+them into module boxes.
 
 ### ANTI-REDUNDANCY RULES (STRICT)
 - Every innovation in the report must be UNIQUE: no repeated, rephrased, overlapping, or near-duplicate ideas.
@@ -1319,7 +1617,7 @@ The graph must be a DENSELY WOVEN NETWORK, not a collection of loose chains:
 - Actively create LATERAL (RT/AS) edges between innovations, and cross-domain edges (Dependency, HA) between different science fields.
 - Close semantic loops: goals (stars) must receive NEG-FEEDBACK style IF-THEN edges back into the system core.
 - No isolated islands: every sub-network must connect to the main structure.
-- Target edge density: at least 1.5 edges per node.
+- Target edge density: at least {target_edge_factor} edges per node.
 
 ### STRICT JSON FORMAT (MANDATORY)
 Output EXACTLY this structure (use these field names, nothing else):
@@ -1331,7 +1629,7 @@ Output EXACTLY this structure (use these field names, nothing else):
     {{"id": "e1", "source": "n1", "target": "n2", "rel_type": "BT"}}
   ]
 }}
-Rules: 'id' must be unique and referenced by 'source'/'target'; 'label' must be unique; at least 12 nodes and 18 edges; use only the relation codes listed above.
+Rules: 'id' must be unique and referenced by 'source'/'target'; 'label' must be unique; between {node_min} and {node_max} nodes and at least {edge_min} edges; use only the relation codes listed above{'; restrict relations to: ' + allowed_rels_str if selected_edge_types else ''}.
 """
                 # IZVEDBA KLICA NA GOOGLE GEMINI API
                 innovation_raw = google_generate(
@@ -1500,6 +1798,16 @@ Rules: 'id' must be unique and referenced by 'source'/'target'; 'label' must be 
                         rel = rel_u
                     elif str(rel).strip() in KNOWN_RELS:
                         rel = str(rel).strip()
+
+                    # --- NOVO (v23): FILTRIRANJE PO IZBRANIH TIPIH POVEZAV ---
+                    if selected_edge_types:
+                        rel_str = str(rel)
+                        is_allowed = rel_str in selected_edge_types or any(
+                            t.startswith("Triggers") and rel_str.startswith("Triggers")
+                            for t in selected_edge_types
+                        )
+                        if not is_allowed:
+                            continue
 
                     # --- POVEZLJIVOSTNA OKREPITEV: preslikava vseh zapisov v veljavne ID-je ---
                     # Source/target: podpira 'source'/'from'/'src', 'target'/'to'/'tgt' (ID ali label)
@@ -1677,21 +1985,38 @@ Rules: 'id' must be unique and referenced by 'source'/'target'; 'label' must be 
                 if len(prev_network) > 0:
                     st.success(f"🌐 Network Fusion: merged with previous run(s) — one unified network ({len(final_elements)} elements total). Use ♻️ RESET to start a fresh network.")
 
+                # --- NOVO (v23): priprava elementov za prikaz (modularno ali navadno) ---
+                grouping_mode = {"Node Color (semantic domains)": "color", "Node Shape (logical level)": "shape", "Color + Shape (fine-grained)": "both"}.get(module_grouping, "color")
+                if modular_view:
+                    display_elements = build_modular_elements(final_elements, grouping=grouping_mode)
+                    st.caption(f"🧩 Modular view enabled: nodes grouped into module boxes by {module_grouping.lower()}.")
+                else:
+                    display_elements = final_elements
+
                 # 5e. FINAL GRAPH RENDERING (Z DINAMIČNO PERSPEKTIVO)
-                st.subheader(f"🕸️ HYBRID SEMANTIC SYSTEM MAP ({graph_perspective.upper()} VIEW)")
+                view_title = f"🕸️ HYBRID SEMANTIC SYSTEM MAP ({graph_perspective.upper()} VIEW" + (" — MODULAR" if modular_view else "") + ")"
+                st.subheader(view_title)
                 render_cytoscape_network(
-                    final_elements, 
+                    display_elements, 
                     layout_type=graph_perspective, 
-                    container_id=f"cy_{int(time.time())}"
+                    container_id=f"cy_{int(time.time())}",
+                    modular=modular_view
                 )
 
                 # 5f. IZVOZ POROČILA IN GRAFA V SAMOSTOJNI HTML
-                def build_html_export(elements, report_md):
+                def build_html_export(elements, report_md, modular=False):
                     """Skuha samostojno HTML datoteko: poročilo + interaktivni graf (Cytoscape)."""
                     # Poročilo varno prek base64 (prepreči lomljenje zaradi narekovajev/znakov)
                     report_b64 = base64.b64encode((report_md or "").encode("utf-8")).decode("ascii")
                     elements_json = json.dumps(elements or [])
                     layout_js = "cose"
+                    module_style_js = """
+        { selector: 'node[module_box = "true"]', style: {
+            'shape': 'roundrectangle', 'background-color': 'data(color)', 'background-opacity': 0.12,
+            'border-width': 3, 'border-style': 'dashed', 'border-color': 'data(color)',
+            'label': 'data(label)', 'color': '#1d3557', 'font-size': '15px', 'font-weight': '900',
+            'text-valign': 'top', 'text-halign': 'center', 'text-transform': 'uppercase', 'padding': '28px'
+        }},""" if modular else ""
                     html = """<!DOCTYPE html>
 <html lang="sl">
 <head>
@@ -1742,6 +2067,7 @@ cy1 = cytoscape({
             'font-size': '12px', 'font-weight': 'bold', 'text-wrap': 'wrap', 'text-max-width': '80px',
             'border-width': 3, 'border-color': '#ffffff', 'text-outline-color': '#ffffff', 'text-outline-width': 2
         }},
+__MODULE_STYLE__
         { selector: 'edge', style: {
             'width': 2, 'line-color': 'data(color)', 'label': 'data(rel_type)', 'font-size': '9px',
             'color': '#2a9d8f', 'curve-style': 'unbundled-bezier', 'control-point-step-size': 40,
@@ -1767,12 +2093,13 @@ function downloadPng() {
                     html = html.replace("__REPORT_B64__", report_b64)
                     html = html.replace("__ELEMENTS__", elements_json)
                     html = html.replace("__LAYOUT__", layout_js)
+                    html = html.replace("__MODULE_STYLE__", module_style_js)
                     return html
 
                 # Gumb za prenos samostojnega HTML (poročilo + graf v eni datoteki)
                 st.download_button(
                     "🌐 EXPORT REPORT + GRAPH (HTML)",
-                    data=build_html_export(final_elements, full_report),
+                    data=build_html_export(display_elements, full_report, modular=modular_view),
                     file_name=f"sis_report_graph_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html",
                     mime="text/html",
                     use_container_width=True,
