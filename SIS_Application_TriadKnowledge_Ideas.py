@@ -14,7 +14,7 @@ import streamlit.components.v1 as components
 # 0. GLOBAL CONFIGURATION & SESSION DATE (FEBRUARY 24, 2026)
 # =============================================================================
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v23.4.0-ULTRA-SYNERGY-GOOGLE-GEMINI-ONLY-LEAN"
+VERSION_CODE = "v23.5.0-ULTRA-SYNERGY-GOOGLE-GEMINI-ONLY-LEAN-AUTO-DENSITY"
 
 # =============================================================================
 # INITIALIZATION FIX: Preprečuje AttributeError pri zagonu in resetiranju
@@ -1115,6 +1115,21 @@ def ensure_single_connected_network(elements):
         if added == 0:
             break
     return current, total_added, last_comps
+
+# --- NOVO (v23.5): SAMODEJNI KOEFICIENT GOSTOTE POVEZAV ---
+def compute_edge_factor(node_count):
+    """
+    Prilagodi faktor gostote (povezav na vozlišče) glede na število vozlišč,
+    da graf pri vsaki velikosti ostane eno celovito, bogato in povezano
+    semantično/UML/logično omrežje:
+      - malo vozlišč (12–25): gostejše omrežje (~1,63–1,78) → bogatina pri majhnem obsegu
+      - srednje (26–60):     zmerna gostota (~1,3–1,63)
+      - veliko (61–150):     redkejše (~1,2) → berljivost in izogibanje 'špagetom'
+    Sidro: 40 vozlišč ≈ 1,50 (izhodna vrednost).
+    """
+    factor = 1.5 + (40 - node_count) * 0.012
+    return round(max(1.2, min(2.0, factor)), 2)
+
 # =============================================================================
 # 4. KONČNI POPRAVLJEN SIDEBAR (Z UNIKATNIMI KLJUČI) — GOOGLE GEMINI ONLY
 # =============================================================================
@@ -1210,15 +1225,36 @@ with st.sidebar:
         help="Ciljno število vozlišč, ki jih mora graf vsebovati (določimo ga PRED poizvedbama).",
         key="side_node_count_slider_v23"
     )
-    target_edge_factor = st.slider(
-        "Edge Density (edges per node):",
-        min_value=1.0,
-        max_value=4.0,
-        value=1.5,
-        step=0.1,
-        help="Kakovost povezanosti: več = gostejše, bolj povezano omrežje.",
-        key="side_edge_density_slider_v23"
+
+    # --- NOVO (v23.5): SAMODEGNO PRILAGOJEN KOEFICIENT GOSTOTE ---
+    auto_edge_factor = compute_edge_factor(target_node_count)
+    density_mode = st.radio(
+        "Edge Density Mode:",
+        options=["Auto (prilagojeno številu vozlišč)", "Manual (ročna nastavitev)"],
+        index=0,
+        help="V 'Auto' načinu se koeficient gostote samodejno prilagodi številu vozlišč: "
+             "manj vozlišč → gostejše omrežje, več vozlišč → redkejše, da graf vedno "
+             "ostane eno celovito in berljivo omrežje.",
+        key="side_density_mode_v23"
     )
+
+    if density_mode.startswith("Auto"):
+        target_edge_factor = auto_edge_factor
+        st.caption(
+            f"⚙️ Auto koeficient: **{auto_edge_factor:.2f}** povezav/vozlišče "
+            f"(za {target_node_count} vozlišč) → približno "
+            f"**{int(target_node_count * auto_edge_factor)}** povezav."
+        )
+    else:
+        target_edge_factor = st.slider(
+            "Edge Density (edges per node):",
+            min_value=1.0,
+            max_value=4.0,
+            value=auto_edge_factor,
+            step=0.1,
+            help="Kakovost povezanosti: več = gostejše, bolj povezano omrežje.",
+            key="side_edge_density_slider_v23"
+        )
 
     # --- NOVO (v23): IZBIRA TIPOV POVEZAV ---
     st.subheader("🔗 EDGE TYPE CONTROL")
@@ -1542,7 +1578,7 @@ Constraint: Maintain clear boundaries between scientific disciplines.
 Use 'BT', 'NT', 'RT', or 'AS' relations for cross-domain links.
 """
 
-                # --- IZGRADNJA SISTEMSKEGA NAVODILA ---
+                # --- IZGRADNJA SISTEMSKEGA NAVODILA --- 
                 samba_sys_prompt = f"""
 You are the SIS Lead Strategic Innovation Architect.
 
@@ -1687,7 +1723,7 @@ FINAL SELF-CHECK before output: mentally traverse the graph — it MUST be ONE S
 
             # --- PROCESIRANJE VOZLIŠČ Z IZRAZITO GEOMETRIJSKO TAKSONOMIJO ---
             if g_data.get("nodes"):
-                # --- ROBUSTNO BRANJE POLJ: AI uporablja različna imena (label/name, id/node_id, shape/type) ---
+                # --- ROBUSTNO BRANJE POLJ: AI uporablja različna imena (label/name, id/node_id, shape/type) --- 
                 def first_val(d, keys, default=None):
                     for k in keys:
                         if isinstance(d, dict) and d.get(k) not in (None, ""):
