@@ -14,7 +14,7 @@ import streamlit.components.v1 as components
 # 0. GLOBAL CONFIGURATION & SESSION DATE (FEBRUARY 24, 2026)
 # =============================================================================
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v23.5.1-ULTRA-SYNERGY-GOOGLE-GEMINI-ONLY-LEAN-AUTO-DENSITY"
+VERSION_CODE = "v23.5.2-ULTRA-SYNERGY-GOOGLE-GEMINI-ONLY-LEAN-AUTO-DENSITY"
 
 # =============================================================================
 # INITIALIZATION FIX: Preprečuje AttributeError pri zagonu in resetiranju
@@ -53,16 +53,17 @@ st.markdown("""
     }
 
     /* 2. FORCE SIDEBAR VISIBILITY & HIGH CONTRAST */
-    /* FIX (v23.5.1): ozadje sidebara je zdaj temno mornarsko, ker CSS sili
-       BELO barvo vseh napisov — na svetlem ozadju so bile oznake (radio gumbi,
-       caption) nevidne. Temno ozadje + beli tekst = popolna berljivost. */
+    /* FIX (v23.5.2): temno ozadje je naredilo nevidne privzete Streamlit
+       gradnike (drsniki, selectboxi, gumbi, inputi). Vrnili smo SVETLO
+       ozadje in besedilo v temno mornarski barvi — tako so vidni VSI
+       elementi: oznake, opisi, gradniki in info-polje. */
     [data-testid="stSidebar"] {
-        background-color: #1d3557 !important;
-        border-right: 2px solid #457b9d !important;
+        background-color: #fcfcfc !important;
+        border-right: 2px solid #e9ecef !important;
         min-width: 380px !important;
     }
 
-    /* Force all sidebar text to be deep black/navy for perfect visibility */
+    /* Force all sidebar text to deep navy for perfect visibility on light bg */
     [data-testid="stSidebar"] .stMarkdown p, 
     [data-testid="stSidebar"] .stMarkdown li,
     [data-testid="stSidebar"] label,
@@ -70,24 +71,24 @@ st.markdown("""
     [data-testid="stSidebar"] .stExpander li,
     [data-testid="stSidebar"] .stMarkdown span,
     [data-testid="stSidebar"] .stMarkdown div {
-        color: #ffffff !important; /* Maximum Contrast */
+        color: #1d3557 !important; /* Maximum Contrast na svetlem ozadju */
         font-size: 0.98em !important;
         font-weight: 500 !important;
         line-height: 1.6 !important;
         opacity: 1 !important;
     }
 
-    /* 3. RE-STYLE EXPANDERS FOR PROFESSIONAL DENSITY (temna plošča na temnem sidebaru) */
+    /* 3. RE-STYLE EXPANDERS FOR PROFESSIONAL DENSITY */
     .stExpander {
-        background-color: #234066 !important;
-        border: 1px solid #457b9d !important;
+        background-color: #A9A9A9 !important;
+        border: 1px solid #d8e2dc !important;
         border-radius: 12px !important;
         margin-bottom: 12px !important;
         box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important;
     }
     
     .stExpander details summary p {
-        color: #ffffff !important;
+        color: #1d3557 !important;
         font-weight: 800 !important;
         font-size: 1.05em !important;
         text-transform: uppercase;
@@ -183,11 +184,11 @@ st.markdown("""
         margin-bottom: 5px;
     }
 
-    /* FIX (v23.5.1): elegantno info-polje za Auto koeficient — vedno berljivo
-       (svetlo pisavo na temni plošči, neodvisno od privzetih Streamlit stilov) */
+    /* FIX (v23.5.2): elegantno info-polje za Auto koeficient — svetla plošča
+       s temnim besedilom, vidna na svetlem sidebaru ob vsakem kontrastu */
     .density-info-box {
-        background: linear-gradient(135deg, #2a4a73, #234066);
-        color: #ffffff;
+        background-color: #eef4f8;
+        color: #1d3557;
         padding: 12px 16px;
         border-radius: 12px;
         border-left: 5px solid #2a9d8f;
@@ -195,9 +196,9 @@ st.markdown("""
         font-weight: 500;
         line-height: 1.6;
         margin: 8px 0 4px 0;
-        box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+        box-shadow: 0 2px 8px rgba(29,53,87,0.12);
     }
-    .density-info-box b { color: #ffd166; }
+    .density-info-box b { color: #0f766e; }
 
     .stButton>button {
         width: 100%;
