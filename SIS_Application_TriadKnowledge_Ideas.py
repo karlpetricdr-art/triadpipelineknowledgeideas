@@ -14,7 +14,7 @@ import streamlit.components.v1 as components
 # 0. GLOBAL CONFIGURATION & SESSION DATE (FEBRUARY 24, 2026)
 # =============================================================================
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v23.5.0-ULTRA-SYNERGY-GOOGLE-GEMINI-ONLY-LEAN-AUTO-DENSITY"
+VERSION_CODE = "v23.5.1-ULTRA-SYNERGY-GOOGLE-GEMINI-ONLY-LEAN-AUTO-DENSITY"
 
 # =============================================================================
 # INITIALIZATION FIX: Preprečuje AttributeError pri zagonu in resetiranju
@@ -53,9 +53,12 @@ st.markdown("""
     }
 
     /* 2. FORCE SIDEBAR VISIBILITY & HIGH CONTRAST */
+    /* FIX (v23.5.1): ozadje sidebara je zdaj temno mornarsko, ker CSS sili
+       BELO barvo vseh napisov — na svetlem ozadju so bile oznake (radio gumbi,
+       caption) nevidne. Temno ozadje + beli tekst = popolna berljivost. */
     [data-testid="stSidebar"] {
-        background-color: #fcfcfc !important;
-        border-right: 2px solid #e9ecef !important;
+        background-color: #1d3557 !important;
+        border-right: 2px solid #457b9d !important;
         min-width: 380px !important;
     }
 
@@ -74,17 +77,17 @@ st.markdown("""
         opacity: 1 !important;
     }
 
-    /* 3. RE-STYLE EXPANDERS FOR PROFESSIONAL DENSITY */
+    /* 3. RE-STYLE EXPANDERS FOR PROFESSIONAL DENSITY (temna plošča na temnem sidebaru) */
     .stExpander {
-        background-color: #A9A9A9 !important;
-        border: 1px solid #d8e2dc !important;
+        background-color: #234066 !important;
+        border: 1px solid #457b9d !important;
         border-radius: 12px !important;
         margin-bottom: 12px !important;
         box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important;
     }
     
     .stExpander details summary p {
-        color: #1d3557 !important;
+        color: #ffffff !important;
         font-weight: 800 !important;
         font-size: 1.05em !important;
         text-transform: uppercase;
@@ -179,6 +182,22 @@ st.markdown("""
         padding: 10px 0;
         margin-bottom: 5px;
     }
+
+    /* FIX (v23.5.1): elegantno info-polje za Auto koeficient — vedno berljivo
+       (svetlo pisavo na temni plošči, neodvisno od privzetih Streamlit stilov) */
+    .density-info-box {
+        background: linear-gradient(135deg, #2a4a73, #234066);
+        color: #ffffff;
+        padding: 12px 16px;
+        border-radius: 12px;
+        border-left: 5px solid #2a9d8f;
+        font-size: 0.9em;
+        font-weight: 500;
+        line-height: 1.6;
+        margin: 8px 0 4px 0;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+    }
+    .density-info-box b { color: #ffd166; }
 
     .stButton>button {
         width: 100%;
@@ -1226,24 +1245,28 @@ with st.sidebar:
         key="side_node_count_slider_v23"
     )
 
-    # --- NOVO (v23.5): SAMODEGNO PRILAGOJEN KOEFICIENT GOSTOTE ---
+    # --- NOVO (v23.5.1): SAMODEGNO PRILAGOJEN KOEFICIENT GOSTOTE ---
+    # Radio gumbi z belim besedilom na svetlem ozadju so bili nevidni —
+    # namesto radia uporabimo toggle (en stikalo, enoznačen opis) ter
+    # elegantno temno info-polje, ki je vidno ob vsakem kontrastu.
     auto_edge_factor = compute_edge_factor(target_node_count)
-    density_mode = st.radio(
-        "Edge Density Mode:",
-        options=["Auto (prilagojeno številu vozlišč)", "Manual (ročna nastavitev)"],
-        index=0,
-        help="V 'Auto' načinu se koeficient gostote samodejno prilagodi številu vozlišč: "
-             "manj vozlišč → gostejše omrežje, več vozlišč → redkejše, da graf vedno "
-             "ostane eno celovito in berljivo omrežje.",
-        key="side_density_mode_v23"
+    auto_density = st.toggle(
+        "⚡ Auto Edge Density (prilagodi se številu vozlišč)",
+        value=True,
+        help="VKLOPLJENO: koeficient gostote se samodejno prilagodi številu vozlišč "
+             "(manj vozlišč → gostejše, več → redkejše), da graf vedno ostane "
+             "eno celovito in berljivo omrežje.\nIZKLOPLJENO: ročna nastavitev z drsnikom.",
+        key="side_density_toggle_v23"
     )
 
-    if density_mode.startswith("Auto"):
+    if auto_density:
         target_edge_factor = auto_edge_factor
-        st.caption(
-            f"⚙️ Auto koeficient: **{auto_edge_factor:.2f}** povezav/vozlišče "
-            f"(za {target_node_count} vozlišč) → približno "
-            f"**{int(target_node_count * auto_edge_factor)}** povezav."
+        st.markdown(
+            f'<div class="density-info-box">⚙️ <b>Auto koeficient:</b> '
+            f'<b>{auto_edge_factor:.2f}</b> povezav/vozlišče '
+            f'(za {target_node_count} vozlišč) → približno '
+            f'<b>{int(target_node_count * auto_edge_factor)}</b> povezav.</div>',
+            unsafe_allow_html=True
         )
     else:
         target_edge_factor = st.slider(
