@@ -14,7 +14,7 @@ import streamlit.components.v1 as components
 # 0. GLOBAL CONFIGURATION & SESSION DATE (FEBRUARY 24, 2026)
 # =============================================================================
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v23.5.3-ULTRA-SYNERGY-GOOGLE-GEMINI-ONLY-LEAN-AUTO-DENSITY"
+VERSION_CODE = "v23.5.4-ULTRA-SYNERGY-GOOGLE-GEMINI-ONLY-LEAN-AUTO-DENSITY"
 
 # =============================================================================
 # INITIALIZATION FIX: Preprečuje AttributeError pri zagonu in resetiranju
@@ -163,11 +163,17 @@ st.markdown("""
         font-size: 2.8rem;
     }
 
-    .date-badge {
-        background-color: #1d3557;
-        color: #ffffff !important; /* FIX (v23.5.3): !important je nujen, ker
-           generično pravilo za sidebar sili temno barvo na VSE div elemente —
-           temna pisava na temno modrem okvirju je bila nevidna. */
+    /* FIX (v23.5.4): pravilo `[data-testid="stSidebar"] .stMarkdown div`
+       (temna pisava, !important) ima VEČJO specifičnost kot `.date-badge` in
+       ga povoži tudi z !important — zato uporabimo enako določilen selektor
+       + besedilne sence, da je krepko bela pisava zajamčeno. */
+    .date-badge,
+    [data-testid="stSidebar"] .stMarkdown div.date-badge,
+    [data-testid="stSidebar"] div.date-badge {
+        background-color: #1d3557 !important;
+        color: #ffffff !important;
+        font-weight: 800 !important;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.4) !important;
         padding: 12px 20px;
         border-radius: 50px;
         font-size: 1em;
