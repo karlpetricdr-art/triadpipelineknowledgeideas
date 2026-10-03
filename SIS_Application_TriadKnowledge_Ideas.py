@@ -14,7 +14,7 @@ import streamlit.components.v1 as components
 # 0. GLOBAL CONFIGURATION & SESSION DATE (FEBRUARY 24, 2026)
 # =============================================================================
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v23.5.2-ULTRA-SYNERGY-GOOGLE-GEMINI-ONLY-LEAN-AUTO-DENSITY"
+VERSION_CODE = "v23.5.3-ULTRA-SYNERGY-GOOGLE-GEMINI-ONLY-LEAN-AUTO-DENSITY"
 
 # =============================================================================
 # INITIALIZATION FIX: Preprečuje AttributeError pri zagonu in resetiranju
@@ -165,7 +165,9 @@ st.markdown("""
 
     .date-badge {
         background-color: #1d3557;
-        color: white;
+        color: #ffffff !important; /* FIX (v23.5.3): !important je nujen, ker
+           generično pravilo za sidebar sili temno barvo na VSE div elemente —
+           temna pisava na temno modrem okvirju je bila nevidna. */
         padding: 12px 20px;
         border-radius: 50px;
         font-size: 1em;
