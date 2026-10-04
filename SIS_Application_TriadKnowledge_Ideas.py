@@ -14,7 +14,7 @@ import streamlit.components.v1 as components
 # 0. GLOBAL CONFIGURATION & SESSION DATE (FEBRUARY 24, 2026)
 # =============================================================================
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v23.5.4-ULTRA-SYNERGY-GOOGLE-GEMINI-ONLY-LEAN-AUTO-DENSITY"
+VERSION_CODE = "v23.6.0-ULTRA-SYNERGY-GOOGLE-GEMINI-ONLY-LEAN-AUTO-DENSITY-MATH-EQUATIONS"
 
 # =============================================================================
 # INITIALIZATION FIX: Preprečuje AttributeError pri zagonu in resetiranju
@@ -164,9 +164,9 @@ st.markdown("""
     }
 
     /* FIX (v23.5.4): pravilo `[data-testid="stSidebar"] .stMarkdown div`
-       (temna pisava, !important) ima VEČJO specifičnost kot `.date-badge` in
-       ga povoži tudi z !important — zato uporabimo enako določilen selektor
-       + besedilne sence, da je krepko bela pisava zajamčeno. */
+       (temna pisava, !important) ima VEČJO specifičnost kot `.date-badge` in
+       ga povoži tudi z !important — zato uporabimo enako določen selektor
+       + besedilne sence, da je krepko bela pisava zajamčena. */
     .date-badge,
     [data-testid="stSidebar"] .stMarkdown div.date-badge,
     [data-testid="stSidebar"] div.date-badge {
@@ -207,6 +207,19 @@ st.markdown("""
         box-shadow: 0 2px 8px rgba(29,53,87,0.12);
     }
     .density-info-box b { color: #0f766e; }
+
+    /* NEW (v23.6): elegantno polje za matematični pogled grafa */
+    .math-equation-box {
+        background-color: #fbfbfd;
+        color: #1d3557;
+        padding: 18px 22px;
+        border-radius: 15px;
+        border-left: 8px solid #6366f1;
+        font-size: 0.95em;
+        line-height: 1.8;
+        margin: 12px 0;
+        box-shadow: 0 4px 12px rgba(29,53,87,0.08);
+    }
 
     .stButton>button {
         width: 100%;
@@ -1040,7 +1053,208 @@ EDGE_REL_TYPES = [
     "Causes(+)", "Inhibits(-)", "Triggers(θ)"
 ]
 
-# --- NOVO (v23.2): CELOVITO POVEZANO OMREŽJE — združevanje osamljenih otočkov ---
+# =============================================================================
+# 3.2 NEW (v23.6): MATHEMATICAL / PHYSICAL CONNECTOR SEMANTICS
+# =============================================================================
+# Every graph connector is formally established as a mathematical operator
+# or function. The core convention required by the user:
+#     'Composition'  ==  the INTEGRAL operator (whole = ∫ over its parts)
+# All other connectors are mapped to canonical math operators below.
+#
+# Each entry: {rel_type: {"op": human-readable operator,
+#                         "latex": LaTeX template with @A@ and @B@}}
+# @A@ = source node, @B@ = target node.
+MATH_CONNECTOR_MAP = {
+    # --- ISO 25964 Thesaurus logic → order-theoretic / statistical operators ---
+    "TT":            {"op": "supremum (lattice top)",      "latex": r"x_{@B@} = \sup(\mathcal{L}) \;\succeq\; x_{@A@}"},
+    "BT":            {"op": "subsumption (⊑)",              "latex": r"x_{@A@} \;\sqsubseteq\; x_{@B@}"},
+    "NT":            {"op": "refinement (⊒)",              "latex": r"x_{@A@} \;\sqsupseteq\; x_{@B@}"},
+    "IN":            {"op": "set membership (∈)",          "latex": r"x_{@A@} \in [\,x_{@B@}\,]"},
+    "RT":            {"op": "correlation (corr)",          "latex": r"\mathrm{corr}(x_{@A@}, x_{@B@}) \neq 0"},
+    "AS":            {"op": "associative product (∘)",      "latex": r"x_{@A@} \circ x_{@B} \;=\; x_{@B@} \circ x_{@A@}"},
+    "EQ":            {"op": "equivalence (≡)",             "latex": r"x_{@A@} \equiv x_{@B@}"},
+    # --- Petrič HA → tensor product ---
+    "HA":            {"op": "hierarchical tensor (⊗)",      "latex": r"x_{@A@} \otimes x_{@B@}"},
+    # --- Logic gates → Boolean algebra ---
+    "AND":           {"op": "conjunction (∧)",            "latex": r"x_{@A@} \wedge x_{@B@} \;\Rightarrow\; \min(x_{@A@}, x_{@B@})"},
+    "OR":            {"op": "disjunction (∨)",              "latex": r"x_{@A@} \vee x_{@B@} \;\Rightarrow\; \max(x_{@A@}, x_{@B@})"},
+    "XOR":           {"op": "exclusive-or (⊕)",            "latex": r"x_{@A@} \oplus x_{@B@} = \left| x_{@A@} - x_{@B@} \right|"},
+    "NOT":           {"op": "negation (¬)",                 "latex": r"x_{@B@} = \neg\, x_{@A@} = 1 - x_{@A@}"},
+    "IF-THEN":       {"op": "material implication (⇒)",     "latex": r"x_{@A@} \Rightarrow x_{@B@} \;\;(\;\neg x_{@A@} \vee x_{@B@}\;)"},
+    # --- UML 2.5 structural logic → set-theoretic & analytic operators ---
+    "Generalization": {"op": "union (⋃)",                 "latex": r"x_{@B@} = \bigcup_{i}\, x_{@A@} \quad \text{(abstraction over specifics)}"},
+    "Specialization": {"op": "intersection (⋂)",           "latex": r"x_{@B@} = \bigcap_{i}\, x_{@A@} \quad \text{(derivation from the general)}"},
+    "Realization":    {"op": "realization mapping (⊢)",     "latex": r"x_{@A@} \;\vdash\; x_{@B@}, \quad \mathrm{Real}(x_{@A@}) = x_{@B@}"},
+    "Composition":    {"op": "INTEGRAL (∫) — whole = ∫ over parts",
+                      "latex": r"x_{@A@} = \int_{\mathcal{P}(x_{@A@})} x_{@B@} \, d\mu \;\;\; \text{(whole integrates its parts; parts lose independent existence)}"},
+    "Aggregation":    {"op": "summation (Σ) — whole = Σ of parts",
+                      "latex": r"x_{@A@} = \sum_{p \,\in\, \mathrm{parts}(x_{@A@})} p \;\;\; \text{(} x_{@B@} \text{ retained independently)}"},
+    "Dependency":     {"op": "functional dependence (∂f/∂x)",
+                      "latex": r"x_{@B@} = f(x_{@A@}), \quad \frac{\partial x_{@B@}}{\partial x_{@A@}} \neq 0"},
+    "Conflict":       {"op": "contradiction (⊥)",           "latex": r"x_{@A@} \wedge x_{@B@} \vDash \bot \;\;\; \text{(mutually exclusive)}"},
+    "Containment":    {"op": "structural membership (∈ whole)",
+                      "latex": r"x_{@B@} \Subset x_{@A@} \;\;\; \text{(contained inside the structural whole)}"},
+    # --- Dynamical causality → ODE coupling operators ---
+    "Causes(+)":      {"op": "reinforcing coupling (+k·x)",
+                      "latex": r"\dot{x}_{@B@} \; + \; k_{@A@@B@}\, x_{@A@}"},
+    "Inhibits(-)":    {"op": "damping coupling (−k·x)",
+                      "latex": r"\dot{x}_{@B@} \; - \; \mu_{@A@@B@}\, x_{@A@}"},
+    "Triggers":       {"op": "Heaviside threshold H(x − θ)",
+                      "latex": r"\dot{x}_{@B@} \; + \; k^{\theta}_{@A@@B@}\, H(x_{@A@} - \theta_{@A@@B@})"},
+    "Flow":           {"op": "stock-flow transfer (dX/dt)",
+                      "latex": r"\frac{d x_{@B@}}{dt} = q_{@A@@B@}\, x_{@A@}"},
+}
+
+# Fallback for unknown rel types (e.g. AI-invented labels)
+MATH_CONNECTOR_DEFAULT = {"op": "generic coupling (g)",
+                          "latex": r"x_{@B@} = g(x_{@A@})"}
+
+
+def build_math_equation_view(elements):
+    """
+    NEW (v23.6): CONVERTS THE CREATED GRAPH INTO MATH / PHYSICAL EQUATIONS.
+
+    Every node becomes a state variable x_i; every connector becomes a math
+    operator (Composition → ∫ integral; Aggregation → Σ; AND → ∧; etc.).
+
+    Returns a dict:
+      {"markdown":  full LaTeX-bearing markdown to render in Streamlit,
+       "plain":     plain-text equation list for HTML export}
+    """
+    nodes = {}
+    edges = []
+    for el in elements:
+        d = el.get("data", {})
+        if "label" in d:
+            nodes[d["id"]] = d.get("label", d["id"])
+        elif "source" in d:
+            edges.append(d)
+
+    if not nodes:
+        return {"markdown": "", "plain": []}
+
+    # --- Stable variable indexing: node -> x_{i} ---
+    ordered_ids = list(nodes.keys())
+    idx_of = {nid: i + 1 for i, nid in enumerate(ordered_ids)}
+
+    def tex_var(nid):
+        return f"x_{{{idx_of[nid]}}}"
+
+    def var_defs():
+        lines = []
+        for nid in ordered_ids:
+            lbl = str(nodes[nid]).replace("|", "/")
+            lines.append(rf"x_{{{idx_of[nid]}}} \;=\; \text{{[{lbl[:48]}]}}")
+        return lines
+
+    # --- 1) STRUCTURAL EQUATIONS (one per edge, connector → operator) ---
+    struct_lines = []
+    plain = []
+    for d in edges:
+        s, t, rel = d.get("source"), d.get("target"), str(d.get("rel_type", ""))
+        if s not in idx_of or t not in idx_of or s == t:
+            continue
+        rel_key = rel if rel in MATH_CONNECTOR_MAP else ("Triggers" if rel.startswith("Triggers") else None)
+        spec = MATH_CONNECTOR_MAP.get(rel_key, MATH_CONNECTOR_DEFAULT)
+        latex = spec["latex"].replace("@A@", f"{{{idx_of[s]}}}").replace("@B@", f"{{{idx_of[t]}}}")
+        struct_lines.append(latex)
+        plain.append(f"[{rel}] {spec['op']}: " + latex)
+
+    # --- 2) DYNAMICAL SYSTEM (state-space ODEs) ---
+    #      \dot{x}_i = Σ (+k x_s) − Σ (μ x_s) + Σ k^θ H(x_s − θ) + Σ q x_s + f_i(·)
+    dyn_terms = {nid: [] for nid in ordered_ids}
+    for d in edges:
+        s, t, rel = d.get("source"), d.get("target"), str(d.get("rel_type", ""))
+        if s not in idx_of or t not in idx_of or s == t:
+            continue
+        if rel == "Causes(+)":
+            dyn_terms[t].append(f"+ k_{{{idx_of[s]},{idx_of[t]}}}\\, x_{{{idx_of[s]}}}")
+        elif rel == "Inhibits(-)":
+            dyn_terms[t].append(f"- \\mu_{{{idx_of[s]},{idx_of[t]}}}\\, x_{{{idx_of[s]}}}")
+        elif rel.startswith("Triggers"):
+            dyn_terms[t].append(f"+ k^{{\\theta}}_{{{idx_of[s]},{idx_of[t]}}} H\\!\\left(x_{{{idx_of[s]}}} - \\theta_{{{idx_of[s]},{idx_of[t]}}}\\right)")
+        elif rel == "Flow":
+            dyn_terms[t].append(f"+ q_{{{idx_of[s]},{idx_of[t]}}}\\, x_{{{idx_of[s]}}}")
+
+    ode_lines = []
+    for nid in ordered_ids:
+        i = idx_of[nid]
+        rhs = " ".join(dyn_terms[nid]).strip() if dyn_terms[nid] else ""
+        if rhs:
+            ode_lines.append(rf"\dot{{x}}_{{{i}}} = {rhs} + f_{{{i}}}(\mathbf{{x}})")
+        else:
+            ode_lines.append(rf"\dot{{x}}_{{{i}}} = f_{{{i}}}(\mathbf{{x}}) \quad \text{{(algebraic/structural node)}}")
+
+    # --- 3) GLOBAL COMPOSITION EQUATIONS (system integral & coupling tensor) ---
+    n = len(ordered_ids)
+    m = len(edges)
+    global_eqs = [
+        rf"\mathbf{{x}} = (x_{{1}}, \dots, x_{{{n}}}) \in \mathbb{{R}}^{{{n}}}, \qquad \dot{{\mathbf{{x}}}} = F(\mathbf{{x}})",
+        rf"\mathcal{{S}} = \int_{{\mathcal{{N}}}} x_{{i}} \, d\mu(i) \quad \text{{(system integral — Composition operator over all nodes)}}",
+        rf"W \in \mathbb{{R}}^{{{n}\times{n}}}: \; W_{{ij}} = \sum_{{e=(i,j)}} w_{{e}}, \quad |\mathcal{{E}}| = {m} \; \text{{couplings (weighted adjacency tensor)}}",
+    ]
+
+    # --- 4) ASSEMBLE MARKDOWN (no tables → clean LaTeX rendering everywhere) ---
+    md_parts = []
+    md_parts.append("**(1) State variables (node → variable):**\n\n" +
+                    "\n\n".join(f"$${l}$$" for l in var_defs()))
+    md_parts.append("**(2) Dynamical system (connector couplings as ODE terms):**\n\n" +
+                    "\n\n".join(f"$${l}$$" for l in ode_lines))
+    md_parts.append("**(3) Structural equations (every connector as a math operator; Composition = ∫ integration):**\n\n" +
+                    ("\n\n".join(f"$${l}$$" for l in struct_lines) if struct_lines else
+                     "$$\\text{No structural edges.}$$"))
+    md_parts.append("**(4) Global system equations:**\n\n" +
+                    "\n\n".join(f"$${l}$$" for l in global_eqs))
+
+    # --- 5) OPERATOR LEGEND (connector → operator) ---
+    legend_items = [
+        ("Composition", "∫ definite integral — whole = ∫ over parts (emergent, non-separable unity)"),
+        ("Aggregation", "Σ summation — whole = Σ of parts (parts keep identity)"),
+        ("Generalization", "⋃ union — abstraction over many specifics"),
+        ("Specialization", "⋂ intersection — derivation of the specific from the general"),
+        ("Realization", "⊢ / Real(·) — implementation mapping"),
+        ("Dependency", "∂x_B/∂x_A ≠ 0 — functional dependence (Jacobian coupling)"),
+        ("Containment", "∈ / ⊂ — structural set membership"),
+        ("Conflict", "x_A ∧ x_B ⊨ ⊥ — contradiction operator"),
+        ("TT / BT / NT", "sup / ⊑ / ⊒ — lattice ordering of the thesaurus hierarchy"),
+        ("IN", "∈ instance membership; RT — corr(x_A, x_B) statistical correlation"),
+        ("AS", "∘ associative composition of functions"),
+        ("EQ", "≡ equivalence relation"),
+        ("HA", "⊗ hierarchical-associative tensor product"),
+        ("AND / OR / XOR / NOT", "∧ / ∨ / ⊕ / ¬ — Boolean lattice operators"),
+        ("IF-THEN", "⇒ material implication (¬x_A ∨ x_B)"),
+        ("Causes(+)", "+k·x_s — reinforcing linear coupling term in the ODE"),
+        ("Inhibits(-)", "−μ·x_s — damping/inhibitory coupling term"),
+        ("Triggers(θ)", "H(x_s − θ) — Heaviside step function (nonlinear threshold activation)"),
+        ("Flow", "dX/dt = q·x_s — stock-to-flow transfer rate"),
+    ]
+    md_parts.append("**(5) Connector → Operator legend:**\n\n" +
+                    "\n".join(f"- `{k}` → {v}" for k, v in legend_items))
+
+    markdown = "\n\n".join(md_parts)
+    plain.extend(["", "GLOBAL:"] + global_eqs)
+    return {"markdown": markdown, "plain": plain}
+
+
+def render_math_equation_view(elements):
+    """Renders the converted (equation) graph below the visual graph."""
+    view = build_math_equation_view(elements)
+    if not view["markdown"]:
+        return ""
+    st.subheader("🧮 MATHEMATICAL / PHYSICAL EQUATION VIEW (Graph → Equations)")
+    st.markdown(
+        '<div class="math-equation-box">Every node is a state variable <b>x<sub>i</sub></b>; '
+        'every connector is a math operator. <b>Composition = ∫ integration</b> '
+        '(the whole integrates its parts); Aggregation = Σ summation; '
+        'Causes(+) = +k·x, Inhibits(-) = −μ·x, Triggers(θ) = Heaviside H(x−θ).</div>',
+        unsafe_allow_html=True
+    )
+    st.markdown(view["markdown"])
+    return view["markdown"]
+
+# =============================================================================
+# 3.3 CELOVITO POVEZANO OMREŽJE — združevanje osamljenih otočkov
+# =============================================================================
 def ensure_single_connected_network(elements):
     """
     NOVO (v23.4): ZAGOTOVLJENO CELOVITO POVEZAN OMREŽJE (zemljevidni scenarij).
@@ -1250,7 +1464,7 @@ with st.sidebar:
         max_value=150,
         value=40,
         step=2,
-        help="Ciljno število vozlišč, ki jih mora graf vsebovati (določimo ga PRED poizvedbama).",
+        help="Ciljno število vozlišč, ki jih mora graf vsebovati (določimo ga PRED poizvedbami).",
         key="side_node_count_slider_v23"
     )
 
@@ -1260,21 +1474,22 @@ with st.sidebar:
     # elegantno temno info-polje, ki je vidno ob vsakem kontrastu.
     auto_edge_factor = compute_edge_factor(target_node_count)
     auto_density = st.toggle(
-        "⚡ Auto Edge Density (prilagodi se številu vozlišč)",
+        "⚡ Auto Edge Density (adapts to the node count)",
         value=True,
-        help="VKLOPLJENO: koeficient gostote se samodejno prilagodi številu vozlišč "
-             "(manj vozlišč → gostejše, več → redkejše), da graf vedno ostane "
-             "eno celovito in berljivo omrežje.\nIZKLOPLJENO: ročna nastavitev z drsnikom.",
+        help="ON: the edge-density coefficient automatically adapts to the node "
+             "count (fewer nodes → denser, more → sparser), so the graph always "
+             "remains one fully connected, readable network.\n"
+             "OFF: manual adjustment with the slider.",
         key="side_density_toggle_v23"
     )
 
     if auto_density:
         target_edge_factor = auto_edge_factor
         st.markdown(
-            f'<div class="density-info-box">⚙️ <b>Auto koeficient:</b> '
-            f'<b>{auto_edge_factor:.2f}</b> povezav/vozlišče '
-            f'(za {target_node_count} vozlišč) → približno '
-            f'<b>{int(target_node_count * auto_edge_factor)}</b> povezav.</div>',
+            f'<div class="density-info-box">⚙️ <b>Auto coefficient:</b> '
+            f'<b>{auto_edge_factor:.2f}</b> edges/node '
+            f'(for {target_node_count} nodes) → approximately '
+            f'<b>{int(target_node_count * auto_edge_factor)}</b> edges.</div>',
             unsafe_allow_html=True
         )
     else:
@@ -1363,6 +1578,36 @@ with st.sidebar:
         st.markdown("**Hierarchography Methods:**")
         st.write(", ".join(HIERARCHOLOGY_ONTOLOGY["hierarchography_tools"]))
 
+    with st.expander("🧮 Math/Physical Connector → Operator Map", expanded=False):
+        st.markdown(
+            "Every connector is formally established as a math operator/function. "
+            "**Composition = ∫ integration** (the whole integrates its parts)."
+        )
+        legend = [
+            ("Composition", "∫ definite integral (whole = ∫ over parts)"),
+            ("Aggregation", "Σ summation (whole = Σ of parts)"),
+            ("Generalization", "⋃ union"),
+            ("Specialization", "⋂ intersection"),
+            ("Realization", "⊢ realization mapping Real(·)"),
+            ("Dependency", "∂x_B/∂x_A ≠ 0 functional dependence"),
+            ("Containment", "∈ structural membership"),
+            ("Conflict", "⊥ contradiction (x_A ∧ x_B ⊨ ⊥)"),
+            ("TT / BT / NT", "sup / ⊑ / ⊒ lattice ordering"),
+            ("IN", "∈ instance membership"),
+            ("RT", "corr(x_A, x_B) correlation"),
+            ("AS", "∘ associative product"),
+            ("EQ", "≡ equivalence"),
+            ("HA", "⊗ hierarchical tensor product"),
+            ("AND / OR / XOR / NOT", "∧ / ∨ / ⊕ / ¬ Boolean operators"),
+            ("IF-THEN", "⇒ material implication"),
+            ("Causes(+)", "+k·x reinforcing ODE coupling"),
+            ("Inhibits(-)", "−μ·x damping ODE coupling"),
+            ("Triggers(θ)", "H(x − θ) Heaviside step function"),
+            ("Flow", "dX/dt = q·x stock-to-flow transfer"),
+        ]
+        for k, v in legend:
+            st.markdown(f"• **{k}** → {v}")
+
     with st.expander("🏗️ Structural Model Context", expanded=False):
         for m, d in KNOWLEDGE_BASE["Structural models"].items(): 
             st.markdown(f"**{m}**: {d}")
@@ -1378,6 +1623,7 @@ if st.session_state.show_user_guide:
     2. **Research Foundation (Step 1)**: Google Gemini performs structural synthesis foundation using Integrated Metamodel Architecture (IMA).
     3. **Innovation Prompt (Step 2)**: Google Gemini takes the Phase 1 foundation and generates radical 'Useful Innovative Ideas' using Mental Approaches (MA) logic.
     4. **Visualization**: The interactive 18D graph maps structural facts against generative ideas. Node count and edge types are set in the sidebar BEFORE running the two inquiries.
+    5. **Mathematical/Physical Equation View**: Next to the created graph, the system converts the same graph into equations — every node becomes a state variable x_i and every connector becomes a math operator (Composition = ∫ integration, Aggregation = Σ, Causes(+) = +k·x, Triggers(θ) = Heaviside H(x−θ), etc.).
     """)
 
 # REFERENCE ARCHITECTURE BOXES
@@ -1547,16 +1793,16 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
 
             if trigger_keyword in user_query or (idea_query and trigger_keyword in idea_query):
                 active_context = f"""
-                \n### MANDATORY SYSTEM INSTRUCTION: APPLY INTERFACE PARAMETERS ###
-                The user has explicitly activated the following constraints for this specific run:
-                - Target Science Fields: {', '.join(sel_sciences)}
-                - Applied Scientific Paradigms: {', '.join(sel_paradigms)}
-                - Structural Model Focus: {', '.join(sel_models)}
-                - Applied Methodologies (7): {', '.join(sel_methodologies) if sel_methodologies else 'auto-select from fields'}
-                - Applied Tools (8): {', '.join(sel_tools) if sel_tools else 'auto-select from fields'}
-                - Innovation Frameworks: {', '.join(selected_techniques)}
-                - Expertise Level: {expertise}
-                - Project Strategic Goal: {goal_context}
+                \n### MANDATORY SYSTEM INSTRUCTION: APPLY INTERFACE PARAMETERS ###\n
+                The user has explicitly activated the following constraints for this specific run:\n
+                - Target Science Fields: {', '.join(sel_sciences)}\n
+                - Applied Scientific Paradigms: {', '.join(sel_paradigms)}\n
+                - Structural Model Focus: {', '.join(sel_models)}\n
+                - Applied Methodologies (7): {', '.join(sel_methodologies) if sel_methodologies else 'auto-select from fields'}\n
+                - Applied Tools (8): {', '.join(sel_tools) if sel_tools else 'auto-select from fields'}\n
+                - Innovation Frameworks: {', '.join(selected_techniques)}\n
+                - Expertise Level: {expertise}\n
+                - Project Strategic Goal: {goal_context}\n
                 \n###########################################################\n
                 """
 
@@ -2078,35 +2324,52 @@ FINAL SELF-CHECK before output: mentally traverse the graph — it MUST be ONE S
                     container_id=f"cy_{int(time.time())}"
                 )
 
+                # 5e-2. NEW (v23.6): MATH / PHYSICAL EQUATION VIEW
+                #       Beyond the created graph: the SAME graph converted into
+                #       math/physical equations (Composition = ∫ integration,
+                #       all other connectors = math operators/functions).
+                math_view_md = render_math_equation_view(final_elements)
+
                 # 5f. IZVOZ POROČILA IN GRAFA V SAMOSTOJNI HTML
-                def build_html_export(elements, report_md):
-                    """Skuha samostojno HTML datoteko: poročilo + interaktivni graf (Cytoscape)."""
+                def build_html_export(elements, report_md, math_md):
+                    """Skuha samostojno HTML datoteko: poročilo + interaktivni graf (Cytoscape) + matematični pogled (MathJax)."""
                     # Poročilo varno prek base64 (prepreči lomljenje zaradi narekovajev/znakov)
                     report_b64 = base64.b64encode((report_md or "").encode("utf-8")).decode("ascii")
+                    math_b64 = base64.b64encode((math_md or "").encode("utf-8")).decode("ascii")
                     elements_json = json.dumps(elements or [])
                     layout_js = "cose"
                     html = """<!DOCTYPE html>
-<html lang="sl">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <title>SIS Universal Knowledge Synthesizer — Export __SYSDATE__</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+window.MathJax = { tex: { inlineMath: [['$','$'], ['\\(','\\)']],
+                          displayMath: [['$$','$$'], ['\\[','\\]']] },
+                   svg: { fontCache: 'global' } };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
 <style>
 body { font-family: 'Segoe UI', Roboto, sans-serif; margin: 0; background: #f8f9fa; color: #1d3557; }
 header { background: linear-gradient(90deg, #1d3557, #457b9d); color: white; padding: 30px 40px; }
 header h1 { margin: 0; font-size: 1.8em; }
 #report { max-width: 1100px; margin: 30px auto; background: white; padding: 40px 50px; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); line-height: 1.8; }
+#mathview { max-width: 1100px; margin: 30px auto 60px; background: white; padding: 40px 50px; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); line-height: 1.9; font-size: 1.02em; }
 #cy { width: 100%; height: 800px; background: white; border-radius: 15px; border: 1px solid #e0e0e0; max-width: 1200px; margin: 0 auto 40px; }
 .toolbar { max-width: 1200px; margin: 0 auto 10px; display: flex; gap: 8px; }
 .toolbar button { padding: 10px 18px; background: #1d3557; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 800; font-size: 12px; }
 h2 { margin-top: 40px; text-align: center; }
+.mathplain { font-family: Consolas, monospace; font-size: 0.85em; white-space: pre-wrap; }
 </style>
 </head>
 <body>
 <header><h1>🧱 SIS Universal Knowledge Synthesizer</h1><p>__SYSDATE__ | __VERSION__</p></header>
 <h2>📋 INTEGRATED HIERARCHOLOGICAL REPORT</h2>
 <div id="report"></div>
+<h2>🧮 MATHEMATICAL / PHYSICAL EQUATION VIEW</h2>
+<div id="mathview"></div>
 <h2>🕸️ HYBRID SEMANTIC SYSTEM MAP</h2>
 <div class="toolbar">
     <button onclick="zoomIn()">➕ ZOOM IN</button>
@@ -2124,6 +2387,7 @@ function b64ToUtf8(b64) {
     return new TextDecoder('utf-8').decode(bytes);
 }
 document.getElementById('report').innerHTML = marked.parse(b64ToUtf8("__REPORT_B64__"));
+document.getElementById('mathview').innerHTML = b64ToUtf8("__MATH_B64__");
 cy1 = cytoscape({
     container: document.getElementById('cy'),
     elements: __ELEMENTS__,
@@ -2158,14 +2422,15 @@ function downloadPng() {
 </html>"""
                     html = html.replace("__SYSDATE__", SYSTEM_DATE).replace("__VERSION__", VERSION_CODE)
                     html = html.replace("__REPORT_B64__", report_b64)
+                    html = html.replace("__MATH_B64__", math_b64)
                     html = html.replace("__ELEMENTS__", elements_json)
                     html = html.replace("__LAYOUT__", layout_js)
                     return html
 
-                # Gumb za prenos samostojnega HTML (poročilo + graf v eni datoteki)
+                # Gumb za prenos samostojnega HTML (poročilo + graf + enačbe v eni datoteki)
                 st.download_button(
-                    "🌐 EXPORT REPORT + GRAPH (HTML)",
-                    data=build_html_export(final_elements, full_report),
+                    "🌐 EXPORT REPORT + GRAPH + EQUATIONS (HTML)",
+                    data=build_html_export(final_elements, full_report, math_view_md),
                     file_name=f"sis_report_graph_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html",
                     mime="text/html",
                     use_container_width=True,
