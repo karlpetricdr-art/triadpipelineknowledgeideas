@@ -1599,8 +1599,11 @@ with st.sidebar:
         help="Google AI Studio / Gemini API key."
     )
 
-    # Google-only language-model catalog (enaki modeli kot v prejšnji različici).
+    # Google-only language-model catalog
     GOOGLE_MODELS = {
+        # --- NEW: Gemini 4 Series ---
+        "Gemini 4 Argon — latest preview": "gemini-4-argon",  # ali "gemini-4-argon-preview"
+        
         # Current Gemini 3.x
         "Gemini 3.8 Flash — latest": "gemini-3.8-flash",
         "Gemini 3.7 Flash — advanced": "gemini-3.7-flash",
@@ -1610,10 +1613,12 @@ with st.sidebar:
         "Gemini 3.1 Flash-Lite — free/cost-efficient": "gemini-3.1-flash-lite",
         "Gemini 3.1 Pro Preview": "gemini-3.1-pro-preview",
         "Gemini 3 Flash Preview": "gemini-3-flash-preview",
+        
         # Gemini 2.5 family
         "Gemini 2.5 Pro": "gemini-2.5-pro",
         "Gemini 2.5 Flash": "gemini-2.5-flash",
         "Gemini 2.5 Flash-Lite": "gemini-2.5-flash-lite",
+        
         # Gemma 4
         "Gemma 4 31B IT — free": "gemma-4-31b-it",
         "Gemma 4 26B A4B IT — free": "gemma-4-26b-a4b-it",
