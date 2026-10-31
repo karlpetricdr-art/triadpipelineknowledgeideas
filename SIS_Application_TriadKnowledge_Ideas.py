@@ -5,6 +5,8 @@ import requests
 import urllib.parse
 import re
 import time
+import html as html_lib
+from collections import Counter
 from datetime import datetime
 from google import genai
 from google.genai import types
@@ -14,7 +16,7 @@ import streamlit.components.v1 as components
 # 0. GLOBAL CONFIGURATION & SESSION DATE (FEBRUARY 24, 2026)
 # =============================================================================
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v23.6.0-ULTRA-SYNERGY-GOOGLE-GEMINI-ONLY-LEAN-AUTO-DENSITY-MATH-EQUATIONS"
+VERSION_CODE = "v23.7.0-ULTRA-SYNERGY-GOOGLE-GEMINI-ONLY-LEAN-AUTO-DENSITY-MATH-EQUATIONS-AUDIT-PROVENANCE"
 
 # =============================================================================
 # INITIALIZATION FIX: Preprečuje AttributeError pri zagonu in resetiranju
@@ -275,6 +277,7 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
     Vključuje: ISO 25964 Thesaurus, UML 2.5 Standard, Petrič HA Logiko, Logic Gates in EX fuzijo.
     GEOMETRIJSKA TAKSONOMIJA: Zvezde, Heksagoni, Diamanti, Oktogoni, Trikotniki, Elipse, Pravokotniki.
     NOVO (v23): Modularni prikaz (compound/module škatle po barvah vozlišč).
+    NOVO (v23.7): Samodejni mostovi (synthetic_bridge) so prikazani črtkano v jantarni barvi #f39c12.
     """
 
     layout_configs = {
@@ -320,6 +323,8 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
     }
 
     selected_layout = layout_configs.get(layout_type, layout_configs["organic"])
+    # Kompaktna serializacija (manj bajtov) + varno proti zaprtju <script> bloka
+    elements_js = json.dumps(elements, separators=(',', ':')).replace("</", "<\\/")
 
     cyto_html = f"""
     <div style="position: relative; width: 100%;">
@@ -336,7 +341,7 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
         document.addEventListener('DOMContentLoaded', function() {{
             var cy = cytoscape({{
                 container: document.getElementById('{container_id}'),
-                elements: {json.dumps(elements)},
+                elements: {elements_js},
                 style: [
                     {{
                         selector: 'node',
@@ -439,6 +444,20 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
                             'line-style': 'dashed',
                             'target-arrow-shape': 'triangle-tee',
                             'target-arrow-color': '#ffb703'
+                        }}
+                    }},
+
+                    /* --- 6. NEW (v23.7): SYNTHETIC / AUTO-BRIDGE EDGES (Scientific Cage repair) --- */
+                    {{
+                        selector: 'edge[?synthetic_bridge]',
+                        style: {{
+                            'width': 4,
+                            'line-color': '#f39c12',
+                            'line-style': 'dashed',
+                            'target-arrow-shape': 'triangle',
+                            'target-arrow-color': '#f39c12',
+                            'color': '#f39c12',
+                            'opacity': 1
                         }}
                     }},
 
@@ -1071,7 +1090,7 @@ MATH_CONNECTOR_MAP = {
     "NT":            {"op": "refinement (⊒)",              "latex": r"x_{@A@} \;\sqsupseteq\; x_{@B@}"},
     "IN":            {"op": "set membership (∈)",          "latex": r"x_{@A@} \in [\,x_{@B@}\,]"},
     "RT":            {"op": "correlation (corr)",          "latex": r"\mathrm{corr}(x_{@A@}, x_{@B@}) \neq 0"},
-    "AS":            {"op": "associative product (∘)",      "latex": r"x_{@A@} \circ x_{@B} \;=\; x_{@B@} \circ x_{@A@}"},
+    "AS":            {"op": "associative product (∘)",      "latex": r"x_{@A@} \circ x_{@B@} \;=\; x_{@B@} \circ x_{@A@}"},
     "EQ":            {"op": "equivalence (≡)",             "latex": r"x_{@A@} \equiv x_{@B@}"},
     # --- Petrič HA → tensor product ---
     "HA":            {"op": "hierarchical tensor (⊗)",      "latex": r"x_{@A@} \otimes x_{@B@}"},
@@ -1109,6 +1128,44 @@ MATH_CONNECTOR_MAP = {
 MATH_CONNECTOR_DEFAULT = {"op": "generic coupling (g)",
                           "latex": r"x_{@B@} = g(x_{@A@})"}
 
+# =============================================================================
+# 3.2b NEW (v23.7): EPISTEMIC NOTICE, BRIDGE CONSTANTS & ROLE TAXONOMY
+# =============================================================================
+EPISTEMIC_NOTICE = (
+    "EPISTEMIC NOTICE: This mathematical view constitutes a qualitative, notational "
+    "formalism for documenting structural assumptions and directional causal couplings "
+    "(analogous to Causal Loop Diagrams in System Dynamics). Parameter coefficients "
+    "(+k, -μ, θ) represent theoretical structural hypotheses for prospective empirical "
+    "calibration, not established quantitative constants."
+)
+
+BRIDGE_COLOR = "#f39c12"
+BRIDGE_REL_TYPE = "RT [AUTO-BRIDGE]"
+
+NODE_ROLE_BY_SHAPE = {
+    "star": "Ultimate Goal (macro-vision)",
+    "hexagon": "Science Domain",
+    "diamond": "Innovation Core",
+    "triangle": "Active Process / Method",
+    "octagon": "Ethical Constraint / Rule",
+    "ellipse": "Human Factor",
+    "rectangle": "Specific Fact / Datum",
+}
+
+
+def base_rel_code(rel):
+    """'RT [AUTO-BRIDGE]' -> 'RT' (strips provenance suffix to get the pure relation code)."""
+    return str(rel or "").strip().split(" [", 1)[0].strip()
+
+
+def epistemic_banner_html():
+    """Prominent, print-safe HTML banner carrying the epistemic notice (Streamlit + HTML export)."""
+    return (
+        '<div style="background:#fff8e1;border:2px solid #f39c12;border-left:10px solid #e67e22;'
+        'border-radius:12px;padding:16px 22px;margin:14px 0;color:#5d3a00;font-size:0.95em;'
+        'line-height:1.7;font-weight:600;">⚠️ <b>' + html_lib.escape(EPISTEMIC_NOTICE) + '</b></div>'
+    )
+
 
 def build_math_equation_view(elements):
     """
@@ -1117,9 +1174,13 @@ def build_math_equation_view(elements):
     Every node becomes a state variable x_i; every connector becomes a math
     operator (Composition → ∫ integral; Aggregation → Σ; AND → ∧; etc.).
 
+    NEW (v23.7): permanent EPISTEMIC NOTICE (qualitative notational formalism).
+
     Returns a dict:
-      {"markdown":  full LaTeX-bearing markdown to render in Streamlit,
-       "plain":     plain-text equation list for HTML export}
+      {"markdown":  EPISTEMIC NOTICE + full LaTeX-bearing markdown,
+       "body":      LaTeX-bearing markdown without the notice (for the HTML export,
+                    which carries the notice as a static HTML banner),
+       "plain":     plain-text equation list (notice first)}
     """
     nodes = {}
     edges = []
@@ -1131,7 +1192,7 @@ def build_math_equation_view(elements):
             edges.append(d)
 
     if not nodes:
-        return {"markdown": "", "plain": []}
+        return {"markdown": "", "body": "", "plain": []}
 
     # --- Stable variable indexing: node -> x_{i} ---
     ordered_ids = list(nodes.keys())
@@ -1151,7 +1212,7 @@ def build_math_equation_view(elements):
     struct_lines = []
     plain = []
     for d in edges:
-        s, t, rel = d.get("source"), d.get("target"), str(d.get("rel_type", ""))
+        s, t, rel = d.get("source"), d.get("target"), base_rel_code(d.get("rel_type", ""))
         if s not in idx_of or t not in idx_of or s == t:
             continue
         rel_key = rel if rel in MATH_CONNECTOR_MAP else ("Triggers" if rel.startswith("Triggers") else None)
@@ -1164,7 +1225,7 @@ def build_math_equation_view(elements):
     #      \dot{x}_i = Σ (+k x_s) − Σ (μ x_s) + Σ k^θ H(x_s − θ) + Σ q x_s + f_i(·)
     dyn_terms = {nid: [] for nid in ordered_ids}
     for d in edges:
-        s, t, rel = d.get("source"), d.get("target"), str(d.get("rel_type", ""))
+        s, t, rel = d.get("source"), d.get("target"), base_rel_code(d.get("rel_type", ""))
         if s not in idx_of or t not in idx_of or s == t:
             continue
         if rel == "Causes(+)":
@@ -1231,9 +1292,12 @@ def build_math_equation_view(elements):
     md_parts.append("**(5) Connector → Operator legend:**\n\n" +
                     "\n".join(f"- `{k}` → {v}" for k, v in legend_items))
 
-    markdown = "\n\n".join(md_parts)
+    body = "\n\n".join(md_parts)
+    # NEW (v23.7): permanent epistemic notice (LaTeX/markdown version)
+    notice_md = f"> ⚠️ **{EPISTEMIC_NOTICE}**\n\n"
+    plain = [EPISTEMIC_NOTICE, ""] + plain
     plain.extend(["", "GLOBAL:"] + global_eqs)
-    return {"markdown": markdown, "plain": plain}
+    return {"markdown": notice_md + body, "body": body, "plain": plain}
 
 
 def render_math_equation_view(elements):
@@ -1242,6 +1306,8 @@ def render_math_equation_view(elements):
     if not view["markdown"]:
         return ""
     st.subheader("🧮 MATHEMATICAL / PHYSICAL EQUATION VIEW (Graph → Equations)")
+    # NEW (v23.7): permanent, prominent epistemic status banner
+    st.markdown(epistemic_banner_html(), unsafe_allow_html=True)
     st.markdown(
         '<div class="math-equation-box">Every node is a state variable <b>x<sub>i</sub></b>; '
         'every connector is a math operator. <b>Composition = ∫ integration</b> '
@@ -1249,7 +1315,7 @@ def render_math_equation_view(elements):
         'Causes(+) = +k·x, Inhibits(-) = −μ·x, Triggers(θ) = Heaviside H(x−θ).</div>',
         unsafe_allow_html=True
     )
-    st.markdown(view["markdown"])
+    st.markdown(view["body"])
     return view["markdown"]
 
 # =============================================================================
@@ -1267,8 +1333,17 @@ def ensure_single_connected_network(elements):
          vozlišča iste majhne komponente), kar prepreči 'viseče verige' in dvojice.
       3) Varnostna preverba: če po mostovih graf še vedno ni ena sama komponenta
          (teoretično nemogoče), se postopek ponovi (max 3 krogi).
+    NOVO (v23.7): vsak samodejno vstavljen rob je transparentno označen
+      "synthetic_bridge": True, "rel_type": "RT [AUTO-BRIDGE]", jantarna barva #f39c12.
     Vrne (elements, skupno št. dodanih povezav, št. komponent na začetku).
     """
+    def _bridge_edge(edge_id, source, target, mechanism):
+        return {"data": {
+            "id": edge_id, "source": source, "target": target,
+            "rel_type": BRIDGE_REL_TYPE, "color": BRIDGE_COLOR,
+            "synthetic_bridge": True, "bridge_mechanism": mechanism
+        }}
+
     def _pass(els):
         node_ids = [el["data"]["id"] for el in els if "label" in el.get("data", {})]
         edge_list = [el for el in els if "source" in el.get("data", {})]
@@ -1320,12 +1395,12 @@ def ensure_single_connected_network(elements):
             for comp in components[1:]:
                 c_hub = hub_of(comp)
                 # Most 1: hub otočka -> glavni hub
-                out.append({"data": {"id": f"e_bridge_{c_hub}_{added}", "source": c_hub, "target": main_hub, "rel_type": "RT", "color": "#2A9D8F"}})
+                out.append(_bridge_edge(f"e_bridge_{c_hub}_{added}", c_hub, main_hub, "component-bridge"))
                 added += 1
                 # Most 2: drugo vozlišče otočka -> drugi hub glavne komponente
                 c_hub2 = hub_of(comp, exclude={c_hub})
                 if c_hub2 and main_hub2 and c_hub2 != main_hub2:
-                    out.append({"data": {"id": f"e_bridge_{c_hub2}_{added}", "source": c_hub2, "target": main_hub2, "rel_type": "RT", "color": "#2A9D8F"}})
+                    out.append(_bridge_edge(f"e_bridge_{c_hub2}_{added}", c_hub2, main_hub2, "component-bridge"))
                     added += 1
 
         # Minimalna stopnja 2 za vsako vozlišče (prepreči viseče verige in dvojice)
@@ -1340,7 +1415,7 @@ def ensure_single_connected_network(elements):
                     break
                 if hub == nid or hub in adj[nid]:
                     continue
-                out.append({"data": {"id": f"e_deg_{nid}_{added}", "source": nid, "target": hub, "rel_type": "RT", "color": "#2A9D8F"}})
+                out.append(_bridge_edge(f"e_deg_{nid}_{added}", nid, hub, "degree-reinforcement"))
                 adj[nid].add(hub)
                 adj[hub].add(nid)
                 added += 1
@@ -1357,6 +1432,137 @@ def ensure_single_connected_network(elements):
         if added == 0:
             break
     return current, total_added, last_comps
+
+# =============================================================================
+# 3.3b NEW (v23.7): INSPECTABLE GRAPH AUDIT TABLES & EPISTEMIC PROVENANCE BOX
+# =============================================================================
+# Machine-readable HTML tables generated from the SAME final_elements as the
+# Cytoscape canvas, so evaluators / OCR / PDF printouts can audit node counts,
+# degree distributions and relational couplings without executing any JS/WebGL.
+
+def _operator_for_rel(rel):
+    code = base_rel_code(rel)
+    key = code if code in MATH_CONNECTOR_MAP else ("Triggers" if code.startswith("Triggers") else None)
+    return MATH_CONNECTOR_MAP.get(key, MATH_CONNECTOR_DEFAULT)["op"]
+
+
+def _audit_table_html(headers, rows, caption):
+    th_style = 'style="border:1px solid #adb5bd;padding:6px 10px;background:#1d3557;color:#ffffff;text-align:left;font-size:0.85em;"'
+    td_style = 'style="border:1px solid #ced4da;padding:5px 10px;font-size:0.82em;color:#1d3557;vertical-align:top;"'
+    parts = [
+        '<table style="border-collapse:collapse;width:100%;margin:8px 0 22px;background:#ffffff;">',
+        f'<caption style="caption-side:top;text-align:left;font-weight:800;padding:6px 0;color:#1d3557;">{html_lib.escape(caption)}</caption>',
+        '<thead><tr>' + "".join(f'<th {th_style}>{html_lib.escape(h)}</th>' for h in headers) + '</tr></thead><tbody>',
+    ]
+    for r in rows:
+        parts.append('<tr>' + "".join(f'<td {td_style}>{html_lib.escape(str(c))}</td>' for c in r) + '</tr>')
+    parts.append('</tbody></table>')
+    return "".join(parts)
+
+
+def build_graph_audit(elements):
+    """Collects audit rows (nodes, edges, bridges, degree distribution) from the graph elements."""
+    nodes, edges = [], []
+    for el in (elements or []):
+        d = el.get("data", {})
+        if "label" in d:
+            nodes.append(d)
+        elif "source" in d:
+            edges.append(d)
+
+    label_of = {n["id"]: n.get("label", n["id"]) for n in nodes}
+    degree = {n["id"]: 0 for n in nodes}
+    for d in edges:
+        for k in ("source", "target"):
+            if d.get(k) in degree:
+                degree[d[k]] += 1
+
+    node_rows = []
+    for n in nodes:
+        shape = str(n.get("shape", "")).lower()
+        node_rows.append([
+            n["id"], n.get("label", n["id"]), shape or "n/a",
+            str(n.get("color", "n/a")).upper(),
+            NODE_ROLE_BY_SHAPE.get(shape, "Unclassified"),
+        ])
+
+    edge_rows, bridge_rows = [], []
+    for d in edges:
+        s, t = d.get("source"), d.get("target")
+        s_txt = f"{s} · {label_of.get(s, s)}"
+        t_txt = f"{t} · {label_of.get(t, t)}"
+        is_bridge = bool(d.get("synthetic_bridge"))
+        edge_rows.append([
+            d.get("id", ""), s_txt, t_txt, str(d.get("rel_type", "")),
+            _operator_for_rel(d.get("rel_type", "")),
+            "Auto-Bridge" if is_bridge else "Generated",
+        ])
+        if is_bridge:
+            mech = d.get("bridge_mechanism") or ("degree-reinforcement" if str(d.get("id", "")).startswith("e_deg_") else "component-bridge")
+            bridge_rows.append({
+                "id": d.get("id", ""), "source": s, "target": t,
+                "source_label": label_of.get(s, s), "target_label": label_of.get(t, t),
+                "mechanism": mech,
+            })
+
+    return {
+        "node_rows": node_rows, "edge_rows": edge_rows, "bridge_rows": bridge_rows,
+        "degree_dist": Counter(degree.values()),
+        "n_nodes": len(nodes), "n_edges": len(edges),
+    }
+
+
+def build_graph_audit_html(elements):
+    """Node Audit Table + Edge Audit Table (+ count / degree-distribution summary) as plain HTML."""
+    a = build_graph_audit(elements)
+    n_bridges = len(a["bridge_rows"])
+    dist = ", ".join(f"degree {k}: {v} node(s)" for k, v in sorted(a["degree_dist"].items())) or "n/a"
+    summary = (
+        '<div style="background:#eef4f8;border-left:6px solid #2a9d8f;border-radius:10px;padding:12px 18px;'
+        'margin:10px 0;color:#1d3557;font-size:0.9em;line-height:1.7;">'
+        f'<b>Graph census:</b> {a["n_nodes"]} nodes | {a["n_edges"]} edges '
+        f'({a["n_edges"] - n_bridges} generated, {n_bridges} auto-bridge) | '
+        f'<b>Degree distribution:</b> {html_lib.escape(dist)}</div>'
+    )
+    node_tbl = _audit_table_html(
+        ["Node ID", "Label", "Geometric Shape", "Color Code", "Functional Role"],
+        a["node_rows"], f"Node Audit Table ({a['n_nodes']} nodes)")
+    edge_tbl = _audit_table_html(
+        ["Edge ID", "Source Node", "Target Node", "Relation Code", "Mathematical Operator", "Bridge Type"],
+        a["edge_rows"], f"Edge Audit Table ({a['n_edges']} edges)")
+    return summary + node_tbl + edge_tbl
+
+
+def build_provenance_box_html(elements):
+    """Epistemic Provenance Audit Box: exact node pairs bridged by the Scientific Cage (Checkpoint B)."""
+    a = build_graph_audit(elements)
+    rows = a["bridge_rows"]
+    head = (
+        '<div style="background:#fffaf0;border:2px dashed #f39c12;border-left:10px solid #f39c12;border-radius:12px;'
+        'padding:16px 22px;margin:14px 0;color:#5d3a00;font-size:0.9em;line-height:1.7;">'
+        '<b>🧾 EPISTEMIC PROVENANCE AUDIT BOX — Checkpoint B (human inspection)</b><br>'
+        'Edges below were NOT proposed by the language model; they were inserted by the Scientific Cage '
+        '(automated BFS connectivity repair / minimum-degree reinforcement) and are flagged '
+        '<code>synthetic_bridge = true</code>, relation <code>RT [AUTO-BRIDGE]</code>, drawn dashed in amber (#f39c12).<br>'
+    )
+    if not rows:
+        return head + '<i>No synthetic bridges were required: every edge in this graph is model-generated.</i></div>'
+    items = []
+    for r in rows:
+        mech = "component bridge (island repair)" if r["mechanism"] == "component-bridge" else "degree reinforcement (min-degree 2)"
+        items.append(
+            f'<li><b>{html_lib.escape(str(r["source_label"]))}</b> ({html_lib.escape(str(r["source"]))}) ⇄ '
+            f'<b>{html_lib.escape(str(r["target_label"]))}</b> ({html_lib.escape(str(r["target"]))}) — '
+            f'edge <code>{html_lib.escape(str(r["id"]))}</code>, {mech}</li>'
+        )
+    return head + f'<b>{len(rows)} machine-repaired edge(s):</b><ol style="margin:6px 0 0 18px;">' + "".join(items) + '</ol></div>'
+
+
+def render_graph_audit(elements):
+    """Streamlit rendering of provenance box + audit tables, directly below the Cytoscape canvas."""
+    st.subheader("🔎 INSPECTABLE GRAPH AUDIT (text-based — PDF / OCR safe)")
+    st.markdown(build_provenance_box_html(elements), unsafe_allow_html=True)
+    st.markdown(build_graph_audit_html(elements), unsafe_allow_html=True)
 
 # --- NOVO (v23.5): SAMODEJNI KOEFICIENT GOSTOTE POVEZAV ---
 def compute_edge_factor(node_count):
@@ -1865,6 +2071,21 @@ You are the SIS Lead Strategic Innovation Architect.
 2. DO NOT include JSON code or any semantic-graph-data inside the report text.
 3. MANDATORY: After your report is completely finished, provide the graph data as a single block starting EXACTLY with the header: ### SEMANTIC_GRAPH_JSON
 
+### MANDATORY REPORT OPENING (CONCISE EXECUTIVE BRIEF — STRICT)
+The STRATEGIC INNOVATION REPORT MUST begin STRICTLY with the following heading as its very first line (no preamble, title, or text before it):
+### EXECUTIVE SYNTHESIS BRIEF (Max 350 words)
+Under it provide exactly three concise, non-redundant bullet points:
+- **The Core Paradigm Shift** — which prevailing axiom or assumption is refuted.
+- **The Tri-Domain Emergent Nexus** — why the emergent synergy Ψ > 0 across the three principal domains of this synthesis cannot be reduced to isolated disciplines.
+- **Actionable Interventional Levers** — the concrete points of intervention.
+The brief must not exceed 350 words. Immediately after the brief, continue with the deeper technical hypotheses and innovations; those sections must ADD new depth and must NOT restate or paraphrase the brief.
+
+### ACADEMIC HEDGING RULE (NO BIOLOGICAL DETERMINISM — STRICT)
+- Avoid fatalistic, deterministic, or essentialist biological phrasing. FORBIDDEN examples: "crime is not a choice", "biology determines behavior", "genes cause criminality", "born criminals".
+- Frame biological mechanisms as "probabilistic biological moderation", "lowered situational thresholds", and "multi-causal biosocial interactions".
+- Treat biological factors as risk-modulating, context-dependent, and interacting with psychological, social, and situational factors; preserve agency, uncertainty, and the need for empirical validation.
+- Use calibrated language (e.g. "is associated with", "may increase the probability of", "under certain conditions") instead of unconditional causal claims.
+
 {protocol_snippet}
 
 {edge_restriction_block}
@@ -2083,6 +2304,10 @@ FINAL SELF-CHECK before output: mentally traverse the graph — it MUST be ONE S
                     "containment": "Containment", "realization": "Realization",
                     "if-then": "IF-THEN", "if then": "IF-THEN",
                 }
+                # Optimizacija: množica znanih relacij je definirana enkrat (ne v vsaki iteraciji)
+                KNOWN_RELS = {"TT","BT","NT","IN","RT","AS","EQ","HA","AND","OR","XOR","NOT","IF-THEN",
+                              "Generalization","Specialization","Realization","Composition","Aggregation",
+                              "Dependency","Conflict","Containment"}
 
                 seen_edges = set()  # Deduplikacija povezav (isti par + relacija)
                 valid_node_ids = set(node_id_alias.values())
@@ -2095,9 +2320,6 @@ FINAL SELF-CHECK before output: mentally traverse the graph — it MUST be ONE S
                     # Če je AI uporabil polno besedo, jo skrajšamo v kodo
                     rel = rel_map.get(raw_rel, orig_rel)
                     # Normalizacija: 'tt' -> 'TT' ipd., da se povezava poveže s pravim stilom
-                    KNOWN_RELS = {"TT","BT","NT","IN","RT","AS","EQ","HA","AND","OR","XOR","NOT","IF-THEN",
-                                  "Generalization","Specialization","Realization","Composition","Aggregation",
-                                  "Dependency","Conflict","Containment"}
                     rel_u = str(rel).strip().upper()
                     if rel_u in KNOWN_RELS:
                         rel = rel_u
@@ -2223,7 +2445,8 @@ FINAL SELF-CHECK before output: mentally traverse the graph — it MUST be ONE S
                             <span style="color:#1d3557;">⬤ Hierarchical (ISO)</span> | 
                             <span style="color:#7b2cb1;">⬤ Associative</span> | 
                             <span style="color:#2a9d8f;">⬤ Related</span> | 
-                            <span style="color:#f1c40f;">⬤ Equivalence</span>
+                            <span style="color:#f1c40f;">⬤ Equivalence</span> | 
+                            <span style="color:#f39c12;">┄ Auto-Bridge (machine-repaired)</span>
                         </div>
                     </div>
                 </div>
@@ -2314,7 +2537,7 @@ FINAL SELF-CHECK before output: mentally traverse the graph — it MUST be ONE S
                 final_elements, added_bridges, comp_count = ensure_single_connected_network(final_elements)
                 st.session_state.accumulated_network = final_elements
                 if added_bridges:
-                    st.caption(f"🔗 Connectivity reinforcement: {added_bridges} isolated island(s) out of {comp_count} components auto-bridged into one fully connected network (RT).")
+                    st.caption(f"🔗 Connectivity reinforcement: {added_bridges} isolated island(s) out of {comp_count} components auto-bridged into one fully connected network (RT [AUTO-BRIDGE], dashed amber).")
 
                 # 5e. FINAL GRAPH RENDERING (Z DINAMIČNO PERSPEKTIVO)
                 st.subheader(f"🕸️ HYBRID SEMANTIC SYSTEM MAP ({graph_perspective.upper()} VIEW)")
@@ -2324,6 +2547,12 @@ FINAL SELF-CHECK before output: mentally traverse the graph — it MUST be ONE S
                     container_id=f"cy_{int(time.time())}"
                 )
 
+                # 5e-1. NEW (v23.7): INSPECTABLE GRAPH AUDIT TABLES + EPISTEMIC PROVENANCE BOX
+                #       Text-based mirror of the canvas (Node + Edge audit tables) so that
+                #       PDF printouts / OCR / text-only evaluators can audit the graph
+                #       without executing WebGL/JS; plus the list of machine-bridged pairs.
+                render_graph_audit(final_elements)
+
                 # 5e-2. NEW (v23.6): MATH / PHYSICAL EQUATION VIEW
                 #       Beyond the created graph: the SAME graph converted into
                 #       math/physical equations (Composition = ∫ integration,
@@ -2332,11 +2561,14 @@ FINAL SELF-CHECK before output: mentally traverse the graph — it MUST be ONE S
 
                 # 5f. IZVOZ POROČILA IN GRAFA V SAMOSTOJNI HTML
                 def build_html_export(elements, report_md, math_md):
-                    """Skuha samostojno HTML datoteko: poročilo + interaktivni graf (Cytoscape) + matematični pogled (MathJax)."""
+                    """Skuha samostojno HTML datoteko: poročilo + interaktivni graf (Cytoscape) + revizijske tabele
+                    + provenienčni okvir + matematični pogled (MathJax) z epistemičnim opozorilom."""
                     # Poročilo varno prek base64 (prepreči lomljenje zaradi narekovajev/znakov)
                     report_b64 = base64.b64encode((report_md or "").encode("utf-8")).decode("ascii")
-                    math_b64 = base64.b64encode((math_md or "").encode("utf-8")).decode("ascii")
-                    elements_json = json.dumps(elements or [])
+                    # Epistemično opozorilo je v izvozu statičen HTML-banner, zato uporabimo telo brez opozorila
+                    math_body = build_math_equation_view(elements)["body"] or (math_md or "")
+                    math_b64 = base64.b64encode(math_body.encode("utf-8")).decode("ascii")
+                    elements_json = json.dumps(elements or [], separators=(',', ':')).replace("</", "<\\/")
                     layout_js = "cose"
                     html = """<!DOCTYPE html>
 <html lang="en">
@@ -2362,6 +2594,15 @@ header h1 { margin: 0; font-size: 1.8em; }
 .toolbar button { padding: 10px 18px; background: #1d3557; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 800; font-size: 12px; }
 h2 { margin-top: 40px; text-align: center; }
 .mathplain { font-family: Consolas, monospace; font-size: 0.85em; white-space: pre-wrap; }
+.auditwrap { max-width: 1200px; margin: 0 auto 40px; padding: 0 10px; }
+.mathbanner { max-width: 1100px; margin: 0 auto; }
+@media print {
+    .toolbar { display: none; }
+    #cy { height: 520px; }
+    table { page-break-inside: auto; }
+    tr { page-break-inside: avoid; page-break-after: auto; }
+    thead { display: table-header-group; }
+}
 </style>
 </head>
 <body>
@@ -2369,6 +2610,7 @@ h2 { margin-top: 40px; text-align: center; }
 <h2>📋 INTEGRATED HIERARCHOLOGICAL REPORT</h2>
 <div id="report"></div>
 <h2>🧮 MATHEMATICAL / PHYSICAL EQUATION VIEW</h2>
+<div class="mathbanner">__EPISTEMIC_BANNER__</div>
 <div id="mathview"></div>
 <h2>🕸️ HYBRID SEMANTIC SYSTEM MAP</h2>
 <div class="toolbar">
@@ -2378,6 +2620,8 @@ h2 { margin-top: 40px; text-align: center; }
     <button onclick="downloadPng()">💾 PNG</button>
 </div>
 <div id="cy"></div>
+<h2>🔎 INSPECTABLE GRAPH AUDIT (text-based — PDF / OCR safe)</h2>
+<div class="auditwrap">__AUDIT_HTML__</div>
 <script>
 var cy1;
 function b64ToUtf8(b64) {
@@ -2405,6 +2649,11 @@ cy1 = cytoscape({
             'target-arrow-color': 'data(color)', 'target-arrow-shape': 'vee',
             'text-background-opacity': 1, 'text-background-color': '#ffffff',
             'text-background-padding': '3px', 'text-background-shape': 'roundrectangle', 'opacity': 0.8
+        }},
+        { selector: 'edge[?synthetic_bridge]', style: {
+            'width': 4, 'line-color': '#f39c12', 'line-style': 'dashed',
+            'target-arrow-shape': 'triangle', 'target-arrow-color': '#f39c12',
+            'color': '#f39c12', 'opacity': 1
         }}
     ],
     layout: { name: '__LAYOUT__', idealEdgeLength: 120, nodeOverlap: 50, fit: true, padding: 50, nodeRepulsion: 1000000, animate: false }
@@ -2420,7 +2669,10 @@ function downloadPng() {
 </script>
 </body>
 </html>"""
+                    audit_html = build_provenance_box_html(elements) + build_graph_audit_html(elements)
                     html = html.replace("__SYSDATE__", SYSTEM_DATE).replace("__VERSION__", VERSION_CODE)
+                    html = html.replace("__EPISTEMIC_BANNER__", epistemic_banner_html())
+                    html = html.replace("__AUDIT_HTML__", audit_html)
                     html = html.replace("__REPORT_B64__", report_b64)
                     html = html.replace("__MATH_B64__", math_b64)
                     html = html.replace("__ELEMENTS__", elements_json)
