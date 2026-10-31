@@ -1599,11 +1599,10 @@ with st.sidebar:
         help="Google AI Studio / Gemini API key."
     )
 
-    # Google-only language-model catalog
+    # Google-only language-model catalog (enaki modeli kot v prejšnji različici).
     GOOGLE_MODELS = {
-        # --- NEW: Gemini 4 Series ---
-        "Gemini 4 Argon — latest preview": "gemini-4-argon",  # ali "gemini-4-argon-preview"
-        
+        # Gemini 4 (stable, paid tier only)
+        "Gemini 4 Argon — newest (paid)": "gemini-4-argon",
         # Current Gemini 3.x
         "Gemini 3.8 Flash — latest": "gemini-3.8-flash",
         "Gemini 3.7 Flash — advanced": "gemini-3.7-flash",
@@ -1613,12 +1612,10 @@ with st.sidebar:
         "Gemini 3.1 Flash-Lite — free/cost-efficient": "gemini-3.1-flash-lite",
         "Gemini 3.1 Pro Preview": "gemini-3.1-pro-preview",
         "Gemini 3 Flash Preview": "gemini-3-flash-preview",
-        
         # Gemini 2.5 family
         "Gemini 2.5 Pro": "gemini-2.5-pro",
         "Gemini 2.5 Flash": "gemini-2.5-flash",
         "Gemini 2.5 Flash-Lite": "gemini-2.5-flash-lite",
-        
         # Gemma 4
         "Gemma 4 31B IT — free": "gemma-4-31b-it",
         "Gemma 4 26B A4B IT — free": "gemma-4-26b-a4b-it",
@@ -1628,19 +1625,18 @@ with st.sidebar:
 
     # Thinking level (kakovost > stroški; "low" znižuje kakovost grafov)
     thinking_level = st.selectbox(
-        "🧠 Gemini 3.x Thinking Level:",
+        "🧠 Gemini Thinking Level (3.x / 4.x):",
         ["High", "Medium", "Low", "Default (API)"],
         index=0,
-        help="Stopnja notranjega razmišljanja za Gemini 3.x modele. 'High' daje "
-             "najboljše poročila in grafe (9,6+).",
+        help="Stopnja notranjega razmišljanja za napredne Gemini modele. 'High' daje najboljša poročila in grafe.",
         key="side_thinking_level_v2026"
     )
 
     # Izbira za Phase 1 (Foundation)
     p1_model_label = st.selectbox(
         "Phase 1 Model (Structure):", 
-        list(GOOGLE_MODELS.keys()), 
-        index=3, 
+        list(GOOGLE_MODELS.keys()),
+        index=4,
         help="Priporočeno: Gemini 3.5 Flash za kompleksno IMA sintezo."
     )
     p1_model = GOOGLE_MODELS[p1_model_label]
@@ -1648,8 +1644,8 @@ with st.sidebar:
     # Izbira za Phase 2 (Innovation)
     p2_model_label = st.selectbox(
         "Phase 2 Model (Innovation):", 
-        list(GOOGLE_MODELS.keys()), 
-        index=1, 
+        list(GOOGLE_MODELS.keys()),
+        index=2,
         help="Priporočeno: Gemini 3.7/3.8 Flash za MA inovativne preboje."
     )
     p2_model = GOOGLE_MODELS[p2_model_label]
@@ -1952,7 +1948,7 @@ def google_generate(client, model_id, system_prompt, user_content, temperature, 
         "temperature": temperature,
     }
     # Thinking level ni vsiljen na "low" — kakovost ima prednost.
-    if model_id.startswith("gemini-3") and thinking_level and thinking_level.startswith(("High", "Medium", "Low")):
+    if (model_id.startswith("gemini-3") or model_id.startswith("gemini-4")) and thinking_level and thinking_level.startswith(("High", "Medium", "Low")):
         try:
             config_kwargs["thinking_config"] = types.ThinkingConfig(thinking_level=thinking_level.lower())
         except Exception:
