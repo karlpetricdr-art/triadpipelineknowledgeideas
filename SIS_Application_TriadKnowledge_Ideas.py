@@ -16,7 +16,7 @@ import streamlit.components.v1 as components
 # 0. GLOBAL CONFIGURATION & SESSION DATE (FEBRUARY 24, 2026)
 # =============================================================================
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v23.7.0-ULTRA-SYNERGY-GOOGLE-GEMINI-ONLY-LEAN-AUTO-DENSITY-MATH-EQUATIONS-AUDIT-PROVENANCE"
+VERSION_CODE = "v23.8.0-ULTRA-SYNERGY-GOOGLE-GEMINI-ONLY-LEAN-TOKEN-SAVER-AUTO-DENSITY-MATH-EQUATIONS-AUDIT-PROVENANCE"
 
 # =============================================================================
 # INITIALIZATION FIX: Preprečuje AttributeError pri zagonu in resetiranju
@@ -496,6 +496,8 @@ def render_cytoscape_network(elements, layout_type="organic", container_id="cy_c
     components.html(cyto_html, height=900)
 
 
+# NEW (v23.8): predpomnjenje ORCID klicev (1 h) — ponovni zagoni z istimi avtorji ne ponavljajo HTTP klicev.
+@st.cache_data(ttl=3600, show_spinner=False)
 def fetch_author_bibliographies(author_input):
     """Pridobi bibliografijo preko ORCID API-ja."""
     if not author_input: return ""
@@ -1599,45 +1601,39 @@ with st.sidebar:
         help="Google AI Studio / Gemini API key."
     )
 
-    # Google-only language-model catalog (enaki modeli kot v prejšnji različici).
+    # NEW (v23.8): katalog uradnih, stabilnih Google Gemini modelov.
     GOOGLE_MODELS = {
-        # Gemini 4 (stable, paid tier only)
-        "Gemini 4 Argon — newest (paid)": "gemini-4-argon",
-        # Current Gemini 3.x
-        "Gemini 3.8 Flash — latest": "gemini-3.8-flash",
-        "Gemini 3.7 Flash — advanced": "gemini-3.7-flash",
-        "Gemini 3.6 Flash": "gemini-3.6-flash",
-        "Gemini 3.5 Flash": "gemini-3.5-flash",
-        "Gemini 3.5 Flash-Lite — free/cost-efficient": "gemini-3.5-flash-lite",
-        "Gemini 3.1 Flash-Lite — free/cost-efficient": "gemini-3.1-flash-lite",
-        "Gemini 3.1 Pro Preview": "gemini-3.1-pro-preview",
-        "Gemini 3 Flash Preview": "gemini-3-flash-preview",
-        # Gemini 2.5 family
-        "Gemini 2.5 Pro": "gemini-2.5-pro",
-        "Gemini 2.5 Flash": "gemini-2.5-flash",
-        "Gemini 2.5 Flash-Lite": "gemini-2.5-flash-lite",
-        # Gemma 4
-        "Gemma 4 31B IT — free": "gemma-4-31b-it",
-        "Gemma 4 26B A4B IT — free": "gemma-4-26b-a4b-it",
+        "Gemini 2.5 Flash — priporočeno (hitro, varčno)": "gemini-2.5-flash",
+        "Gemini 2.5 Pro — najvišja kakovost": "gemini-2.5-pro",
+        "Gemini 2.0 Flash-Lite — minimalna poraba": "gemini-2.0-flash-lite",
     }
 
     st.subheader("🤖 Sequential Google Model Selection")
 
-    # Thinking level (kakovost > stroški; "low" znižuje kakovost grafov)
-    thinking_level = st.selectbox(
-        "🧠 Gemini Thinking Level (3.x / 4.x):",
-        ["High", "Medium", "Low", "Default (API)"],
+    # NEW (v23.8): natančen nadzor Thinking proračuna (thinking_budget v žetonih).
+    # Privzeto "Varčno" — prepreči nenadzorovano porabo (do ~30k žetonov na klic).
+    THINKING_BUDGETS = {
+        "Varčno (1.024 žetonov)": 1024,
+        "Izklopljeno (0 žetonov)": 0,
+        "Zmerno (2.048 žetonov)": 2048,
+    }
+    thinking_label = st.selectbox(
+        "🧠 Thinking proračun (žetoni):",
+        list(THINKING_BUDGETS.keys()),
         index=0,
-        help="Stopnja notranjega razmišljanja za napredne Gemini modele. 'High' daje najboljša poročila in grafe.",
-        key="side_thinking_level_v2026"
+        help="Natančen nadzor notranjega razmišljanja. Velja za Gemini 2.5 modele; "
+             "Gemini 2.0 Flash-Lite thinkinga ne podpira. Pri 2.5 Pro je najmanjša vrednost 128 (izklop ni mogoč).",
+        key="side_thinking_budget_v2026"
     )
+    thinking_budget = THINKING_BUDGETS[thinking_label]
 
     # Izbira za Phase 1 (Foundation)
     p1_model_label = st.selectbox(
         "Phase 1 Model (Structure):", 
         list(GOOGLE_MODELS.keys()),
-        index=4,
-        help="Priporočeno: Gemini 3.5 Flash za kompleksno IMA sintezo."
+        index=0,
+        help="Priporočeno: Gemini 2.5 Flash (hitrost in nizka poraba).",
+        key="side_p1_model_v2026"
     )
     p1_model = GOOGLE_MODELS[p1_model_label]
 
@@ -1645,8 +1641,9 @@ with st.sidebar:
     p2_model_label = st.selectbox(
         "Phase 2 Model (Innovation):", 
         list(GOOGLE_MODELS.keys()),
-        index=2,
-        help="Priporočeno: Gemini 3.7/3.8 Flash za MA inovativne preboje."
+        index=0,
+        help="Priporočeno: Gemini 2.5 Flash; za višjo kakovost Gemini 2.5 Pro.",
+        key="side_p2_model_v2026"
     )
     p2_model = GOOGLE_MODELS[p2_model_label]
 
@@ -1923,6 +1920,11 @@ with col_inq3:
     if uploaded_file is not None:
         try:
             file_content = uploaded_file.read().decode("utf-8")
+            # NEW (v23.8): omejitev velikosti datoteke (varčevanje z vhodnimi žetoni)
+            MAX_FILE_CHARS = 30000  # ~7–8k žetonov
+            if len(file_content) > MAX_FILE_CHARS:
+                st.warning(f"⚠️ Datoteka je bila skrajšana na {MAX_FILE_CHARS} znakov zaradi varčevanja z žetoni.")
+                file_content = file_content[:MAX_FILE_CHARS]
             st.success(f"📎 {uploaded_file.name} uploaded!")
             with st.expander("File Preview"):
                 st.text(file_content[:300] + "...")
@@ -1933,12 +1935,12 @@ with col_inq3:
 # 5. SYNERGY EXECUTION ENGINE (PURE GOOGLE GEMINI SEQUENTIAL PIPELINE)
 # ============================================================================= 
 
-def google_generate(client, model_id, system_prompt, user_content, temperature, max_retries=4, thinking_level="High"):
+def google_generate(client, model_id, system_prompt, user_content, temperature, max_retries=3, thinking_budget=1024):
     """Single Google GenAI gateway. No third-party LLM providers.
 
-    Includes automatic retry with exponential backoff for transient server-side
-    errors (e.g. 503 UNAVAILABLE / high demand), which are temporary on Google's
-    side and usually succeed on the next attempt.
+    NEW (v23.8): thinking_budget (število žetonov) namesto thinking_level; velja samo za
+    Gemini 2.5 modele. Retry z backoffom: pri kvoti (429) daljše čakanje, ker se minutni
+    TPM števec sprosti šele čez ~20+ s; pri 5xx kratek eksponentni backoff.
     """
     if client is None:
         raise RuntimeError("Google Gemini client is not initialized.")
@@ -1947,10 +1949,12 @@ def google_generate(client, model_id, system_prompt, user_content, temperature, 
         "system_instruction": system_prompt,
         "temperature": temperature,
     }
-    # Thinking level ni vsiljen na "low" — kakovost ima prednost.
-    if (model_id.startswith("gemini-3") or model_id.startswith("gemini-4")) and thinking_level and thinking_level.startswith(("High", "Medium", "Low")):
+    # 2.5 modeli podpirajo thinking_budget; 2.0 Flash-Lite ga ne (povzroči napako).
+    # 2.5 Pro thinkinga ne more izklopiti (najmanj 128 žetonov).
+    if model_id.startswith("gemini-2.5"):
+        budget = max(thinking_budget, 128) if "pro" in model_id else thinking_budget
         try:
-            config_kwargs["thinking_config"] = types.ThinkingConfig(thinking_level=thinking_level.lower())
+            config_kwargs["thinking_config"] = types.ThinkingConfig(thinking_budget=budget)
         except Exception:
             pass
 
@@ -1974,10 +1978,11 @@ def google_generate(client, model_id, system_prompt, user_content, temperature, 
         except Exception as exc:
             last_exc = exc
             error_str = str(exc)
-            is_transient = any(code in error_str for code in ["503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED", "500", "INTERNAL"])
+            is_quota = any(code in error_str for code in ["429", "RESOURCE_EXHAUSTED"])
+            is_transient = is_quota or any(code in error_str for code in ["503", "UNAVAILABLE", "500", "INTERNAL"])
             if is_transient and attempt < max_retries - 1:
-                wait_time = (2 ** attempt) + 1  # 2s, 3s, 5s, 9s...
-                st.toast(f"⏳ Google API trenutno preobremenjen (poskus {attempt + 1}/{max_retries}). Ponovni poskus čez {wait_time}s...")
+                wait_time = 20 * (attempt + 1) if is_quota else (2 ** attempt) + 1
+                st.toast(f"⏳ Google API omejitev (poskus {attempt + 1}/{max_retries}). Ponovni poskus čez {wait_time}s...")
                 time.sleep(wait_time)
                 continue
             raise
@@ -2025,7 +2030,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
             # Inicializacija Google Gemini klienta
             google_client = genai.Client(api_key=google_api_key)
 
-            # --- PHASE 1: GOOGLE GEMINI (Foundation - npr. Gemini 3.5 Flash) ---
+            # --- PHASE 1: GOOGLE GEMINI (Foundation - npr. Gemini 2.5 Flash) ---
             with st.spinner(f'PHASE 1: Building Architecture with {p1_model_label}...'):
                 groq_synthesis = google_generate(
                     google_client,
@@ -2033,9 +2038,13 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                     "You are the SIS Lead Hierarchologist. If the user provides specific Paradigms or Models in the 'MANDATORY SYSTEM INSTRUCTION', you MUST prioritize them in your structural analysis.",
                     full_ai_input,
                     temperature=0.4,
-                    thinking_level=thinking_level
+                    thinking_budget=thinking_budget
                 )
                 st.session_state.groq_synthesis = groq_synthesis
+
+            # NEW (v23.8): kratek karantenski premor med fazama (glajenje Googlovega TPM števca).
+            with st.spinner("⏳ Kratek premor med fazama (sprostitev TPM števca)..."):
+                time.sleep(3)
 
             # --- NOVO (v23): dinamične omejitve velikosti grafa ---
             node_min = max(12, int(target_node_count * 0.9))
@@ -2052,7 +2061,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
 - Do NOT emit edges with any other relation type.
 """ if selected_edge_types else "")
 
-            # --- 3. PHASE 2: GOOGLE GEMINI (Innovation - npr. Gemini 3.7/3.8 Flash) ---
+            # --- 3. PHASE 2: GOOGLE GEMINI (Innovation - npr. Gemini 2.5 Flash) ---
             with st.spinner(f'PHASE 2: Generating innovations with {p2_model_label}...'):
 
                 # --- STANDARDNI INTERDISCIPLINARNI PROTOKOL (Epiplexity odstranjen) --- 
@@ -2159,13 +2168,15 @@ Rules: 'id' must be unique and referenced by 'source'/'target'; 'label' must be 
 FINAL SELF-CHECK before output: mentally traverse the graph — it MUST be ONE SINGLE CONNECTED COMPONENT (every node reachable from every other) with every node having degree >= 2. If not, add edges until it is.
 """
                 # IZVEDBA KLICA NA GOOGLE GEMINI API
+                # NEW (v23.8): razbremenitev vhodnega konteksta — surova datoteka in bibliografija
+                # se ne pošiljata ponovno; Phase 1 ju je že vključil v sintezo (>60 % manj žetonov).
                 innovation_raw = google_generate(
                     google_client,
                     p2_model,
                     samba_sys_prompt,
-                    f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER GOAL: {idea_query}{file_context_str}",
+                    f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER GOAL: {idea_query}",
                     temperature=0.85,
-                    thinking_level=thinking_level
+                    thinking_budget=thinking_budget
                 )
 
             # ============================================================================= 
