@@ -16,7 +16,7 @@ import streamlit.components.v1 as components
 # 0. GLOBAL CONFIGURATION & SESSION DATE (FEBRUARY 24, 2026)
 # =============================================================================
 SYSTEM_DATE = datetime.now().strftime("%B %d, %Y")
-VERSION_CODE = "v23.8.0-ULTRA-SYNERGY-GOOGLE-GEMINI-ONLY-LEAN-TOKEN-SAVER-AUTO-DENSITY-MATH-EQUATIONS-AUDIT-PROVENANCE"
+VERSION_CODE = "v23.8.1-ULTRA-SYNERGY-GOOGLE-GEMINI-ONLY-LEAN-TOKEN-SAVER-AUTO-DENSITY-MATH-EQUATIONS-AUDIT-PROVENANCE"
 
 # =============================================================================
 # INITIALIZATION FIX: Preprečuje AttributeError pri zagonu in resetiranju
@@ -1601,38 +1601,47 @@ with st.sidebar:
         help="Google AI Studio / Gemini API key."
     )
 
-    # NEW (v23.8): katalog uradnih, stabilnih Google Gemini modelov.
+    # Google-only language-model catalog (VRNJEN prejšnji katalog modelov).
     GOOGLE_MODELS = {
-        "Gemini 2.5 Flash — priporočeno (hitro, varčno)": "gemini-2.5-flash",
-        "Gemini 2.5 Pro — najvišja kakovost": "gemini-2.5-pro",
-        "Gemini 2.0 Flash-Lite — minimalna poraba": "gemini-2.0-flash-lite",
+        # Gemini 4 (stable, paid tier only)
+        "Gemini 4 Argon — newest (paid)": "gemini-4-argon",
+        # Current Gemini 3.x
+        "Gemini 3.8 Flash — latest": "gemini-3.8-flash",
+        "Gemini 3.7 Flash — advanced": "gemini-3.7-flash",
+        "Gemini 3.6 Flash": "gemini-3.6-flash",
+        "Gemini 3.5 Flash": "gemini-3.5-flash",
+        "Gemini 3.5 Flash-Lite — free/cost-efficient": "gemini-3.5-flash-lite",
+        "Gemini 3.1 Flash-Lite — free/cost-efficient": "gemini-3.1-flash-lite",
+        "Gemini 3.1 Pro Preview": "gemini-3.1-pro-preview",
+        "Gemini 3 Flash Preview": "gemini-3-flash-preview",
+        # Gemini 2.5 family
+        "Gemini 2.5 Pro": "gemini-2.5-pro",
+        "Gemini 2.5 Flash": "gemini-2.5-flash",
+        "Gemini 2.5 Flash-Lite": "gemini-2.5-flash-lite",
+        # Gemma 4
+        "Gemma 4 31B IT — free": "gemma-4-31b-it",
+        "Gemma 4 26B A4B IT — free": "gemma-4-26b-a4b-it",
     }
 
     st.subheader("🤖 Sequential Google Model Selection")
 
-    # NEW (v23.8): natančen nadzor Thinking proračuna (thinking_budget v žetonih).
-    # Privzeto "Varčno" — prepreči nenadzorovano porabo (do ~30k žetonov na klic).
-    THINKING_BUDGETS = {
-        "Varčno (1.024 žetonov)": 1024,
-        "Izklopljeno (0 žetonov)": 0,
-        "Zmerno (2.048 žetonov)": 2048,
-    }
-    thinking_label = st.selectbox(
-        "🧠 Thinking proračun (žetoni):",
-        list(THINKING_BUDGETS.keys()),
+    # NEW (v23.8.1): Thinking nadzor — privzeto "Low" (varčno). "High" porabi bistveno več žetonov.
+    # Gemini 3.x/4.x: thinking_level; Gemini 2.5: ekvivalenten thinking_budget (Low=1024, Medium=2048, High=8192).
+    thinking_level = st.selectbox(
+        "🧠 Gemini Thinking Level (varčnost žetonov):",
+        ["Low", "Medium", "High", "Default (API)"],
         index=0,
-        help="Natančen nadzor notranjega razmišljanja. Velja za Gemini 2.5 modele; "
-             "Gemini 2.0 Flash-Lite thinkinga ne podpira. Pri 2.5 Pro je najmanjša vrednost 128 (izklop ni mogoč).",
-        key="side_thinking_budget_v2026"
+        help="Low = najmanj žetonov (privzeto), Medium = zmerno, High = največ razmišljanja (draga poraba). "
+             "Velja za Gemini 3.x / 4.x (level) in 2.5 (ekvivalentni proračun). Gemma / 2.0 thinkinga ne podpirajo.",
+        key="side_thinking_level_v2026"
     )
-    thinking_budget = THINKING_BUDGETS[thinking_label]
 
     # Izbira za Phase 1 (Foundation)
     p1_model_label = st.selectbox(
         "Phase 1 Model (Structure):", 
         list(GOOGLE_MODELS.keys()),
-        index=0,
-        help="Priporočeno: Gemini 2.5 Flash (hitrost in nizka poraba).",
+        index=4,
+        help="Priporočeno: Gemini 3.5 Flash za kompleksno IMA sintezo.",
         key="side_p1_model_v2026"
     )
     p1_model = GOOGLE_MODELS[p1_model_label]
@@ -1641,8 +1650,8 @@ with st.sidebar:
     p2_model_label = st.selectbox(
         "Phase 2 Model (Innovation):", 
         list(GOOGLE_MODELS.keys()),
-        index=0,
-        help="Priporočeno: Gemini 2.5 Flash; za višjo kakovost Gemini 2.5 Pro.",
+        index=2,
+        help="Priporočeno: Gemini 3.7/3.8 Flash za MA inovativne preboje.",
         key="side_p2_model_v2026"
     )
     p2_model = GOOGLE_MODELS[p2_model_label]
@@ -1935,12 +1944,12 @@ with col_inq3:
 # 5. SYNERGY EXECUTION ENGINE (PURE GOOGLE GEMINI SEQUENTIAL PIPELINE)
 # ============================================================================= 
 
-def google_generate(client, model_id, system_prompt, user_content, temperature, max_retries=3, thinking_budget=1024):
+def google_generate(client, model_id, system_prompt, user_content, temperature, max_retries=3, thinking_level="Low"):
     """Single Google GenAI gateway. No third-party LLM providers.
 
-    NEW (v23.8): thinking_budget (število žetonov) namesto thinking_level; velja samo za
-    Gemini 2.5 modele. Retry z backoffom: pri kvoti (429) daljše čakanje, ker se minutni
-    TPM števec sprosti šele čez ~20+ s; pri 5xx kratek eksponentni backoff.
+    NEW (v23.8.1): thinking_level za Gemini 3.x/4.x, ekvivalenten thinking_budget za 2.5.
+    Retry z backoffom: pri kvoti (429) daljše čakanje, ker se minutni TPM števec
+    sprosti šele čez ~20+ s; pri 5xx kratek eksponentni backoff.
     """
     if client is None:
         raise RuntimeError("Google Gemini client is not initialized.")
@@ -1949,10 +1958,15 @@ def google_generate(client, model_id, system_prompt, user_content, temperature, 
         "system_instruction": system_prompt,
         "temperature": temperature,
     }
-    # 2.5 modeli podpirajo thinking_budget; 2.0 Flash-Lite ga ne (povzroči napako).
-    # 2.5 Pro thinkinga ne more izklopiti (najmanj 128 žetonov).
-    if model_id.startswith("gemini-2.5"):
-        budget = max(thinking_budget, 128) if "pro" in model_id else thinking_budget
+    # Gemini 3.x / 4.x: thinking_level. Gemini 2.5: thinking_budget. Gemma: brez thinking konfiguracije.
+    level_key = (thinking_level or "").split(" ")[0]
+    if model_id.startswith(("gemini-3", "gemini-4")) and level_key in ("High", "Medium", "Low"):
+        try:
+            config_kwargs["thinking_config"] = types.ThinkingConfig(thinking_level=level_key.lower())
+        except Exception:
+            pass
+    elif model_id.startswith("gemini-2.5") and level_key in ("High", "Medium", "Low"):
+        budget = {"Low": 1024, "Medium": 2048, "High": 8192}[level_key]
         try:
             config_kwargs["thinking_config"] = types.ThinkingConfig(thinking_budget=budget)
         except Exception:
@@ -2038,7 +2052,7 @@ if st.button("🚀 EXECUTE MULTI-DIMENSIONAL SEQUENTIAL SYNERGY PIPELINE", use_c
                     "You are the SIS Lead Hierarchologist. If the user provides specific Paradigms or Models in the 'MANDATORY SYSTEM INSTRUCTION', you MUST prioritize them in your structural analysis.",
                     full_ai_input,
                     temperature=0.4,
-                    thinking_budget=thinking_budget
+                    thinking_level=thinking_level
                 )
                 st.session_state.groq_synthesis = groq_synthesis
 
@@ -2176,7 +2190,7 @@ FINAL SELF-CHECK before output: mentally traverse the graph — it MUST be ONE S
                     samba_sys_prompt,
                     f"PHASE 1 FOUNDATION:\n{groq_synthesis}\n\nUSER GOAL: {idea_query}",
                     temperature=0.85,
-                    thinking_budget=thinking_budget
+                    thinking_level=thinking_level
                 )
 
             # ============================================================================= 
